@@ -4,5 +4,7 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {
+		"java.format.settings.url": ".vscode/eclipse-java-google-style.xml",
+	}
 }

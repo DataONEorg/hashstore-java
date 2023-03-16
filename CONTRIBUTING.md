@@ -132,7 +132,8 @@ Code should be written to professional standards to enable clean, well-documente
 readable, and maintainable software.  While there has been significant variablility
 in the coding styles applied historically, new contributions should strive for
 clean code formatting.  We generally follow PEP8 guidelines for Python code formatting,
-typically enforced through the `black` code formatting package.
+typically enforced through the `black` code formatting package. For Java, we typically 
+follow the [Google Style](https://raw.githubusercontent.com/google/styleguide/gh-pages/eclipse-java-google-style.xml), enforced through the VS Code formatting extensions.
 
 ## Contributor license agreement
 
