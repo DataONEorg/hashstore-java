@@ -11,16 +11,15 @@ HashStore is a server-side python package implementing a content-based identifie
 
 DataONE in general, and HashStore in particular, are open source, community projects.  We [welcome contributions](https://github.com/DataONEorg/hashstore-java/blob/main/CONTRIBUTING.md) in many forms, including code, graphics, documentation, bug reports, testing, etc.  Use the [DataONE discussions](https://github.com/DataONEorg/dataone/discussions) to discuss these contributions with us.
 
-
 ## Documentation
 
 Documentation is a work in progress, and can be found on the [Metacat repository](https://github.com/NCEAS/metacat/blob/feature-1436-storage-and-indexing/docs/user/metacat/source/storage-subsystem.rst#physical-file-layout) as part of the storage redesign planning. Future updates will include documentation here as the package matures.
 
 ## Development build
 
-HashStore is a Java package, and built using the [Maven](https://maven.apache.org/) build tool. 
+HashStore is a Java package, and built using the [Maven](https://maven.apache.org/) build tool.
 
-To install `hashstore` locally, install Java and Maven on your local machine, 
+To install `hashstore` locally, install Java and Maven on your local machine,
 and then install or build the package with `mvn install` or `mvn package`, respectively.
 
 We also maintain a parallel [Python-based version of HashStore](https://github.com/DataONEorg/hashstore).
@@ -55,5 +54,3 @@ Additional support was provided for collaboration by the National Center for Eco
 [![DataONE_footer](https://user-images.githubusercontent.com/6643222/162324180-b5cf0f5f-ae7a-4ca6-87c3-9733a2590634.png)](https://dataone.org)
 
 [![nceas_footer](https://www.nceas.ucsb.edu/sites/default/files/2020-03/NCEAS-full%20logo-4C.png)](https://www.nceas.ucsb.edu)
-
-
