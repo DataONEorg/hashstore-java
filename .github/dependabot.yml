@@ -10,3 +10,5 @@ updates:
     schedule:
       interval: "weekly"
     target-branch: "develop"
+    # Disable version updates for maven dependencies (still does security updates)
+    open-pull-requests-limit: 0
