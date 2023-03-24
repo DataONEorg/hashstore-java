@@ -9,11 +9,11 @@ public class HashAddress {
     private boolean isDuplicate;
     private Map<String, String> hexDigests;
 
-    public HashAddress(String id, String relpath, String abspath, boolean isDuplicate,
+    public HashAddress(String id, String relPath, String absPath, boolean isDuplicate,
             Map<String, String> hexDigests) {
         this.id = id;
-        this.relPath = relpath;
-        this.absPath = abspath;
+        this.relPath = relPath;
+        this.absPath = absPath;
         this.isDuplicate = isDuplicate;
         this.hexDigests = hexDigests;
     }
