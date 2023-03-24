@@ -1,10 +1,13 @@
 package org.dataone.hashstore;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -27,7 +30,12 @@ public class HashFileStoreTest {
         Path rootDirectory = tempFolder.getRoot().toPath();
         String rootString = rootDirectory.toString();
         String rootStringFull = rootString + "metacat/objects";
-        new HashFileStore(3, 2, "sha256", rootStringFull);
+        try {
+            new HashFileStore(3, 2, "sha256", rootStringFull);
+        } catch (IOException e) {
+            fail("IOException encountered");
+        }
+
         Path checkPath = Paths.get(rootStringFull);
         assertTrue(Files.exists(checkPath));
     }
