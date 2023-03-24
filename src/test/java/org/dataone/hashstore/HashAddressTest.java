@@ -10,7 +10,7 @@ import org.junit.Test;
 import org.dataone.hashstore.hashfs.HashAddress;
 
 /**
- * Test class for HashAddres
+ * Test class for HashAddress
  */
 public class HashAddressTest {
 
