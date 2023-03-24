@@ -10,13 +10,14 @@ import org.dataone.hashstore.hashfs.HashFileStore;
 public class HashStore {
     private String sysmetaNameSpace;
 
-    public HashStore(int depth, int width, String algorithm, String storeDirectory, String namespace) {
+    public HashStore(int depth, int width, String algorithm, String storeDirectory, String namespace)
+            throws IllegalArgumentException {
         this.sysmetaNameSpace = namespace;
         try {
             HashFileStore hashfs = new HashFileStore(depth, width, algorithm, storeDirectory);
         } catch (IllegalArgumentException e) {
             // TODO: Log failure - include signature values, e
-            return;
+            throw e;
         }
 
     }
