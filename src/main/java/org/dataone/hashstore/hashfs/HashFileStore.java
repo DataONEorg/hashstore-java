@@ -12,7 +12,7 @@ public class HashFileStore {
     private String rootDirectory;
 
     public HashFileStore(int depth, int width, String algorithm, String storeDirectory)
-            throws IllegalArgumentException {
+            throws IllegalArgumentException, IOException {
         // Validate input parameters
         if (depth <= 0 || width <= 0) {
             throw new IllegalArgumentException("Depth and width must be greater than 0.");
@@ -32,7 +32,12 @@ public class HashFileStore {
             Files.createDirectories(objectStoreDirectory);
         } catch (IOException e) {
             // TODO: Log IO exeption failure, e
-            return;
+            throw e;
         }
+    }
+
+    protected void put() {
+        // TODO: Return HashAddress
+        return;
     }
 }

@@ -1,5 +1,7 @@
 package org.dataone.hashstore;
 
+import java.io.IOException;
+
 import org.dataone.hashstore.hashfs.HashFileStore;
 
 /**
@@ -11,7 +13,7 @@ public class HashStore {
     private String sysmetaNameSpace;
 
     public HashStore(int depth, int width, String algorithm, String storeDirectory, String namespace)
-            throws IllegalArgumentException {
+            throws IllegalArgumentException, IOException {
         this.sysmetaNameSpace = namespace;
         try {
             HashFileStore hashfs = new HashFileStore(depth, width, algorithm, storeDirectory);
