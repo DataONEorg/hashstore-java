@@ -11,6 +11,9 @@ public class HashFileStore {
     private String algorithm;
     private String rootDirectory;
 
+    /**
+     * Constructor to initialize HashStore fields and object store directory
+     */
     public HashFileStore(int depth, int width, String algorithm, String storeDirectory)
             throws IllegalArgumentException, IOException {
         // Validate input parameters
