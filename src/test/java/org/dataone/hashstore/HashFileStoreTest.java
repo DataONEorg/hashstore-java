@@ -26,14 +26,14 @@ public class HashFileStoreTest {
      * Check that directory has been created for object store
      */
     @Test
-    public void checkCreateDirectory() {
+    public void testCreateDirectory() {
         Path rootDirectory = tempFolder.getRoot().toPath();
         String rootString = rootDirectory.toString();
         String rootStringFull = rootString + "metacat/objects";
         try {
             new HashFileStore(3, 2, "sha256", rootStringFull);
         } catch (IOException e) {
-            fail("IOException encountered");
+            fail("IOException encountered: " + e.getMessage());
         }
 
         Path checkPath = Paths.get(rootStringFull);
