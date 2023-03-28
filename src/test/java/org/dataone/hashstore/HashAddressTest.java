@@ -18,7 +18,7 @@ public class HashAddressTest {
      * Check HashAddress constructor and get methods
      */
     @Test
-    public void checkGetMethods() {
+    public void testGetMethods() {
         String id = "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
         String relpath = "/rel/test/directory";
         String abspath = "/abs/test/directory";
