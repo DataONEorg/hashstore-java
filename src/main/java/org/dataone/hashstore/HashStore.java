@@ -9,10 +9,11 @@ import org.dataone.hashstore.hashfs.HashFileStore;
  * the object's hex digest value as the file address
  */
 public class HashStore {
-    private String sysmetaNameSpace = "http://ns.dataone.org/service/types/v2.0";
-    private String algorithm = "sha256";
     private int depth = 3;
     private int width = 2;
+    private String sysmetaNameSpace = "http://ns.dataone.org/service/types/v2.0";
+    private String algorithm = "sha256";
+    private HashFileStore hashfs;
 
     /**
      * Default constructor for HashStore
@@ -24,7 +25,7 @@ public class HashStore {
     public HashStore(String storeDirectory)
             throws IllegalArgumentException, IOException {
         try {
-            HashFileStore hashfs = new HashFileStore(depth, width, algorithm, storeDirectory);
+            hashfs = new HashFileStore(this.depth, this.width, this.algorithm, storeDirectory);
         } catch (IllegalArgumentException e) {
             // TODO: Log failure - include signature values, e
             throw e;
