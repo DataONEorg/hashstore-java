@@ -29,14 +29,18 @@ public class HashFileStoreTest {
     public void testCreateDirectory() {
         Path rootDirectory = tempFolder.getRoot().toPath();
         String rootString = rootDirectory.toString();
-        String rootStringFull = rootString + "metacat/objects";
+        String rootStringFull = rootString + "/metacat/objects";
         try {
             new HashFileStore(3, 2, "sha256", rootStringFull);
         } catch (IOException e) {
             fail("IOException encountered: " + e.getMessage());
         }
 
-        Path checkPath = Paths.get(rootStringFull);
-        assertTrue(Files.exists(checkPath));
+        Path checkStorePath = Paths.get(rootStringFull);
+        assertTrue(Files.exists(checkStorePath));
+
+        String tmpStringFull = rootString + "/metacat/objects/tmp";
+        Path checkTmpPath = Paths.get(tmpStringFull);
+        assertTrue(Files.exists(checkTmpPath));
     }
 }

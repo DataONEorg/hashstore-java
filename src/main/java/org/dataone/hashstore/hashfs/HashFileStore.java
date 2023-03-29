@@ -1,6 +1,8 @@
 package org.dataone.hashstore.hashfs;
 
+// import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -12,7 +14,8 @@ public class HashFileStore {
     private int directoryDepth;
     private int directoryWidth;
     private String algorithm;
-    private String rootDirectory;
+    private Path objectStoreDirectory;
+    private Path tmpFileDirectory;
 
     /**
      * Constructor to initialize HashStore fields and object store directory
@@ -40,25 +43,26 @@ public class HashFileStore {
         this.algorithm = algorithm;
 
         // If no path provided, create default path with user.dir root + /HashFileStore
-        Path objectStoreDirectory;
         if (storeDirectory == null) {
-            this.rootDirectory = System.getProperty("user.dir");
+            String rootDirectory = System.getProperty("user.dir");
             String objectPath = "HashFileStore";
-            objectStoreDirectory = Paths.get(rootDirectory).resolve(objectPath);
+            this.objectStoreDirectory = Paths.get(rootDirectory).resolve(objectPath);
         } else {
-            objectStoreDirectory = Paths.get(storeDirectory);
+            this.objectStoreDirectory = Paths.get(storeDirectory);
         }
+        this.tmpFileDirectory = this.objectStoreDirectory.resolve("tmp");
 
-        // Create store directory
+        // Create store and tmp directory
         try {
-            Files.createDirectories(objectStoreDirectory);
+            Files.createDirectories(this.objectStoreDirectory);
+            Files.createDirectories(this.tmpFileDirectory);
         } catch (IOException e) {
             // TODO: Log IO exeption failure, e
             throw e;
         }
     }
 
-    protected void put() {
+    protected void put(InputStream object, String algorithm, String checksum) throws IOException {
         // TODO: Return HashAddress
         return;
     }
