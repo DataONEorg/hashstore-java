@@ -16,9 +16,9 @@ import javax.xml.bind.DatatypeConverter;
  */
 public class HashUtil {
     /**
-     * Create a temporary new file
      * 
      * @param prefix
+     * @param directory
      * @return
      * @throws IOException
      */
