@@ -6,7 +6,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.xml.bind.DatatypeConverter;
@@ -16,6 +18,7 @@ import javax.xml.bind.DatatypeConverter;
  */
 public class HashUtil {
     /**
+     * Creates an empty file in a given location
      * 
      * @param prefix
      * @param directory
@@ -38,8 +41,10 @@ public class HashUtil {
     }
 
     /**
-     * Write the input stream into a given file (tmpFile) and return a HashMap of
-     * the default algorithms and their respective hex digests
+     * Write the input stream into a given file (tmpFile) and return a HashMap
+     * consisting of algorithms and their respective hex digests
+     * 
+     * Default algorithms: MD5, SHA-1, SHA-256, SHA-384, SHA-512
      * 
      * @param tmpFile             File into which the stream will be written to
      * @param dataStream          Source data stream
@@ -91,6 +96,27 @@ public class HashUtil {
         hexDigests.put("sha512", sha512Digest);
 
         return hexDigests;
+    }
+
+    public String shard(int depth, int width, String digest) {
+        List<String> tokens = new ArrayList<String>();
+        int digestLength = digest.length();
+        for (int i = 0; i < depth; i++) {
+            int start = i * width;
+            int end = Math.min((i + 1) * width, digestLength);
+            tokens.add(digest.substring(start, end));
+        }
+        if (depth * width < digestLength) {
+            tokens.add(digest.substring(depth * width));
+        }
+        List<String> stringArray = new ArrayList<String>();
+        for (String str : tokens) {
+            if (!str.isEmpty()) {
+                stringArray.add(str);
+            }
+        }
+        String shardedPath = String.join("/", stringArray);
+        return shardedPath;
     }
 
 }
