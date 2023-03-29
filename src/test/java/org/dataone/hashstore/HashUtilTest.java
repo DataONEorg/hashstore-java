@@ -76,11 +76,11 @@ public class HashUtilTest {
             String sha256 = "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
             String sha384 = "a204678330fcdc04980c9327d4e5daf01ab7541e8a351d49a7e9c5005439dce749ada39c4c35f573dd7d307cca11bea8";
             String sha512 = "bf9e7f4d4e66bd082817d87659d1d57c2220c376cd032ed97cadd481cf40d78dd479cbed14d34d98bae8cebc603b40c633d088751f07155a94468aa59e2ad109";
-            assertEquals(md5, hexDigests.get("md5"));
-            assertEquals(sha1, hexDigests.get("sha1"));
-            assertEquals(sha256, hexDigests.get("sha256"));
-            assertEquals(sha384, hexDigests.get("sha384"));
-            assertEquals(sha512, hexDigests.get("sha512"));
+            assertEquals(md5, hexDigests.get("MD-5"));
+            assertEquals(sha1, hexDigests.get("SHA-1"));
+            assertEquals(sha256, hexDigests.get("SHA-256"));
+            assertEquals(sha384, hexDigests.get("SHA-384"));
+            assertEquals(sha512, hexDigests.get("SHA-512"));
 
             long testDataFileSize = Files.size(testDataFile.toPath());
             Path tmpFilePath = newTmpFile.toPath();
