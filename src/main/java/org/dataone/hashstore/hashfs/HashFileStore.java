@@ -70,6 +70,21 @@ public class HashFileStore {
         }
     }
 
+    /**
+     * Takes a given input stream and writes it to its permanent address on disk
+     * based on its SHA-256 hex digest value.
+     * 
+     * Returns a HashAddress object that contains the file id, relative path,
+     * absolute path, duplicate status and a checksum map based on the default
+     * algorithm list.
+     * 
+     * @param object
+     * @param additionalAlgorithm
+     * @param checksum
+     * @return
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     */
     public HashAddress put(InputStream object, String additionalAlgorithm, String checksum)
             throws IOException, NoSuchAlgorithmException {
         // Cannot generate additional algorithm if it is not supported
@@ -108,6 +123,16 @@ public class HashFileStore {
         return hashAddress;
     }
 
+    /**
+     * Moves an object from one directory to another if the object does not exist
+     * and returns a HashAddress object.
+     * 
+     * @param permanentObject
+     * @param sourceObject
+     * @param hexDigests
+     * @return
+     * @throws IOException
+     */
     private HashAddress move(File permanentObject, File sourceObject, Map<String, String> hexDigests)
             throws IOException {
         HashAddress hashAddress = null;
