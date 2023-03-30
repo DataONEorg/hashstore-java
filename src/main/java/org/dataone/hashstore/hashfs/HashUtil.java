@@ -144,10 +144,12 @@ public class HashUtil {
         if (target.exists()) {
             isDuplicate = true;
         } else {
-            // Create parent directory
             File destinationDirectory = new File(target.getParent());
-            Path destinationDirectoryPath = destinationDirectory.toPath();
-            Files.createDirectories(destinationDirectoryPath);
+            // Create parent directory if it doesn't exist
+            if (!destinationDirectory.exists()) {
+                Path destinationDirectoryPath = destinationDirectory.toPath();
+                Files.createDirectories(destinationDirectoryPath);
+            }
 
             // Move file
             Path sourceFilePath = source.toPath();
