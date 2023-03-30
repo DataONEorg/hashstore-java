@@ -104,4 +104,23 @@ public class HashUtilTest {
         String shardedPathExpected = "/94/f9/b6/c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
         assertEquals(shardedPath, shardedPathExpected);
     }
+
+    /**
+     * Confirm that object has moved
+     */
+    @Test
+    public void testMove() {
+        HashUtil hsil = new HashUtil();
+
+        File newTmpFile = generateTemporaryFile();
+        String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
+        File targetFile = new File(targetString);
+
+        try {
+            hsil.move(newTmpFile, targetFile);
+            assertTrue(targetFile.exists());
+        } catch (IOException e) {
+            fail("IOException: " + e.getMessage());
+        }
+    }
 }
