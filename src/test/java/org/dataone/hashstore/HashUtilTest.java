@@ -101,7 +101,7 @@ public class HashUtilTest {
     public void testShardHexDigest() {
         HashUtil hsil = new HashUtil();
         String shardedPath = hsil.shard(3, 2, "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a");
-        String shardedPathExpected = "94/f9/b6/c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
+        String shardedPathExpected = "/94/f9/b6/c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
         assertEquals(shardedPath, shardedPathExpected);
     }
 }

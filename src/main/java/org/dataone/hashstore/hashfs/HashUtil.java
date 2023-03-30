@@ -98,6 +98,15 @@ public class HashUtil {
         return hexDigests;
     }
 
+    /**
+     * Create a list of 'depth' number of tokens with 'width' with the last item
+     * being the remainder of the digest, and return a String path
+     * 
+     * @param depth
+     * @param width
+     * @param digest
+     * @return
+     */
     public String shard(int depth, int width, String digest) {
         List<String> tokens = new ArrayList<String>();
         int digestLength = digest.length();
@@ -115,7 +124,7 @@ public class HashUtil {
                 stringArray.add(str);
             }
         }
-        String shardedPath = String.join("/", stringArray);
+        String shardedPath = "/" + String.join("/", stringArray);
         return shardedPath;
     }
 
