@@ -79,14 +79,8 @@ public class HashFileStore {
         }
 
         // Generate tmp file and write to it
-        File tmpDirectory = this.tmpFileDirectory.toFile();
-        File tmpFile = this.hsil.generateTmpFile("tmp", tmpDirectory);
+        File tmpFile = this.hsil.generateTmpFile("tmp", this.tmpFileDirectory.toFile());
         Map<String, String> hexDigests = this.hsil.writeToTmpFileAndGenerateChecksums(tmpFile, object, algorithm);
-
-        // Gather HashAddress elements
-        String objHexDigest = hexDigests.get("SHA-256");
-        String objRelativePath = this.hsil.shard(directoryDepth, directoryWidth, objHexDigest);
-        String objAbsolutePath = objectStoreDirectory.toString() + objRelativePath;
 
         // Validate object if algorithm and checksum is passed
         if (additionalAlgorithm != null && checksum != null) {
@@ -99,26 +93,42 @@ public class HashFileStore {
 
         }
 
-        // Move object if it doesn't already exist
+        // Gather object permanent address elements
+        String objHexDigest = hexDigests.get("SHA-256");
+        String objRelativePath = this.hsil.shard(directoryDepth, directoryWidth, objHexDigest);
+        String objAbsolutePath = this.objectStoreDirectory.toString() + objRelativePath;
         File objPermanentAddress = new File(objAbsolutePath);
+
+        // Move object
+        HashAddress hashAddress = this.move(objPermanentAddress, tmpFile, hexDigests);
+        return hashAddress;
+    }
+
+    private HashAddress move(File permanentObject, File sourceObject, Map<String, String> hexDigests)
+            throws IOException {
         HashAddress hashAddress = null;
         boolean isDuplicate = false;
-        if (objPermanentAddress.exists()) {
-            tmpFile.delete();
+        if (permanentObject.exists()) {
+            sourceObject.delete();
             isDuplicate = true;
             hashAddress = new HashAddress(null, null, null, isDuplicate, null);
         } else {
             // Create parent directory
-            File destinationDirectory = new File(objPermanentAddress.getParent());
+            File destinationDirectory = new File(permanentObject.getParent());
             Path newFilePathDir = destinationDirectory.toPath();
             Files.createDirectories(newFilePathDir);
 
             // Move file
-            Path tmpFilePath = tmpFile.toPath();
-            Path permanentObjectPath = objPermanentAddress.toPath();
+            Path tmpFilePath = sourceObject.toPath();
+            Path permanentObjectPath = permanentObject.toPath();
             Files.move(tmpFilePath, permanentObjectPath, StandardCopyOption.ATOMIC_MOVE);
 
-            hashAddress = new HashAddress(objHexDigest, objRelativePath, objAbsolutePath, isDuplicate, hexDigests);
+            // Gather HashAddress elements
+            String objId = hexDigests.get("SHA-256");
+            String objRelativePath = this.hsil.shard(this.directoryDepth, this.directoryWidth, objId);
+            String objAbsolutePath = this.objectStoreDirectory.toString() + objRelativePath;
+
+            hashAddress = new HashAddress(objId, objRelativePath, objAbsolutePath, isDuplicate, hexDigests);
         }
         return hashAddress;
     }
