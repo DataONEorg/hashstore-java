@@ -6,7 +6,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Map;
@@ -115,7 +114,7 @@ public class HashFileStore {
         File objHashAddress = new File(objAbsolutePath);
 
         // Move object
-        boolean isDuplicate = this.move(tmpFile, objHashAddress);
+        boolean isDuplicate = this.hsil.move(tmpFile, objHashAddress);
         if (isDuplicate) {
             tmpFile.delete();
             objHexDigest = null;
@@ -127,36 +126,5 @@ public class HashFileStore {
         HashAddress hashAddress = new HashAddress(objHexDigest, objRelativePath, objAbsolutePath, isDuplicate,
                 hexDigests);
         return hashAddress;
-    }
-
-    /**
-     * Moves an object from one directory to another if the object does not exist
-     * 
-     * @param source
-     * @param target
-     * @return
-     * @throws IOException
-     */
-    private boolean move(File source, File target) throws IOException {
-        boolean isDuplicate = false;
-        if (target.exists()) {
-            isDuplicate = true;
-        } else {
-            // Create parent directory
-            File destinationDirectory = new File(target.getParent());
-            Path destinationDirectoryPath = destinationDirectory.toPath();
-            Files.createDirectories(destinationDirectoryPath);
-
-            // Move file
-            Path sourceFilePath = source.toPath();
-            Path targetFilePath = target.toPath();
-            try {
-                Files.move(sourceFilePath, targetFilePath, StandardCopyOption.ATOMIC_MOVE);
-            } catch (IOException ioe) {
-                // TODO: Log failure - include signature values, ioe
-                throw ioe;
-            }
-        }
-        return isDuplicate;
     }
 }

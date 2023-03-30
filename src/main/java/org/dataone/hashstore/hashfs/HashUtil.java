@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -128,4 +131,34 @@ public class HashUtil {
         return shardedPath;
     }
 
+    /**
+     * Moves an object from one directory to another if the object does not exist
+     * 
+     * @param source
+     * @param target
+     * @return
+     * @throws IOException
+     */
+    public boolean move(File source, File target) throws IOException {
+        boolean isDuplicate = false;
+        if (target.exists()) {
+            isDuplicate = true;
+        } else {
+            // Create parent directory
+            File destinationDirectory = new File(target.getParent());
+            Path destinationDirectoryPath = destinationDirectory.toPath();
+            Files.createDirectories(destinationDirectoryPath);
+
+            // Move file
+            Path sourceFilePath = source.toPath();
+            Path targetFilePath = target.toPath();
+            try {
+                Files.move(sourceFilePath, targetFilePath, StandardCopyOption.ATOMIC_MOVE);
+            } catch (IOException ioe) {
+                // TODO: Log failure - include signature values, ioe
+                throw ioe;
+            }
+        }
+        return isDuplicate;
+    }
 }
