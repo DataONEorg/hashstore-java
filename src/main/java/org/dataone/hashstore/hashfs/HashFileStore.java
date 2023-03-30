@@ -101,6 +101,10 @@ public class HashFileStore {
 
         // Move object
         HashAddress hashAddress = this.move(objPermanentAddress, tmpFile, hexDigests);
+
+        if (hashAddress.getIsDuplicate()) {
+            tmpFile.delete();
+        }
         return hashAddress;
     }
 
@@ -109,7 +113,6 @@ public class HashFileStore {
         HashAddress hashAddress = null;
         boolean isDuplicate = false;
         if (permanentObject.exists()) {
-            sourceObject.delete();
             isDuplicate = true;
             hashAddress = new HashAddress(null, null, null, isDuplicate, null);
         } else {
