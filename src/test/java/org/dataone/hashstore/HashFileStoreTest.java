@@ -8,10 +8,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.xml.transform.Source;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
