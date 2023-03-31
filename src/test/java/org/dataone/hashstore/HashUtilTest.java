@@ -15,6 +15,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 
 import org.dataone.hashstore.hashfs.HashUtil;
+import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -23,6 +24,7 @@ import org.junit.rules.TemporaryFolder;
  * Test class for HashStore utility methods
  */
 public class HashUtilTest {
+    public TestDataHarness testData = new TestDataHarness();
 
     /*
      * Non-test method using HashUtil class to generate a temp file
@@ -58,39 +60,42 @@ public class HashUtilTest {
      */
     @Test
     public void testWriteToTempFileAndGenerateChecksums() {
-        File newTmpFile = generateTemporaryFile();
+        for (String pid : this.testData.pidList) {
+            File newTmpFile = generateTemporaryFile();
+            String pidFormatted = pid.replace("/", "_");
 
-        // Get test file
-        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", "jtao.1700.1");
-        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-        File testDataFile = new File(testdataAbsolutePath);
+            // Get test file
+            Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pidFormatted);
+            String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+            File testDataFile = new File(testdataAbsolutePath);
 
-        try {
-            InputStream dataStream = new FileInputStream(testDataFile);
-            HashUtil hsil = new HashUtil();
-            Map<String, String> hexDigests = hsil.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream, null);
+            try {
+                InputStream dataStream = new FileInputStream(testDataFile);
+                HashUtil hsil = new HashUtil();
+                Map<String, String> hexDigests = hsil.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream, null);
 
-            // Validate checksum values
-            String md5 = "f4ea2d07db950873462a064937197b0f";
-            String sha1 = "3d25436c4490b08a2646e283dada5c60e5c0539d";
-            String sha256 = "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
-            String sha384 = "a204678330fcdc04980c9327d4e5daf01ab7541e8a351d49a7e9c5005439dce749ada39c4c35f573dd7d307cca11bea8";
-            String sha512 = "bf9e7f4d4e66bd082817d87659d1d57c2220c376cd032ed97cadd481cf40d78dd479cbed14d34d98bae8cebc603b40c633d088751f07155a94468aa59e2ad109";
-            assertEquals(md5, hexDigests.get("MD-5"));
-            assertEquals(sha1, hexDigests.get("SHA-1"));
-            assertEquals(sha256, hexDigests.get("SHA-256"));
-            assertEquals(sha384, hexDigests.get("SHA-384"));
-            assertEquals(sha512, hexDigests.get("SHA-512"));
+                // Validate checksum values
+                String md5 = this.testData.pidData.get(pid).get("md5");
+                String sha1 = this.testData.pidData.get(pid).get("sha1");
+                String sha256 = this.testData.pidData.get(pid).get("sha256");
+                String sha384 = this.testData.pidData.get(pid).get("sha384");
+                String sha512 = this.testData.pidData.get(pid).get("sha512");
+                assertEquals(md5, hexDigests.get("MD-5"));
+                assertEquals(sha1, hexDigests.get("SHA-1"));
+                assertEquals(sha256, hexDigests.get("SHA-256"));
+                assertEquals(sha384, hexDigests.get("SHA-384"));
+                assertEquals(sha512, hexDigests.get("SHA-512"));
 
-            long testDataFileSize = Files.size(testDataFile.toPath());
-            Path tmpFilePath = newTmpFile.toPath();
-            long tmpFileSize = Files.size(tmpFilePath);
-            assertEquals(testDataFileSize, tmpFileSize);
+                long testDataFileSize = Files.size(testDataFile.toPath());
+                Path tmpFilePath = newTmpFile.toPath();
+                long tmpFileSize = Files.size(tmpFilePath);
+                assertEquals(testDataFileSize, tmpFileSize);
 
-        } catch (NoSuchAlgorithmException e) {
-            fail("NoSuchAlgorithmExceptionJava: " + e.getMessage());
-        } catch (IOException e) {
-            fail("IOException: " + e.getMessage());
+            } catch (NoSuchAlgorithmException e) {
+                fail("NoSuchAlgorithmExceptionJava: " + e.getMessage());
+            } catch (IOException e) {
+                fail("IOException: " + e.getMessage());
+            }
         }
     }
 
