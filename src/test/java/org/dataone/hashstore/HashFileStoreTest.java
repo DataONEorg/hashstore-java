@@ -9,6 +9,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -70,8 +72,22 @@ public class HashFileStoreTest {
         try {
             InputStream dataStream = new FileInputStream(testDataFile);
             HashAddress address = hfs.put(dataStream, null, null);
+
+            // Check id (sha-256 hex digest)
+            String objID = "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
+            assertEquals(objID, address.getId());
+
+            // Check relative path
+            String objRelPath = "/94/f9/b6/c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
+            assertEquals(objRelPath, address.getRelPath());
+
+            // Check absolute path
             File objAbsPath = new File(address.getAbsPath());
             assertTrue(objAbsPath.exists());
+
+            // Check duplicate status
+            assertFalse(address.getIsDuplicate());
+
         } catch (NoSuchAlgorithmException e) {
             fail("NoSuchAlgorithmExceptionJava: " + e.getMessage());
         } catch (IOException e) {
