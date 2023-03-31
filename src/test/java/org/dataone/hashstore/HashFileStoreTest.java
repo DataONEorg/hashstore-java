@@ -94,4 +94,39 @@ public class HashFileStoreTest {
             fail("IOException: " + e.getMessage());
         }
     }
+
+    /**
+     * Verify that file was not moved if object exists
+     */
+    @Test
+    public void testPutDuplicateObject() {
+        // Get test file to "upload"
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", "jtao.1700.1");
+        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+        File testDataFile = new File(testdataAbsolutePath);
+
+        try {
+            InputStream dataStream = new FileInputStream(testDataFile);
+            HashAddress address = hfs.put(dataStream, null, null);
+
+            // Check duplicate status
+            assertFalse(address.getIsDuplicate());
+
+            // Try duplicate upload
+            InputStream dataStreamTwo = new FileInputStream(testDataFile);
+            HashAddress addressTwo = hfs.put(dataStreamTwo, null, null);
+            assertTrue(addressTwo.getIsDuplicate());
+
+            // Confirm there is only 1 file
+            File addressAbsPath = new File(address.getAbsPath());
+            File addressParent = new File(addressAbsPath.getParent());
+            int fileCount = addressParent.list().length;
+            assertEquals(fileCount, 1);
+
+        } catch (NoSuchAlgorithmException e) {
+            fail("NoSuchAlgorithmExceptionJava: " + e.getMessage());
+        } catch (IOException e) {
+            fail("IOException: " + e.getMessage());
+        }
+    }
 }
