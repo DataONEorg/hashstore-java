@@ -50,14 +50,14 @@ public class HashFileStoreTest {
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
     /**
-     * Check that directory has been created for object store
+     * Check object store and tmp directory are created
      */
     @Test
     public void testCreateDirectory() {
         Path checkStorePath = Paths.get(this.rootStringFull);
         assertTrue(Files.exists(checkStorePath));
 
-        Path checkTmpPath = Paths.get(tmpStringFull);
+        Path checkTmpPath = Paths.get(this.tmpStringFull);
         assertTrue(Files.exists(checkTmpPath));
     }
 
