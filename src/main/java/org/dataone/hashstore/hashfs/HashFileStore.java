@@ -16,7 +16,7 @@ import java.util.Map;
 public class HashFileStore {
     private int directoryDepth;
     private int directoryWidth;
-    private String algorithm;
+    private String objectStoreAlgorithm;
     private Path objectStoreDirectory;
     private Path tmpFileDirectory;
     private HashUtil hsil;
@@ -46,7 +46,7 @@ public class HashFileStore {
 
         this.directoryDepth = depth;
         this.directoryWidth = width;
-        this.algorithm = algorithm;
+        this.objectStoreAlgorithm = algorithm;
 
         // If no path provided, create default path with user.dir root + /HashFileStore
         if (storeDirectory == null) {
@@ -94,11 +94,12 @@ public class HashFileStore {
 
         // Generate tmp file and write to it
         File tmpFile = this.hsil.generateTmpFile("tmp", this.tmpFileDirectory.toFile());
-        Map<String, String> hexDigests = this.hsil.writeToTmpFileAndGenerateChecksums(tmpFile, object, algorithm);
+        Map<String, String> hexDigests = this.hsil.writeToTmpFileAndGenerateChecksums(tmpFile, object,
+                additionalAlgorithm);
 
         // Validate object if algorithm and checksum is passed
         if (additionalAlgorithm != null && checksum != null) {
-            String digestFromHexDigests = hexDigests.get(algorithm);
+            String digestFromHexDigests = hexDigests.get(objectStoreAlgorithm);
             if (checksum != digestFromHexDigests) {
                 tmpFile.delete();
                 throw new IllegalArgumentException(
@@ -107,8 +108,8 @@ public class HashFileStore {
 
         }
 
-        // Gather HashAddress elements
-        String objHexDigest = hexDigests.get("SHA-256");
+        // Gather HashAddress elements and prepare object permanent address
+        String objHexDigest = hexDigests.get(this.objectStoreAlgorithm);
         String objRelativePath = this.hsil.shard(directoryDepth, directoryWidth, objHexDigest);
         String objAbsolutePath = this.objectStoreDirectory.toString() + objRelativePath;
         File objHashAddress = new File(objAbsolutePath);
