@@ -55,7 +55,7 @@ public class HashUtil {
      */
     public Map<String, String> writeToTmpFileAndGenerateChecksums(File tmpFile, InputStream dataStream,
             String additionalAlgorithm) throws NoSuchAlgorithmException, IOException {
-        // TODO: Handle additionalAlgorithm when not null
+        MessageDigest extraAlgo = null;
         Map<String, String> hexDigests = new HashMap<>();
 
         FileOutputStream os = new FileOutputStream(tmpFile);
@@ -64,6 +64,9 @@ public class HashUtil {
         MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
         MessageDigest sha384 = MessageDigest.getInstance("SHA-384");
         MessageDigest sha512 = MessageDigest.getInstance("SHA-512");
+        if (additionalAlgorithm != null) {
+            extraAlgo = MessageDigest.getInstance(additionalAlgorithm);
+        }
 
         try {
             byte[] buffer = new byte[8192];
@@ -75,6 +78,9 @@ public class HashUtil {
                 sha256.update(buffer, 0, bytesRead);
                 sha384.update(buffer, 0, bytesRead);
                 sha512.update(buffer, 0, bytesRead);
+                if (additionalAlgorithm != null) {
+                    extraAlgo.update(buffer, 0, bytesRead);
+                }
             }
         } finally {
             if (os != null) {
@@ -87,16 +93,20 @@ public class HashUtil {
             }
         }
 
-        String md5Checksum = DatatypeConverter.printHexBinary(md5.digest()).toLowerCase();
+        String md5Digest = DatatypeConverter.printHexBinary(md5.digest()).toLowerCase();
         String sha1Digest = DatatypeConverter.printHexBinary(sha1.digest()).toLowerCase();
         String sha256Digest = DatatypeConverter.printHexBinary(sha256.digest()).toLowerCase();
         String sha384Digest = DatatypeConverter.printHexBinary(sha384.digest()).toLowerCase();
         String sha512Digest = DatatypeConverter.printHexBinary(sha512.digest()).toLowerCase();
-        hexDigests.put("MD-5", md5Checksum);
+        hexDigests.put("MD-5", md5Digest);
         hexDigests.put("SHA-1", sha1Digest);
         hexDigests.put("SHA-256", sha256Digest);
         hexDigests.put("SHA-384", sha384Digest);
         hexDigests.put("SHA-512", sha512Digest);
+        if (additionalAlgorithm != null) {
+            String extraDigest = DatatypeConverter.printHexBinary(extraAlgo.digest()).toLowerCase();
+            hexDigests.put(additionalAlgorithm, extraDigest);
+        }
 
         return hexDigests;
     }
