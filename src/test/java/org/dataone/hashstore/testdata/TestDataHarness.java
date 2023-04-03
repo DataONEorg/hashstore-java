@@ -16,6 +16,7 @@ public class TestDataHarness {
 
         Map<String, String> values1 = new HashMap<>();
         values1.put("s_cid", "0d555ed77052d7e166017f779cbc193357c3a5006ee8b8457230bcf7abcef65e");
+        values1.put("md2", "b33c730ac5e36b2b886a9cd14552f42e");
         values1.put("md5", "db91c910a3202478c8def1071c54aae5");
         values1.put("sha1", "1fe86e3c8043afa4c70857ca983d740ad8501ccd");
         values1.put("sha256", "4d198171eef969d553d4c9537b1811a7b078f9a3804fc978a761bc014c05972c");
@@ -27,6 +28,7 @@ public class TestDataHarness {
 
         Map<String, String> values2 = new HashMap<>();
         values2.put("s_cid", "a8241925740d5dcd719596639e780e0a090c9d55a5d0372b0eaf55ed711d4edf");
+        values2.put("md2", "9c25df1c8ba1d2e57bb3fd4785878b85");
         values2.put("md5", "f4ea2d07db950873462a064937197b0f");
         values2.put("sha1", "3d25436c4490b08a2646e283dada5c60e5c0539d");
         values2.put("sha256", "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a");
@@ -38,6 +40,7 @@ public class TestDataHarness {
 
         Map<String, String> values3 = new HashMap<>();
         values3.put("s_cid", "7f5cc18f0b04e812a3b4c8f686ce34e6fec558804bf61e54b176742a7f6368d6");
+        values3.put("md2", "9f2b06b300f661ce4398006c41d8aa88");
         values3.put("md5", "e1932fc75ca94de8b64f1d73dc898079");
         values3.put("sha1", "c6d2a69a3f5adaf478ba796c114f57b990cf7ad1");
         values3.put("sha256", "4473516a592209cbcd3a7ba4edeebbdb374ee8e4a49d19896fafb8f278dc25fa");

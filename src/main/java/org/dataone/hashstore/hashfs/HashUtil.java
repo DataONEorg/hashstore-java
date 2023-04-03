@@ -98,7 +98,7 @@ public class HashUtil {
         String sha256Digest = DatatypeConverter.printHexBinary(sha256.digest()).toLowerCase();
         String sha384Digest = DatatypeConverter.printHexBinary(sha384.digest()).toLowerCase();
         String sha512Digest = DatatypeConverter.printHexBinary(sha512.digest()).toLowerCase();
-        hexDigests.put("MD-5", md5Digest);
+        hexDigests.put("MD5", md5Digest);
         hexDigests.put("SHA-1", sha1Digest);
         hexDigests.put("SHA-256", sha256Digest);
         hexDigests.put("SHA-384", sha384Digest);

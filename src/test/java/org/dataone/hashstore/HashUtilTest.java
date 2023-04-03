@@ -70,9 +70,13 @@ public class HashUtilTest {
             File testDataFile = new File(testdataAbsolutePath);
 
             try {
+                // Extra algo to calculate - MD2
+                String addAlgo = "MD2";
+
                 InputStream dataStream = new FileInputStream(testDataFile);
                 HashUtil hsil = new HashUtil();
-                Map<String, String> hexDigests = hsil.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream, null);
+                Map<String, String> hexDigests = hsil.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream,
+                        addAlgo);
 
                 // Validate checksum values
                 String md5 = this.testData.pidData.get(pid).get("md5");
@@ -80,11 +84,15 @@ public class HashUtilTest {
                 String sha256 = this.testData.pidData.get(pid).get("sha256");
                 String sha384 = this.testData.pidData.get(pid).get("sha384");
                 String sha512 = this.testData.pidData.get(pid).get("sha512");
-                assertEquals(md5, hexDigests.get("MD-5"));
+                assertEquals(md5, hexDigests.get("MD5"));
                 assertEquals(sha1, hexDigests.get("SHA-1"));
                 assertEquals(sha256, hexDigests.get("SHA-256"));
                 assertEquals(sha384, hexDigests.get("SHA-384"));
                 assertEquals(sha512, hexDigests.get("SHA-512"));
+
+                // Validate additional algorithm
+                String md2 = this.testData.pidData.get(pid).get("md2");
+                assertEquals(md2, hexDigests.get("MD2"));
 
                 long testDataFileSize = Files.size(testDataFile.toPath());
                 Path tmpFilePath = newTmpFile.toPath();
