@@ -38,7 +38,7 @@ public class HashFileStoreTest {
         this.rootStringFull = rootString + "/metacat/objects";
         this.tmpStringFull = this.rootString + "/metacat/objects/tmp";
         try {
-            this.hfs = new HashFileStore(3, 2, "sha256", rootStringFull);
+            this.hfs = new HashFileStore(3, 2, "SHA-256", rootStringFull);
         } catch (IOException e) {
             fail("IOException encountered: " + e.getMessage());
         }
