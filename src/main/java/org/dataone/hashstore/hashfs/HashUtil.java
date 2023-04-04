@@ -178,6 +178,12 @@ public class HashUtil {
         return isDuplicate;
     }
 
+    /**
+     * Checks whether a given algorithm is supported based on an agreed upon list
+     * 
+     * @param algorithm
+     * @return
+     */
     public boolean validateAlgorithm(String algorithm) {
         if (!Arrays.asList(this.supportedHashAlgorithms).contains(algorithm) && algorithm != null) {
             return false;
