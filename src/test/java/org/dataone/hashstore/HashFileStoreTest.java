@@ -196,4 +196,26 @@ public class HashFileStoreTest {
             fail("IOException: " + e.getMessage());
         }
     }
+
+    /**
+     * Verify exception thrown when checksum provided does not match
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testPutIncorrectChecksum() {
+        // Get test file to "upload"
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", "jtao.1700.1");
+        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+        File testDataFile = new File(testdataAbsolutePath);
+
+        try {
+            String checksumInvalid = "1c25df1c8ba1d2e57bb3fd4785878b85";
+            InputStream dataStream = new FileInputStream(testDataFile);
+            HashAddress address = hfs.put(dataStream, "MD2", checksumInvalid);
+
+        } catch (NoSuchAlgorithmException e) {
+            fail("NoSuchAlgorithmExceptionJava: " + e.getMessage());
+        } catch (IOException e) {
+            fail("IOException: " + e.getMessage());
+        }
+    }
 }
