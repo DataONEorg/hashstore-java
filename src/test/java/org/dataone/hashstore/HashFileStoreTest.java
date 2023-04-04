@@ -11,6 +11,7 @@ import java.security.NoSuchAlgorithmException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -46,6 +47,18 @@ public class HashFileStoreTest {
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
+
+    /**
+     * Test invalid depth value
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testConstructorIllegalArguments() {
+        try {
+            new HashFileStore(0, 2, "SHA-256", rootStringFull);
+        } catch (IOException e) {
+            fail("IOException encountered: " + e.getMessage());
+        }
+    }
 
     /**
      * Confirm default file directories are created when storeDirectory is null
