@@ -107,7 +107,7 @@ public class HashFileStore {
                 tmpFile.delete();
                 // TODO: Log failure - include signature values
                 throw new IllegalArgumentException(
-                        "Checksum passed does not equal to the calculated hex digest: " + digestFromHexDigests
+                        "Checksum supplied does not equal to the calculated hex digest: " + digestFromHexDigests
                                 + ". Deleting tmpFile: " + tmpFile.toString());
             }
 
