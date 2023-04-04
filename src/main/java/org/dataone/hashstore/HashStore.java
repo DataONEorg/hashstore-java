@@ -12,7 +12,7 @@ public class HashStore {
     private int depth = 3;
     private int width = 2;
     private String sysmetaNameSpace = "http://ns.dataone.org/service/types/v2.0";
-    private String algorithm = "sha256";
+    private String algorithm = "SHA-256";
     private HashFileStore hashfs;
 
     /**
