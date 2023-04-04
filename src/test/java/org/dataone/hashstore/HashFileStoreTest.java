@@ -175,4 +175,25 @@ public class HashFileStoreTest {
             fail("IOException: " + e.getMessage());
         }
     }
+
+    /**
+     * Verify exception thrown when unsupported additional algorithm provided
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testPutInvalidAlgorithm() {
+        // Get test file to "upload"
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", "jtao.1700.1");
+        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+        File testDataFile = new File(testdataAbsolutePath);
+
+        try {
+            InputStream dataStream = new FileInputStream(testDataFile);
+            HashAddress address = hfs.put(dataStream, "SM2", null);
+
+        } catch (NoSuchAlgorithmException e) {
+            fail("NoSuchAlgorithmExceptionJava: " + e.getMessage());
+        } catch (IOException e) {
+            fail("IOException: " + e.getMessage());
+        }
+    }
 }
