@@ -97,7 +97,7 @@ public class HashFileStore {
 
         // Validate object if algorithm and checksum is passed
         if (additionalAlgorithm != null && checksum != null) {
-            String digestFromHexDigests = hexDigests.get(objectStoreAlgorithm);
+            String digestFromHexDigests = hexDigests.get(this.objectStoreAlgorithm);
             if (checksum != digestFromHexDigests) {
                 tmpFile.delete();
                 throw new IllegalArgumentException(
