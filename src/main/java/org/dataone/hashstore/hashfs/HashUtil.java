@@ -59,6 +59,12 @@ public class HashUtil {
      */
     public Map<String, String> writeToTmpFileAndGenerateChecksums(File tmpFile, InputStream dataStream,
             String additionalAlgorithm) throws NoSuchAlgorithmException, IOException {
+        boolean algorithmSupported = this.validateAlgorithm(additionalAlgorithm);
+        if (!algorithmSupported) {
+            throw new IllegalArgumentException(
+                    "Algorithm not supported. Supported algorithms: " + this.supportedHashAlgorithms);
+        }
+
         MessageDigest extraAlgo = null;
         Map<String, String> hexDigests = new HashMap<>();
 

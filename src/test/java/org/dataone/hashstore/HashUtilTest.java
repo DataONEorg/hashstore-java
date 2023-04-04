@@ -108,6 +108,37 @@ public class HashUtilTest {
     }
 
     /**
+     * Check that exception is thrown when unsupported algorithm supplied
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testWriteToTempFileAndGenerateChecksumsInvalidAlgo() {
+        for (String pid : this.testData.pidList) {
+            File newTmpFile = generateTemporaryFile();
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test file
+            Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pidFormatted);
+            String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+            File testDataFile = new File(testdataAbsolutePath);
+
+            try {
+                // Extra algo to calculate - MD2
+                String addAlgo = "SM2";
+
+                InputStream dataStream = new FileInputStream(testDataFile);
+                HashUtil hsil = new HashUtil();
+                Map<String, String> hexDigests = hsil.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream,
+                        addAlgo);
+
+            } catch (NoSuchAlgorithmException e) {
+                fail("NoSuchAlgorithmExceptionJava: " + e.getMessage());
+            } catch (IOException e) {
+                fail("IOException: " + e.getMessage());
+            }
+        }
+    }
+
+    /**
      * Confirm that a digest is sharded appropriately
      */
     @Test
