@@ -91,6 +91,7 @@ public class HashFileStore {
         // Cannot generate additional algorithm if it is not supported
         boolean algorithmSupported = this.hsil.validateAlgorithm(additionalAlgorithm);
         if (!algorithmSupported) {
+            // TODO: Log failure - include signature values
             throw new IllegalArgumentException(
                     "Algorithm not supported. Supported algorithms: " + this.hsil.supportedHashAlgorithms);
         }
@@ -105,8 +106,10 @@ public class HashFileStore {
             String digestFromHexDigests = hexDigests.get(this.objectStoreAlgorithm);
             if (checksum != digestFromHexDigests) {
                 tmpFile.delete();
+                // TODO: Log failure - include signature values
                 throw new IllegalArgumentException(
-                        "Checksum passed does not equal to the calculated hex digest: " + digestFromHexDigests);
+                        "Checksum passed does not equal to the calculated hex digest: " + digestFromHexDigests
+                                + ". Deleting tmpFile: " + tmpFile.toString());
             }
 
         }
