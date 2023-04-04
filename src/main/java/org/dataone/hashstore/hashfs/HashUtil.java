@@ -10,6 +10,7 @@ import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,9 @@ import javax.xml.bind.DatatypeConverter;
  * HashUtil provides utility methods for HashFileStore
  */
 public class HashUtil {
+    public String[] supportedHashAlgorithms = { "MD2", "MD5", "SHA-1", "SHA-256", "SHA-384", "SHA-512", "SHA-512/224",
+            "SHA-512/256" };
+
     /**
      * Creates an empty file in a given location
      * 
@@ -172,5 +176,13 @@ public class HashUtil {
             }
         }
         return isDuplicate;
+    }
+
+    public boolean validateAlgorithm(String algorithm) {
+        if (!Arrays.asList(this.supportedHashAlgorithms).contains(algorithm) && algorithm != null) {
+            return false;
+        } else {
+            return true;
+        }
     }
 }

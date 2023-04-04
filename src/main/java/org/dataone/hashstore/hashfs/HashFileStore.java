@@ -20,8 +20,6 @@ public class HashFileStore {
     private Path objectStoreDirectory;
     private Path tmpFileDirectory;
     private HashUtil hsil;
-    private String[] supportedHashAlgorithms = { "MD2", "MD5", "SHA-1", "SHA-256", "SHA-384", "SHA-512", "SHA-512/224",
-            "SHA-512/256" };
 
     /**
      * Constructor to initialize HashStore fields and object store directory
@@ -86,9 +84,10 @@ public class HashFileStore {
     public HashAddress put(InputStream object, String additionalAlgorithm, String checksum)
             throws IOException, NoSuchAlgorithmException {
         // Cannot generate additional algorithm if it is not supported
-        if (!Arrays.asList(supportedHashAlgorithms).contains(additionalAlgorithm) && additionalAlgorithm != null) {
+        boolean algorithmSupported = this.hsil.validateAlgorithm(additionalAlgorithm);
+        if (!algorithmSupported) {
             throw new IllegalArgumentException(
-                    "Algorithm not supported. Supported algorithms: " + supportedHashAlgorithms);
+                    "Algorithm not supported. Supported algorithms: " + this.hsil.supportedHashAlgorithms);
         }
 
         // Generate tmp file and write to it
