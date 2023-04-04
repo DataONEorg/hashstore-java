@@ -19,7 +19,7 @@ public class HashFileStore {
     private String objectStoreAlgorithm;
     private Path objectStoreDirectory;
     private Path tmpFileDirectory;
-    private HashUtil hsil;
+    private HashUtil hsil = new HashUtil();
 
     /**
      * Constructor to initialize HashStore fields and object store directory
@@ -40,6 +40,12 @@ public class HashFileStore {
         if (algorithm == null || algorithm.isEmpty()) {
             throw new IllegalArgumentException("Algorithm cannot be null or empty.");
         }
+        boolean algorithmSupported = this.hsil.validateAlgorithm(algorithm);
+        if (!algorithmSupported) {
+            throw new IllegalArgumentException(
+                    "Algorithm not supported. Supported algorithms: " +
+                            this.hsil.supportedHashAlgorithms);
+        }
 
         this.directoryDepth = depth;
         this.directoryWidth = width;
@@ -59,7 +65,6 @@ public class HashFileStore {
         try {
             Files.createDirectories(this.objectStoreDirectory);
             Files.createDirectories(this.tmpFileDirectory);
-            this.hsil = new HashUtil();
         } catch (IOException e) {
             // TODO: Log IO exeption failure, e
             throw e;

@@ -52,9 +52,21 @@ public class HashFileStoreTest {
      * Test invalid depth value
      */
     @Test(expected = IllegalArgumentException.class)
-    public void testConstructorIllegalArguments() {
+    public void testConstructorIllegalDepthArg() {
         try {
             new HashFileStore(0, 2, "SHA-256", rootStringFull);
+        } catch (IOException e) {
+            fail("IOException encountered: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Test invalid algorithm value
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testConstructorIllegalAlgorithmArg() {
+        try {
+            new HashFileStore(2, 2, "SM2", rootStringFull);
         } catch (IOException e) {
             fail("IOException encountered: " + e.getMessage());
         }
