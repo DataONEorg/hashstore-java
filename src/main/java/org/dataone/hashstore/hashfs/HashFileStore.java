@@ -42,7 +42,6 @@ public class HashFileStore {
         if (algorithm == null || algorithm.isEmpty()) {
             throw new IllegalArgumentException("Algorithm cannot be null or empty.");
         }
-        // TODO: Handle when algorithm is not "sha256"
 
         this.directoryDepth = depth;
         this.directoryWidth = width;

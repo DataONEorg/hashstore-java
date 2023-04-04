@@ -48,6 +48,27 @@ public class HashFileStoreTest {
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
     /**
+     * Confirm default file directories are created when storeDirectory is null
+     */
+    @Test
+    public void testDefaultStoreDirectory() {
+        try {
+            HashFileStore defaultHfs = new HashFileStore(3, 2, "SHA-256", null);
+
+            String rootDirectory = System.getProperty("user.dir");
+            String objectPath = "HashFileStore";
+
+            Path defaultDirectoryPath = Paths.get(rootDirectory).resolve(objectPath);
+            assertTrue(Files.exists(defaultDirectoryPath));
+
+            Path defaultTmpDirectoryPath = defaultDirectoryPath.resolve("tmp");
+            assertTrue(Files.exists(defaultTmpDirectoryPath));
+        } catch (IOException e) {
+            fail("IOException encountered: " + e.getMessage());
+        }
+    }
+
+    /**
      * Check object store and tmp directory are created
      */
     @Test
