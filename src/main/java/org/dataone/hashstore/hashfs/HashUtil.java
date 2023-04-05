@@ -159,7 +159,7 @@ public class HashUtil {
      * @return
      * @throws IOException
      */
-    public boolean move(File source, File target) throws IOException {
+    protected boolean move(File source, File target) throws IOException {
         boolean isDuplicate = false;
         if (target.exists()) {
             isDuplicate = true;
