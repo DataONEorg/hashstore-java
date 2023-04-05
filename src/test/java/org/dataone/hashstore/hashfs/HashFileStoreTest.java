@@ -1,4 +1,4 @@
-package org.dataone.hashstore;
+package org.dataone.hashstore.hashfs;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -18,8 +18,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.dataone.hashstore.hashfs.HashAddress;
-import org.dataone.hashstore.hashfs.HashFileStore;
 
 /**
  * Test class for HashFileStore

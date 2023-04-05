@@ -1,4 +1,4 @@
-package org.dataone.hashstore;
+package org.dataone.hashstore.hashfs;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -6,8 +6,6 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import org.junit.Test;
-
-import org.dataone.hashstore.hashfs.HashAddress;
 
 /**
  * Test class for HashAddress

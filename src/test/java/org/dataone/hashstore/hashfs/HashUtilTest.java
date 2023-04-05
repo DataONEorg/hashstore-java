@@ -1,4 +1,4 @@
-package org.dataone.hashstore;
+package org.dataone.hashstore.hashfs;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -14,7 +14,6 @@ import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 
-import org.dataone.hashstore.hashfs.HashUtil;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.Rule;
 import org.junit.Test;
