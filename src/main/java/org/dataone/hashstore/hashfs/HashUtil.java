@@ -25,6 +25,21 @@ public class HashUtil {
             "SHA-512/256" };
 
     /**
+     * Checks whether a given algorithm is supported based on an the HashUtil class
+     * variable supportedHashAlgorithms
+     * 
+     * @param algorithm
+     * @return
+     */
+    public boolean validateAlgorithm(String algorithm) {
+        if (!Arrays.asList(this.supportedHashAlgorithms).contains(algorithm) && algorithm != null) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    /**
      * Creates an empty file in a given location
      * 
      * @param prefix
@@ -45,6 +60,36 @@ public class HashUtil {
         }
         // TODO: Log - newFile.getCanonicalPath());
         return newFile;
+    }
+
+    /**
+     * Create a list of 'depth' number of tokens with 'width' with the last item
+     * being the remainder of the digest, and return a String path
+     * 
+     * @param depth
+     * @param width
+     * @param digest
+     * @return
+     */
+    public String shard(int depth, int width, String digest) {
+        List<String> tokens = new ArrayList<String>();
+        int digestLength = digest.length();
+        for (int i = 0; i < depth; i++) {
+            int start = i * width;
+            int end = Math.min((i + 1) * width, digestLength);
+            tokens.add(digest.substring(start, end));
+        }
+        if (depth * width < digestLength) {
+            tokens.add(digest.substring(depth * width));
+        }
+        List<String> stringArray = new ArrayList<String>();
+        for (String str : tokens) {
+            if (!str.isEmpty()) {
+                stringArray.add(str);
+            }
+        }
+        String shardedPath = "/" + String.join("/", stringArray);
+        return shardedPath;
     }
 
     /**
@@ -122,36 +167,6 @@ public class HashUtil {
     }
 
     /**
-     * Create a list of 'depth' number of tokens with 'width' with the last item
-     * being the remainder of the digest, and return a String path
-     * 
-     * @param depth
-     * @param width
-     * @param digest
-     * @return
-     */
-    public String shard(int depth, int width, String digest) {
-        List<String> tokens = new ArrayList<String>();
-        int digestLength = digest.length();
-        for (int i = 0; i < depth; i++) {
-            int start = i * width;
-            int end = Math.min((i + 1) * width, digestLength);
-            tokens.add(digest.substring(start, end));
-        }
-        if (depth * width < digestLength) {
-            tokens.add(digest.substring(depth * width));
-        }
-        List<String> stringArray = new ArrayList<String>();
-        for (String str : tokens) {
-            if (!str.isEmpty()) {
-                stringArray.add(str);
-            }
-        }
-        String shardedPath = "/" + String.join("/", stringArray);
-        return shardedPath;
-    }
-
-    /**
      * Moves an object from one directory to another if the object does not exist
      * 
      * @param source
@@ -182,20 +197,5 @@ public class HashUtil {
             }
         }
         return isDuplicate;
-    }
-
-    /**
-     * Checks whether a given algorithm is supported based on an the HashUtil class
-     * variable supportedHashAlgorithms
-     * 
-     * @param algorithm
-     * @return
-     */
-    public boolean validateAlgorithm(String algorithm) {
-        if (!Arrays.asList(this.supportedHashAlgorithms).contains(algorithm) && algorithm != null) {
-            return false;
-        } else {
-            return true;
-        }
     }
 }
