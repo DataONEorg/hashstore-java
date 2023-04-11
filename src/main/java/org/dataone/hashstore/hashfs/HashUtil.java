@@ -185,7 +185,8 @@ public class HashUtil {
     }
 
     /**
-     * Checks whether a given algorithm is supported based on an agreed upon list
+     * Checks whether a given algorithm is supported based on an the HashUtil class
+     * variable supportedHashAlgorithms
      * 
      * @param algorithm
      * @return

@@ -1,6 +1,7 @@
 package org.dataone.hashstore.hashfs;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -165,5 +166,26 @@ public class HashUtilTest {
         } catch (IOException e) {
             fail("IOException: " + e.getMessage());
         }
+    }
+
+    /**
+     * Check algorithm support
+     */
+    @Test
+    public void testValidateAlgorithm() {
+        HashUtil hsil = new HashUtil();
+
+        String md2 = "MD2";
+        boolean supported = hsil.validateAlgorithm(md2);
+        assertTrue(supported);
+
+        String sm3 = "SM3";
+        boolean not_supported = hsil.validateAlgorithm(sm3);
+        assertFalse(not_supported);
+
+        // Must match string to reduce complexity, no string formatting
+        String md2_lowercase = "md2";
+        boolean lowercase_not_supported = hsil.validateAlgorithm(md2_lowercase);
+        assertFalse(lowercase_not_supported);
     }
 }
