@@ -85,7 +85,7 @@ public class HashFileStore {
      * @throws IOException
      * @throws NoSuchAlgorithmException
      */
-    public HashAddress put(InputStream object, String additionalAlgorithm, String checksum)
+    protected HashAddress put(InputStream object, String additionalAlgorithm, String checksum)
             throws IOException, NoSuchAlgorithmException {
         // Cannot generate additional algorithm if it is not supported
         boolean algorithmSupported = this.hsil.validateAlgorithm(additionalAlgorithm);
