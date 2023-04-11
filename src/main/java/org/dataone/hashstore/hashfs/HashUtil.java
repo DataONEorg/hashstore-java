@@ -57,7 +57,7 @@ public class HashUtil {
      * @param dataStream          Source data stream
      * @param additionalAlgorithm Optional additional algoritm to generate
      */
-    public Map<String, String> writeToTmpFileAndGenerateChecksums(File tmpFile, InputStream dataStream,
+    protected Map<String, String> writeToTmpFileAndGenerateChecksums(File tmpFile, InputStream dataStream,
             String additionalAlgorithm) throws NoSuchAlgorithmException, IOException {
         boolean algorithmSupported = this.validateAlgorithm(additionalAlgorithm);
         if (!algorithmSupported) {
