@@ -1,7 +1,10 @@
 package org.dataone.hashstore;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.security.NoSuchAlgorithmException;
 
+import org.dataone.hashstore.hashfs.HashAddress;
 import org.dataone.hashstore.hashfs.HashFileStore;
 
 /**
@@ -27,6 +30,39 @@ public class HashStore {
         try {
             hashfs = new HashFileStore(this.depth, this.width, this.algorithm, storeDirectory);
         } catch (IllegalArgumentException e) {
+            // TODO: Log failure - include signature values, e
+            throw e;
+        }
+
+    }
+
+    /**
+     * Store an object to the storeDirectory.
+     * 
+     * The permanent address is the SHA256 hex digest of a given authority based
+     * identifer (abId) which is usually a pid.
+     * 
+     * Returns a HashAddress object that contains the file id, relative path,
+     * absolute path, duplicate status and a checksum map based on a default
+     * algorithm list.
+     * 
+     * @param pid
+     * @param data
+     * @param additionalAlgorithm
+     * @param checksum
+     * @return
+     * @throws NoSuchAlgorithmException
+     * @throws IOException
+     */
+    public HashAddress storeObject(String pid, InputStream data, String additionalAlgorithm, String checksum)
+            throws NoSuchAlgorithmException, IOException {
+        try {
+            HashAddress objInfo = this.hashfs.putObject(data, pid, additionalAlgorithm, checksum);
+            return objInfo;
+        } catch (NoSuchAlgorithmException e) {
+            // TODO: Log failure - include signature values, e
+            throw e;
+        } catch (IOException e) {
             // TODO: Log failure - include signature values, e
             throw e;
         }
