@@ -188,4 +188,18 @@ public class HashUtilTest {
         boolean lowercase_not_supported = hsil.validateAlgorithm(md2_lowercase);
         assertFalse(lowercase_not_supported);
     }
+
+    @Test
+    public void testGetHexDigest() {
+        HashUtil hsil = new HashUtil();
+        try {
+            for (String pid : this.testData.pidList) {
+                String abIdDigest = hsil.getHexDigest(pid, "SHA-256");
+                String abIdTestData = this.testData.pidData.get(pid).get("s_cid");
+                assertEquals(abIdDigest, abIdTestData);
+            }
+        } catch (NoSuchAlgorithmException nsae) {
+            fail("NoSuchAlgorithmException: " + nsae.getMessage());
+        }
+    }
 }

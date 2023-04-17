@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -90,6 +91,27 @@ public class HashUtil {
         }
         String shardedPath = "/" + String.join("/", stringArray);
         return shardedPath;
+    }
+
+    /**
+     * Given a string and supported algorithm returns the hex digest
+     * 
+     * @param abId
+     * @param algorithm
+     * @return
+     * @throws NoSuchAlgorithmException
+     */
+    public String getHexDigest(String abId, String algorithm) throws NoSuchAlgorithmException {
+        boolean algorithmSupported = this.validateAlgorithm(algorithm);
+        if (!algorithmSupported) {
+            throw new IllegalArgumentException(
+                    "Algorithm not supported. Supported algorithms: " + this.supportedHashAlgorithms);
+        }
+        MessageDigest abIdMessageDigest = MessageDigest.getInstance(algorithm);
+        byte[] bytes = abId.getBytes(StandardCharsets.UTF_8);
+        abIdMessageDigest.update(bytes);
+        String abIdDigest = DatatypeConverter.printHexBinary(abIdMessageDigest.digest()).toLowerCase();
+        return abIdDigest;
     }
 
     /**
