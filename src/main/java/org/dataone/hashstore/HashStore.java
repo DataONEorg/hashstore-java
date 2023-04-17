@@ -33,14 +33,13 @@ public class HashStore {
             // TODO: Log failure - include signature values, e
             throw e;
         }
-
     }
 
     /**
      * Store an object to the storeDirectory.
      * 
-     * The permanent address is the SHA256 hex digest of a given authority based
-     * identifer (abId) which is usually a pid.
+     * The permanent address is the SHA256 hex digest of a given string that
+     * represents an authority based identifer (pid).
      * 
      * Returns a HashAddress object that contains the file id, relative path,
      * absolute path, duplicate status and a checksum map based on a default
@@ -66,6 +65,5 @@ public class HashStore {
             // TODO: Log failure - include signature values, e
             throw e;
         }
-
     }
 }
