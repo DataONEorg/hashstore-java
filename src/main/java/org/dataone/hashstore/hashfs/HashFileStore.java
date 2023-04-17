@@ -102,6 +102,7 @@ public class HashFileStore {
      * algorithm list.
      * 
      * @param object
+     * @param abId
      * @param additionalAlgorithm
      * @param checksum
      * @return
@@ -125,13 +126,13 @@ public class HashFileStore {
 
         // Validate object if algorithm and checksum is passed
         if (additionalAlgorithm != null && checksum != null) {
-            String digestFromHexDigests = hexDigests.get(this.objectStoreAlgorithm);
+            String digestFromHexDigests = hexDigests.get(additionalAlgorithm);
             if (checksum != digestFromHexDigests) {
                 tmpFile.delete();
                 // TODO: Log failure - include signature values
                 throw new IllegalArgumentException(
                         "Checksum supplied does not equal to the calculated hex digest: " + digestFromHexDigests
-                                + ". Deleting tmpFile: " + tmpFile.toString());
+                                + "Checksum provided: " + checksum + ". Deleting tmpFile: " + tmpFile.toString());
             }
 
         }
