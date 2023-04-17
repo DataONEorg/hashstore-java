@@ -120,9 +120,12 @@ public class HashUtil {
      * 
      * Default algorithms: MD5, SHA-1, SHA-256, SHA-384, SHA-512
      * 
-     * @param tmpFile             File into which the stream will be written to
-     * @param dataStream          Source data stream
-     * @param additionalAlgorithm Optional additional algoritm to generate
+     * @param tmpFile
+     * @param dataStream
+     * @param additionalAlgorithm
+     * @return
+     * @throws NoSuchAlgorithmException
+     * @throws IOException
      */
     protected Map<String, String> writeToTmpFileAndGenerateChecksums(File tmpFile, InputStream dataStream,
             String additionalAlgorithm) throws NoSuchAlgorithmException, IOException {

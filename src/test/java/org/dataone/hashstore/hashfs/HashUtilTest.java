@@ -55,6 +55,52 @@ public class HashUtilTest {
     }
 
     /**
+     * Confirm that a digest is sharded appropriately
+     */
+    @Test
+    public void testShardHexDigest() {
+        HashUtil hsil = new HashUtil();
+        String shardedPath = hsil.shard(3, 2, "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a");
+        String shardedPathExpected = "/94/f9/b6/c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
+        assertEquals(shardedPath, shardedPathExpected);
+    }
+
+    /**
+     * Check algorithm support
+     */
+    @Test
+    public void testValidateAlgorithm() {
+        HashUtil hsil = new HashUtil();
+
+        String md2 = "MD2";
+        boolean supported = hsil.validateAlgorithm(md2);
+        assertTrue(supported);
+
+        String sm3 = "SM3";
+        boolean not_supported = hsil.validateAlgorithm(sm3);
+        assertFalse(not_supported);
+
+        // Must match string to reduce complexity, no string formatting
+        String md2_lowercase = "md2";
+        boolean lowercase_not_supported = hsil.validateAlgorithm(md2_lowercase);
+        assertFalse(lowercase_not_supported);
+    }
+
+    @Test
+    public void testGetHexDigest() {
+        HashUtil hsil = new HashUtil();
+        try {
+            for (String pid : this.testData.pidList) {
+                String abIdDigest = hsil.getHexDigest(pid, "SHA-256");
+                String abIdTestData = this.testData.pidData.get(pid).get("s_cid");
+                assertEquals(abIdDigest, abIdTestData);
+            }
+        } catch (NoSuchAlgorithmException nsae) {
+            fail("NoSuchAlgorithmException: " + nsae.getMessage());
+        }
+    }
+
+    /**
      * Check that the temporary file is not empty and that a list of
      * checksums are generated.
      */
@@ -139,17 +185,6 @@ public class HashUtilTest {
     }
 
     /**
-     * Confirm that a digest is sharded appropriately
-     */
-    @Test
-    public void testShardHexDigest() {
-        HashUtil hsil = new HashUtil();
-        String shardedPath = hsil.shard(3, 2, "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a");
-        String shardedPathExpected = "/94/f9/b6/c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
-        assertEquals(shardedPath, shardedPathExpected);
-    }
-
-    /**
      * Confirm that object has moved
      */
     @Test
@@ -165,41 +200,6 @@ public class HashUtilTest {
             assertTrue(targetFile.exists());
         } catch (IOException e) {
             fail("IOException: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Check algorithm support
-     */
-    @Test
-    public void testValidateAlgorithm() {
-        HashUtil hsil = new HashUtil();
-
-        String md2 = "MD2";
-        boolean supported = hsil.validateAlgorithm(md2);
-        assertTrue(supported);
-
-        String sm3 = "SM3";
-        boolean not_supported = hsil.validateAlgorithm(sm3);
-        assertFalse(not_supported);
-
-        // Must match string to reduce complexity, no string formatting
-        String md2_lowercase = "md2";
-        boolean lowercase_not_supported = hsil.validateAlgorithm(md2_lowercase);
-        assertFalse(lowercase_not_supported);
-    }
-
-    @Test
-    public void testGetHexDigest() {
-        HashUtil hsil = new HashUtil();
-        try {
-            for (String pid : this.testData.pidList) {
-                String abIdDigest = hsil.getHexDigest(pid, "SHA-256");
-                String abIdTestData = this.testData.pidData.get(pid).get("s_cid");
-                assertEquals(abIdDigest, abIdTestData);
-            }
-        } catch (NoSuchAlgorithmException nsae) {
-            fail("NoSuchAlgorithmException: " + nsae.getMessage());
         }
     }
 }
