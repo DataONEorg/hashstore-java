@@ -14,6 +14,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -23,11 +24,13 @@ import org.junit.rules.TemporaryFolder;
  * Test class for HashFileStore
  */
 public class HashFileStoreTest {
-    HashFileStore hfs;
-    Path rootDirectory;
-    String rootString;
-    String rootStringFull;
-    String tmpStringFull;
+    public HashFileStore hfs;
+    public Path rootDirectory;
+    public String rootString;
+    public String rootStringFull;
+    public String tmpStringFull;
+
+    public TestDataHarness testData = new TestDataHarness();
 
     @Before
     public void initializeHashFileStore() {
@@ -103,39 +106,43 @@ public class HashFileStoreTest {
     }
 
     /**
-     * Verify that file was put (moved) to its permanent address
+     * Verify that test data files are put (moved) to its permanent address
      */
     @Test
-    public void testPut() {
-        // Get test file to "upload"
-        String pid = "jtao.1700.1";
-        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
-        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-        File testDataFile = new File(testdataAbsolutePath);
+    public void testPutTestHarness() {
+        HashUtil hsil = new HashUtil();
 
-        try {
-            InputStream dataStream = new FileInputStream(testDataFile);
-            HashAddress address = hfs.put(dataStream, pid, null, null);
+        for (String pid : this.testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
+                    "testdata", pidFormatted);
+            String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+            File testDataFile = new File(testdataAbsolutePath);
 
-            // Check id (sha-256 hex digest)
-            String objID = "a8241925740d5dcd719596639e780e0a090c9d55a5d0372b0eaf55ed711d4edf";
-            assertEquals(objID, address.getId());
+            try {
+                InputStream dataStream = new FileInputStream(testDataFile);
+                HashAddress address = hfs.put(dataStream, pid, null, null);
 
-            // Check relative path
-            String objRelPath = "/a8/24/19/25740d5dcd719596639e780e0a090c9d55a5d0372b0eaf55ed711d4edf";
-            assertEquals(objRelPath, address.getRelPath());
+                // Check id (sha-256 hex digest of the ab_id, aka s_cid)
+                String objAuthorityId = this.testData.pidData.get(pid).get("s_cid");
+                assertEquals(objAuthorityId, address.getId());
 
-            // Check absolute path
-            File objAbsPath = new File(address.getAbsPath());
-            assertTrue(objAbsPath.exists());
+                // Check relative path
+                String objRelPath = hsil.shard(3, 2, objAuthorityId);
+                assertEquals(objRelPath, address.getRelPath());
 
-            // Check duplicate status
-            assertFalse(address.getIsDuplicate());
+                // Check absolute path
+                File objAbsPath = new File(address.getAbsPath());
+                assertTrue(objAbsPath.exists());
 
-        } catch (NoSuchAlgorithmException e) {
-            fail("NoSuchAlgorithmExceptionJava: " + e.getMessage());
-        } catch (IOException e) {
-            fail("IOException: " + e.getMessage());
+                // Check duplicate status
+                assertFalse(address.getIsDuplicate());
+
+            } catch (NoSuchAlgorithmException e) {
+                fail("NoSuchAlgorithmExceptionJava: " + e.getMessage());
+            } catch (IOException e) {
+                fail("IOException: " + e.getMessage());
+            }
         }
     }
 
