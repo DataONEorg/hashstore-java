@@ -108,20 +108,21 @@ public class HashFileStoreTest {
     @Test
     public void testPut() {
         // Get test file to "upload"
-        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", "jtao.1700.1");
+        String pid = "jtao.1700.1";
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
         String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
         File testDataFile = new File(testdataAbsolutePath);
 
         try {
             InputStream dataStream = new FileInputStream(testDataFile);
-            HashAddress address = hfs.put(dataStream, null, null);
+            HashAddress address = hfs.put(dataStream, pid, null, null);
 
             // Check id (sha-256 hex digest)
-            String objID = "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
+            String objID = "a8241925740d5dcd719596639e780e0a090c9d55a5d0372b0eaf55ed711d4edf";
             assertEquals(objID, address.getId());
 
             // Check relative path
-            String objRelPath = "/94/f9/b6/c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
+            String objRelPath = "/a8/24/19/25740d5dcd719596639e780e0a090c9d55a5d0372b0eaf55ed711d4edf";
             assertEquals(objRelPath, address.getRelPath());
 
             // Check absolute path
@@ -144,20 +145,21 @@ public class HashFileStoreTest {
     @Test
     public void testPutDuplicateObject() {
         // Get test file to "upload"
-        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", "jtao.1700.1");
+        String pid = "jtao.1700.1";
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
         String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
         File testDataFile = new File(testdataAbsolutePath);
 
         try {
             InputStream dataStream = new FileInputStream(testDataFile);
-            HashAddress address = hfs.put(dataStream, null, null);
+            HashAddress address = hfs.put(dataStream, pid, null, null);
 
             // Check duplicate status
             assertFalse(address.getIsDuplicate());
 
             // Try duplicate upload
             InputStream dataStreamTwo = new FileInputStream(testDataFile);
-            HashAddress addressTwo = hfs.put(dataStreamTwo, null, null);
+            HashAddress addressTwo = hfs.put(dataStreamTwo, pid, null, null);
             assertTrue(addressTwo.getIsDuplicate());
 
             // Confirm there is only 1 file
@@ -179,13 +181,14 @@ public class HashFileStoreTest {
     @Test(expected = IllegalArgumentException.class)
     public void testPutInvalidAlgorithm() {
         // Get test file to "upload"
-        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", "jtao.1700.1");
+        String pid = "jtao.1700.1";
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
         String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
         File testDataFile = new File(testdataAbsolutePath);
 
         try {
             InputStream dataStream = new FileInputStream(testDataFile);
-            HashAddress address = hfs.put(dataStream, "SM2", null);
+            HashAddress address = hfs.put(dataStream, pid, "SM2", null);
 
         } catch (NoSuchAlgorithmException e) {
             fail("NoSuchAlgorithmExceptionJava: " + e.getMessage());
@@ -200,14 +203,15 @@ public class HashFileStoreTest {
     @Test(expected = IllegalArgumentException.class)
     public void testPutIncorrectChecksum() {
         // Get test file to "upload"
-        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", "jtao.1700.1");
+        String pid = "jtao.1700.1";
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
         String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
         File testDataFile = new File(testdataAbsolutePath);
 
         try {
             String checksumInvalid = "1c25df1c8ba1d2e57bb3fd4785878b85";
             InputStream dataStream = new FileInputStream(testDataFile);
-            HashAddress address = hfs.put(dataStream, "MD2", checksumInvalid);
+            HashAddress address = hfs.put(dataStream, pid, "MD2", checksumInvalid);
 
         } catch (NoSuchAlgorithmException e) {
             fail("NoSuchAlgorithmExceptionJava: " + e.getMessage());

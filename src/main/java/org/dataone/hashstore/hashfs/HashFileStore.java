@@ -85,7 +85,7 @@ public class HashFileStore {
      * @throws IOException
      * @throws NoSuchAlgorithmException
      */
-    protected HashAddress put(InputStream object, String additionalAlgorithm, String checksum)
+    protected HashAddress put(InputStream object, String abId, String additionalAlgorithm, String checksum)
             throws IOException, NoSuchAlgorithmException {
         // Cannot generate additional algorithm if it is not supported
         boolean algorithmSupported = this.hsil.validateAlgorithm(additionalAlgorithm);
@@ -114,8 +114,8 @@ public class HashFileStore {
         }
 
         // Gather HashAddress elements and prepare object permanent address
-        String objHexDigest = hexDigests.get(this.objectStoreAlgorithm);
-        String objRelativePath = this.hsil.shard(directoryDepth, directoryWidth, objHexDigest);
+        String objAuthorityId = this.hsil.getHexDigest(abId, this.objectStoreAlgorithm);
+        String objRelativePath = this.hsil.shard(directoryDepth, directoryWidth, objAuthorityId);
         String objAbsolutePath = this.objectStoreDirectory.toString() + objRelativePath;
         File objHashAddress = new File(objAbsolutePath);
 
@@ -123,13 +123,13 @@ public class HashFileStore {
         boolean isDuplicate = this.hsil.move(tmpFile, objHashAddress);
         if (isDuplicate) {
             tmpFile.delete();
-            objHexDigest = null;
+            objAuthorityId = null;
             objRelativePath = null;
             objAbsolutePath = null;
             hexDigests = null;
         }
 
-        HashAddress hashAddress = new HashAddress(objHexDigest, objRelativePath, objAbsolutePath, isDuplicate,
+        HashAddress hashAddress = new HashAddress(objAuthorityId, objRelativePath, objAbsolutePath, isDuplicate,
                 hexDigests);
         return hashAddress;
     }
