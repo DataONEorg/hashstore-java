@@ -21,12 +21,18 @@ public class HashFileStore {
     private HashUtil hsil = new HashUtil();
 
     /**
-     * Constructor to initialize HashStore fields and object store directory
+     * Constructor to initialize HashStore fields and object store directory. If
+     * storeDirectory is null or an empty string, a default path will be generated
+     * based on the user's root folder + "/HashFileStore".
+     * 
+     * Two directories will be created based on the given storeDirectory string:
+     * - .../objects
+     * - .../objects/tmp
      * 
      * @param depth
      * @param width
      * @param algorithm
-     * @param storeDirectory Full file path (ex. /usr/org/objects)
+     * @param storeDirectory Full file path (ex. /usr/org/)
      * @throws IllegalArgumentException
      * @throws IOException
      */
@@ -51,12 +57,12 @@ public class HashFileStore {
         this.objectStoreAlgorithm = algorithm;
 
         // If no path provided, create default path with user.dir root + /HashFileStore
-        if (storeDirectory == null) {
+        if (storeDirectory == null || storeDirectory == "") {
             String rootDirectory = System.getProperty("user.dir");
-            String objectPath = "HashFileStore";
-            this.objectStoreDirectory = Paths.get(rootDirectory).resolve(objectPath);
+            String defaultPath = "HashFileStore";
+            this.objectStoreDirectory = Paths.get(rootDirectory).resolve(defaultPath).resolve("objects");
         } else {
-            this.objectStoreDirectory = Paths.get(storeDirectory);
+            this.objectStoreDirectory = Paths.get(storeDirectory).resolve("objects");
         }
         this.tmpFileDirectory = this.objectStoreDirectory.resolve("tmp");
 

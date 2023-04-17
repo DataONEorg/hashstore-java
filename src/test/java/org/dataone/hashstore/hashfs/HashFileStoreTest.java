@@ -28,16 +28,21 @@ public class HashFileStoreTest {
     public Path rootDirectory;
     public String rootString;
     public String rootStringFull;
+    public String objStringFull;
     public String tmpStringFull;
 
     public TestDataHarness testData = new TestDataHarness();
 
+    /**
+     * Initialize HashFileStore for test efficiency purposes (creates directories)
+     */
     @Before
     public void initializeHashFileStore() {
-        this.rootDirectory = tempFolder.getRoot().toPath();
-        this.rootString = rootDirectory.toString();
-        this.rootStringFull = rootString + "/metacat/objects";
-        this.tmpStringFull = this.rootString + "/metacat/objects/tmp";
+        this.rootDirectory = this.tempFolder.getRoot().toPath();
+        this.rootString = this.rootDirectory.toString();
+        this.rootStringFull = this.rootString + "/metacat";
+        this.objStringFull = this.rootStringFull + "/objects";
+        this.tmpStringFull = this.rootStringFull + "/objects/tmp";
         try {
             this.hfs = new HashFileStore(3, 2, "SHA-256", rootStringFull);
         } catch (IOException e) {
@@ -47,6 +52,18 @@ public class HashFileStoreTest {
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
+
+    /**
+     * Check object store and tmp directory are created after initialization
+     */
+    @Test
+    public void testCreateDirectory() {
+        Path checkStorePath = Paths.get(this.objStringFull);
+        assertTrue(Files.exists(checkStorePath));
+
+        Path checkTmpPath = Paths.get(this.tmpStringFull);
+        assertTrue(Files.exists(checkTmpPath));
+    }
 
     /**
      * Test invalid depth value
@@ -76,17 +93,17 @@ public class HashFileStoreTest {
      * Confirm default file directories are created when storeDirectory is null
      */
     @Test
-    public void testDefaultStoreDirectory() {
+    public void testDefaultStoreDirectoryNull() {
         try {
             HashFileStore defaultHfs = new HashFileStore(3, 2, "SHA-256", null);
 
             String rootDirectory = System.getProperty("user.dir");
             String objectPath = "HashFileStore";
 
-            Path defaultDirectoryPath = Paths.get(rootDirectory).resolve(objectPath);
-            assertTrue(Files.exists(defaultDirectoryPath));
+            Path defaultObjDirectoryPath = Paths.get(rootDirectory).resolve(objectPath).resolve("objects");
+            assertTrue(Files.exists(defaultObjDirectoryPath));
 
-            Path defaultTmpDirectoryPath = defaultDirectoryPath.resolve("tmp");
+            Path defaultTmpDirectoryPath = defaultObjDirectoryPath.resolve("tmp");
             assertTrue(Files.exists(defaultTmpDirectoryPath));
         } catch (IOException e) {
             fail("IOException encountered: " + e.getMessage());
@@ -94,15 +111,24 @@ public class HashFileStoreTest {
     }
 
     /**
-     * Check object store and tmp directory are created
+     * Confirm default file directories are created when storeDirectory is ""
      */
     @Test
-    public void testCreateDirectory() {
-        Path checkStorePath = Paths.get(this.rootStringFull);
-        assertTrue(Files.exists(checkStorePath));
+    public void testDefaultStoreDirectoryEmptyString() {
+        try {
+            HashFileStore defaultHfs = new HashFileStore(3, 2, "SHA-256", "");
 
-        Path checkTmpPath = Paths.get(this.tmpStringFull);
-        assertTrue(Files.exists(checkTmpPath));
+            String rootDirectory = System.getProperty("user.dir");
+            String objectPath = "HashFileStore";
+
+            Path defaultObjDirectoryPath = Paths.get(rootDirectory).resolve(objectPath).resolve("objects");
+            assertTrue(Files.exists(defaultObjDirectoryPath));
+
+            Path defaultTmpDirectoryPath = defaultObjDirectoryPath.resolve("tmp");
+            assertTrue(Files.exists(defaultTmpDirectoryPath));
+        } catch (IOException e) {
+            fail("IOException encountered: " + e.getMessage());
+        }
     }
 
     /**
