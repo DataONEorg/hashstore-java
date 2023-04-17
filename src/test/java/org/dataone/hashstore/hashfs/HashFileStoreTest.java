@@ -121,7 +121,7 @@ public class HashFileStoreTest {
 
             try {
                 InputStream dataStream = new FileInputStream(testDataFile);
-                HashAddress address = hfs.put(dataStream, pid, null, null);
+                HashAddress address = hfs.putObject(dataStream, pid, null, null);
 
                 // Check id (sha-256 hex digest of the ab_id, aka s_cid)
                 String objAuthorityId = this.testData.pidData.get(pid).get("s_cid");
@@ -159,14 +159,14 @@ public class HashFileStoreTest {
 
         try {
             InputStream dataStream = new FileInputStream(testDataFile);
-            HashAddress address = hfs.put(dataStream, pid, null, null);
+            HashAddress address = hfs.putObject(dataStream, pid, null, null);
 
             // Check duplicate status
             assertFalse(address.getIsDuplicate());
 
             // Try duplicate upload
             InputStream dataStreamTwo = new FileInputStream(testDataFile);
-            HashAddress addressTwo = hfs.put(dataStreamTwo, pid, null, null);
+            HashAddress addressTwo = hfs.putObject(dataStreamTwo, pid, null, null);
             assertTrue(addressTwo.getIsDuplicate());
 
             // Confirm there is only 1 file
@@ -195,7 +195,7 @@ public class HashFileStoreTest {
 
         try {
             InputStream dataStream = new FileInputStream(testDataFile);
-            HashAddress address = hfs.put(dataStream, pid, "SM2", null);
+            HashAddress address = hfs.putObject(dataStream, pid, "SM2", null);
 
         } catch (NoSuchAlgorithmException e) {
             fail("NoSuchAlgorithmExceptionJava: " + e.getMessage());
@@ -218,7 +218,7 @@ public class HashFileStoreTest {
         try {
             String checksumInvalid = "1c25df1c8ba1d2e57bb3fd4785878b85";
             InputStream dataStream = new FileInputStream(testDataFile);
-            HashAddress address = hfs.put(dataStream, pid, "MD2", checksumInvalid);
+            HashAddress address = hfs.putObject(dataStream, pid, "MD2", checksumInvalid);
 
         } catch (NoSuchAlgorithmException e) {
             fail("NoSuchAlgorithmExceptionJava: " + e.getMessage());

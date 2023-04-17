@@ -71,6 +71,23 @@ public class HashFileStore {
     }
 
     /**
+     * Stores a file to the Hash File Store
+     * 
+     * @param object
+     * @param abId
+     * @param additionalAlgorithm
+     * @param checksum
+     * @return
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     */
+    public HashAddress putObject(InputStream object, String abId, String additionalAlgorithm, String checksum)
+            throws IOException, NoSuchAlgorithmException {
+        HashAddress hashad = this.put(object, abId, additionalAlgorithm, checksum);
+        return hashad;
+    }
+
+    /**
      * Takes a given input stream and writes it to its permanent address on disk
      * based on its SHA-256 hex digest value.
      * 
@@ -133,4 +150,5 @@ public class HashFileStore {
                 hexDigests);
         return hashAddress;
     }
+
 }
