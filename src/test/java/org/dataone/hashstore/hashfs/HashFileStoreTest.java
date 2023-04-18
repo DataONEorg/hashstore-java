@@ -147,7 +147,7 @@ public class HashFileStoreTest {
 
             try {
                 InputStream dataStream = new FileInputStream(testDataFile);
-                HashAddress address = hfs.putObject(dataStream, pid, null, null);
+                HashAddress address = hfs.putObject(dataStream, pid, null, null, null);
 
                 // Check id (sha-256 hex digest of the ab_id, aka s_cid)
                 String objAuthorityId = this.testData.pidData.get(pid).get("s_cid");
@@ -185,14 +185,14 @@ public class HashFileStoreTest {
 
         try {
             InputStream dataStream = new FileInputStream(testDataFile);
-            HashAddress address = hfs.putObject(dataStream, pid, null, null);
+            HashAddress address = hfs.putObject(dataStream, pid, null, null, null);
 
             // Check duplicate status
             assertFalse(address.getIsDuplicate());
 
             // Try duplicate upload
             InputStream dataStreamTwo = new FileInputStream(testDataFile);
-            HashAddress addressTwo = hfs.putObject(dataStreamTwo, pid, null, null);
+            HashAddress addressTwo = hfs.putObject(dataStreamTwo, pid, null, null, null);
             assertTrue(addressTwo.getIsDuplicate());
 
             // Confirm there is only 1 file
@@ -221,7 +221,32 @@ public class HashFileStoreTest {
 
         try {
             InputStream dataStream = new FileInputStream(testDataFile);
-            HashAddress address = hfs.putObject(dataStream, pid, "SM2", null);
+            HashAddress address = hfs.putObject(dataStream, pid, "SM2", null, null);
+
+        } catch (NoSuchAlgorithmException e) {
+            fail("NoSuchAlgorithmExceptionJava: " + e.getMessage());
+        } catch (IOException e) {
+            fail("IOException: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Verify exception thrown when checksum provided does not match
+     */
+    public void testPutCorrectChecksumValue() {
+        // Get test file to "upload"
+        String pid = "jtao.1700.1";
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
+        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+        File testDataFile = new File(testdataAbsolutePath);
+
+        try {
+            String checksumCorrect = "9c25df1c8ba1d2e57bb3fd4785878b85";
+            InputStream dataStream = new FileInputStream(testDataFile);
+            HashAddress address = hfs.putObject(dataStream, pid, "MD2", checksumCorrect, "MD2");
+
+            String md2 = this.testData.pidData.get(pid).get("md2");
+            assertEquals(checksumCorrect, md2);
 
         } catch (NoSuchAlgorithmException e) {
             fail("NoSuchAlgorithmExceptionJava: " + e.getMessage());
@@ -234,7 +259,7 @@ public class HashFileStoreTest {
      * Verify exception thrown when checksum provided does not match
      */
     @Test(expected = IllegalArgumentException.class)
-    public void testPutIncorrectChecksum() {
+    public void testPutIncorrectChecksumValue() {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
@@ -242,9 +267,9 @@ public class HashFileStoreTest {
         File testDataFile = new File(testdataAbsolutePath);
 
         try {
-            String checksumInvalid = "1c25df1c8ba1d2e57bb3fd4785878b85";
+            String checksumIncorrect = "1c25df1c8ba1d2e57bb3fd4785878b85";
             InputStream dataStream = new FileInputStream(testDataFile);
-            HashAddress address = hfs.putObject(dataStream, pid, "MD2", checksumInvalid);
+            HashAddress address = hfs.putObject(dataStream, pid, "MD2", checksumIncorrect, "MD2");
 
         } catch (NoSuchAlgorithmException e) {
             fail("NoSuchAlgorithmExceptionJava: " + e.getMessage());

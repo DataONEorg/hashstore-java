@@ -75,7 +75,7 @@ public class HashStoreTest {
 
             try {
                 InputStream dataStream = new FileInputStream(testDataFile);
-                HashAddress objInfo = hsj.storeObject(pid, dataStream, null, null);
+                HashAddress objInfo = hsj.storeObject(pid, dataStream, null, null, null);
 
                 // Check id (sha-256 hex digest of the ab_id, aka s_cid)
                 String objAuthorityId = this.testData.pidData.get(pid).get("s_cid");

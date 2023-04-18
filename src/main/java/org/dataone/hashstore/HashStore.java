@@ -49,14 +49,17 @@ public class HashStore {
      * @param data
      * @param additionalAlgorithm
      * @param checksum
+     * @param checksumAlgorithm
+     * 
      * @return
      * @throws NoSuchAlgorithmException
      * @throws IOException
      */
-    public HashAddress storeObject(String pid, InputStream data, String additionalAlgorithm, String checksum)
+    public HashAddress storeObject(String pid, InputStream data, String additionalAlgorithm, String checksum,
+            String checksumAlgorithm)
             throws NoSuchAlgorithmException, IOException {
         try {
-            HashAddress objInfo = this.hashfs.putObject(data, pid, additionalAlgorithm, checksum);
+            HashAddress objInfo = this.hashfs.putObject(data, pid, additionalAlgorithm, checksum, checksumAlgorithm);
             return objInfo;
         } catch (NoSuchAlgorithmException e) {
             // TODO: Log failure - include signature values, e
