@@ -77,46 +77,65 @@ public class HashFileStore {
     }
 
     /**
-     * Stores a file to the Hash File Store
+     * Stores a file to the Hash File Store.
      * 
      * @param object
      * @param abId
      * @param additionalAlgorithm
      * @param checksum
+     * @param checksumAlgorithm
+     * 
      * @return
      * @throws IOException
      * @throws NoSuchAlgorithmException
      */
-    public HashAddress putObject(InputStream object, String abId, String additionalAlgorithm, String checksum)
+    public HashAddress putObject(InputStream object, String abId, String additionalAlgorithm, String checksum,
+            String checksumAlgorithm)
             throws IOException, NoSuchAlgorithmException {
-        HashAddress hashad = this.put(object, abId, additionalAlgorithm, checksum);
+        HashAddress hashad = this.put(object, abId, additionalAlgorithm, checksum, checksumAlgorithm);
         return hashad;
     }
 
     /**
      * Takes a given input stream and writes it to its permanent address on disk
-     * based on its SHA-256 hex digest value.
+     * based on the SHA-256 hex digest value of a persistent identifier (pid).
+     * 
+     * If an additional algorithm is provided and supported, its respective hex
+     * digest value will be included in hexDigests. If a checksum and
+     * checksumAlgorithm is provided, HashFileStore will attempt to validate the
+     * checksum against the hex digest produced of the supplied algorithm.
      * 
      * Returns a HashAddress object that contains the file id, relative path,
      * absolute path, duplicate status and a checksum map based on the default
      * algorithm list.
      * 
      * @param object
-     * @param abId
-     * @param additionalAlgorithm
+     * @param abId                authority based identifier
+     * @param additionalAlgorithm optional checksum value to generate in hex digests
      * @param checksum
+     * @param checksumAlgorithm
+     * 
      * @return
      * @throws IOException
      * @throws NoSuchAlgorithmException
      */
-    protected HashAddress put(InputStream object, String abId, String additionalAlgorithm, String checksum)
+    protected HashAddress put(InputStream object, String abId, String additionalAlgorithm, String checksum,
+            String checksumAlgorithm)
             throws IOException, NoSuchAlgorithmException {
         // Cannot generate additional algorithm if it is not supported
         boolean algorithmSupported = this.hsil.validateAlgorithm(additionalAlgorithm);
+        boolean checksumAlgorithmSupported = this.hsil.validateAlgorithm(checksumAlgorithm);
         if (!algorithmSupported) {
             // TODO: Log failure - include signature values
             throw new IllegalArgumentException(
-                    "Algorithm not supported. Supported algorithms: " + this.hsil.supportedHashAlgorithms);
+                    "Additional algorithm not supported - unable to generate additional hex digest value. Supported algorithms: "
+                            + this.hsil.supportedHashAlgorithms);
+        }
+        if (!checksumAlgorithmSupported) {
+            // TODO: Log failure - include signature values
+            throw new IllegalArgumentException(
+                    "Checksum algorithm not supported - cannot be used to validate object. Supported algorithms: "
+                            + this.hsil.supportedHashAlgorithms);
         }
 
         // Generate tmp file and write to it
@@ -124,9 +143,9 @@ public class HashFileStore {
         Map<String, String> hexDigests = this.hsil.writeToTmpFileAndGenerateChecksums(tmpFile, object,
                 additionalAlgorithm);
 
-        // Validate object if algorithm and checksum is passed
+        // Validate object if checksum and checksum algorithm is passed
         if (additionalAlgorithm != null && checksum != null) {
-            String digestFromHexDigests = hexDigests.get(additionalAlgorithm);
+            String digestFromHexDigests = hexDigests.get(checksumAlgorithm);
             if (checksum != digestFromHexDigests) {
                 tmpFile.delete();
                 // TODO: Log failure - include signature values
