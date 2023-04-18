@@ -96,22 +96,22 @@ public class HashUtil {
     /**
      * Given a string and supported algorithm returns the hex digest
      * 
-     * @param abId
+     * @param string    authority based identifier or persistent identifier
      * @param algorithm
      * @return
      * @throws NoSuchAlgorithmException
      */
-    public String getHexDigest(String abId, String algorithm) throws NoSuchAlgorithmException {
+    public String getHexDigest(String string, String algorithm) throws NoSuchAlgorithmException {
         boolean algorithmSupported = this.validateAlgorithm(algorithm);
         if (!algorithmSupported) {
             throw new IllegalArgumentException(
                     "Algorithm not supported. Supported algorithms: " + this.supportedHashAlgorithms);
         }
-        MessageDigest abIdMessageDigest = MessageDigest.getInstance(algorithm);
-        byte[] bytes = abId.getBytes(StandardCharsets.UTF_8);
-        abIdMessageDigest.update(bytes);
-        String abIdDigest = DatatypeConverter.printHexBinary(abIdMessageDigest.digest()).toLowerCase();
-        return abIdDigest;
+        MessageDigest stringMessageDigest = MessageDigest.getInstance(algorithm);
+        byte[] bytes = string.getBytes(StandardCharsets.UTF_8);
+        stringMessageDigest.update(bytes);
+        String stringDigest = DatatypeConverter.printHexBinary(stringMessageDigest.digest()).toLowerCase();
+        return stringDigest;
     }
 
     /**
