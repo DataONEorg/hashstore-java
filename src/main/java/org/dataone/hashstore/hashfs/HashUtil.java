@@ -65,7 +65,7 @@ public class HashUtil {
 
     /**
      * Create a list of 'depth' number of tokens with 'width' with the last item
-     * being the remainder of the digest, and return a String path
+     * being the remainder of the digest, delimited by "/"
      * 
      * @param depth
      * @param width
@@ -89,8 +89,8 @@ public class HashUtil {
                 stringArray.add(str);
             }
         }
-        String shardedPath = "/" + String.join("/", stringArray);
-        return shardedPath;
+        String stringShard = "/" + String.join("/", stringArray);
+        return stringShard;
     }
 
     /**
@@ -116,7 +116,9 @@ public class HashUtil {
 
     /**
      * Write the input stream into a given file (tmpFile) and return a HashMap
-     * consisting of algorithms and their respective hex digests
+     * consisting of algorithms and their respective hex digests. If an additional
+     * algorithm is supplied and supported, it and its checksum value will be
+     * included in the hex digests map.
      * 
      * Default algorithms: MD5, SHA-1, SHA-256, SHA-384, SHA-512
      * 
@@ -192,7 +194,7 @@ public class HashUtil {
     }
 
     /**
-     * Moves an object from one directory to another if the object does not exist
+     * Moves an object from one location to another if the object does not exist
      * 
      * @param source
      * @param target

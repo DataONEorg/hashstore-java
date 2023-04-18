@@ -39,7 +39,7 @@ public class HashStore {
      * Store an object to the storeDirectory.
      * 
      * The permanent address is the SHA256 hex digest of a given string that
-     * represents an authority based identifer (pid).
+     * represents an authority based identifer (ex. pid)
      * 
      * Returns a HashAddress object that contains the file id, relative path,
      * absolute path, duplicate status and a checksum map based on a default

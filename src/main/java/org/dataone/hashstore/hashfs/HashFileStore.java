@@ -98,12 +98,13 @@ public class HashFileStore {
 
     /**
      * Takes a given input stream and writes it to its permanent address on disk
-     * based on the SHA-256 hex digest value of a persistent identifier (pid).
+     * based on the SHA-256 hex digest value of an authority based identifier,
+     * which is usually a persistent identifier (pid).
      * 
      * If an additional algorithm is provided and supported, its respective hex
-     * digest value will be included in hexDigests. If a checksum and
-     * checksumAlgorithm is provided, HashFileStore will attempt to validate the
-     * checksum against the hex digest produced of the supplied algorithm.
+     * digest value will be included in hexDigests map. If a checksum and
+     * checksumAlgorithm is provided, HashFileStore will validate the given
+     * checksum against the hex digest produced of the supplied checksumAlgorithm.
      * 
      * Returns a HashAddress object that contains the file id, relative path,
      * absolute path, duplicate status and a checksum map based on the default
