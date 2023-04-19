@@ -47,17 +47,20 @@ public class HashUtil {
      * @param directory
      * @return
      * @throws IOException
+     * @throws SecurityException
      */
-    public File generateTmpFile(String prefix, File directory) throws IOException {
+    public File generateTmpFile(String prefix, File directory) throws IOException, SecurityException {
         String newPrefix = prefix + "-" + System.currentTimeMillis();
         String suffix = null;
         File newFile = null;
         try {
             newFile = File.createTempFile(newPrefix, suffix, directory);
-        } catch (Exception e) {
-            // try again if the first time fails
-            newFile = File.createTempFile(newPrefix, suffix, directory);
-            // TODO: Log Exception e
+        } catch (IOException ioe) {
+            // TODO: Log Exception ioe
+            throw new IOException("Unable to generate tmpFile. IOException: " + ioe.getMessage());
+        } catch (SecurityException se) {
+            // TODO: Log Exception se
+            throw new SecurityException("File not allowed (security manager exists): " + se.getMessage());
         }
         // TODO: Log - newFile.getCanonicalPath());
         return newFile;

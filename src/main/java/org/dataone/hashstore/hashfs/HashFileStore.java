@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
+import java.security.Security;
 import java.util.Map;
 
 /**
@@ -88,10 +89,11 @@ public class HashFileStore {
      * @return
      * @throws IOException
      * @throws NoSuchAlgorithmException
+     * @throws SecurityException
      */
     public HashAddress putObject(InputStream object, String abId, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
-            throws IOException, NoSuchAlgorithmException {
+            throws IOException, NoSuchAlgorithmException, SecurityException {
         HashAddress hashad = this.put(object, abId, additionalAlgorithm, checksum, checksumAlgorithm);
         return hashad;
     }
@@ -119,10 +121,11 @@ public class HashFileStore {
      * @return
      * @throws IOException
      * @throws NoSuchAlgorithmException
+     * @throws SecurityException
      */
     protected HashAddress put(InputStream object, String abId, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
-            throws IOException, NoSuchAlgorithmException {
+            throws IOException, NoSuchAlgorithmException, SecurityException {
         // Cannot generate additional algorithm if it is not supported
         boolean algorithmSupported = this.hsil.validateAlgorithm(additionalAlgorithm);
         boolean checksumAlgorithmSupported = this.hsil.validateAlgorithm(checksumAlgorithm);
