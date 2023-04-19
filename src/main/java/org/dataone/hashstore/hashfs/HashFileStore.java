@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -34,7 +35,7 @@ public class HashFileStore {
      * @param depth
      * @param width
      * @param algorithm
-     * @param storeDirectory Full file path (ex. /usr/org/)
+     * @param storeDirectory Desired absolute file path (ex. /usr/org/)
      * @throws IllegalArgumentException
      * @throws IOException
      */
@@ -54,10 +55,6 @@ public class HashFileStore {
                             this.hsil.supportedHashAlgorithms);
         }
 
-        this.directoryDepth = depth;
-        this.directoryWidth = width;
-        this.objectStoreAlgorithm = algorithm;
-
         // If no path provided, create default path with user.dir root + /HashFileStore
         if (storeDirectory == null || storeDirectory == "") {
             String rootDirectory = System.getProperty("user.dir");
@@ -66,9 +63,9 @@ public class HashFileStore {
         } else {
             this.objectStoreDirectory = Paths.get(storeDirectory).resolve("objects");
         }
+        // Resolve tmp object directory path
         this.tmpFileDirectory = this.objectStoreDirectory.resolve("tmp");
-
-        // Create store and tmp directory
+        // Physically create store and tmp directory
         try {
             Files.createDirectories(this.objectStoreDirectory);
             Files.createDirectories(this.tmpFileDirectory);
@@ -76,26 +73,34 @@ public class HashFileStore {
             // TODO: Log IO exeption failure, e
             throw e;
         }
+        // Finalize instance variables
+        this.directoryDepth = depth;
+        this.directoryWidth = width;
+        this.objectStoreAlgorithm = algorithm;
     }
 
     /**
      * Stores a file to the Hash File Store.
      * 
      * @param object
-     * @param abId
+     * @param pid                 authority based identifer
      * @param additionalAlgorithm
      * @param checksum
      * @param checksumAlgorithm
      * 
-     * @return
+     * @return Hash address with id, relpath, abspath, duplicate status & hex
+     *         digests
      * @throws IOException
      * @throws NoSuchAlgorithmException
      * @throws SecurityException
+     * @throws FileNotFoundException
+     * @throws FileAlreadyExistsException
      */
-    public HashAddress putObject(InputStream object, String abId, String additionalAlgorithm, String checksum,
+    public HashAddress putObject(InputStream object, String pid, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
-            throws IOException, NoSuchAlgorithmException, SecurityException {
-        HashAddress hashad = this.put(object, abId, additionalAlgorithm, checksum, checksumAlgorithm);
+            throws IOException, NoSuchAlgorithmException, SecurityException, FileNotFoundException,
+            FileAlreadyExistsException {
+        HashAddress hashad = this.put(object, pid, additionalAlgorithm, checksum, checksumAlgorithm);
         return hashad;
     }
 
@@ -109,25 +114,25 @@ public class HashFileStore {
      * checksumAlgorithm is provided, HashFileStore will validate the given
      * checksum against the hex digest produced of the supplied checksumAlgorithm.
      * 
-     * Returns a HashAddress object that contains the file id, relative path,
-     * absolute path, duplicate status and a checksum map based on the default
-     * algorithm list.
-     * 
      * @param object
-     * @param abId                authority based identifier
+     * @param pid                 authority based identifier
      * @param additionalAlgorithm optional checksum value to generate in hex digests
      * @param checksum
      * @param checksumAlgorithm
      * 
-     * @return
+     * @return A HashAddress object that contains the file id, relative path,
+     *         absolute path, duplicate status and a checksum map based on the
+     *         default algorithm list.
      * @throws IOException
      * @throws NoSuchAlgorithmException
      * @throws SecurityException
      * @throws FileNotFoundException
+     * @throws FileAlreadyExistsException
      */
-    protected HashAddress put(InputStream object, String abId, String additionalAlgorithm, String checksum,
+    protected HashAddress put(InputStream object, String pid, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
-            throws IOException, NoSuchAlgorithmException, SecurityException, FileNotFoundException {
+            throws IOException, NoSuchAlgorithmException, SecurityException, FileNotFoundException,
+            FileAlreadyExistsException {
         // Cannot generate additional algorithm if it is not supported
         boolean algorithmSupported = this.hsil.validateAlgorithm(additionalAlgorithm);
         boolean checksumAlgorithmSupported = this.hsil.validateAlgorithm(checksumAlgorithm);
@@ -142,6 +147,16 @@ public class HashFileStore {
             throw new IllegalArgumentException(
                     "Checksum algorithm not supported - cannot be used to validate object. Supported algorithms: "
                             + this.hsil.supportedHashAlgorithms);
+        }
+
+        // Gather HashAddress elements and prepare object permanent address
+        String objAuthorityId = this.hsil.getHexDigest(pid, this.objectStoreAlgorithm);
+        String objShardString = this.hsil.shard(directoryDepth, directoryWidth, objAuthorityId);
+        String objAbsolutePathString = this.objectStoreDirectory.toString() + objShardString;
+        // If file (pid hash) exists, reject request immediately
+        File objHashAddress = new File(objAbsolutePathString);
+        if (objHashAddress.exists()) {
+            throw new FileAlreadyExistsException("File already exists for pid: " + pid);
         }
 
         // Generate tmp file and write to it
@@ -159,26 +174,18 @@ public class HashFileStore {
                         "Checksum supplied does not equal to the calculated hex digest: " + digestFromHexDigests
                                 + "Checksum provided: " + checksum + ". Deleting tmpFile: " + tmpFile.toString());
             }
-
         }
-
-        // Gather HashAddress elements and prepare object permanent address
-        String objAuthorityId = this.hsil.getHexDigest(abId, this.objectStoreAlgorithm);
-        String objRelativePath = this.hsil.shard(directoryDepth, directoryWidth, objAuthorityId);
-        String objAbsolutePath = this.objectStoreDirectory.toString() + objRelativePath;
-        File objHashAddress = new File(objAbsolutePath);
 
         // Move object
         boolean isDuplicate = this.hsil.move(tmpFile, objHashAddress);
         if (isDuplicate) {
             tmpFile.delete();
             objAuthorityId = null;
-            objRelativePath = null;
-            objAbsolutePath = null;
-            hexDigests = null;
+            objShardString = null;
+            objAbsolutePathString = null;
         }
 
-        HashAddress hashAddress = new HashAddress(objAuthorityId, objRelativePath, objAbsolutePath, isDuplicate,
+        HashAddress hashAddress = new HashAddress(objAuthorityId, objShardString, objAbsolutePathString, isDuplicate,
                 hexDigests);
         return hashAddress;
     }

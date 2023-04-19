@@ -1,7 +1,9 @@
 package org.dataone.hashstore;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.FileAlreadyExistsException;
 import java.security.NoSuchAlgorithmException;
 
 import org.dataone.hashstore.hashfs.HashAddress;
@@ -55,19 +57,30 @@ public class HashStore {
      * @throws NoSuchAlgorithmException
      * @throws IOException
      * @throws SecurityException
+     * @throws FileNotFoundException
+     * @throws FileAlreadyExistsException
      */
     public HashAddress storeObject(String pid, InputStream data, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
-            throws NoSuchAlgorithmException, IOException, SecurityException {
+            throws NoSuchAlgorithmException, IOException, SecurityException, FileNotFoundException,
+            FileAlreadyExistsException {
         try {
             HashAddress objInfo = this.hashfs.putObject(data, pid, additionalAlgorithm, checksum, checksumAlgorithm);
             return objInfo;
         } catch (NoSuchAlgorithmException nsae) {
             // TODO: Log failure - include signature values, nsae
             throw nsae;
+        } catch (FileAlreadyExistsException faee) {
+            // TODO: Log failure - include signature values, faee
+            throw faee;
+        } catch (FileNotFoundException fnfe) {
+            // TODO: Log failure - include signature values, fnfe
+            throw fnfe;
         } catch (IOException ioe) {
+            // TODO: Log failure - include signature values, ioe
             throw ioe;
         } catch (SecurityException se) {
+            // TODO: Log failure - include signature values, se
             throw se;
         }
     }
