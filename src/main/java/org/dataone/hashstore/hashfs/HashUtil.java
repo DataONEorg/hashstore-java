@@ -1,10 +1,12 @@
 package org.dataone.hashstore.hashfs;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -30,7 +32,7 @@ public class HashUtil {
      * variable supportedHashAlgorithms
      * 
      * @param algorithm
-     * @return
+     * @return boolean that describes whether an algorithm is supported
      */
     public boolean validateAlgorithm(String algorithm) {
         if (!Arrays.asList(this.supportedHashAlgorithms).contains(algorithm) && algorithm != null) {
@@ -45,7 +47,8 @@ public class HashUtil {
      * 
      * @param prefix
      * @param directory
-     * @return
+     * 
+     * @return Temporary file (File) ready to write into
      * @throws IOException
      * @throws SecurityException
      */
@@ -101,11 +104,16 @@ public class HashUtil {
      * 
      * @param string    authority based identifier or persistent identifier
      * @param algorithm
-     * @return
+     * 
+     * @return Hex digest of the given string in lower-case
      * @throws NoSuchAlgorithmException
      */
     public String getHexDigest(String string, String algorithm) throws NoSuchAlgorithmException {
         boolean algorithmSupported = this.validateAlgorithm(algorithm);
+        if (algorithm == null || algorithm == "" | string == null || string == "") {
+            throw new IllegalArgumentException(
+                    "Algorithm and string cannot be null or empty: ");
+        }
         if (!algorithmSupported) {
             throw new IllegalArgumentException(
                     "Algorithm not supported. Supported algorithms: " + this.supportedHashAlgorithms);
@@ -128,16 +136,26 @@ public class HashUtil {
      * @param tmpFile
      * @param dataStream
      * @param additionalAlgorithm
-     * @return
+     * 
+     * @return A map containing the hex digests of the default algorithms
      * @throws NoSuchAlgorithmException
      * @throws IOException
+     * @throws SecurityException
+     * @throws FileNotFoundException
      */
     protected Map<String, String> writeToTmpFileAndGenerateChecksums(File tmpFile, InputStream dataStream,
-            String additionalAlgorithm) throws NoSuchAlgorithmException, IOException {
-        boolean algorithmSupported = this.validateAlgorithm(additionalAlgorithm);
-        if (!algorithmSupported) {
+            String additionalAlgorithm)
+            throws NoSuchAlgorithmException, IOException, FileNotFoundException, SecurityException {
+        if (additionalAlgorithm == "") {
             throw new IllegalArgumentException(
-                    "Algorithm not supported. Supported algorithms: " + this.supportedHashAlgorithms);
+                    "Additional algorithm cannot be empty");
+        }
+        if (additionalAlgorithm != null) {
+            boolean algorithmSupported = this.validateAlgorithm(additionalAlgorithm);
+            if (!algorithmSupported) {
+                throw new IllegalArgumentException(
+                        "Algorithm not supported. Supported algorithms: " + this.supportedHashAlgorithms);
+            }
         }
 
         MessageDigest extraAlgo = null;
@@ -201,10 +219,11 @@ public class HashUtil {
      * 
      * @param source
      * @param target
-     * @return
+     * 
+     * @return boolean to confirm file is not a duplicate
      * @throws IOException
      */
-    protected boolean move(File source, File target) throws IOException {
+    protected boolean move(File source, File target) throws IOException, SecurityException {
         boolean isDuplicate = false;
         if (target.exists()) {
             isDuplicate = true;
@@ -221,6 +240,9 @@ public class HashUtil {
             Path targetFilePath = target.toPath();
             try {
                 Files.move(sourceFilePath, targetFilePath, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException amnse) {
+                // TODO: Log exception and specify atomic_move not possible
+                Files.move(sourceFilePath, targetFilePath);
             } catch (IOException ioe) {
                 // TODO: Log failure - include signature values, ioe
                 throw ioe;

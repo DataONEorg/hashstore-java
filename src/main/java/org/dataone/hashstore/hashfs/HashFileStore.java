@@ -1,6 +1,7 @@
 package org.dataone.hashstore.hashfs;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -122,10 +123,11 @@ public class HashFileStore {
      * @throws IOException
      * @throws NoSuchAlgorithmException
      * @throws SecurityException
+     * @throws FileNotFoundException
      */
     protected HashAddress put(InputStream object, String abId, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
-            throws IOException, NoSuchAlgorithmException, SecurityException {
+            throws IOException, NoSuchAlgorithmException, SecurityException, FileNotFoundException {
         // Cannot generate additional algorithm if it is not supported
         boolean algorithmSupported = this.hsil.validateAlgorithm(additionalAlgorithm);
         boolean checksumAlgorithmSupported = this.hsil.validateAlgorithm(checksumAlgorithm);
