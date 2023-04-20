@@ -23,7 +23,7 @@ public class HashAddressTest {
      * Initialize HashAddress variables for test efficiency purposes
      */
     @Before
-    public void initializeHashFileStore() {
+    public void initializeInstanceVariables() {
         this.id = "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
         this.relpath = "/rel/test/directory";
         this.abspath = "/abs/test/directory";
@@ -36,7 +36,6 @@ public class HashAddressTest {
                 "a204678330fcdc04980c9327d4e5daf01ab7541e8a351d49a7e9c5005439dce749ada39c4c35f573dd7d307cca11bea8");
         this.hexDigests.put("sha512",
                 "bf9e7f4d4e66bd082817d87659d1d57c2220c376cd032ed97cadd481cf40d78dd479cbed14d34d98bae8cebc603b40c633d088751f07155a94468aa59e2ad109");
-
     }
 
     /**
