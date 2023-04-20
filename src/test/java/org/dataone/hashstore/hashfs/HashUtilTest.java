@@ -39,25 +39,6 @@ public class HashUtilTest {
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
     /**
-     * Confirm that a temporary file has been generated.
-     */
-    @Test
-    public void testGenerateTemporaryFile() throws Exception {
-        File newTmpFile = generateTemporaryFile();
-        assertTrue(newTmpFile.exists());
-    }
-
-    /**
-     * Confirm that a digest is sharded appropriately
-     */
-    @Test
-    public void testShardHexDigest() {
-        String shardedPath = this.hsil.shard(3, 2, "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a");
-        String shardedPathExpected = "/94/f9/b6/c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
-        assertEquals(shardedPath, shardedPathExpected);
-    }
-
-    /**
      * Check algorithm support for supported algorithm
      */
     @Test
@@ -86,6 +67,25 @@ public class HashUtilTest {
         String md2_lowercase = "md2";
         boolean lowercase_not_supported = this.hsil.validateAlgorithm(md2_lowercase);
         assertFalse(lowercase_not_supported);
+    }
+
+    /**
+     * Confirm that a temporary file has been generated.
+     */
+    @Test
+    public void testGenerateTemporaryFile() throws Exception {
+        File newTmpFile = generateTemporaryFile();
+        assertTrue(newTmpFile.exists());
+    }
+
+    /**
+     * Confirm that a digest is sharded appropriately
+     */
+    @Test
+    public void testShardHexDigest() {
+        String shardedPath = this.hsil.shard(3, 2, "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a");
+        String shardedPathExpected = "/94/f9/b6/c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
+        assertEquals(shardedPath, shardedPathExpected);
     }
 
     /**
@@ -136,34 +136,7 @@ public class HashUtilTest {
     }
 
     /**
-     * Check that additional algorithm is generated and correct
-     */
-    @Test
-    public void testWriteToTempFileAndGenerateChecksumsAddAlgo() throws Exception {
-        for (String pid : this.testData.pidList) {
-            File newTmpFile = generateTemporaryFile();
-            String pidFormatted = pid.replace("/", "_");
-
-            // Get test file
-            Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pidFormatted);
-            String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-            File testDataFile = new File(testdataAbsolutePath);
-
-            // Extra algo to calculate - MD2
-            String addAlgo = "MD2";
-
-            InputStream dataStream = new FileInputStream(testDataFile);
-            Map<String, String> hexDigests = this.hsil.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream,
-                    addAlgo);
-
-            // Validate additional algorithm
-            String md2 = this.testData.pidData.get(pid).get("md2");
-            assertEquals(md2, hexDigests.get("MD2"));
-        }
-    }
-
-    /**
-     * Check that the temporary file is not empty
+     * Check that the temporary file that has been written into is not empty
      */
     @Test
     public void testWriteToTempFileAndGenerateChecksumsTmpFileSize() throws Exception {
@@ -187,6 +160,33 @@ public class HashUtilTest {
             Path tmpFilePath = newTmpFile.toPath();
             long tmpFileSize = Files.size(tmpFilePath);
             assertEquals(testDataFileSize, tmpFileSize);
+        }
+    }
+
+    /**
+     * Check that additional algorithm is generated and correct
+     */
+    @Test
+    public void testWriteToTempFileAndGenerateChecksumsAddAlgo() throws Exception {
+        for (String pid : this.testData.pidList) {
+            File newTmpFile = generateTemporaryFile();
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test file
+            Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pidFormatted);
+            String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+            File testDataFile = new File(testdataAbsolutePath);
+
+            // Extra algo to calculate - MD2
+            String addAlgo = "MD2";
+
+            InputStream dataStream = new FileInputStream(testDataFile);
+            Map<String, String> hexDigests = this.hsil.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream,
+                    addAlgo);
+
+            // Validate additional algorithm
+            String md2 = this.testData.pidData.get(pid).get("md2");
+            assertEquals(md2, hexDigests.get("MD2"));
         }
     }
 
