@@ -9,7 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
-import java.security.Security;
 import java.util.Map;
 
 /**
@@ -45,7 +44,7 @@ public class HashFileStore {
         if (depth <= 0 || width <= 0) {
             throw new IllegalArgumentException("Depth and width must be greater than 0.");
         }
-        if (algorithm == null || algorithm.isEmpty()) {
+        if (algorithm == null || algorithm == "") {
             throw new IllegalArgumentException("Algorithm cannot be null or empty.");
         }
         boolean algorithmSupported = this.hsil.validateAlgorithm(algorithm);
@@ -95,11 +94,12 @@ public class HashFileStore {
      * @throws SecurityException
      * @throws FileNotFoundException
      * @throws FileAlreadyExistsException
+     * @throws IllegalArgumentException
      */
     public HashAddress putObject(InputStream object, String pid, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
             throws IOException, NoSuchAlgorithmException, SecurityException, FileNotFoundException,
-            FileAlreadyExistsException {
+            FileAlreadyExistsException, IllegalArgumentException {
         HashAddress hashad = this.put(object, pid, additionalAlgorithm, checksum, checksumAlgorithm);
         return hashad;
     }
@@ -128,24 +128,38 @@ public class HashFileStore {
      * @throws SecurityException
      * @throws FileNotFoundException
      * @throws FileAlreadyExistsException
+     * @throws IllegalArgumentException
      */
     protected HashAddress put(InputStream object, String pid, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
             throws IOException, NoSuchAlgorithmException, SecurityException, FileNotFoundException,
-            FileAlreadyExistsException {
+            FileAlreadyExistsException, IllegalArgumentException {
+        // pid cannot be empty or null
+        if (pid == null || pid == "") {
+            // TODO: Log failure - include signature values
+            throw new IllegalArgumentException("The pid cannot be null or empty");
+        }
+
+        // Checksum cannot be empty of checksumAlgorithm is passed
+        if (checksumAlgorithm != null & checksum == "") {
+            // TODO: Log failure - include signature values
+            throw new IllegalArgumentException("Checksum cannot be null or empty");
+        }
         // Cannot generate additional algorithm if it is not supported
         boolean algorithmSupported = this.hsil.validateAlgorithm(additionalAlgorithm);
         boolean checksumAlgorithmSupported = this.hsil.validateAlgorithm(checksumAlgorithm);
         if (!algorithmSupported) {
             // TODO: Log failure - include signature values
             throw new IllegalArgumentException(
-                    "Additional algorithm not supported - unable to generate additional hex digest value. Supported algorithms: "
+                    "Additional algorithm not supported - unable to generate additional hex digest value. additionalAlgorithm: "
+                            + additionalAlgorithm + ". Supported algorithms: "
                             + this.hsil.supportedHashAlgorithms);
         }
         if (!checksumAlgorithmSupported) {
             // TODO: Log failure - include signature values
             throw new IllegalArgumentException(
-                    "Checksum algorithm not supported - cannot be used to validate object. Supported algorithms: "
+                    "Checksum algorithm not supported - cannot be used to validate object. checksumAlgorithm: "
+                            + checksumAlgorithm + ". Supported algorithms: "
                             + this.hsil.supportedHashAlgorithms);
         }
 
@@ -153,8 +167,8 @@ public class HashFileStore {
         String objAuthorityId = this.hsil.getHexDigest(pid, this.objectStoreAlgorithm);
         String objShardString = this.hsil.shard(directoryDepth, directoryWidth, objAuthorityId);
         String objAbsolutePathString = this.objectStoreDirectory.toString() + objShardString;
-        // If file (pid hash) exists, reject request immediately
         File objHashAddress = new File(objAbsolutePathString);
+        // If file (pid hash) exists, reject request immediately
         if (objHashAddress.exists()) {
             throw new FileAlreadyExistsException("File already exists for pid: " + pid);
         }
@@ -185,6 +199,7 @@ public class HashFileStore {
             objAbsolutePathString = null;
         }
 
+        // Create HashAddress object to return with pertinent data
         HashAddress hashAddress = new HashAddress(objAuthorityId, objShardString, objAbsolutePathString, isDuplicate,
                 hexDigests);
         return hashAddress;

@@ -255,6 +255,56 @@ public class HashFileStoreTest {
     }
 
     /**
+     * Verify exception thrown when checksum provided does not match
+     */
+    public void testPutCorrectChecksumValue() throws Exception {
+        // Get test file to "upload"
+        String pid = "jtao.1700.1";
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
+        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+        File testDataFile = new File(testdataAbsolutePath);
+
+        String checksumCorrect = "9c25df1c8ba1d2e57bb3fd4785878b85";
+        InputStream dataStream = new FileInputStream(testDataFile);
+        HashAddress address = hfs.putObject(dataStream, pid, "MD2", checksumCorrect, "MD2");
+
+        String md2 = this.testData.pidData.get(pid).get("md2");
+        assertEquals(checksumCorrect, md2);
+    }
+
+    /**
+     * Verify exception thrown when checksum provided does not match
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testPutIncorrectChecksumValue() throws Exception {
+        // Get test file to "upload"
+        String pid = "jtao.1700.1";
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
+        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+        File testDataFile = new File(testdataAbsolutePath);
+
+        String checksumIncorrect = "1c25df1c8ba1d2e57bb3fd4785878b85";
+        InputStream dataStream = new FileInputStream(testDataFile);
+        HashAddress address = hfs.putObject(dataStream, pid, "MD2", checksumIncorrect, "MD2");
+    }
+
+    /**
+     * Verify exception thrown when checksum is empty and algorithm supported
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testPutEmptyChecksumValue() throws Exception {
+        // Get test file to "upload"
+        String pid = "jtao.1700.1";
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
+        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+        File testDataFile = new File(testdataAbsolutePath);
+
+        String checksumEmpty = "";
+        InputStream dataStream = new FileInputStream(testDataFile);
+        HashAddress address = hfs.putObject(dataStream, pid, "MD2", checksumEmpty, "MD2");
+    }
+
+    /**
      * Verify that putObject throws exception when storing a duplicate object
      */
     @Test(expected = FileAlreadyExistsException.class)
@@ -293,29 +343,12 @@ public class HashFileStoreTest {
     }
 
     /**
-     * Verify exception thrown when checksum provided does not match
-     */
-    public void testPutCorrectChecksumValue() throws Exception {
-        // Get test file to "upload"
-        String pid = "jtao.1700.1";
-        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
-        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-        File testDataFile = new File(testdataAbsolutePath);
-
-        String checksumCorrect = "9c25df1c8ba1d2e57bb3fd4785878b85";
-        InputStream dataStream = new FileInputStream(testDataFile);
-        HashAddress address = hfs.putObject(dataStream, pid, "MD2", checksumCorrect, "MD2");
-
-        String md2 = this.testData.pidData.get(pid).get("md2");
-        assertEquals(checksumCorrect, md2);
-    }
-
-    /**
-     * Verify exception thrown when checksum provided does not match
+     * Verify exception thrown when pid is empty
      */
     @Test(expected = IllegalArgumentException.class)
-    public void testPutIncorrectChecksumValue() throws Exception {
+    public void testPutEmptyPid() throws Exception {
         // Get test file to "upload"
+        String pidEmpty = "";
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
         String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
@@ -323,6 +356,23 @@ public class HashFileStoreTest {
 
         String checksumIncorrect = "1c25df1c8ba1d2e57bb3fd4785878b85";
         InputStream dataStream = new FileInputStream(testDataFile);
-        HashAddress address = hfs.putObject(dataStream, pid, "MD2", checksumIncorrect, "MD2");
+        HashAddress address = hfs.putObject(dataStream, pidEmpty, "MD2", checksumIncorrect, "MD2");
+    }
+
+    /**
+     * Verify exception thrown when pid is null
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testPutNullPid() throws Exception {
+        // Get test file to "upload"
+        String pidNull = null;
+        String pid = "jtao.1700.1";
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
+        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+        File testDataFile = new File(testdataAbsolutePath);
+
+        String checksumIncorrect = "1c25df1c8ba1d2e57bb3fd4785878b85";
+        InputStream dataStream = new FileInputStream(testDataFile);
+        HashAddress address = hfs.putObject(dataStream, pidNull, "MD2", checksumIncorrect, "MD2");
     }
 }
