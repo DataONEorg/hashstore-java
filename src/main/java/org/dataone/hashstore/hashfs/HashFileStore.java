@@ -79,7 +79,8 @@ public class HashFileStore {
     }
 
     /**
-     * Stores a file to the Hash File Store.
+     * Put an object from a given InputStream to this.objectStoreDirectory
+     * Encapsulates this.put()
      * 
      * @param object
      * @param pid                 authority based identifer
@@ -100,8 +101,8 @@ public class HashFileStore {
             String checksumAlgorithm)
             throws IOException, NoSuchAlgorithmException, SecurityException, FileNotFoundException,
             FileAlreadyExistsException, IllegalArgumentException {
-        HashAddress hashad = this.put(object, pid, additionalAlgorithm, checksum, checksumAlgorithm);
-        return hashad;
+        HashAddress hashAddress = this.put(object, pid, additionalAlgorithm, checksum, checksumAlgorithm);
+        return hashAddress;
     }
 
     /**
@@ -140,7 +141,7 @@ public class HashFileStore {
             throw new IllegalArgumentException("The pid cannot be null or empty");
         }
 
-        // Checksum cannot be empty of checksumAlgorithm is passed
+        // Checksum cannot be empty if checksumAlgorithm is passed
         if (checksumAlgorithm != null & checksum == "") {
             // TODO: Log failure - include signature values
             throw new IllegalArgumentException("Checksum cannot be null or empty");
