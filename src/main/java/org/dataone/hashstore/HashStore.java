@@ -59,14 +59,18 @@ public class HashStore {
      * @throws SecurityException
      * @throws FileNotFoundException
      * @throws FileAlreadyExistsException
+     * @throws IllegalArgumentException
      */
     public HashAddress storeObject(String pid, InputStream data, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
             throws NoSuchAlgorithmException, IOException, SecurityException, FileNotFoundException,
-            FileAlreadyExistsException {
+            FileAlreadyExistsException, IllegalArgumentException {
         try {
             HashAddress objInfo = this.hashfs.putObject(data, pid, additionalAlgorithm, checksum, checksumAlgorithm);
             return objInfo;
+        } catch (IllegalArgumentException iae) {
+            // TODO: Log failure - include signature values, nsae
+            throw iae;
         } catch (NoSuchAlgorithmException nsae) {
             // TODO: Log failure - include signature values, nsae
             throw nsae;
