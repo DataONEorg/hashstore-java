@@ -188,6 +188,51 @@ public class HashStoreTest {
     }
 
     /**
+     * Check that store object throws exception when object is null
+     */
+    @Test(expected = NullPointerException.class)
+    public void testStoreObjectNull() throws Exception {
+        String pid = "j.tao.1700.1";
+        HashAddress objInfo = hsj.storeObject(null, pid, null, null, null);
+    }
+
+    /**
+     * Check that store object throws exception when pid is null
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testStoreNullPid() throws Exception {
+        for (String pid : this.testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
+                    "testdata", pidFormatted);
+            String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+            File testDataFile = new File(testdataAbsolutePath);
+
+            InputStream dataStream = new FileInputStream(testDataFile);
+            HashAddress objInfo = hsj.storeObject(dataStream, null, null, null, null);
+
+        }
+    }
+
+    /**
+     * Check that store object throws exception when pid is empty
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testStoreEmptyPid() throws Exception {
+        for (String pid : this.testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
+                    "testdata", pidFormatted);
+            String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+            File testDataFile = new File(testdataAbsolutePath);
+
+            InputStream dataStream = new FileInputStream(testDataFile);
+            HashAddress objInfo = hsj.storeObject(dataStream, "", null, null, null);
+
+        }
+    }
+
+    /**
      * Check that store object throws FileAlreadyExists error when storing duplicate
      * object
      */

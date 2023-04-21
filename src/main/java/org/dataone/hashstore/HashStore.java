@@ -86,7 +86,7 @@ public class HashStore {
                 try {
                     objectLockedIds.wait(TIME_OUT_MILLISEC);
                 } catch (InterruptedException ie) {
-                    // TODO: Log failure - include signature values, nsae
+                    // TODO: Log failure - include signature values, ie
                     throw ie;
                 }
             }
@@ -96,8 +96,11 @@ public class HashStore {
         try {
             HashAddress objInfo = this.hashfs.putObject(object, pid, additionalAlgorithm, checksum, checksumAlgorithm);
             return objInfo;
+        } catch (NullPointerException npe) {
+            // TODO: Log failure - include signature values, npe
+            throw npe;
         } catch (IllegalArgumentException iae) {
-            // TODO: Log failure - include signature values, nsae
+            // TODO: Log failure - include signature values, iae
             throw iae;
         } catch (NoSuchAlgorithmException nsae) {
             // TODO: Log failure - include signature values, nsae
