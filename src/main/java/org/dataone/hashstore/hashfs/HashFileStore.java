@@ -118,8 +118,8 @@ public class HashFileStore {
      * @param object
      * @param pid                 authority based identifier
      * @param additionalAlgorithm optional checksum value to generate in hex digests
-     * @param checksum
-     * @param checksumAlgorithm
+     * @param checksum            value of checksum to validate against
+     * @param checksumAlgorithm   algorithm of checksum submitted
      * 
      * @return A HashAddress object that contains the file id, relative path,
      *         absolute path, duplicate status and a checksum map based on the
