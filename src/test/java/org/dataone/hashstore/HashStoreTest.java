@@ -14,6 +14,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.dataone.hashstore.hashfs.HashAddress;
 import org.dataone.hashstore.hashfs.HashUtil;
@@ -81,7 +86,7 @@ public class HashStoreTest {
             File testDataFile = new File(testdataAbsolutePath);
 
             InputStream dataStream = new FileInputStream(testDataFile);
-            HashAddress objInfo = hsj.storeObject(pid, dataStream, null, null, null);
+            HashAddress objInfo = hsj.storeObject(dataStream, pid, null, null, null);
 
             // Check id (sha-256 hex digest of the ab_id, aka s_cid)
             String objAuthorityId = this.testData.pidData.get(pid).get("s_cid");
@@ -102,7 +107,7 @@ public class HashStoreTest {
             File testDataFile = new File(testdataAbsolutePath);
 
             InputStream dataStream = new FileInputStream(testDataFile);
-            HashAddress objInfo = hsj.storeObject(pid, dataStream, null, null, null);
+            HashAddress objInfo = hsj.storeObject(dataStream, pid, null, null, null);
 
             // Check relative path
             String objAuthorityId = this.testData.pidData.get(pid).get("s_cid");
@@ -124,7 +129,7 @@ public class HashStoreTest {
             File testDataFile = new File(testdataAbsolutePath);
 
             InputStream dataStream = new FileInputStream(testDataFile);
-            HashAddress objInfo = hsj.storeObject(pid, dataStream, null, null, null);
+            HashAddress objInfo = hsj.storeObject(dataStream, pid, null, null, null);
 
             // Check absolute path
             File objAbsPath = new File(objInfo.getAbsPath());
@@ -145,7 +150,7 @@ public class HashStoreTest {
             File testDataFile = new File(testdataAbsolutePath);
 
             InputStream dataStream = new FileInputStream(testDataFile);
-            HashAddress objInfo = hsj.storeObject(pid, dataStream, null, null, null);
+            HashAddress objInfo = hsj.storeObject(dataStream, pid, null, null, null);
 
             // Check duplicate status
             assertFalse(objInfo.getIsDuplicate());
@@ -165,7 +170,7 @@ public class HashStoreTest {
             File testDataFile = new File(testdataAbsolutePath);
 
             InputStream dataStream = new FileInputStream(testDataFile);
-            HashAddress objInfo = hsj.storeObject(pid, dataStream, null, null, null);
+            HashAddress objInfo = hsj.storeObject(dataStream, pid, null, null, null);
 
             Map<String, String> hexDigests = objInfo.getHexDigests();
 
@@ -197,10 +202,118 @@ public class HashStoreTest {
             File testDataFile = new File(testdataAbsolutePath);
 
             InputStream dataStream = new FileInputStream(testDataFile);
-            HashAddress objInfo = hsj.storeObject(pid, dataStream, null, null, null);
+            HashAddress objInfo = hsj.storeObject(dataStream, pid, null, null, null);
 
             InputStream dataStreamDup = new FileInputStream(testDataFile);
-            HashAddress objInfoDup = hsj.storeObject(pid, dataStreamDup, null, null, null);
+            HashAddress objInfoDup = hsj.storeObject(dataStreamDup, pid, null, null, null);
+        }
+    }
+
+    /**
+     * Check store object pid lock for duplicate object file exists.
+     * 
+     * Two threads will run concurrently, one of which will encounter an
+     * ExecutionException (which is what is thrown when using Executors)
+     * and the other will store the given object. The HashAddress object that is not
+     * null, checks that the file has been written and moved successfully.
+     */
+    @Test
+    public void testStoreObjectObjectLockedIdsPidFileExists() throws Exception {
+        // Get test file to "upload"
+        String pid = "jtao.1700.1";
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
+        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+        File testDataFile = new File(testdataAbsolutePath);
+
+        // Create a thread pool with 2 threads
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
+
+        // Submit 2 threads, each calling storeObject
+        executorService.submit(() -> {
+            try {
+                InputStream dataStream = new FileInputStream(testDataFile);
+                HashAddress objInfo = hsj.storeObject(dataStream, pid, null, null, null);
+                if (objInfo != null) {
+                    String absPath = objInfo.getAbsPath();
+                    File permAddress = new File(absPath);
+                    assertTrue(permAddress.exists());
+                }
+            } catch (Exception e) {
+                fail("future - Unexpected Exception: " + e.getMessage());
+            }
+        });
+        executorService.submit(() -> {
+            try {
+                InputStream dataStreamDup = new FileInputStream(testDataFile);
+                HashAddress objInfoDup = hsj.storeObject(dataStreamDup, pid, null, null, null);
+                if (objInfoDup != null) {
+                    String absPath = objInfoDup.getAbsPath();
+                    File permAddress = new File(absPath);
+                    assertTrue(permAddress.exists());
+                }
+            } catch (Exception e) {
+                fail("future_dup - Unexpected Exception: " + e.getMessage());
+            }
+        });
+
+        // Wait for all tasks to complete
+        executorService.shutdown();
+        executorService.awaitTermination(1, TimeUnit.MINUTES);
+    }
+
+    /**
+     * Check store object pid lock for duplicate object exception
+     * 
+     * Two futures (threads) will run concurrently, one of which will encounter an
+     * ExecutionException. The future that yields the exception is then parsed to
+     * confirm that a FileAlreadyExistsException was encountered.
+     */
+    @Test(expected = FileAlreadyExistsException.class)
+    public void testStoreObjectObjectLockedIds() throws Exception {
+        // Get test file to "upload"
+        String pid = "jtao.1700.1";
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
+        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+        File testDataFile = new File(testdataAbsolutePath);
+
+        // Create a thread pool with 2 threads
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
+
+        // Submit 2 threads, each calling storeObject
+        Future<?> future = executorService.submit(() -> {
+            try {
+                InputStream dataStream = new FileInputStream(testDataFile);
+                HashAddress objInfo = hsj.storeObject(dataStream, pid, null, null, null);
+            } catch (FileAlreadyExistsException e) {
+                fail("future - FileAlreadyExistsException Exception: " + e.getMessage());
+            } catch (Exception e) {
+                fail("future - Unexpected Exception: " + e.getMessage());
+            }
+        });
+        Future<?> future_dup = executorService.submit(() -> {
+            try {
+                InputStream dataStreamDup = new FileInputStream(testDataFile);
+                HashAddress objInfoDup = hsj.storeObject(dataStreamDup, pid, null, null, null);
+            } catch (FileAlreadyExistsException e) {
+                fail("future_dup - FileAlreadyExistsException Exception: " + e.getMessage());
+            } catch (Exception e) {
+                fail("future_dup - Unexpected Exception: " + e.getMessage());
+            }
+        });
+
+        // Wait for all tasks to complete
+        executorService.shutdown();
+        executorService.awaitTermination(1, TimeUnit.MINUTES);
+
+        // Get exception message and confirm FileAlreadyExistsException
+        try {
+            future.get();
+            future_dup.get();
+        } catch (ExecutionException e) {
+            String cause = e.getMessage();
+            if (cause.contains("FileAlreadyExistsException")) {
+                throw new FileAlreadyExistsException(cause);
+            }
         }
     }
 

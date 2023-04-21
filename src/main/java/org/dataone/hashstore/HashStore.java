@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 
 import org.dataone.hashstore.hashfs.HashAddress;
 import org.dataone.hashstore.hashfs.HashFileStore;
@@ -19,6 +20,9 @@ public class HashStore {
     private String sysmetaNameSpace = "http://ns.dataone.org/service/types/v2.0";
     private String algorithm = "SHA-256";
     private HashFileStore hashfs;
+    private final static int TIME_OUT_MILLISEC = 1000;
+    // Shared class variable amongst all instances
+    private static ArrayList<String> objectLockedIds = new ArrayList<String>(100);
 
     /**
      * Default constructor for HashStore
@@ -47,11 +51,11 @@ public class HashStore {
      * absolute path, duplicate status and a checksum map based on a default
      * algorithm list.
      * 
-     * @param pid
      * @param data
-     * @param additionalAlgorithm
-     * @param checksum
-     * @param checksumAlgorithm
+     * @param pid
+     * @param additionalAlgorithm Additional hex digest to include in hexDigests
+     * @param checksum            Value of checksum to validate against
+     * @param checksumAlgorithm   Algorithm of checksum submitted
      * 
      * @return
      * @throws NoSuchAlgorithmException
@@ -60,11 +64,35 @@ public class HashStore {
      * @throws FileNotFoundException
      * @throws FileAlreadyExistsException
      * @throws IllegalArgumentException
+     * @throws NullPointerException
+     * @throws InterruptedException
      */
-    public HashAddress storeObject(String pid, InputStream data, String additionalAlgorithm, String checksum,
+    public HashAddress storeObject(InputStream data, String pid, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
             throws NoSuchAlgorithmException, IOException, SecurityException, FileNotFoundException,
-            FileAlreadyExistsException, IllegalArgumentException {
+            FileAlreadyExistsException, IllegalArgumentException, NullPointerException, InterruptedException {
+        if (data == null) {
+            throw new NullPointerException("Invalid input stream, data is null.");
+        }
+        if (pid == null || pid == "") {
+            throw new IllegalArgumentException("Pid cannot be null or empty, pid: " + pid);
+        }
+
+        // Lock pid for thread safety, transaction control and atomic writing
+        // A pid can only be stored once and only once, subsequent calls will
+        // be accepted but will be rejected if pid hash object exists
+        synchronized (objectLockedIds) {
+            while (objectLockedIds.contains(pid)) {
+                try {
+                    objectLockedIds.wait(TIME_OUT_MILLISEC);
+                } catch (InterruptedException ie) {
+                    // TODO: Log failure - include signature values, nsae
+                    throw ie;
+                }
+            }
+            objectLockedIds.add(pid);
+        }
+        // Store object
         try {
             HashAddress objInfo = this.hashfs.putObject(data, pid, additionalAlgorithm, checksum, checksumAlgorithm);
             return objInfo;
@@ -86,6 +114,17 @@ public class HashStore {
         } catch (SecurityException se) {
             // TODO: Log failure - include signature values, se
             throw se;
+        } finally {
+            // Release lock
+            try {
+                synchronized (objectLockedIds) {
+                    objectLockedIds.remove(pid);
+                    objectLockedIds.notifyAll();
+                }
+            } catch (RuntimeException re) {
+                // TODO: Log failure - include signature values, re
+                throw re;
+            }
         }
     }
 }
