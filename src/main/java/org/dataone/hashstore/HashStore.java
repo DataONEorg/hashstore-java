@@ -51,7 +51,7 @@ public class HashStore {
      * absolute path, duplicate status and a checksum map based on a default
      * algorithm list.
      * 
-     * @param data
+     * @param object
      * @param pid
      * @param additionalAlgorithm Additional hex digest to include in hexDigests
      * @param checksum            Value of checksum to validate against
@@ -67,11 +67,11 @@ public class HashStore {
      * @throws NullPointerException
      * @throws InterruptedException
      */
-    public HashAddress storeObject(InputStream data, String pid, String additionalAlgorithm, String checksum,
+    public HashAddress storeObject(InputStream object, String pid, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
             throws NoSuchAlgorithmException, IOException, SecurityException, FileNotFoundException,
             FileAlreadyExistsException, IllegalArgumentException, NullPointerException, InterruptedException {
-        if (data == null) {
+        if (object == null) {
             throw new NullPointerException("Invalid input stream, data is null.");
         }
         if (pid == null || pid == "") {
@@ -94,7 +94,7 @@ public class HashStore {
         }
         // Store object
         try {
-            HashAddress objInfo = this.hashfs.putObject(data, pid, additionalAlgorithm, checksum, checksumAlgorithm);
+            HashAddress objInfo = this.hashfs.putObject(object, pid, additionalAlgorithm, checksum, checksumAlgorithm);
             return objInfo;
         } catch (IllegalArgumentException iae) {
             // TODO: Log failure - include signature values, nsae
