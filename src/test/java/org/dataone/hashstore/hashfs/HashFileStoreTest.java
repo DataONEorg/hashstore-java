@@ -375,4 +375,16 @@ public class HashFileStoreTest {
         InputStream dataStream = new FileInputStream(testDataFile);
         HashAddress address = hfs.putObject(dataStream, pidNull, "MD2", checksumIncorrect, "MD2");
     }
+
+    /**
+     * Verify exception thrown when object is null
+     */
+    @Test(expected = NullPointerException.class)
+    public void testPutNullObject() throws Exception {
+        // Get test file to "upload"
+        String pid = "jtao.1700.1";
+
+        String checksumIncorrect = "1c25df1c8ba1d2e57bb3fd4785878b85";
+        HashAddress address = hfs.putObject(null, pid, "MD2", checksumIncorrect, "MD2");
+    }
 }

@@ -130,11 +130,15 @@ public class HashFileStore {
      * @throws FileNotFoundException
      * @throws FileAlreadyExistsException
      * @throws IllegalArgumentException
+     * @throws NullPointerException
      */
     protected HashAddress put(InputStream object, String pid, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
             throws IOException, NoSuchAlgorithmException, SecurityException, FileNotFoundException,
-            FileAlreadyExistsException, IllegalArgumentException {
+            FileAlreadyExistsException, IllegalArgumentException, NullPointerException {
+        if (object == null) {
+            throw new NullPointerException("Invalid input stream, data is null.");
+        }
         // pid cannot be empty or null
         if (pid == null || pid == "") {
             // TODO: Log failure - include signature values
