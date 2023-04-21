@@ -212,13 +212,13 @@ public class HashStoreTest {
     /**
      * Check store object pid lock for duplicate object file exists.
      * 
-     * Two threads will run concurrently, one of which will encounter an
-     * ExecutionException (which is what is thrown when using Executors)
-     * and the other will store the given object. The HashAddress object that is not
-     * null, checks that the file has been written and moved successfully.
+     * Two futures (threads) will run concurrently, one of which will encounter an
+     * ExecutionException, and the other will store the given object. The future
+     * that stores the object successfully (obj != null) is checked to ensure
+     * that the file has been written and moved as intended.
      */
     @Test
-    public void testStoreObjectObjectLockedIdsPidFileExists() throws Exception {
+    public void testStoreObjectObjectLockedIdsPidFileMoved() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
@@ -229,7 +229,7 @@ public class HashStoreTest {
         ExecutorService executorService = Executors.newFixedThreadPool(2);
 
         // Submit 2 threads, each calling storeObject
-        executorService.submit(() -> {
+        Future<?> future = executorService.submit(() -> {
             try {
                 InputStream dataStream = new FileInputStream(testDataFile);
                 HashAddress objInfo = hsj.storeObject(dataStream, pid, null, null, null);
@@ -242,7 +242,7 @@ public class HashStoreTest {
                 fail("future - Unexpected Exception: " + e.getMessage());
             }
         });
-        executorService.submit(() -> {
+        Future<?> future_dup = executorService.submit(() -> {
             try {
                 InputStream dataStreamDup = new FileInputStream(testDataFile);
                 HashAddress objInfoDup = hsj.storeObject(dataStreamDup, pid, null, null, null);
@@ -265,11 +265,11 @@ public class HashStoreTest {
      * Check store object pid lock for duplicate object exception
      * 
      * Two futures (threads) will run concurrently, one of which will encounter an
-     * ExecutionException. The future that yields the exception is then parsed to
-     * confirm that a FileAlreadyExistsException was encountered.
+     * ExecutionException. The future that yields the exception is then checked to
+     * confirm that a FileAlreadyExistsException exception is thrown.
      */
-    @Test(expected = FileAlreadyExistsException.class)
-    public void testStoreObjectObjectLockedIds() throws Exception {
+    @Test
+    public void testStoreObjectObjectLockedIdsFileExistsException() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
@@ -284,37 +284,24 @@ public class HashStoreTest {
             try {
                 InputStream dataStream = new FileInputStream(testDataFile);
                 HashAddress objInfo = hsj.storeObject(dataStream, pid, null, null, null);
-            } catch (FileAlreadyExistsException e) {
-                fail("future - FileAlreadyExistsException Exception: " + e.getMessage());
             } catch (Exception e) {
-                fail("future - Unexpected Exception: " + e.getMessage());
+                Class<?> exceptionClass = e.getClass();
+                assertTrue(exceptionClass == FileAlreadyExistsException.class);
             }
         });
         Future<?> future_dup = executorService.submit(() -> {
             try {
                 InputStream dataStreamDup = new FileInputStream(testDataFile);
                 HashAddress objInfoDup = hsj.storeObject(dataStreamDup, pid, null, null, null);
-            } catch (FileAlreadyExistsException e) {
-                fail("future_dup - FileAlreadyExistsException Exception: " + e.getMessage());
             } catch (Exception e) {
-                fail("future_dup - Unexpected Exception: " + e.getMessage());
+                Class<?> exceptionClass = e.getClass();
+                assertTrue(exceptionClass == FileAlreadyExistsException.class);
             }
         });
 
         // Wait for all tasks to complete
         executorService.shutdown();
         executorService.awaitTermination(1, TimeUnit.MINUTES);
-
-        // Get exception message and confirm FileAlreadyExistsException
-        try {
-            future.get();
-            future_dup.get();
-        } catch (ExecutionException e) {
-            String cause = e.getMessage();
-            if (cause.contains("FileAlreadyExistsException")) {
-                throw new FileAlreadyExistsException(cause);
-            }
-        }
     }
 
 }
