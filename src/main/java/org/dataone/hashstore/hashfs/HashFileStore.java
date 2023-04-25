@@ -31,9 +31,9 @@ public class HashFileStore {
      * - .../objects
      * - .../objects/tmp
      * 
-     * @param depth
-     * @param width
-     * @param algorithm
+     * @param depth          Number of directories created from a given hex digest
+     * @param width          Width of the directories
+     * @param algorithm      Algorithm used for the permanent address
      * @param storeDirectory Desired absolute file path (ex. /usr/org/)
      * @throws IllegalArgumentException
      * @throws IOException
@@ -83,24 +83,26 @@ public class HashFileStore {
      * Encapsulates this.put()
      * 
      * @param object
-     * @param pid                 authority based identifer
-     * @param additionalAlgorithm
-     * @param checksum
-     * @param checksumAlgorithm
+     * @param pid                 authority based identifier
+     * @param additionalAlgorithm optional checksum value to generate in hex digests
+     * @param checksum            value of checksum to validate against
+     * @param checksumAlgorithm   algorithm of checksum submitted
      * 
-     * @return Hash address with id, relpath, abspath, duplicate status & hex
-     *         digests
+     * @return A HashAddress object that contains the file id, relative path,
+     *         absolute path, duplicate status and a checksum map based on the
+     *         default algorithm list.
      * @throws IOException
      * @throws NoSuchAlgorithmException
      * @throws SecurityException
      * @throws FileNotFoundException
      * @throws FileAlreadyExistsException
      * @throws IllegalArgumentException
+     * @throws NullPointerException
      */
     public HashAddress putObject(InputStream object, String pid, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
             throws IOException, NoSuchAlgorithmException, SecurityException, FileNotFoundException,
-            FileAlreadyExistsException, IllegalArgumentException {
+            FileAlreadyExistsException, IllegalArgumentException, NullPointerException {
         HashAddress hashAddress = this.put(object, pid, additionalAlgorithm, checksum, checksumAlgorithm);
         return hashAddress;
     }
