@@ -26,12 +26,9 @@ import org.junit.rules.TemporaryFolder;
  */
 public class HashFileStoreTest {
     public HashFileStore hfs;
-    public Path rootDirectory;
-    public String rootString;
-    public String rootStringFull;
-    public String objStringFull;
-    public String tmpStringFull;
-
+    public Path objStringFull;
+    public Path tmpStringFull;
+    public Path rootPathFull;
     public TestDataHarness testData = new TestDataHarness();
     public HashUtil hsil = new HashUtil();
 
@@ -40,13 +37,14 @@ public class HashFileStoreTest {
      */
     @Before
     public void initializeHashFileStore() {
-        this.rootDirectory = this.tempFolder.getRoot().toPath();
-        this.rootString = this.rootDirectory.toString();
-        this.rootStringFull = this.rootString + "/metacat";
-        this.objStringFull = this.rootStringFull + "/objects";
-        this.tmpStringFull = this.rootStringFull + "/objects/tmp";
+        Path rootDirectory = this.tempFolder.getRoot().toPath();
+        String rootString = rootDirectory.toString();
+        String rootStringFull = rootString + "/metacat";
+        this.objStringFull = Paths.get(rootStringFull + "/objects");
+        this.tmpStringFull = Paths.get(rootStringFull + "/objects/tmp");
+        this.rootPathFull = Paths.get(rootStringFull);
         try {
-            this.hfs = new HashFileStore(3, 2, "SHA-256", rootStringFull);
+            this.hfs = new HashFileStore(3, 2, "SHA-256", rootPathFull);
         } catch (IOException e) {
             fail("IOException encountered: " + e.getMessage());
         }
@@ -60,7 +58,7 @@ public class HashFileStoreTest {
      */
     @Test
     public void testCreateObjDirectory() {
-        Path checkStorePath = Paths.get(this.objStringFull);
+        Path checkStorePath = this.objStringFull;
         assertTrue(Files.exists(checkStorePath));
     }
 
@@ -69,7 +67,7 @@ public class HashFileStoreTest {
      */
     @Test
     public void testCreateObjTmpDirectory() {
-        Path checkTmpPath = Paths.get(this.tmpStringFull);
+        Path checkTmpPath = this.tmpStringFull;
         assertTrue(Files.exists(checkTmpPath));
     }
 
@@ -78,7 +76,7 @@ public class HashFileStoreTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void testConstructorIllegalDepthArg() throws Exception {
-        new HashFileStore(0, 2, "SHA-256", rootStringFull);
+        new HashFileStore(0, 2, "SHA-256", this.rootPathFull);
     }
 
     /**
@@ -86,7 +84,7 @@ public class HashFileStoreTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void testConstructorIllegalAlgorithmArg() throws Exception {
-        new HashFileStore(2, 2, "SM2", rootStringFull);
+        new HashFileStore(2, 2, "SM2", this.rootPathFull);
     }
 
     /**
@@ -103,34 +101,6 @@ public class HashFileStoreTest {
         assertTrue(Files.exists(defaultObjDirectoryPath));
 
         Path defaultTmpDirectoryPath = defaultObjDirectoryPath.resolve("tmp");
-        assertTrue(Files.exists(defaultTmpDirectoryPath));
-    }
-
-    /**
-     * Confirm default obj file directory is created when storeDirectory is ""
-     */
-    @Test
-    public void testDefaultObjStoreDirectoryEmptyString() throws Exception {
-        HashFileStore defaultHfs = new HashFileStore(3, 2, "SHA-256", "");
-
-        String rootDirectory = System.getProperty("user.dir");
-        String objectPath = "HashFileStore";
-
-        Path defaultObjDirectoryPath = Paths.get(rootDirectory).resolve(objectPath).resolve("objects");
-        assertTrue(Files.exists(defaultObjDirectoryPath));
-    }
-
-    /**
-     * Confirm default obj tmp file directory is created when storeDirectory is ""
-     */
-    @Test
-    public void testDefaultObjTmpStoreDirectoryEmptyString() throws Exception {
-        HashFileStore defaultHfs = new HashFileStore(3, 2, "SHA-256", "");
-
-        String rootDirectory = System.getProperty("user.dir");
-        String objectPath = "HashFileStore";
-
-        Path defaultTmpDirectoryPath = Paths.get(rootDirectory).resolve(objectPath).resolve("objects").resolve("tmp");
         assertTrue(Files.exists(defaultTmpDirectoryPath));
     }
 

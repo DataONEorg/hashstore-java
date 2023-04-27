@@ -38,7 +38,7 @@ public class HashFileStore {
      * @throws IllegalArgumentException
      * @throws IOException
      */
-    public HashFileStore(int depth, int width, String algorithm, String storeDirectory)
+    public HashFileStore(int depth, int width, String algorithm, Path storeDirectory)
             throws IllegalArgumentException, IOException {
         // Validate input parameters
         if (depth <= 0 || width <= 0) {
@@ -55,12 +55,12 @@ public class HashFileStore {
         }
 
         // If no path provided, create default path with user.dir root + /HashFileStore
-        if (storeDirectory == null || storeDirectory == "") {
+        if (storeDirectory == null || storeDirectory == null) {
             String rootDirectory = System.getProperty("user.dir");
             String defaultPath = "HashFileStore";
             this.objectStoreDirectory = Paths.get(rootDirectory).resolve(defaultPath).resolve("objects");
         } else {
-            this.objectStoreDirectory = Paths.get(storeDirectory).resolve("objects");
+            this.objectStoreDirectory = storeDirectory.resolve("objects");
         }
         // Resolve tmp object directory path
         this.tmpFileDirectory = this.objectStoreDirectory.resolve("tmp");

@@ -32,10 +32,7 @@ import org.junit.rules.TemporaryFolder;
  */
 public class HashStoreTest {
     public HashStore hsj;
-    public Path rootDirectory;
-    public String rootString;
-    public String rootStringFull;
-
+    public Path rootPathFull;
     public TestDataHarness testData = new TestDataHarness();
     public HashUtil hsil = new HashUtil();
 
@@ -44,11 +41,12 @@ public class HashStoreTest {
 
     @Before
     public void initializeHashStore() {
-        this.rootDirectory = tempFolder.getRoot().toPath();
-        this.rootString = rootDirectory.toString();
-        this.rootStringFull = rootString + "/metacat";
+        Path rootDirectory = tempFolder.getRoot().toPath();
+        String rootString = rootDirectory.toString();
+        String rootStringFull = rootString + "/metacat";
+        this.rootPathFull = Paths.get(rootStringFull);
         try {
-            this.hsj = new HashStore(rootStringFull);
+            this.hsj = new HashStore(rootPathFull);
         } catch (IOException e) {
             fail("IOException encountered: " + e.getMessage());
         }
@@ -59,7 +57,7 @@ public class HashStoreTest {
      */
     @Test
     public void testHashStoreConstructorStoreDirectory() {
-        Path checkStoreObjPath = Paths.get(this.rootStringFull).resolve("objects");
+        Path checkStoreObjPath = rootPathFull.resolve("objects");
         assertTrue(Files.exists(checkStoreObjPath));
     }
 
@@ -68,7 +66,7 @@ public class HashStoreTest {
      */
     @Test
     public void testHashStoreConstructorStoreTmpDirectory() {
-        Path checkStoreObjTmpPath = Paths.get(this.rootStringFull).resolve("objects/tmp");
+        Path checkStoreObjTmpPath = rootPathFull.resolve("objects/tmp");
         assertTrue(Files.exists(checkStoreObjTmpPath));
     }
 

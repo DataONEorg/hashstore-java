@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 
@@ -31,7 +32,7 @@ public class HashStore {
      * @throws IllegalArgumentException
      * @throws IOException
      */
-    public HashStore(String storeDirectory)
+    public HashStore(Path storeDirectory)
             throws IllegalArgumentException, IOException {
         try {
             hashfs = new HashFileStore(this.depth, this.width, this.algorithm, storeDirectory);
