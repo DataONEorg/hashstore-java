@@ -106,17 +106,18 @@ public class HashUtil {
      * @param algorithm
      * 
      * @return Hex digest of the given string in lower-case
+     * @throws IllegalArgumentException
      * @throws NoSuchAlgorithmException
      */
     public String getHexDigest(String string, String algorithm) throws NoSuchAlgorithmException {
         boolean algorithmSupported = this.validateAlgorithm(algorithm);
-        if (algorithm == null || algorithm == "" | string == null || string == "") {
+        if (algorithm == null || algorithm.isEmpty() | string == null || string.isEmpty()) {
             throw new IllegalArgumentException(
-                    "Algorithm and string cannot be null or empty: ");
+                    "Algorithm and/or string cannot be null or empty: ");
         }
         if (!algorithmSupported) {
-            throw new IllegalArgumentException(
-                    "Algorithm not supported. Supported algorithms: " + this.supportedHashAlgorithms);
+            throw new NoSuchAlgorithmException(
+                    "Algorithm not supported. Supported algorithms: " + Arrays.toString(supportedHashAlgorithms));
         }
         MessageDigest stringMessageDigest = MessageDigest.getInstance(algorithm);
         byte[] bytes = string.getBytes(StandardCharsets.UTF_8);

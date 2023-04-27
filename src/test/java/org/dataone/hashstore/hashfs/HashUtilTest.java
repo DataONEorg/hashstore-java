@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 
 import org.dataone.hashstore.testdata.TestDataHarness;
@@ -97,6 +98,16 @@ public class HashUtilTest {
             String abIdDigest = this.hsil.getHexDigest(pid, "SHA-256");
             String abIdTestData = this.testData.pidData.get(pid).get("s_cid");
             assertEquals(abIdDigest, abIdTestData);
+        }
+    }
+
+    /**
+     * Check for NoSuchAlgorithmException
+     */
+    @Test(expected = NoSuchAlgorithmException.class)
+    public void testGetHexDigestBadAlgorithm() throws Exception {
+        for (String pid : this.testData.pidList) {
+            String abIdDigest = this.hsil.getHexDigest(pid, "SM2");
         }
     }
 
