@@ -79,7 +79,7 @@ public class HashStore {
         if (object == null) {
             throw new NullPointerException("Invalid input stream, data is null.");
         }
-        if (pid == null || pid == "") {
+        if (pid == null || pid.isEmpty()) {
             throw new IllegalArgumentException("Pid cannot be null or empty, pid: " + pid);
         }
 

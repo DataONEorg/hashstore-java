@@ -44,7 +44,7 @@ public class HashFileStore {
         if (depth <= 0 || width <= 0) {
             throw new IllegalArgumentException("Depth and width must be greater than 0.");
         }
-        if (algorithm == null || algorithm == "") {
+        if (algorithm == null || algorithm.isEmpty()) {
             throw new IllegalArgumentException("Algorithm cannot be null or empty.");
         }
         boolean algorithmSupported = this.hsil.validateAlgorithm(algorithm);
@@ -142,32 +142,39 @@ public class HashFileStore {
             throw new NullPointerException("Invalid input stream, data is null.");
         }
         // pid cannot be empty or null
-        if (pid == null || pid == "") {
+        if (pid == null || pid.isEmpty()) {
             // TODO: Log failure - include signature values
             throw new IllegalArgumentException("The pid cannot be null or empty");
         }
 
-        // Checksum cannot be empty if checksumAlgorithm is passed
-        if (checksumAlgorithm != null & checksum == "") {
-            // TODO: Log failure - include signature values
-            throw new IllegalArgumentException("Checksum cannot be null or empty");
+        // Checksum cannot be empty or null if checksumAlgorithm is passed
+        if (checksumAlgorithm != null & checksum != null) {
+            if (checksum.isEmpty()) {
+                // TODO: Log failure - include signature values
+                throw new IllegalArgumentException(
+                        "Checksum cannot be null or empty when a checksumAlgorithm is supplied.");
+            }
         }
-        // Cannot generate additional algorithm if it is not supported
-        boolean algorithmSupported = this.hsil.validateAlgorithm(additionalAlgorithm);
-        boolean checksumAlgorithmSupported = this.hsil.validateAlgorithm(checksumAlgorithm);
-        if (!algorithmSupported) {
-            // TODO: Log failure - include signature values
-            throw new IllegalArgumentException(
-                    "Additional algorithm not supported - unable to generate additional hex digest value. additionalAlgorithm: "
-                            + additionalAlgorithm + ". Supported algorithms: "
-                            + this.hsil.supportedHashAlgorithms);
+        // Cannot generate additional or checksum algorithm if it is not supported
+        if (additionalAlgorithm != null) {
+            boolean algorithmSupported = this.hsil.validateAlgorithm(additionalAlgorithm);
+            if (!algorithmSupported) {
+                // TODO: Log failure - include signature values
+                throw new IllegalArgumentException(
+                        "Additional algorithm not supported - unable to generate additional hex digest value. additionalAlgorithm: "
+                                + additionalAlgorithm + ". Supported algorithms: "
+                                + this.hsil.supportedHashAlgorithms);
+            }
         }
-        if (!checksumAlgorithmSupported) {
-            // TODO: Log failure - include signature values
-            throw new IllegalArgumentException(
-                    "Checksum algorithm not supported - cannot be used to validate object. checksumAlgorithm: "
-                            + checksumAlgorithm + ". Supported algorithms: "
-                            + this.hsil.supportedHashAlgorithms);
+        if (checksumAlgorithm != null) {
+            boolean checksumAlgorithmSupported = this.hsil.validateAlgorithm(checksumAlgorithm);
+            if (!checksumAlgorithmSupported) {
+                // TODO: Log failure - include signature values
+                throw new IllegalArgumentException(
+                        "Checksum algorithm not supported - cannot be used to validate object. checksumAlgorithm: "
+                                + checksumAlgorithm + ". Supported algorithms: "
+                                + this.hsil.supportedHashAlgorithms);
+            }
         }
 
         // Gather HashAddress elements and prepare object permanent address
