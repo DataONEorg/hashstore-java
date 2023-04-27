@@ -15,11 +15,11 @@ import java.util.Map;
  * HashFileStore handles IO operations for HashStore
  */
 public class HashFileStore {
-    private int directoryDepth;
-    private int directoryWidth;
-    private String objectStoreAlgorithm;
-    private Path objectStoreDirectory;
-    private Path tmpFileDirectory;
+    private final int directoryDepth;
+    private final int directoryWidth;
+    private final String objectStoreAlgorithm;
+    private final Path objectStoreDirectory;
+    private final Path tmpFileDirectory;
     private HashUtil hsil = new HashUtil();
 
     /**

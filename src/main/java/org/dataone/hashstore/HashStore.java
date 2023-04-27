@@ -57,7 +57,9 @@ public class HashStore {
      * @param checksum            Value of checksum to validate against
      * @param checksumAlgorithm   Algorithm of checksum submitted
      * 
-     * @return
+     * @return A HashAddress object that contains the file id, relative path,
+     *         absolute path, duplicate status and a checksum map based on the
+     *         default algorithm list.
      * @throws NoSuchAlgorithmException   When additiionalAlgorithm or
      *                                    checksumAlgorithm is invalid
      * @throws IOException                I/O Error when writing file, generating
