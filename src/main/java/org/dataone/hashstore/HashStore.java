@@ -16,14 +16,13 @@ import org.dataone.hashstore.hashfs.HashFileStore;
  * the object's hex digest value as the file address
  */
 public class HashStore {
-    private int depth = 3;
-    private int width = 2;
-    private String sysmetaNameSpace = "http://ns.dataone.org/service/types/v2.0";
-    private String algorithm = "SHA-256";
     private HashFileStore hashfs;
+    private final int depth = 3;
+    private final int width = 2;
+    private final String sysmetaNameSpace = "http://ns.dataone.org/service/types/v2.0";
+    private final String algorithm = "SHA-256";
     private final static int TIME_OUT_MILLISEC = 1000;
-    // Shared class variable amongst all instances
-    private static ArrayList<String> objectLockedIds = new ArrayList<String>(100);
+    private final static ArrayList<String> objectLockedIds = new ArrayList<String>(100);
 
     /**
      * Default constructor for HashStore
