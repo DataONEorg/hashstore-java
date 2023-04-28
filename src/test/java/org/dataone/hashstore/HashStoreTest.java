@@ -1,7 +1,6 @@
 package org.dataone.hashstore;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -16,7 +15,6 @@ import java.nio.file.Paths;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.dataone.hashstore.hashfs.HashAddress;
@@ -31,10 +29,10 @@ import org.junit.rules.TemporaryFolder;
  * Unit tests for HashStore-java
  */
 public class HashStoreTest {
-    public HashStore hsj;
+    public HashStore hashStore;
     public Path rootPathFull;
     public TestDataHarness testData = new TestDataHarness();
-    public HashUtil hsil = new HashUtil();
+    public HashUtil hashUtil = new HashUtil();
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -46,7 +44,7 @@ public class HashStoreTest {
         String rootStringFull = rootString + "/metacat";
         this.rootPathFull = Paths.get(rootStringFull);
         try {
-            this.hsj = new HashStore(rootPathFull);
+            this.hashStore = new HashStore(rootPathFull);
         } catch (IOException e) {
             fail("IOException encountered: " + e.getMessage());
         }
@@ -56,7 +54,7 @@ public class HashStoreTest {
      * Check that object storeDirectory is created
      */
     @Test
-    public void testHashStoreConstructorStoreDirectory() {
+    public void hashStoreConstructor_storeDirectory() {
         Path checkStoreObjPath = rootPathFull.resolve("objects");
         assertTrue(Files.exists(checkStoreObjPath));
     }
@@ -65,7 +63,7 @@ public class HashStoreTest {
      * Check that object tmp storeDirectory is created
      */
     @Test
-    public void testHashStoreConstructorStoreTmpDirectory() {
+    public void hashStoreConstructor_storeTmpDirectory() {
         Path checkStoreObjTmpPath = rootPathFull.resolve("objects/tmp");
         assertTrue(Files.exists(checkStoreObjTmpPath));
     }
@@ -74,7 +72,7 @@ public class HashStoreTest {
      * Check that store object returns the correct HashAddress object id
      */
     @Test
-    public void testStoreObject() throws Exception {
+    public void storeObject() throws Exception {
         for (String pid : this.testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
@@ -83,7 +81,7 @@ public class HashStoreTest {
             File testDataFile = new File(testdataAbsolutePath);
 
             InputStream dataStream = new FileInputStream(testDataFile);
-            HashAddress objInfo = hsj.storeObject(dataStream, pid, null, null, null);
+            HashAddress objInfo = hashStore.storeObject(dataStream, pid, null, null, null);
 
             // Check id (sha-256 hex digest of the ab_id, aka s_cid)
             String objAuthorityId = this.testData.pidData.get(pid).get("s_cid");
@@ -95,7 +93,7 @@ public class HashStoreTest {
      * Check that store object returns the correct HashAddress object rel path
      */
     @Test
-    public void testStoreObjectRelPath() throws Exception {
+    public void storeObject_relPath() throws Exception {
         for (String pid : this.testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
@@ -104,11 +102,11 @@ public class HashStoreTest {
             File testDataFile = new File(testdataAbsolutePath);
 
             InputStream dataStream = new FileInputStream(testDataFile);
-            HashAddress objInfo = hsj.storeObject(dataStream, pid, null, null, null);
+            HashAddress objInfo = hashStore.storeObject(dataStream, pid, null, null, null);
 
             // Check relative path
             String objAuthorityId = this.testData.pidData.get(pid).get("s_cid");
-            String objRelPath = this.hsil.shard(3, 2, objAuthorityId);
+            String objRelPath = this.hashUtil.shard(3, 2, objAuthorityId);
             assertEquals(objRelPath, objInfo.getRelPath());
         }
     }
@@ -117,7 +115,7 @@ public class HashStoreTest {
      * Check that store object returns the correct HashAddress object abs path
      */
     @Test
-    public void testStoreObjectAbsPath() throws Exception {
+    public void storeObject_absPath() throws Exception {
         for (String pid : this.testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
@@ -126,7 +124,7 @@ public class HashStoreTest {
             File testDataFile = new File(testdataAbsolutePath);
 
             InputStream dataStream = new FileInputStream(testDataFile);
-            HashAddress objInfo = hsj.storeObject(dataStream, pid, null, null, null);
+            HashAddress objInfo = hashStore.storeObject(dataStream, pid, null, null, null);
 
             // Check absolute path
             File objAbsPath = new File(objInfo.getAbsPath());
@@ -138,7 +136,7 @@ public class HashStoreTest {
      * Check that store object moves file successfully (isDuplicate == false)
      */
     @Test
-    public void testStoreObjectMoveIsDuplicate() throws Exception {
+    public void storeObject_isNotDuplicate() throws Exception {
         for (String pid : this.testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
@@ -147,7 +145,7 @@ public class HashStoreTest {
             File testDataFile = new File(testdataAbsolutePath);
 
             InputStream dataStream = new FileInputStream(testDataFile);
-            HashAddress objInfo = hsj.storeObject(dataStream, pid, null, null, null);
+            HashAddress objInfo = hashStore.storeObject(dataStream, pid, null, null, null);
 
             // Check duplicate status
             assertTrue(objInfo.getIsNotDuplicate());
@@ -158,7 +156,7 @@ public class HashStoreTest {
      * Check that store object returns the correct HashAddress object hex digests
      */
     @Test
-    public void testStoreObjectHexDigests() throws Exception {
+    public void storeObject_hexDigests() throws Exception {
         for (String pid : this.testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
@@ -167,7 +165,7 @@ public class HashStoreTest {
             File testDataFile = new File(testdataAbsolutePath);
 
             InputStream dataStream = new FileInputStream(testDataFile);
-            HashAddress objInfo = hsj.storeObject(dataStream, pid, null, null, null);
+            HashAddress objInfo = hashStore.storeObject(dataStream, pid, null, null, null);
 
             Map<String, String> hexDigests = objInfo.getHexDigests();
 
@@ -189,16 +187,16 @@ public class HashStoreTest {
      * Check that store object throws exception when object is null
      */
     @Test(expected = NullPointerException.class)
-    public void testStoreObjectNull() throws Exception {
+    public void storeObject_null() throws Exception {
         String pid = "j.tao.1700.1";
-        HashAddress objInfo = hsj.storeObject(null, pid, null, null, null);
+        hashStore.storeObject(null, pid, null, null, null);
     }
 
     /**
      * Check that store object throws exception when pid is null
      */
     @Test(expected = IllegalArgumentException.class)
-    public void testStoreNullPid() throws Exception {
+    public void store_nullPid() throws Exception {
         for (String pid : this.testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
@@ -207,7 +205,7 @@ public class HashStoreTest {
             File testDataFile = new File(testdataAbsolutePath);
 
             InputStream dataStream = new FileInputStream(testDataFile);
-            HashAddress objInfo = hsj.storeObject(dataStream, null, null, null, null);
+            hashStore.storeObject(dataStream, null, null, null, null);
 
         }
     }
@@ -216,7 +214,7 @@ public class HashStoreTest {
      * Check that store object throws exception when pid is empty
      */
     @Test(expected = IllegalArgumentException.class)
-    public void testStoreEmptyPid() throws Exception {
+    public void store_emptyPid() throws Exception {
         for (String pid : this.testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
@@ -225,7 +223,7 @@ public class HashStoreTest {
             File testDataFile = new File(testdataAbsolutePath);
 
             InputStream dataStream = new FileInputStream(testDataFile);
-            HashAddress objInfo = hsj.storeObject(dataStream, "", null, null, null);
+            hashStore.storeObject(dataStream, "", null, null, null);
 
         }
     }
@@ -235,7 +233,7 @@ public class HashStoreTest {
      * object
      */
     @Test(expected = FileAlreadyExistsException.class)
-    public void testStoreObjectDuplicate() throws Exception {
+    public void storeObject_duplicate() throws Exception {
         for (String pid : this.testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
@@ -244,10 +242,10 @@ public class HashStoreTest {
             File testDataFile = new File(testdataAbsolutePath);
 
             InputStream dataStream = new FileInputStream(testDataFile);
-            HashAddress objInfo = hsj.storeObject(dataStream, pid, null, null, null);
+            hashStore.storeObject(dataStream, pid, null, null, null);
 
             InputStream dataStreamDup = new FileInputStream(testDataFile);
-            HashAddress objInfoDup = hsj.storeObject(dataStreamDup, pid, null, null, null);
+            hashStore.storeObject(dataStreamDup, pid, null, null, null);
         }
     }
 
@@ -260,7 +258,7 @@ public class HashStoreTest {
      * that the file has been written and moved as intended.
      */
     @Test
-    public void testStoreObjectObjectLockedIdsPidFileMoved() throws Exception {
+    public void storeObject_objectLockedIdsPidFileMoved() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
@@ -271,10 +269,10 @@ public class HashStoreTest {
         ExecutorService executorService = Executors.newFixedThreadPool(2);
 
         // Submit 2 threads, each calling storeObject
-        Future<?> future = executorService.submit(() -> {
+        executorService.submit(() -> {
             try {
                 InputStream dataStream = new FileInputStream(testDataFile);
-                HashAddress objInfo = hsj.storeObject(dataStream, pid, null, null, null);
+                HashAddress objInfo = hashStore.storeObject(dataStream, pid, null, null, null);
                 if (objInfo != null) {
                     String absPath = objInfo.getAbsPath();
                     File permAddress = new File(absPath);
@@ -284,10 +282,10 @@ public class HashStoreTest {
                 fail("future - Unexpected Exception: " + e.getMessage());
             }
         });
-        Future<?> future_dup = executorService.submit(() -> {
+        executorService.submit(() -> {
             try {
                 InputStream dataStreamDup = new FileInputStream(testDataFile);
-                HashAddress objInfoDup = hsj.storeObject(dataStreamDup, pid, null, null, null);
+                HashAddress objInfoDup = hashStore.storeObject(dataStreamDup, pid, null, null, null);
                 if (objInfoDup != null) {
                     String absPath = objInfoDup.getAbsPath();
                     File permAddress = new File(absPath);
@@ -311,7 +309,7 @@ public class HashStoreTest {
      * confirm that a FileAlreadyExistsException exception is thrown.
      */
     @Test
-    public void testStoreObjectObjectLockedIdsFileExistsException() throws Exception {
+    public void storeObject_objectLockedIdsFileExistsException() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
@@ -322,22 +320,20 @@ public class HashStoreTest {
         ExecutorService executorService = Executors.newFixedThreadPool(2);
 
         // Submit 2 threads, each calling storeObject
-        Future<?> future = executorService.submit(() -> {
+        executorService.submit(() -> {
             try {
                 InputStream dataStream = new FileInputStream(testDataFile);
-                HashAddress objInfo = hsj.storeObject(dataStream, pid, null, null, null);
+                hashStore.storeObject(dataStream, pid, null, null, null);
             } catch (Exception e) {
-                Class<?> exceptionClass = e.getClass();
-                assertTrue(exceptionClass == FileAlreadyExistsException.class);
+                assertTrue(e instanceof FileAlreadyExistsException);
             }
         });
-        Future<?> future_dup = executorService.submit(() -> {
+        executorService.submit(() -> {
             try {
                 InputStream dataStreamDup = new FileInputStream(testDataFile);
-                HashAddress objInfoDup = hsj.storeObject(dataStreamDup, pid, null, null, null);
+                hashStore.storeObject(dataStreamDup, pid, null, null, null);
             } catch (Exception e) {
-                Class<?> exceptionClass = e.getClass();
-                assertTrue(exceptionClass == FileAlreadyExistsException.class);
+                assertTrue(e instanceof FileAlreadyExistsException);
             }
         });
 
