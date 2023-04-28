@@ -147,15 +147,15 @@ public class HashUtil {
     protected Map<String, String> writeToTmpFileAndGenerateChecksums(File tmpFile, InputStream dataStream,
             String additionalAlgorithm)
             throws NoSuchAlgorithmException, IOException, FileNotFoundException, SecurityException {
-        if (additionalAlgorithm == "") {
-            throw new IllegalArgumentException(
-                    "Additional algorithm cannot be empty");
-        }
         if (additionalAlgorithm != null) {
+            if (additionalAlgorithm.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Additional algorithm cannot be empty");
+            }
             boolean algorithmSupported = this.validateAlgorithm(additionalAlgorithm);
             if (!algorithmSupported) {
                 throw new IllegalArgumentException(
-                        "Algorithm not supported. Supported algorithms: " + this.supportedHashAlgorithms);
+                        "Algorithm not supported. Supported algorithms: " + Arrays.toString(supportedHashAlgorithms));
             }
         }
 
@@ -187,13 +187,11 @@ public class HashUtil {
                 }
             }
         } finally {
-            if (os != null) {
-                try {
-                    os.flush();
-                    os.close();
-                } catch (Exception e) {
-                    // TODO: Log exception
-                }
+            try {
+                os.flush();
+                os.close();
+            } catch (Exception e) {
+                // TODO: Log exception
             }
         }
 
