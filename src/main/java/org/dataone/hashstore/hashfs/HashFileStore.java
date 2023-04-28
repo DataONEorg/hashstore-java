@@ -196,12 +196,12 @@ public class HashFileStore {
         // Validate object if checksum and checksum algorithm is passed
         if (checksumAlgorithm != null && checksum != null) {
             String digestFromHexDigests = hexDigests.get(checksumAlgorithm);
-            if (checksum != digestFromHexDigests) {
+            if (!checksum.equals(digestFromHexDigests)) {
                 tmpFile.delete();
                 // TODO: Log failure - include signature values
                 throw new IllegalArgumentException(
                         "Checksum supplied does not equal to the calculated hex digest: " + digestFromHexDigests
-                                + "Checksum provided: " + checksum + ". Deleting tmpFile: " + tmpFile.toString());
+                                + ". Checksum provided: " + checksum + ". Deleting tmpFile: " + tmpFile.toString());
             }
         }
 
