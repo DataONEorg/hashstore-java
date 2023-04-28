@@ -6,15 +6,15 @@ public class HashAddress {
     private String id;
     private String relPath;
     private String absPath;
-    private boolean isDuplicate;
+    private boolean isNotDuplicate;
     private Map<String, String> hexDigests;
 
-    public HashAddress(String id, String relPath, String absPath, boolean isDuplicate,
+    public HashAddress(String id, String relPath, String absPath, boolean isNotDuplicate,
             Map<String, String> hexDigests) {
         this.id = id;
         this.relPath = relPath;
         this.absPath = absPath;
-        this.isDuplicate = isDuplicate;
+        this.isNotDuplicate = isNotDuplicate;
         this.hexDigests = hexDigests;
     }
 
@@ -30,8 +30,8 @@ public class HashAddress {
         return absPath;
     }
 
-    public boolean getIsDuplicate() {
-        return isDuplicate;
+    public boolean getIsNotDuplicate() {
+        return isNotDuplicate;
     }
 
     public Map<String, String> getHexDigests() {

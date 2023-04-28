@@ -150,7 +150,7 @@ public class HashStoreTest {
             HashAddress objInfo = hsj.storeObject(dataStream, pid, null, null, null);
 
             // Check duplicate status
-            assertFalse(objInfo.getIsDuplicate());
+            assertTrue(objInfo.getIsNotDuplicate());
         }
     }
 

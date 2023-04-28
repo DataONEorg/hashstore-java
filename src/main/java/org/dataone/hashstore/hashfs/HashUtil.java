@@ -227,13 +227,13 @@ public class HashUtil {
      * @param source
      * @param target
      * 
-     * @return boolean to confirm file is not a duplicate
+     * @return boolean to confirm file is not a duplicate and has been moved
      * @throws IOException
      */
     protected boolean move(File source, File target) throws IOException, SecurityException {
-        boolean isDuplicate = false;
+        boolean wasMoved = false;
         if (target.exists()) {
-            isDuplicate = true;
+            return wasMoved;
         } else {
             File destinationDirectory = new File(target.getParent());
             // Create parent directory if it doesn't exist
@@ -245,6 +245,7 @@ public class HashUtil {
             // Move file
             Path sourceFilePath = source.toPath();
             Path targetFilePath = target.toPath();
+            wasMoved = true;
             try {
                 Files.move(sourceFilePath, targetFilePath, StandardCopyOption.ATOMIC_MOVE);
             } catch (AtomicMoveNotSupportedException amnse) {
@@ -255,6 +256,6 @@ public class HashUtil {
                 throw ioe;
             }
         }
-        return isDuplicate;
+        return wasMoved;
     }
 }

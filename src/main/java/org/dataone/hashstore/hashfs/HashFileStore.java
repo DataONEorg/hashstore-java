@@ -206,8 +206,8 @@ public class HashFileStore {
         }
 
         // Move object
-        boolean isDuplicate = this.hsil.move(tmpFile, objHashAddress);
-        if (isDuplicate) {
+        boolean isNotDuplicate = this.hsil.move(tmpFile, objHashAddress);
+        if (!isNotDuplicate) {
             tmpFile.delete();
             objAuthorityId = null;
             objShardString = null;
@@ -215,7 +215,7 @@ public class HashFileStore {
         }
 
         // Create HashAddress object to return with pertinent data
-        HashAddress hashAddress = new HashAddress(objAuthorityId, objShardString, objAbsolutePathString, isDuplicate,
+        HashAddress hashAddress = new HashAddress(objAuthorityId, objShardString, objAbsolutePathString, isNotDuplicate,
                 hexDigests);
         return hashAddress;
     }

@@ -188,7 +188,7 @@ public class HashFileStoreTest {
             HashAddress address = hfs.putObject(dataStream, pid, null, null, null);
 
             // Check duplicate status
-            assertFalse(address.getIsDuplicate());
+            assertTrue(address.getIsNotDuplicate());
         }
     }
 
@@ -290,7 +290,7 @@ public class HashFileStoreTest {
         HashAddress address = hfs.putObject(dataStream, pid, null, null, null);
 
         // Check duplicate status
-        assertFalse(address.getIsDuplicate());
+        assertTrue(address.getIsNotDuplicate());
 
         // Try duplicate upload
         InputStream dataStreamTwo = new FileInputStream(testDataFile);
