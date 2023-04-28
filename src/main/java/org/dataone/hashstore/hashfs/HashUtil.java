@@ -74,13 +74,13 @@ public class HashUtil {
     }
 
     /**
-     * Create a list of 'depth' number of tokens with 'width' with the last item
-     * being the remainder of the digest, delimited by "/"
-     * 
+     * Generates a hierarchical path by dividing a given digest into tokens
+     * of fixed width, and concatenating them with '/' as the delimiter.
+     *
      * @param depth
      * @param width
      * @param digest
-     * @return
+     * @return String
      */
     public String shard(int depth, int width, String digest) {
         List<String> tokens = new ArrayList<String>();
@@ -99,7 +99,7 @@ public class HashUtil {
                 stringArray.add(str);
             }
         }
-        String stringShard = "/" + String.join("/", stringArray);
+        String stringShard = String.join("/", stringArray);
         return stringShard;
     }
 
@@ -114,11 +114,15 @@ public class HashUtil {
      * @throws NoSuchAlgorithmException
      */
     public String getHexDigest(String string, String algorithm) throws NoSuchAlgorithmException {
-        boolean algorithmSupported = this.isValidAlgorithm(algorithm);
-        if (algorithm == null || algorithm.isEmpty() | string == null || string.isEmpty()) {
+        if (algorithm == null || algorithm.isEmpty()) {
             throw new IllegalArgumentException(
-                    "Algorithm and/or string cannot be null or empty: ");
+                    "Algorithm cannot be null or empty");
         }
+        if (string == null || string.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "String cannot be null or empty");
+        }
+        boolean algorithmSupported = this.isValidAlgorithm(algorithm);
         if (!algorithmSupported) {
             throw new NoSuchAlgorithmException(
                     "Algorithm not supported. Supported algorithms: " + Arrays.toString(supportedHashAlgorithms));

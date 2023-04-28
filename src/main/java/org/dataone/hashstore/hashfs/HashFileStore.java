@@ -180,8 +180,8 @@ public class HashFileStore {
 
         // Gather HashAddress elements and prepare object permanent address
         String objAuthorityId = this.hsil.getHexDigest(pid, this.objectStoreAlgorithm);
-        String objShardString = this.hsil.shard(directoryDepth, directoryWidth, objAuthorityId);
-        String objAbsolutePathString = this.objectStoreDirectory.toString() + objShardString;
+        String objShardString = this.hsil.shard(this.directoryDepth, this.directoryWidth, objAuthorityId);
+        String objAbsolutePathString = this.objectStoreDirectory.toString() + "/" + objShardString;
         File objHashAddress = new File(objAbsolutePathString);
         // If file (pid hash) exists, reject request immediately
         if (objHashAddress.exists()) {
