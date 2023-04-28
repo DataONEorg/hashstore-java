@@ -45,7 +45,7 @@ public class HashUtilTest {
     @Test
     public void testValidateAlgorithmSupported() {
         String md2 = "MD2";
-        boolean supported = this.hsil.validateAlgorithm(md2);
+        boolean supported = this.hsil.isValidAlgorithm(md2);
         assertTrue(supported);
     }
 
@@ -55,19 +55,27 @@ public class HashUtilTest {
     @Test
     public void testValidateAlgorithmNotSupported() {
         String sm3 = "SM3";
-        boolean not_supported = this.hsil.validateAlgorithm(sm3);
+        boolean not_supported = this.hsil.isValidAlgorithm(sm3);
         assertFalse(not_supported);
     }
 
     /**
-     * Check algorithm support for unsupported algorithm
+     * Check algorithm support for unsupported algorithm with lower cases
      */
     @Test
     public void testValidateAlgorithmNotSupportedLowerCase() {
         // Must match string to reduce complexity, no string formatting
         String md2_lowercase = "md2";
-        boolean lowercase_not_supported = this.hsil.validateAlgorithm(md2_lowercase);
+        boolean lowercase_not_supported = this.hsil.isValidAlgorithm(md2_lowercase);
         assertFalse(lowercase_not_supported);
+    }
+
+    /**
+     * Check algorithm support for null algorithm
+     */
+    @Test(expected = NullPointerException.class)
+    public void testValidateAlgorithmNull() {
+        this.hsil.isValidAlgorithm(null);
     }
 
     /**

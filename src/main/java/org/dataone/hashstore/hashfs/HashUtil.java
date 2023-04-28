@@ -28,13 +28,17 @@ public class HashUtil {
             "SHA-512/256" };
 
     /**
-     * Checks whether a given algorithm is supported based on an the HashUtil class
+     * Checks whether a given algorithm is supported based on the HashUtil class
      * variable supportedHashAlgorithms
      * 
      * @param algorithm
      * @return boolean that describes whether an algorithm is supported
+     * @throws NullPointerException
      */
-    public boolean validateAlgorithm(String algorithm) {
+    public boolean isValidAlgorithm(String algorithm) throws NullPointerException {
+        if (algorithm == null) {
+            throw new NullPointerException("algorithm supplied is null: " + algorithm);
+        }
         if (!Arrays.asList(this.supportedHashAlgorithms).contains(algorithm) && algorithm != null) {
             return false;
         } else {
@@ -110,7 +114,7 @@ public class HashUtil {
      * @throws NoSuchAlgorithmException
      */
     public String getHexDigest(String string, String algorithm) throws NoSuchAlgorithmException {
-        boolean algorithmSupported = this.validateAlgorithm(algorithm);
+        boolean algorithmSupported = this.isValidAlgorithm(algorithm);
         if (algorithm == null || algorithm.isEmpty() | string == null || string.isEmpty()) {
             throw new IllegalArgumentException(
                     "Algorithm and/or string cannot be null or empty: ");
@@ -152,7 +156,7 @@ public class HashUtil {
                 throw new IllegalArgumentException(
                         "Additional algorithm cannot be empty");
             }
-            boolean algorithmSupported = this.validateAlgorithm(additionalAlgorithm);
+            boolean algorithmSupported = this.isValidAlgorithm(additionalAlgorithm);
             if (!algorithmSupported) {
                 throw new IllegalArgumentException(
                         "Algorithm not supported. Supported algorithms: " + Arrays.toString(supportedHashAlgorithms));

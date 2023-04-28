@@ -48,7 +48,7 @@ public class HashFileStore {
         if (algorithm == null || algorithm.isEmpty()) {
             throw new IllegalArgumentException("Algorithm cannot be null or empty.");
         }
-        boolean algorithmSupported = this.hsil.validateAlgorithm(algorithm);
+        boolean algorithmSupported = this.hsil.isValidAlgorithm(algorithm);
         if (!algorithmSupported) {
             throw new IllegalArgumentException(
                     "Algorithm not supported. Supported algorithms: " +
@@ -158,7 +158,7 @@ public class HashFileStore {
         }
         // Cannot generate additional or checksum algorithm if it is not supported
         if (additionalAlgorithm != null) {
-            boolean algorithmSupported = this.hsil.validateAlgorithm(additionalAlgorithm);
+            boolean algorithmSupported = this.hsil.isValidAlgorithm(additionalAlgorithm);
             if (!algorithmSupported) {
                 // TODO: Log failure - include signature values
                 throw new IllegalArgumentException(
@@ -168,7 +168,7 @@ public class HashFileStore {
             }
         }
         if (checksumAlgorithm != null) {
-            boolean checksumAlgorithmSupported = this.hsil.validateAlgorithm(checksumAlgorithm);
+            boolean checksumAlgorithmSupported = this.hsil.isValidAlgorithm(checksumAlgorithm);
             if (!checksumAlgorithmSupported) {
                 // TODO: Log failure - include signature values
                 throw new IllegalArgumentException(
