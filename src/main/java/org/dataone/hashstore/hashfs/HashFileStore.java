@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.Map;
 
 /**
@@ -51,11 +52,11 @@ public class HashFileStore {
         if (!algorithmSupported) {
             throw new IllegalArgumentException(
                     "Algorithm not supported. Supported algorithms: " +
-                            this.hsil.supportedHashAlgorithms);
+                            Arrays.toString(this.hsil.supportedHashAlgorithms));
         }
 
         // If no path provided, create default path with user.dir root + /HashFileStore
-        if (storeDirectory == null || storeDirectory == null) {
+        if (storeDirectory == null) {
             String rootDirectory = System.getProperty("user.dir");
             String defaultPath = "HashFileStore";
             this.objectStoreDirectory = Paths.get(rootDirectory).resolve(defaultPath).resolve("objects");
@@ -163,7 +164,7 @@ public class HashFileStore {
                 throw new IllegalArgumentException(
                         "Additional algorithm not supported - unable to generate additional hex digest value. additionalAlgorithm: "
                                 + additionalAlgorithm + ". Supported algorithms: "
-                                + this.hsil.supportedHashAlgorithms);
+                                + Arrays.toString(this.hsil.supportedHashAlgorithms));
             }
         }
         if (checksumAlgorithm != null) {
@@ -173,7 +174,7 @@ public class HashFileStore {
                 throw new IllegalArgumentException(
                         "Checksum algorithm not supported - cannot be used to validate object. checksumAlgorithm: "
                                 + checksumAlgorithm + ". Supported algorithms: "
-                                + this.hsil.supportedHashAlgorithms);
+                                + Arrays.toString(this.hsil.supportedHashAlgorithms));
             }
         }
 
