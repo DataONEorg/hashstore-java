@@ -21,7 +21,7 @@ public class HashFileStore {
     private final String objectStoreAlgorithm;
     private final Path objectStoreDirectory;
     private final Path tmpFileDirectory;
-    private HashUtil hsil = new HashUtil();
+    private HashUtil hashUtil = new HashUtil();
 
     /**
      * Constructor to initialize HashStore fields and object store directory. If
@@ -48,11 +48,11 @@ public class HashFileStore {
         if (algorithm == null || algorithm.isEmpty()) {
             throw new IllegalArgumentException("Algorithm cannot be null or empty.");
         }
-        boolean algorithmSupported = this.hsil.isValidAlgorithm(algorithm);
+        boolean algorithmSupported = this.hashUtil.isValidAlgorithm(algorithm);
         if (!algorithmSupported) {
             throw new IllegalArgumentException(
                     "Algorithm not supported. Supported algorithms: " +
-                            Arrays.toString(this.hsil.supportedHashAlgorithms));
+                            Arrays.toString(this.hashUtil.supportedHashAlgorithms));
         }
 
         // If no path provided, create default path with user.dir root + /HashFileStore
@@ -158,29 +158,29 @@ public class HashFileStore {
         }
         // Cannot generate additional or checksum algorithm if it is not supported
         if (additionalAlgorithm != null) {
-            boolean algorithmSupported = this.hsil.isValidAlgorithm(additionalAlgorithm);
+            boolean algorithmSupported = this.hashUtil.isValidAlgorithm(additionalAlgorithm);
             if (!algorithmSupported) {
                 // TODO: Log failure - include signature values
                 throw new IllegalArgumentException(
                         "Additional algorithm not supported - unable to generate additional hex digest value. additionalAlgorithm: "
                                 + additionalAlgorithm + ". Supported algorithms: "
-                                + Arrays.toString(this.hsil.supportedHashAlgorithms));
+                                + Arrays.toString(this.hashUtil.supportedHashAlgorithms));
             }
         }
         if (checksumAlgorithm != null) {
-            boolean checksumAlgorithmSupported = this.hsil.isValidAlgorithm(checksumAlgorithm);
+            boolean checksumAlgorithmSupported = this.hashUtil.isValidAlgorithm(checksumAlgorithm);
             if (!checksumAlgorithmSupported) {
                 // TODO: Log failure - include signature values
                 throw new IllegalArgumentException(
                         "Checksum algorithm not supported - cannot be used to validate object. checksumAlgorithm: "
                                 + checksumAlgorithm + ". Supported algorithms: "
-                                + Arrays.toString(this.hsil.supportedHashAlgorithms));
+                                + Arrays.toString(this.hashUtil.supportedHashAlgorithms));
             }
         }
 
         // Gather HashAddress elements and prepare object permanent address
-        String objAuthorityId = this.hsil.getHexDigest(pid, this.objectStoreAlgorithm);
-        String objShardString = this.hsil.shard(this.directoryDepth, this.directoryWidth, objAuthorityId);
+        String objAuthorityId = this.hashUtil.getHexDigest(pid, this.objectStoreAlgorithm);
+        String objShardString = this.hashUtil.shard(this.directoryDepth, this.directoryWidth, objAuthorityId);
         String objAbsolutePathString = this.objectStoreDirectory.toString() + "/" + objShardString;
         File objHashAddress = new File(objAbsolutePathString);
         // If file (pid hash) exists, reject request immediately
@@ -189,8 +189,8 @@ public class HashFileStore {
         }
 
         // Generate tmp file and write to it
-        File tmpFile = this.hsil.generateTmpFile("tmp", this.tmpFileDirectory.toFile());
-        Map<String, String> hexDigests = this.hsil.writeToTmpFileAndGenerateChecksums(tmpFile, object,
+        File tmpFile = this.hashUtil.generateTmpFile("tmp", this.tmpFileDirectory.toFile());
+        Map<String, String> hexDigests = this.hashUtil.writeToTmpFileAndGenerateChecksums(tmpFile, object,
                 additionalAlgorithm);
 
         // Validate object if checksum and checksum algorithm is passed
@@ -206,7 +206,7 @@ public class HashFileStore {
         }
 
         // Move object
-        boolean isNotDuplicate = this.hsil.move(tmpFile, objHashAddress);
+        boolean isNotDuplicate = this.hashUtil.move(tmpFile, objHashAddress);
         if (!isNotDuplicate) {
             tmpFile.delete();
             objAuthorityId = null;
