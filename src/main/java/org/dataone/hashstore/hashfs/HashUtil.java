@@ -1,9 +1,12 @@
 package org.dataone.hashstore.hashfs;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -25,13 +28,17 @@ public class HashUtil {
             "SHA-512/256" };
 
     /**
-     * Checks whether a given algorithm is supported based on an the HashUtil class
+     * Checks whether a given algorithm is supported based on the HashUtil class
      * variable supportedHashAlgorithms
      * 
      * @param algorithm
-     * @return
+     * @return boolean that describes whether an algorithm is supported
+     * @throws NullPointerException
      */
-    public boolean validateAlgorithm(String algorithm) {
+    public boolean isValidAlgorithm(String algorithm) throws NullPointerException {
+        if (algorithm == null) {
+            throw new NullPointerException("algorithm supplied is null: " + algorithm);
+        }
         if (!Arrays.asList(this.supportedHashAlgorithms).contains(algorithm) && algorithm != null) {
             return false;
         } else {
@@ -44,32 +51,36 @@ public class HashUtil {
      * 
      * @param prefix
      * @param directory
-     * @return
+     * 
+     * @return Temporary file (File) ready to write into
      * @throws IOException
+     * @throws SecurityException
      */
-    public File generateTmpFile(String prefix, File directory) throws IOException {
+    public File generateTmpFile(String prefix, File directory) throws IOException, SecurityException {
         String newPrefix = prefix + "-" + System.currentTimeMillis();
         String suffix = null;
         File newFile = null;
         try {
             newFile = File.createTempFile(newPrefix, suffix, directory);
-        } catch (Exception e) {
-            // try again if the first time fails
-            newFile = File.createTempFile(newPrefix, suffix, directory);
-            // TODO: Log Exception e
+        } catch (IOException ioe) {
+            // TODO: Log Exception ioe
+            throw new IOException("Unable to generate tmpFile. IOException: " + ioe.getMessage());
+        } catch (SecurityException se) {
+            // TODO: Log Exception se
+            throw new SecurityException("File not allowed (security manager exists): " + se.getMessage());
         }
         // TODO: Log - newFile.getCanonicalPath());
         return newFile;
     }
 
     /**
-     * Create a list of 'depth' number of tokens with 'width' with the last item
-     * being the remainder of the digest, and return a String path
-     * 
+     * Generates a hierarchical path by dividing a given digest into tokens
+     * of fixed width, and concatenating them with '/' as the delimiter.
+     *
      * @param depth
      * @param width
      * @param digest
-     * @return
+     * @return String
      */
     public String shard(int depth, int width, String digest) {
         List<String> tokens = new ArrayList<String>();
@@ -88,26 +99,72 @@ public class HashUtil {
                 stringArray.add(str);
             }
         }
-        String shardedPath = "/" + String.join("/", stringArray);
-        return shardedPath;
+        String stringShard = String.join("/", stringArray);
+        return stringShard;
+    }
+
+    /**
+     * Given a string and supported algorithm returns the hex digest
+     * 
+     * @param string    authority based identifier or persistent identifier
+     * @param algorithm
+     * 
+     * @return Hex digest of the given string in lower-case
+     * @throws IllegalArgumentException
+     * @throws NoSuchAlgorithmException
+     */
+    public String getHexDigest(String string, String algorithm) throws NoSuchAlgorithmException {
+        if (algorithm == null || algorithm.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Algorithm cannot be null or empty");
+        }
+        if (string == null || string.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "String cannot be null or empty");
+        }
+        boolean algorithmSupported = this.isValidAlgorithm(algorithm);
+        if (!algorithmSupported) {
+            throw new NoSuchAlgorithmException(
+                    "Algorithm not supported. Supported algorithms: " + Arrays.toString(supportedHashAlgorithms));
+        }
+        MessageDigest stringMessageDigest = MessageDigest.getInstance(algorithm);
+        byte[] bytes = string.getBytes(StandardCharsets.UTF_8);
+        stringMessageDigest.update(bytes);
+        String stringDigest = DatatypeConverter.printHexBinary(stringMessageDigest.digest()).toLowerCase();
+        return stringDigest;
     }
 
     /**
      * Write the input stream into a given file (tmpFile) and return a HashMap
-     * consisting of algorithms and their respective hex digests
+     * consisting of algorithms and their respective hex digests. If an additional
+     * algorithm is supplied and supported, it and its checksum value will be
+     * included in the hex digests map.
      * 
      * Default algorithms: MD5, SHA-1, SHA-256, SHA-384, SHA-512
      * 
-     * @param tmpFile             File into which the stream will be written to
-     * @param dataStream          Source data stream
-     * @param additionalAlgorithm Optional additional algoritm to generate
+     * @param tmpFile
+     * @param dataStream
+     * @param additionalAlgorithm
+     * 
+     * @return A map containing the hex digests of the default algorithms
+     * @throws NoSuchAlgorithmException
+     * @throws IOException
+     * @throws SecurityException
+     * @throws FileNotFoundException
      */
     protected Map<String, String> writeToTmpFileAndGenerateChecksums(File tmpFile, InputStream dataStream,
-            String additionalAlgorithm) throws NoSuchAlgorithmException, IOException {
-        boolean algorithmSupported = this.validateAlgorithm(additionalAlgorithm);
-        if (!algorithmSupported) {
-            throw new IllegalArgumentException(
-                    "Algorithm not supported. Supported algorithms: " + this.supportedHashAlgorithms);
+            String additionalAlgorithm)
+            throws NoSuchAlgorithmException, IOException, FileNotFoundException, SecurityException {
+        if (additionalAlgorithm != null) {
+            if (additionalAlgorithm.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Additional algorithm cannot be empty");
+            }
+            boolean algorithmSupported = this.isValidAlgorithm(additionalAlgorithm);
+            if (!algorithmSupported) {
+                throw new IllegalArgumentException(
+                        "Algorithm not supported. Supported algorithms: " + Arrays.toString(supportedHashAlgorithms));
+            }
         }
 
         MessageDigest extraAlgo = null;
@@ -138,13 +195,11 @@ public class HashUtil {
                 }
             }
         } finally {
-            if (os != null) {
-                try {
-                    os.flush();
-                    os.close();
-                } catch (Exception e) {
-                    // TODO: Log exception
-                }
+            try {
+                os.flush();
+                os.close();
+            } catch (Exception e) {
+                // TODO: Log exception
             }
         }
 
@@ -167,17 +222,18 @@ public class HashUtil {
     }
 
     /**
-     * Moves an object from one directory to another if the object does not exist
+     * Moves an object from one location to another if the object does not exist
      * 
      * @param source
      * @param target
-     * @return
+     * 
+     * @return boolean to confirm file is not a duplicate and has been moved
      * @throws IOException
      */
-    protected boolean move(File source, File target) throws IOException {
-        boolean isDuplicate = false;
+    protected boolean move(File source, File target) throws IOException, SecurityException {
+        boolean wasMoved = false;
         if (target.exists()) {
-            isDuplicate = true;
+            return wasMoved;
         } else {
             File destinationDirectory = new File(target.getParent());
             // Create parent directory if it doesn't exist
@@ -189,13 +245,17 @@ public class HashUtil {
             // Move file
             Path sourceFilePath = source.toPath();
             Path targetFilePath = target.toPath();
+            wasMoved = true;
             try {
                 Files.move(sourceFilePath, targetFilePath, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException amnse) {
+                // TODO: Log exception and specify atomic_move not possible
+                Files.move(sourceFilePath, targetFilePath);
             } catch (IOException ioe) {
                 // TODO: Log failure - include signature values, ioe
                 throw ioe;
             }
         }
-        return isDuplicate;
+        return wasMoved;
     }
 }
