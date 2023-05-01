@@ -12,13 +12,14 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.dataone.hashstore.hashfs.HashAddress;
-import org.dataone.hashstore.hashfs.HashUtil;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.Before;
 import org.junit.Rule;
@@ -32,7 +33,36 @@ public class HashStoreTest {
     public HashStore hashStore;
     public Path rootPathFull;
     public TestDataHarness testData = new TestDataHarness();
-    public HashUtil hashUtil = new HashUtil();
+
+    /**
+     * Generates a hierarchical path by dividing a given digest into tokens
+     * of fixed width, and concatenating them with '/' as the delimiter.
+     *
+     * @param depth
+     * @param width
+     * @param digest
+     * @return String
+     */
+    public String shard(int depth, int width, String digest) {
+        List<String> tokens = new ArrayList<String>();
+        int digestLength = digest.length();
+        for (int i = 0; i < depth; i++) {
+            int start = i * width;
+            int end = Math.min((i + 1) * width, digestLength);
+            tokens.add(digest.substring(start, end));
+        }
+        if (depth * width < digestLength) {
+            tokens.add(digest.substring(depth * width));
+        }
+        List<String> stringArray = new ArrayList<String>();
+        for (String str : tokens) {
+            if (!str.trim().isEmpty()) {
+                stringArray.add(str);
+            }
+        }
+        String stringShard = String.join("/", stringArray);
+        return stringShard;
+    }
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -106,7 +136,7 @@ public class HashStoreTest {
 
             // Check relative path
             String objAuthorityId = this.testData.pidData.get(pid).get("s_cid");
-            String objRelPath = this.hashUtil.shard(3, 2, objAuthorityId);
+            String objRelPath = this.shard(3, 2, objAuthorityId);
             assertEquals(objRelPath, objInfo.getRelPath());
         }
     }

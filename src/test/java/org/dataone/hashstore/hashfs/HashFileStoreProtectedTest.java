@@ -3,9 +3,11 @@ package org.dataone.hashstore.hashfs;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,6 +16,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 
 import org.dataone.hashstore.testdata.TestDataHarness;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -21,9 +24,30 @@ import org.junit.rules.TemporaryFolder;
 /**
  * Test class for HashStore utility methods
  */
-public class HashUtilTest {
+public class HashFileStoreProtectedTest {
+    public HashFileStore hashFileStore;
+    public Path objStringFull;
+    public Path tmpStringFull;
+    public Path rootPathFull;
     public TestDataHarness testData = new TestDataHarness();
-    public HashUtil hashUtil = new HashUtil();
+
+    /**
+     * Initialize HashFileStore for test efficiency purposes (creates directories)
+     */
+    @Before
+    public void initializeHashFileStore() {
+        Path rootDirectory = this.tempFolder.getRoot().toPath();
+        String rootString = rootDirectory.toString();
+        String rootStringFull = rootString + "/metacat";
+        this.objStringFull = Paths.get(rootStringFull + "/objects");
+        this.tmpStringFull = Paths.get(rootStringFull + "/objects/tmp");
+        this.rootPathFull = Paths.get(rootStringFull);
+        try {
+            this.hashFileStore = new HashFileStore(3, 2, "SHA-256", rootPathFull);
+        } catch (IOException e) {
+            fail("IOException encountered: " + e.getMessage());
+        }
+    }
 
     /*
      * Non-test method using HashUtil class to generate a temp file
@@ -31,7 +55,7 @@ public class HashUtilTest {
     public File generateTemporaryFile() throws Exception {
         File directory = tempFolder.getRoot();
         File newFile = null;
-        newFile = this.hashUtil.generateTmpFile("testfile", directory);
+        newFile = hashFileStore.generateTmpFile("testfile", directory);
         return newFile;
     }
 
@@ -44,7 +68,7 @@ public class HashUtilTest {
     @Test
     public void isValidAlgorithm_supported() {
         String md2 = "MD2";
-        boolean supported = this.hashUtil.isValidAlgorithm(md2);
+        boolean supported = hashFileStore.isValidAlgorithm(md2);
         assertTrue(supported);
     }
 
@@ -54,7 +78,7 @@ public class HashUtilTest {
     @Test
     public void isValidAlgorithm_notSupported() {
         String sm3 = "SM3";
-        boolean not_supported = this.hashUtil.isValidAlgorithm(sm3);
+        boolean not_supported = hashFileStore.isValidAlgorithm(sm3);
         assertFalse(not_supported);
     }
 
@@ -65,7 +89,7 @@ public class HashUtilTest {
     public void isValidAlgorithm_notSupportedLowerCase() {
         // Must match string to reduce complexity, no string formatting
         String md2_lowercase = "md2";
-        boolean lowercase_not_supported = this.hashUtil.isValidAlgorithm(md2_lowercase);
+        boolean lowercase_not_supported = hashFileStore.isValidAlgorithm(md2_lowercase);
         assertFalse(lowercase_not_supported);
     }
 
@@ -74,7 +98,7 @@ public class HashUtilTest {
      */
     @Test(expected = NullPointerException.class)
     public void isValidAlgorithm_algorithmNull() {
-        this.hashUtil.isValidAlgorithm(null);
+        hashFileStore.isValidAlgorithm(null);
     }
 
     /**
@@ -91,7 +115,7 @@ public class HashUtilTest {
      */
     @Test
     public void shardHexDigest() {
-        String shardedPath = this.hashUtil.shard(3, 2,
+        String shardedPath = hashFileStore.shard(3, 2,
                 "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a");
         String shardedPathExpected = "94/f9/b6/c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
         assertEquals(shardedPath, shardedPathExpected);
@@ -103,7 +127,7 @@ public class HashUtilTest {
     @Test
     public void getHexDigest() throws Exception {
         for (String pid : this.testData.pidList) {
-            String abIdDigest = this.hashUtil.getHexDigest(pid, "SHA-256");
+            String abIdDigest = hashFileStore.getHexDigest(pid, "SHA-256");
             String abIdTestData = this.testData.pidData.get(pid).get("s_cid");
             assertEquals(abIdDigest, abIdTestData);
         }
@@ -115,7 +139,7 @@ public class HashUtilTest {
     @Test(expected = NoSuchAlgorithmException.class)
     public void getHexDigest_badAlgorithm() throws Exception {
         for (String pid : this.testData.pidList) {
-            this.hashUtil.getHexDigest(pid, "SM2");
+            hashFileStore.getHexDigest(pid, "SM2");
         }
     }
 
@@ -137,7 +161,7 @@ public class HashUtilTest {
             String addAlgo = "MD2";
 
             InputStream dataStream = new FileInputStream(testDataFile);
-            Map<String, String> hexDigests = this.hashUtil.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream,
+            Map<String, String> hexDigests = hashFileStore.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream,
                     addAlgo);
 
             // Validate checksum values
@@ -172,7 +196,7 @@ public class HashUtilTest {
             String addAlgo = "MD2";
 
             InputStream dataStream = new FileInputStream(testDataFile);
-            this.hashUtil.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream, addAlgo);
+            hashFileStore.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream, addAlgo);
 
             long testDataFileSize = Files.size(testDataFile.toPath());
             Path tmpFilePath = newTmpFile.toPath();
@@ -199,7 +223,7 @@ public class HashUtilTest {
             String addAlgo = "MD2";
 
             InputStream dataStream = new FileInputStream(testDataFile);
-            Map<String, String> hexDigests = this.hashUtil.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream,
+            Map<String, String> hexDigests = hashFileStore.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream,
                     addAlgo);
 
             // Validate additional algorithm
@@ -226,7 +250,7 @@ public class HashUtilTest {
             String addAlgo = "SM2";
 
             InputStream dataStream = new FileInputStream(testDataFile);
-            this.hashUtil.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream, addAlgo);
+            hashFileStore.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream, addAlgo);
         }
     }
 
@@ -239,7 +263,7 @@ public class HashUtilTest {
         String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
         File targetFile = new File(targetString);
 
-        this.hashUtil.move(newTmpFile, targetFile);
+        hashFileStore.move(newTmpFile, targetFile);
         assertTrue(targetFile.exists());
     }
 }

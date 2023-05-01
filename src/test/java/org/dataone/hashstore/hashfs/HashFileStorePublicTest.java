@@ -23,13 +23,12 @@ import org.junit.rules.TemporaryFolder;
 /**
  * Test class for HashFileStore
  */
-public class HashFileStoreTest {
+public class HashFileStorePublicTest {
     public HashFileStore hashFileStore;
     public Path objStringFull;
     public Path tmpStringFull;
     public Path rootPathFull;
     public TestDataHarness testData = new TestDataHarness();
-    public HashUtil hashUtil = new HashUtil();
 
     /**
      * Initialize HashFileStore for test efficiency purposes (creates directories)
@@ -143,7 +142,7 @@ public class HashFileStoreTest {
 
             // Check relative path
             String objAuthorityId = this.testData.pidData.get(pid).get("s_cid");
-            String objRelPath = hashUtil.shard(3, 2, objAuthorityId);
+            String objRelPath = hashFileStore.shard(3, 2, objAuthorityId);
             assertEquals(objRelPath, address.getRelPath());
         }
     }
