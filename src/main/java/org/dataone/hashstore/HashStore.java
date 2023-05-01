@@ -10,12 +10,13 @@ import java.util.ArrayList;
 
 import org.dataone.hashstore.hashfs.HashAddress;
 import org.dataone.hashstore.hashfs.HashFileStore;
+import org.dataone.hashstore.interfaces.HashStoreInterface;
 
 /**
  * HashStore is a file store system/content-addressable file manager that uses
  * the object's hex digest value as the file address
  */
-public class HashStore {
+public class HashStore implements HashStoreInterface {
     private HashFileStore hashfs;
     private final int depth = 3;
     private final int width = 2;
@@ -34,7 +35,7 @@ public class HashStore {
     public HashStore(Path storeDirectory)
             throws IllegalArgumentException, IOException {
         try {
-            hashfs = new HashFileStore(this.depth, this.width, this.algorithm, storeDirectory);
+            this.hashfs = new HashFileStore(this.depth, this.width, this.algorithm, storeDirectory);
         } catch (IllegalArgumentException e) {
             // TODO: Log failure - include signature values, e
             throw e;
