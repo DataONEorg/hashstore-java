@@ -21,7 +21,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 /**
- * Test class for HashFileStore
+ * Test class for HashFileStore public members
  */
 public class HashFileStorePublicTest {
     public HashFileStore hashFileStore;

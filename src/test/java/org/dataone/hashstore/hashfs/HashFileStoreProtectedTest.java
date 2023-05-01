@@ -1,10 +1,5 @@
 package org.dataone.hashstore.hashfs;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -15,6 +10,11 @@ import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.Before;
 import org.junit.Rule;
@@ -22,7 +22,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 /**
- * Test class for HashStore utility methods
+ * Test class for HashFileStore protected members
  */
 public class HashFileStoreProtectedTest {
     public HashFileStore hashFileStore;
