@@ -47,8 +47,9 @@ public class HashFileStore {
      * @param width          Width of the directories
      * @param algorithm      Algorithm used for the permanent address
      * @param storeDirectory Desired absolute file path (ex. /usr/org/)
-     * @throws IllegalArgumentException
-     * @throws IOException
+     * @throws IllegalArgumentException Constructor arguments cannot be null, empty
+     *                                  or less than 0
+     * @throws IOException              Issue with creating directories
      */
     public HashFileStore(int depth, int width, String algorithm, Path storeDirectory)
             throws IllegalArgumentException, IOException {
@@ -109,13 +110,17 @@ public class HashFileStore {
      * @return A HashAddress object that contains the file id, relative path,
      *         absolute path, duplicate status and a checksum map based on the
      *         default algorithm list.
-     * @throws IOException
-     * @throws NoSuchAlgorithmException
-     * @throws SecurityException
-     * @throws FileNotFoundException
-     * @throws FileAlreadyExistsException
-     * @throws IllegalArgumentException
-     * @throws NullPointerException
+     * @throws IOException                I/O Error when writing file, generating
+     *                                    checksums and moving file
+     * @throws NoSuchAlgorithmException   When additiionalAlgorithm or
+     *                                    checksumAlgorithm is invalid
+     * @throws SecurityException          Insufficient permissions to read/access
+     *                                    files or when generating/writing to a file
+     * @throws FileNotFoundException      When file tmpFile not found during store
+     * @throws FileAlreadyExistsException Duplicate object in store exists
+     * @throws IllegalArgumentException   When signature values are unexpectedly
+     *                                    empty (checksum, pid, etc.)
+     * @throws NullPointerException       Arguments are null for pid or object
      */
     public HashAddress putObject(InputStream object, String pid, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
@@ -228,10 +233,11 @@ public class HashFileStore {
      * @param algorithm
      * 
      * @return Hex digest of the given string in lower-case
-     * @throws IllegalArgumentException
-     * @throws NoSuchAlgorithmException
+     * @throws IllegalArgumentException String or algorithm cannot be null or empty
+     * @throws NoSuchAlgorithmException Algorithm not supported
      */
-    protected String getHexDigest(String string, String algorithm) throws NoSuchAlgorithmException {
+    protected String getHexDigest(String string, String algorithm)
+            throws NoSuchAlgorithmException, IllegalArgumentException {
         if (algorithm == null || algorithm.trim().isEmpty()) {
             throw new IllegalArgumentException(
                     "Algorithm cannot be null or empty");
@@ -289,8 +295,8 @@ public class HashFileStore {
      * @param directory
      * 
      * @return Temporary file (File) ready to write into
-     * @throws IOException
-     * @throws SecurityException
+     * @throws IOException       Issues with generating tmpFile
+     * @throws SecurityException Insufficient permissions to create tmpFile
      */
     protected File generateTmpFile(String prefix, File directory) throws IOException, SecurityException {
         String newPrefix = prefix + "-" + System.currentTimeMillis();
@@ -322,10 +328,11 @@ public class HashFileStore {
      * @param additionalAlgorithm
      * 
      * @return A map containing the hex digests of the default algorithms
-     * @throws NoSuchAlgorithmException
-     * @throws IOException
-     * @throws SecurityException
-     * @throws FileNotFoundException
+     * @throws NoSuchAlgorithmException Unable to generate new instance of supplied
+     *                                  algoritm
+     * @throws IOException              Issue with writing file from InputStream
+     * @throws SecurityException        Unable to write to tmpFile
+     * @throws FileNotFoundException    tmnpFile cannot be found
      */
     protected Map<String, String> writeToTmpFileAndGenerateChecksums(File tmpFile, InputStream dataStream,
             String additionalAlgorithm)
@@ -403,7 +410,8 @@ public class HashFileStore {
      * @param target
      * 
      * @return boolean to confirm file is not a duplicate and has been moved
-     * @throws IOException
+     * @throws IOException       Unable to create parent directory
+     * @throws SecurityException Insufficient permissions to move file
      */
     protected boolean move(File source, File target) throws IOException, SecurityException {
         boolean wasMoved = false;
