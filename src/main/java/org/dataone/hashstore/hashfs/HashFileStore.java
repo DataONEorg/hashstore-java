@@ -45,7 +45,7 @@ public class HashFileStore {
         if (depth <= 0 || width <= 0) {
             throw new IllegalArgumentException("Depth and width must be greater than 0.");
         }
-        if (algorithm == null || algorithm.isEmpty()) {
+        if (algorithm == null || algorithm.trim().isEmpty()) {
             throw new IllegalArgumentException("Algorithm cannot be null or empty.");
         }
         boolean algorithmSupported = this.hashUtil.isValidAlgorithm(algorithm);
@@ -143,14 +143,14 @@ public class HashFileStore {
             throw new NullPointerException("Invalid input stream, data is null.");
         }
         // pid cannot be empty or null
-        if (pid == null || pid.isEmpty()) {
+        if (pid == null || pid.trim().isEmpty()) {
             // TODO: Log failure - include signature values
             throw new IllegalArgumentException("The pid cannot be null or empty");
         }
 
         // Checksum cannot be empty or null if checksumAlgorithm is passed
         if (checksumAlgorithm != null & checksum != null) {
-            if (checksum.isEmpty()) {
+            if (checksum.trim().isEmpty()) {
                 // TODO: Log failure - include signature values
                 throw new IllegalArgumentException(
                         "Checksum cannot be null or empty when a checksumAlgorithm is supplied.");

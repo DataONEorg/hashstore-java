@@ -81,7 +81,7 @@ public class HashStore implements HashStoreInterface {
         if (object == null) {
             throw new NullPointerException("Invalid input stream, data is null.");
         }
-        if (pid == null || pid.isEmpty()) {
+        if (pid == null || pid.trim().isEmpty()) {
             throw new IllegalArgumentException("Pid cannot be null or empty, pid: " + pid);
         }
 

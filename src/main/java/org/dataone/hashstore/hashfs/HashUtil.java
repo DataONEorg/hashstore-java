@@ -95,7 +95,7 @@ public class HashUtil {
         }
         List<String> stringArray = new ArrayList<String>();
         for (String str : tokens) {
-            if (!str.isEmpty()) {
+            if (!str.trim().isEmpty()) {
                 stringArray.add(str);
             }
         }
@@ -114,11 +114,11 @@ public class HashUtil {
      * @throws NoSuchAlgorithmException
      */
     public String getHexDigest(String string, String algorithm) throws NoSuchAlgorithmException {
-        if (algorithm == null || algorithm.isEmpty()) {
+        if (algorithm == null || algorithm.trim().isEmpty()) {
             throw new IllegalArgumentException(
                     "Algorithm cannot be null or empty");
         }
-        if (string == null || string.isEmpty()) {
+        if (string == null || string.trim().isEmpty()) {
             throw new IllegalArgumentException(
                     "String cannot be null or empty");
         }
@@ -156,7 +156,7 @@ public class HashUtil {
             String additionalAlgorithm)
             throws NoSuchAlgorithmException, IOException, FileNotFoundException, SecurityException {
         if (additionalAlgorithm != null) {
-            if (additionalAlgorithm.isEmpty()) {
+            if (additionalAlgorithm.trim().isEmpty()) {
                 throw new IllegalArgumentException(
                         "Additional algorithm cannot be empty");
             }
