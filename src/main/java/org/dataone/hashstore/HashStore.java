@@ -74,6 +74,7 @@ public class HashStore implements HashStoreInterface {
      * @throws NullPointerException       Arguments are null for pid or object
      * @throws InterruptedException       Synchronization issue with objectLockedIds
      */
+    @Override
     public HashAddress storeObject(InputStream object, String pid, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
             throws NoSuchAlgorithmException, IOException, SecurityException, FileNotFoundException,
