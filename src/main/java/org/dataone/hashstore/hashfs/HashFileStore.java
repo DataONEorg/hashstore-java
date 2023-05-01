@@ -80,35 +80,6 @@ public class HashFileStore {
     }
 
     /**
-     * Put an object from a given InputStream to this.objectStoreDirectory
-     * Encapsulates this.put()
-     * 
-     * @param object
-     * @param pid                 authority based identifier
-     * @param additionalAlgorithm optional checksum value to generate in hex digests
-     * @param checksum            value of checksum to validate against
-     * @param checksumAlgorithm   algorithm of checksum submitted
-     * 
-     * @return A HashAddress object that contains the file id, relative path,
-     *         absolute path, duplicate status and a checksum map based on the
-     *         default algorithm list.
-     * @throws IOException
-     * @throws NoSuchAlgorithmException
-     * @throws SecurityException
-     * @throws FileNotFoundException
-     * @throws FileAlreadyExistsException
-     * @throws IllegalArgumentException
-     * @throws NullPointerException
-     */
-    public HashAddress putObject(InputStream object, String pid, String additionalAlgorithm, String checksum,
-            String checksumAlgorithm)
-            throws IOException, NoSuchAlgorithmException, SecurityException, FileNotFoundException,
-            FileAlreadyExistsException, IllegalArgumentException, NullPointerException {
-        HashAddress hashAddress = this.put(object, pid, additionalAlgorithm, checksum, checksumAlgorithm);
-        return hashAddress;
-    }
-
-    /**
      * Takes a given input stream and writes it to its permanent address on disk
      * based on the SHA-256 hex digest value of an authority based identifier,
      * which is usually a persistent identifier (pid).
@@ -135,7 +106,7 @@ public class HashFileStore {
      * @throws IllegalArgumentException
      * @throws NullPointerException
      */
-    protected HashAddress put(InputStream object, String pid, String additionalAlgorithm, String checksum,
+    public HashAddress putObject(InputStream object, String pid, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
             throws IOException, NoSuchAlgorithmException, SecurityException, FileNotFoundException,
             FileAlreadyExistsException, IllegalArgumentException, NullPointerException {
