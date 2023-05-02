@@ -8,7 +8,8 @@ public interface HashStoreInterface {
      * storeObject must atomically store an object to disk given an InputStream
      * and a pid (authority-based identifier) and return an HashAddress object
      * containing the file's id, relative path, absolute path, duplicate object
-     * status and hex digest map of algorithms and checksums.
+     * status and hex digest map of algorithms and checksums. Note, the file's id
+     * is the SHA-256 hex digest of a given persistent identifier (pid).
      * 
      * Additionally, if supplied with an additionalAlgorithm, it must add the
      * algorithm and its respective hex digest to the hex digest map. If supplied
