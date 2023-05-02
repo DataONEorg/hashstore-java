@@ -8,6 +8,8 @@ import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.dataone.hashstore.hashfs.HashAddress;
 import org.dataone.hashstore.hashfs.HashFileStore;
 import org.dataone.hashstore.interfaces.HashStoreInterface;
@@ -17,6 +19,7 @@ import org.dataone.hashstore.interfaces.HashStoreInterface;
  * the object's hex digest value as the file address
  */
 public class HashStore implements HashStoreInterface {
+    private static final Log logHashStore = LogFactory.getLog(HashStore.class);
     private HashFileStore hashfs;
     private final int depth = 3;
     private final int width = 2;
@@ -36,9 +39,9 @@ public class HashStore implements HashStoreInterface {
             throws IllegalArgumentException, IOException {
         try {
             this.hashfs = new HashFileStore(this.depth, this.width, this.algorithm, storeDirectory);
-        } catch (IllegalArgumentException e) {
-            // TODO: Log failure - include signature values, e
-            throw e;
+        } catch (IllegalArgumentException iae) {
+            logHashStore.error("Unable to initialize HashFileStore - Illegal Argument Exception: " + iae.getMessage());
+            throw iae;
         }
     }
 
@@ -80,9 +83,11 @@ public class HashStore implements HashStoreInterface {
             throws NoSuchAlgorithmException, IOException, SecurityException, FileNotFoundException,
             FileAlreadyExistsException, IllegalArgumentException, NullPointerException, InterruptedException {
         if (object == null) {
+            logHashStore.error("HashStore.storeObject - InputStream cannot be null, pid: " + pid);
             throw new NullPointerException("Invalid input stream, data is null.");
         }
         if (pid == null || pid.trim().isEmpty()) {
+            logHashStore.error("HashStore.storeObject - pid cannot be null or empty, pid: " + pid);
             throw new IllegalArgumentException("Pid cannot be null or empty, pid: " + pid);
         }
 
@@ -92,38 +97,53 @@ public class HashStore implements HashStoreInterface {
         synchronized (objectLockedIds) {
             while (objectLockedIds.contains(pid)) {
                 try {
+                    logHashStore.warn("HashStore.storeObject - Duplicate object request encountered for pid: " + pid
+                            + ". Lock is waiting for pid to be released.");
                     objectLockedIds.wait(TIME_OUT_MILLISEC);
                 } catch (InterruptedException ie) {
-                    // TODO: Log failure - include signature values, ie
+                    logHashStore.error(
+                            "HashStore.storeObject - objectLockedIds synchronization has been interrupted for pid: "
+                                    + pid + ". Exception: " + ie.getMessage());
                     throw ie;
                 }
             }
             objectLockedIds.add(pid);
         }
-        // Store object
+
         try {
+            logHashStore.debug("HashStore.storeObject - hashfs.putObject request for pid: " + pid
+                    + ". additionalAlgorithm: " + additionalAlgorithm + ". checksum: " + checksum
+                    + ". checksumAlgorithm: " + checksumAlgorithm);
+            // Store object
             HashAddress objInfo = this.hashfs.putObject(object, pid, additionalAlgorithm, checksum, checksumAlgorithm);
             return objInfo;
         } catch (NullPointerException npe) {
-            // TODO: Log failure - include signature values, npe
+            logHashStore.error("HashStore.storeObject - Cannot store object for pid: " + pid
+                    + ". NullPointerException: " + npe.getMessage());
             throw npe;
         } catch (IllegalArgumentException iae) {
-            // TODO: Log failure - include signature values, iae
+            logHashStore.error("HashStore.storeObject - Cannot store object for pid: " + pid
+                    + ". IllegalArgumentException: " + iae.getMessage());
             throw iae;
         } catch (NoSuchAlgorithmException nsae) {
-            // TODO: Log failure - include signature values, nsae
+            logHashStore.error("HashStore.storeObject - Cannot store object for pid: " + pid
+                    + ". NoSuchAlgorithmException: " + nsae.getMessage());
             throw nsae;
         } catch (FileAlreadyExistsException faee) {
-            // TODO: Log failure - include signature values, faee
+            logHashStore.error("HashStore.storeObject - Cannot store object for pid: " + pid
+                    + ". FileAlreadyExistsException: " + faee.getMessage());
             throw faee;
         } catch (FileNotFoundException fnfe) {
-            // TODO: Log failure - include signature values, fnfe
+            logHashStore.error("HashStore.storeObject - Cannot store object for pid: " + pid
+                    + ". FileNotFoundException: " + fnfe.getMessage());
             throw fnfe;
         } catch (IOException ioe) {
-            // TODO: Log failure - include signature values, ioe
+            logHashStore.error("HashStore.storeObject - Cannot store object for pid: " + pid
+                    + ". IOException: " + ioe.getMessage());
             throw ioe;
         } catch (SecurityException se) {
-            // TODO: Log failure - include signature values, se
+            logHashStore.error("HashStore.storeObject - Cannot store object for pid: " + pid
+                    + ". SecurityException: " + se.getMessage());
             throw se;
         } finally {
             // Release lock
@@ -133,7 +153,8 @@ public class HashStore implements HashStoreInterface {
                     objectLockedIds.notifyAll();
                 }
             } catch (RuntimeException re) {
-                // TODO: Log failure - include signature values, re
+                logHashStore.error("HashStore.storeObject - Object was stored for : " + pid
+                        + ". But encountered RuntimeException when releasing object lock: " + re.getMessage());
                 throw re;
             }
         }
