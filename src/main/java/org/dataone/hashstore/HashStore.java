@@ -7,6 +7,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -82,6 +83,7 @@ public class HashStore implements HashStoreInterface {
             String checksumAlgorithm)
             throws NoSuchAlgorithmException, IOException, SecurityException, FileNotFoundException,
             FileAlreadyExistsException, IllegalArgumentException, NullPointerException, InterruptedException {
+        // Begin input validation
         if (object == null) {
             logHashStore.error("HashStore.storeObject - InputStream cannot be null, pid: " + pid);
             throw new NullPointerException("Invalid input stream, data is null.");
@@ -89,6 +91,41 @@ public class HashStore implements HashStoreInterface {
         if (pid == null || pid.trim().isEmpty()) {
             logHashStore.error("HashStore.storeObject - pid cannot be null or empty, pid: " + pid);
             throw new IllegalArgumentException("Pid cannot be null or empty, pid: " + pid);
+        }
+        // Checksum cannot be empty or null if checksumAlgorithm is passed
+        if (checksumAlgorithm != null & checksum != null) {
+            if (checksum.trim().isEmpty()) {
+                logHashStore
+                        .error("HashStore.storeObject - checksum cannot be empty if checksumAlgorithm is supplied, pid: "
+                                + pid);
+                throw new IllegalArgumentException(
+                        "Checksum cannot be empty when checksumAlgorithm is supplied.");
+            }
+        }
+        // Cannot generate additional or checksum algorithm if it is not supported
+        if (additionalAlgorithm != null) {
+            boolean algorithmSupported = this.hashfs.isValidAlgorithm(additionalAlgorithm);
+            if (!algorithmSupported) {
+                logHashStore.error("HashStore.storeObject - additionalAlgorithm is not supported."
+                        + "additionalAlgorithm: " + additionalAlgorithm + ". pid: " + pid);
+                throw new IllegalArgumentException(
+                        "Additional algorithm not supported - unable to generate additional hex digest value. additionalAlgorithm: "
+                                + additionalAlgorithm + ". Supported algorithms: "
+                                + Arrays.toString(this.hashfs.supportedHashAlgorithms));
+            }
+        }
+        // Check support for checksumAlgorithm
+        if (checksumAlgorithm != null) {
+            boolean checksumAlgorithmSupported = this.hashfs.isValidAlgorithm(checksumAlgorithm);
+            if (!checksumAlgorithmSupported) {
+                logHashStore
+                        .error("HashStore.storeObject - checksumAlgorithm not supported, checksumAlgorithm: "
+                                + checksumAlgorithm);
+                throw new IllegalArgumentException(
+                        "Checksum algorithm not supported - cannot be used to validate object. checksumAlgorithm: "
+                                + checksumAlgorithm + ". Supported algorithms: "
+                                + Arrays.toString(this.hashfs.supportedHashAlgorithms));
+            }
         }
 
         // Lock pid for thread safety, transaction control and atomic writing

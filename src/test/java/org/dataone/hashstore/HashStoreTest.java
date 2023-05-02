@@ -226,7 +226,7 @@ public class HashStoreTest {
      * Check that store object throws exception when pid is null
      */
     @Test(expected = IllegalArgumentException.class)
-    public void store_nullPid() throws Exception {
+    public void storeObject_nullPid() throws Exception {
         for (String pid : this.testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
@@ -244,7 +244,7 @@ public class HashStoreTest {
      * Check that store object throws exception when pid is empty
      */
     @Test(expected = IllegalArgumentException.class)
-    public void store_emptyPid() throws Exception {
+    public void storeObject_emptyPid() throws Exception {
         for (String pid : this.testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
@@ -256,6 +256,72 @@ public class HashStoreTest {
             hashStore.storeObject(dataStream, "", null, null, null);
 
         }
+    }
+
+    /**
+     * Verify that additional checksum is generated/validated
+     */
+    @Test
+    public void storeObject_correctChecksumValue() throws Exception {
+        // Get test file to "upload"
+        String pid = "jtao.1700.1";
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
+        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+        File testDataFile = new File(testdataAbsolutePath);
+
+        String checksumCorrect = "9c25df1c8ba1d2e57bb3fd4785878b85";
+        InputStream dataStream = new FileInputStream(testDataFile);
+        hashStore.storeObject(dataStream, pid, "MD2", checksumCorrect, "MD2");
+
+        String md2 = this.testData.pidData.get(pid).get("md2");
+        assertEquals(checksumCorrect, md2);
+    }
+
+    /**
+     * Verify exception thrown when checksum provided does not match
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void storeObject_incorrectChecksumValue() throws Exception {
+        // Get test file to "upload"
+        String pid = "jtao.1700.1";
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
+        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+        File testDataFile = new File(testdataAbsolutePath);
+
+        String checksumIncorrect = "1c25df1c8ba1d2e57bb3fd4785878b85";
+        InputStream dataStream = new FileInputStream(testDataFile);
+        hashStore.storeObject(dataStream, pid, "MD2", checksumIncorrect, "MD2");
+    }
+
+    /**
+     * Verify exception thrown when checksum is empty and algorithm supported
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void storeObject_emptyChecksumValue() throws Exception {
+        // Get test file to "upload"
+        String pid = "jtao.1700.1";
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
+        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+        File testDataFile = new File(testdataAbsolutePath);
+
+        String checksumEmpty = "";
+        InputStream dataStream = new FileInputStream(testDataFile);
+        hashStore.storeObject(dataStream, pid, "MD2", checksumEmpty, "MD2");
+    }
+
+    /**
+     * Verify exception thrown when unsupported additional algorithm provided
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void put_invalidAlgorithm() throws Exception {
+        // Get test file to "upload"
+        String pid = "jtao.1700.1";
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
+        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+        File testDataFile = new File(testdataAbsolutePath);
+
+        InputStream dataStream = new FileInputStream(testDataFile);
+        hashStore.storeObject(dataStream, pid, "SM2", null, null);
     }
 
     /**
