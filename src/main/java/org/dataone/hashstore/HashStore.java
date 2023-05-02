@@ -83,6 +83,7 @@ public class HashStore implements HashStoreInterface {
             String checksumAlgorithm)
             throws NoSuchAlgorithmException, IOException, SecurityException, FileNotFoundException,
             FileAlreadyExistsException, IllegalArgumentException, NullPointerException, InterruptedException {
+        logHashStore.info("HashStore.storeObject - Called to store object for pid: " + pid);
         // Begin input validation
         if (object == null) {
             logHashStore.error("HashStore.storeObject - InputStream cannot be null, pid: " + pid);
@@ -153,6 +154,9 @@ public class HashStore implements HashStoreInterface {
                     + ". checksumAlgorithm: " + checksumAlgorithm);
             // Store object
             HashAddress objInfo = this.hashfs.putObject(object, pid, additionalAlgorithm, checksum, checksumAlgorithm);
+            logHashStore.info(
+                    "HashStore.storeObject - Object stored for pid: " + pid + ". Permanent address: "
+                            + objInfo.getAbsPath());
             return objInfo;
         } catch (NullPointerException npe) {
             logHashStore.error("HashStore.storeObject - Cannot store object for pid: " + pid
