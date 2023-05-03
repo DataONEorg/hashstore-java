@@ -192,7 +192,7 @@ public class HashFileStore {
 
         // Generate tmp file and write to it
         logHashFileStore.debug("HashFileStore.putObject - Generating tmpFile");
-        File tmpFile = this.generateTmpFile("tmp", this.tmpFileDirectory.toFile());
+        File tmpFile = this.generateTmpFile("tmp", this.tmpFileDirectory);
         Map<String, String> hexDigests = this.writeToTmpFileAndGenerateChecksums(tmpFile, object,
                 additionalAlgorithm);
 
@@ -324,12 +324,14 @@ public class HashFileStore {
      * @throws IOException       Issues with generating tmpFile
      * @throws SecurityException Insufficient permissions to create tmpFile
      */
-    protected File generateTmpFile(String prefix, File directory) throws IOException, SecurityException {
+    protected File generateTmpFile(String prefix, Path directory) throws IOException, SecurityException {
         String newPrefix = prefix + "-" + System.currentTimeMillis();
         String suffix = null;
         File newFile = null;
+        Path newPath = null;
         try {
-            newFile = File.createTempFile(newPrefix, suffix, directory);
+            newPath = Files.createTempFile(directory, newPrefix, suffix);
+            newFile = newPath.toFile();
         } catch (IOException ioe) {
             logHashFileStore.error("HashFileStore.generateTmpFile - Unable to generate tmpFile: " + ioe.getMessage());
             throw new IOException("Unable to generate tmpFile. IOException: " + ioe.getMessage());

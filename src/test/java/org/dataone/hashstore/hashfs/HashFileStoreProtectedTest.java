@@ -53,7 +53,7 @@ public class HashFileStoreProtectedTest {
      * Non-test method using HashUtil class to generate a temp file
      */
     public File generateTemporaryFile() throws Exception {
-        File directory = tempFolder.getRoot();
+        Path directory = tempFolder.getRoot().toPath();
         File newFile = null;
         newFile = hashFileStore.generateTmpFile("testfile", directory);
         return newFile;
