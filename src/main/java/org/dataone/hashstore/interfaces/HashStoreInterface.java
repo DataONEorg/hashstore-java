@@ -5,16 +5,22 @@ import org.dataone.hashstore.hashfs.HashAddress;
 
 public interface HashStoreInterface {
     /**
-     * storeObject must atomically store an object to disk given an InputStream
-     * and a pid (authority-based identifier) and return an HashAddress object
-     * containing the file's id, relative path, absolute path, duplicate object
-     * status and hex digest map of algorithms and checksums. Note, the file's id
-     * is the SHA-256 hex digest of a given persistent identifier (pid).
+     * The storeObject method is responsible for the atomic storage of objects to
+     * disk using a given InputStream and a persistent identifier (pid). Upon
+     * successful storage, the method returns a HashAddress object containing
+     * relevant file information, such as the file's id, relative path, absolute
+     * path, duplicate object status, and hex digest map of algorithms and
+     * checksums.
      * 
-     * Additionally, if supplied with an additionalAlgorithm, it must add the
-     * algorithm and its respective hex digest to the hex digest map. If supplied
-     * with a checksum and a checksumAlgorithm, it must validate that the object
-     * matches what is provided before moving the file to its permanent address.
+     * The file's id is determined using the SHA-256 hex digest of the provided pid,
+     * which is also used as the permanent address of the file. The method ensures
+     * that an object is stored only once by synchronizing multiple calls and
+     * rejecting the ones with already-existing objects. If an additionalAlgorithm
+     * is provided, storeObject adds the algorithm and its corresponding hex digest
+     * to the hex digest map if it is supported. Similarly, if a checksum and a
+     * supported checksumAlgorithm are provided, the method validates the object to
+     * ensure it matches what is provided before moving the file to its permanent
+     * address.
      * 
      * @param object              Input stream to file
      * @param pid                 Authority-based idenetifier

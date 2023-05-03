@@ -26,7 +26,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 /**
- * HashFileStore handles IO operations for HashStore
+ * HashFileStore is a class that enables the storing of objects to disk by
+ * utilizing the SHA-256 hex digest of an authority-based identifier as a key,
+ * which typically takes the form of a persistent identifier (pid). This class
+ * is responsible for managing the underlying storage implementation, as well as
+ * providing an interface for interacting with stored objects and their
+ * associated metadata.
+ *
  */
 public class HashFileStore {
     private static final Log logHashFileStore = LogFactory.getLog(HashFileStore.class);
@@ -170,7 +176,7 @@ public class HashFileStore {
             if (!checksumAlgorithmSupported) {
                 logHashFileStore
                         .error("HashFileStore.putObject - checksumAlgorithm not supported, checksumAlgorithm: "
-                                + checksumAlgorithm);
+                                + checksumAlgorithm + ". pid: " + pid);
                 throw new IllegalArgumentException(
                         "Checksum algorithm not supported - cannot be used to validate object. checksumAlgorithm: "
                                 + checksumAlgorithm + ". Supported algorithms: "
@@ -243,7 +249,10 @@ public class HashFileStore {
      */
     public boolean isValidAlgorithm(String algorithm) throws NullPointerException {
         if (algorithm == null) {
-            throw new NullPointerException("algorithm supplied is null: " + algorithm);
+            throw new NullPointerException("Algorithm value supplied is null");
+        }
+        if (algorithm.trim().isEmpty()) {
+            throw new IllegalArgumentException("Algorithm value supplied is empty");
         }
         if (!Arrays.asList(this.supportedHashAlgorithms).contains(algorithm) && algorithm != null) {
             return false;
@@ -443,7 +452,8 @@ public class HashFileStore {
      * @param source
      * @param target
      * 
-     * @return boolean to confirm file is not a duplicate and has been moved
+     * @return fileMoved (boolean) to confirm file is not a duplicate and has been
+     *         moved
      * @throws IOException       Unable to create parent directory
      * @throws SecurityException Insufficient permissions to move file
      */

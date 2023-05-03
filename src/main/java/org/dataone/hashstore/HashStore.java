@@ -16,8 +16,11 @@ import org.dataone.hashstore.hashfs.HashFileStore;
 import org.dataone.hashstore.interfaces.HashStoreInterface;
 
 /**
- * HashStore is a file store system/content-addressable file manager that uses
- * the object's hex digest value as the file address
+ * HashStore is a content-addressable file management system that utilizes a
+ * persistent identifier (PID) in the form of a hex digest value to address
+ * files. The system stores files in a file store and provides an API for
+ * interacting with the store. The API should implement the HashStoreInterface
+ * to ensure proper usage of the system.
  */
 public class HashStore implements HashStoreInterface {
     private static final Log logHashStore = LogFactory.getLog(HashStore.class);
@@ -121,7 +124,7 @@ public class HashStore implements HashStoreInterface {
             if (!checksumAlgorithmSupported) {
                 logHashStore
                         .error("HashStore.storeObject - checksumAlgorithm not supported, checksumAlgorithm: "
-                                + checksumAlgorithm);
+                                + checksumAlgorithm + ". pid: " + pid);
                 throw new IllegalArgumentException(
                         "Checksum algorithm not supported - cannot be used to validate object. checksumAlgorithm: "
                                 + checksumAlgorithm + ". Supported algorithms: "

@@ -3,9 +3,11 @@ package org.dataone.hashstore.hashfs;
 import java.util.Map;
 
 /**
- * Represents a unique address for a file in the Hashstore. Contains
- * identifying information about the file, its location on disk, and its
- * associated hex digest values.
+ * HashAddress is a class that models a unique identifier for a file in the
+ * Hashstore. It encapsulates information about the file's name, path, and
+ * associated hash digest values. By using HashAddress objects, client code can
+ * easily locate, retrieve, and modify files in the Hashstore without needing to
+ * know the underlying file system details.
  */
 public class HashAddress {
     private String id;

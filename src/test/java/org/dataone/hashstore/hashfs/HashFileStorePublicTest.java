@@ -107,7 +107,7 @@ public class HashFileStorePublicTest {
      * authority based id is correct
      */
     @Test
-    public void put_testHarness_id() throws Exception {
+    public void putObject_testHarness_id() throws Exception {
         for (String pid : this.testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
@@ -129,7 +129,7 @@ public class HashFileStorePublicTest {
      * relative path is correct
      */
     @Test
-    public void put_testHarness_relPath() throws Exception {
+    public void putObject_testHarness_relPath() throws Exception {
         for (String pid : this.testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
@@ -152,7 +152,7 @@ public class HashFileStorePublicTest {
      * absolute path is correct
      */
     @Test
-    public void put_testHarness_absPath() throws Exception {
+    public void putObject_testHarness_absPath() throws Exception {
         for (String pid : this.testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
@@ -174,7 +174,7 @@ public class HashFileStorePublicTest {
      * isDuplicate is correct
      */
     @Test
-    public void put_testHarness_isDuplicate() throws Exception {
+    public void putObject_testHarness_isDuplicate() throws Exception {
         for (String pid : this.testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
@@ -195,7 +195,7 @@ public class HashFileStorePublicTest {
      * hex digests are correct
      */
     @Test
-    public void put_testHarness_hexDigests() throws Exception {
+    public void putObject_testHarness_hexDigests() throws Exception {
         for (String pid : this.testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
@@ -226,7 +226,7 @@ public class HashFileStorePublicTest {
      * Verify that additional checksum is generated/validated
      */
     @Test
-    public void put_correctChecksumValue() throws Exception {
+    public void putObject_correctChecksumValue() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
@@ -245,7 +245,7 @@ public class HashFileStorePublicTest {
      * Verify exception thrown when checksum provided does not match
      */
     @Test(expected = IllegalArgumentException.class)
-    public void put_incorrectChecksumValue() throws Exception {
+    public void putObject_incorrectChecksumValue() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
@@ -261,7 +261,7 @@ public class HashFileStorePublicTest {
      * Verify exception thrown when checksum is empty and algorithm supported
      */
     @Test(expected = IllegalArgumentException.class)
-    public void put_emptyChecksumValue() throws Exception {
+    public void putObject_emptyChecksumValue() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
@@ -277,7 +277,7 @@ public class HashFileStorePublicTest {
      * Verify that putObject throws exception when storing a duplicate object
      */
     @Test(expected = FileAlreadyExistsException.class)
-    public void put_duplicateObject() throws Exception {
+    public void putObject_duplicateObject() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
@@ -300,7 +300,7 @@ public class HashFileStorePublicTest {
      * Verify exception thrown when unsupported additional algorithm provided
      */
     @Test(expected = IllegalArgumentException.class)
-    public void put_invalidAlgorithm() throws Exception {
+    public void putObject_invalidAlgorithm() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
@@ -312,10 +312,25 @@ public class HashFileStorePublicTest {
     }
 
     /**
+     * Verify exception thrown when empty algorithm is supplied
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void putObject_emptyAlgorithm() throws Exception {
+        // Get test file to "upload"
+        String pid = "jtao.1700.1";
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
+        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+        File testDataFile = new File(testdataAbsolutePath);
+
+        InputStream dataStream = new FileInputStream(testDataFile);
+        hashFileStore.putObject(dataStream, pid, "   ", null, null);
+    }
+
+    /**
      * Verify exception thrown when pid is empty
      */
     @Test(expected = IllegalArgumentException.class)
-    public void put_emptyPid() throws Exception {
+    public void putObject_emptyPid() throws Exception {
         // Get test file to "upload"
         String pidEmpty = "";
         String pid = "jtao.1700.1";
@@ -332,7 +347,7 @@ public class HashFileStorePublicTest {
      * Verify exception thrown when pid is null
      */
     @Test(expected = IllegalArgumentException.class)
-    public void put_nullPid() throws Exception {
+    public void putObject_nullPid() throws Exception {
         // Get test file to "upload"
         String pidNull = null;
         String pid = "jtao.1700.1";
@@ -349,7 +364,7 @@ public class HashFileStorePublicTest {
      * Verify exception thrown when object is null
      */
     @Test(expected = NullPointerException.class)
-    public void put_nullObject() throws Exception {
+    public void putObject_nullObject() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
 
