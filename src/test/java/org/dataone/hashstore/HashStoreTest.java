@@ -5,7 +5,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.FileAlreadyExistsException;
@@ -38,13 +37,13 @@ public class HashStoreTest {
      * Generates a hierarchical path by dividing a given digest into tokens
      * of fixed width, and concatenating them with '/' as the delimiter.
      *
-     * @param depth
-     * @param width
-     * @param digest
+     * @param depth  integer to represent number of directories
+     * @param width  width of each directory
+     * @param digest value to shard
      * @return String
      */
     public String shard(int depth, int width, String digest) {
-        List<String> tokens = new ArrayList<String>();
+        List<String> tokens = new ArrayList<>();
         int digestLength = digest.length();
         for (int i = 0; i < depth; i++) {
             int start = i * width;
@@ -54,7 +53,7 @@ public class HashStoreTest {
         if (depth * width < digestLength) {
             tokens.add(digest.substring(depth * width));
         }
-        List<String> stringArray = new ArrayList<String>();
+        List<String> stringArray = new ArrayList<>();
         for (String str : tokens) {
             if (!str.trim().isEmpty()) {
                 stringArray.add(str);
@@ -108,9 +107,9 @@ public class HashStoreTest {
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
                     "testdata", pidFormatted);
             String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-            File testDataFile = new File(testdataAbsolutePath);
+            Path testDataFile = new File(testdataAbsolutePath).toPath();
 
-            InputStream dataStream = new FileInputStream(testDataFile);
+            InputStream dataStream = Files.newInputStream(testDataFile);
             HashAddress objInfo = hashStore.storeObject(dataStream, pid, null, null, null);
 
             // Check id (sha-256 hex digest of the ab_id, aka s_cid)
@@ -129,9 +128,9 @@ public class HashStoreTest {
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
                     "testdata", pidFormatted);
             String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-            File testDataFile = new File(testdataAbsolutePath);
+            Path testDataFile = new File(testdataAbsolutePath).toPath();
 
-            InputStream dataStream = new FileInputStream(testDataFile);
+            InputStream dataStream = Files.newInputStream(testDataFile);
             HashAddress objInfo = hashStore.storeObject(dataStream, pid, null, null, null);
 
             // Check relative path
@@ -151,9 +150,9 @@ public class HashStoreTest {
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
                     "testdata", pidFormatted);
             String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-            File testDataFile = new File(testdataAbsolutePath);
+            Path testDataFile = new File(testdataAbsolutePath).toPath();
 
-            InputStream dataStream = new FileInputStream(testDataFile);
+            InputStream dataStream = Files.newInputStream(testDataFile);
             HashAddress objInfo = hashStore.storeObject(dataStream, pid, null, null, null);
 
             // Check absolute path
@@ -172,9 +171,9 @@ public class HashStoreTest {
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
                     "testdata", pidFormatted);
             String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-            File testDataFile = new File(testdataAbsolutePath);
+            Path testDataFile = new File(testdataAbsolutePath).toPath();
 
-            InputStream dataStream = new FileInputStream(testDataFile);
+            InputStream dataStream = Files.newInputStream(testDataFile);
             HashAddress objInfo = hashStore.storeObject(dataStream, pid, null, null, null);
 
             // Check duplicate status
@@ -192,9 +191,9 @@ public class HashStoreTest {
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
                     "testdata", pidFormatted);
             String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-            File testDataFile = new File(testdataAbsolutePath);
+            Path testDataFile = new File(testdataAbsolutePath).toPath();
 
-            InputStream dataStream = new FileInputStream(testDataFile);
+            InputStream dataStream = Files.newInputStream(testDataFile);
             HashAddress objInfo = hashStore.storeObject(dataStream, pid, null, null, null);
 
             Map<String, String> hexDigests = objInfo.getHexDigests();
@@ -232,9 +231,9 @@ public class HashStoreTest {
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
                     "testdata", pidFormatted);
             String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-            File testDataFile = new File(testdataAbsolutePath);
+            Path testDataFile = new File(testdataAbsolutePath).toPath();
 
-            InputStream dataStream = new FileInputStream(testDataFile);
+            InputStream dataStream = Files.newInputStream(testDataFile);
             hashStore.storeObject(dataStream, null, null, null, null);
 
         }
@@ -250,9 +249,9 @@ public class HashStoreTest {
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
                     "testdata", pidFormatted);
             String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-            File testDataFile = new File(testdataAbsolutePath);
+            Path testDataFile = new File(testdataAbsolutePath).toPath();
 
-            InputStream dataStream = new FileInputStream(testDataFile);
+            InputStream dataStream = Files.newInputStream(testDataFile);
             hashStore.storeObject(dataStream, "", null, null, null);
 
         }
@@ -267,10 +266,11 @@ public class HashStoreTest {
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
         String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-        File testDataFile = new File(testdataAbsolutePath);
+        Path testDataFile = new File(testdataAbsolutePath).toPath();
 
         String checksumCorrect = "9c25df1c8ba1d2e57bb3fd4785878b85";
-        InputStream dataStream = new FileInputStream(testDataFile);
+
+        InputStream dataStream = Files.newInputStream(testDataFile);
         hashStore.storeObject(dataStream, pid, "MD2", checksumCorrect, "MD2");
 
         String md2 = this.testData.pidData.get(pid).get("md2");
@@ -286,10 +286,11 @@ public class HashStoreTest {
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
         String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-        File testDataFile = new File(testdataAbsolutePath);
+        Path testDataFile = new File(testdataAbsolutePath).toPath();
 
         String checksumIncorrect = "1c25df1c8ba1d2e57bb3fd4785878b85";
-        InputStream dataStream = new FileInputStream(testDataFile);
+
+        InputStream dataStream = Files.newInputStream(testDataFile);
         hashStore.storeObject(dataStream, pid, "MD2", checksumIncorrect, "MD2");
     }
 
@@ -302,10 +303,11 @@ public class HashStoreTest {
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
         String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-        File testDataFile = new File(testdataAbsolutePath);
+        Path testDataFile = new File(testdataAbsolutePath).toPath();
 
         String checksumEmpty = "";
-        InputStream dataStream = new FileInputStream(testDataFile);
+
+        InputStream dataStream = Files.newInputStream(testDataFile);
         hashStore.storeObject(dataStream, pid, "MD2", checksumEmpty, "MD2");
     }
 
@@ -318,9 +320,9 @@ public class HashStoreTest {
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
         String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-        File testDataFile = new File(testdataAbsolutePath);
+        Path testDataFile = new File(testdataAbsolutePath).toPath();
 
-        InputStream dataStream = new FileInputStream(testDataFile);
+        InputStream dataStream = Files.newInputStream(testDataFile);
         hashStore.storeObject(dataStream, pid, "SM2", null, null);
     }
 
@@ -335,12 +337,12 @@ public class HashStoreTest {
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
                     "testdata", pidFormatted);
             String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-            File testDataFile = new File(testdataAbsolutePath);
+            Path testDataFile = new File(testdataAbsolutePath).toPath();
 
-            InputStream dataStream = new FileInputStream(testDataFile);
+            InputStream dataStream = Files.newInputStream(testDataFile);
             hashStore.storeObject(dataStream, pid, null, null, null);
 
-            InputStream dataStreamDup = new FileInputStream(testDataFile);
+            InputStream dataStreamDup = Files.newInputStream(testDataFile);
             hashStore.storeObject(dataStreamDup, pid, null, null, null);
         }
     }
@@ -359,7 +361,7 @@ public class HashStoreTest {
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
         String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-        File testDataFile = new File(testdataAbsolutePath);
+        Path testDataFile = new File(testdataAbsolutePath).toPath();
 
         // Create a thread pool with 2 threads
         ExecutorService executorService = Executors.newFixedThreadPool(2);
@@ -367,7 +369,7 @@ public class HashStoreTest {
         // Submit 2 threads, each calling storeObject
         executorService.submit(() -> {
             try {
-                InputStream dataStream = new FileInputStream(testDataFile);
+                InputStream dataStream = Files.newInputStream(testDataFile);
                 HashAddress objInfo = hashStore.storeObject(dataStream, pid, null, null, null);
                 if (objInfo != null) {
                     String absPath = objInfo.getAbsPath();
@@ -380,7 +382,7 @@ public class HashStoreTest {
         });
         executorService.submit(() -> {
             try {
-                InputStream dataStreamDup = new FileInputStream(testDataFile);
+                InputStream dataStreamDup = Files.newInputStream(testDataFile);
                 HashAddress objInfoDup = hashStore.storeObject(dataStreamDup, pid, null, null, null);
                 if (objInfoDup != null) {
                     String absPath = objInfoDup.getAbsPath();
@@ -410,7 +412,7 @@ public class HashStoreTest {
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
         String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-        File testDataFile = new File(testdataAbsolutePath);
+        Path testDataFile = new File(testdataAbsolutePath).toPath();
 
         // Create a thread pool with 2 threads
         ExecutorService executorService = Executors.newFixedThreadPool(2);
@@ -418,7 +420,7 @@ public class HashStoreTest {
         // Submit 2 threads, each calling storeObject
         executorService.submit(() -> {
             try {
-                InputStream dataStream = new FileInputStream(testDataFile);
+                InputStream dataStream = Files.newInputStream(testDataFile);
                 hashStore.storeObject(dataStream, pid, null, null, null);
             } catch (Exception e) {
                 assertTrue(e instanceof FileAlreadyExistsException);
@@ -426,7 +428,7 @@ public class HashStoreTest {
         });
         executorService.submit(() -> {
             try {
-                InputStream dataStreamDup = new FileInputStream(testDataFile);
+                InputStream dataStreamDup = Files.newInputStream(testDataFile);
                 hashStore.storeObject(dataStreamDup, pid, null, null, null);
             } catch (Exception e) {
                 assertTrue(e instanceof FileAlreadyExistsException);

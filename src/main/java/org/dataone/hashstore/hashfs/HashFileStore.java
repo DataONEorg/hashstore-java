@@ -112,7 +112,7 @@ public class HashFileStore {
      * checksumAlgorithm is provided, HashFileStore will validate the given
      * checksum against the hex digest produced of the supplied checksumAlgorithm.
      * 
-     * @param object
+     * @param object              inputstream for file
      * @param pid                 authority based identifier
      * @param additionalAlgorithm optional checksum value to generate in hex digests
      * @param checksum            value of checksum to validate against
@@ -122,7 +122,8 @@ public class HashFileStore {
      *         absolute path, duplicate status and a checksum map based on the
      *         default algorithm list.
      * @throws IOException                I/O Error when writing file, generating
-     *                                    checksums and moving file
+     *                                    checksums and moving file or deleting
+     *                                    tmpFile upon duplicate found
      * @throws NoSuchAlgorithmException   When additiionalAlgorithm or
      *                                    checksumAlgorithm is invalid
      * @throws SecurityException          Insufficient permissions to read/access
@@ -207,14 +208,18 @@ public class HashFileStore {
             logHashFileStore.info("HashFileStore.putObject - Validating object");
             String digestFromHexDigests = hexDigests.get(checksumAlgorithm);
             if (!checksum.equals(digestFromHexDigests)) {
-                tmpFile.delete();
+                // Delete tmp File
+                boolean deleteStatus = tmpFile.delete();
+                if (!deleteStatus) {
+                    throw new IOException("Object cannot be validated and failed to delete tmpFile: " + tmpFile);
+                }
                 logHashFileStore.error(
                         "HashFileStore.putObject - Checksum supplied does not equal to the calculated hex digest: "
                                 + digestFromHexDigests + ". Checksum provided: " + checksum + ". Deleting tmpFile: "
-                                + tmpFile.toString());
+                                + tmpFile);
                 throw new IllegalArgumentException(
                         "Checksum supplied does not equal to the calculated hex digest: " + digestFromHexDigests
-                                + ". Checksum provided: " + checksum + ". Deleting tmpFile: " + tmpFile.toString());
+                                + ". Checksum provided: " + checksum + ". Deleting tmpFile: " + tmpFile);
             }
         }
 
@@ -225,12 +230,15 @@ public class HashFileStore {
         logHashFileStore
                 .info("HashFileStore.putObject - Move object success, permanent address: " + objAbsolutePathString);
         if (!isNotDuplicate) {
-            tmpFile.delete();
+            boolean deleteStatus = tmpFile.delete();
+            if (!deleteStatus) {
+                throw new IOException("Object is a duplicate. Attempted to delete tmpFile but failed: " + tmpFile);
+            }
             objAuthorityId = null;
             objShardString = null;
             objAbsolutePathString = null;
             logHashFileStore.info(
-                    "HashFileStore.putObject - Did not move object, duplicate file found: " + objAbsolutePathString);
+                    "HashFileStore.putObject - Did not move object, duplicate file found for pid: " + pid);
         }
 
         // Create HashAddress object to return with pertinent data
@@ -243,9 +251,9 @@ public class HashFileStore {
      * Checks whether a given algorithm is supported based on the HashUtil class
      * variable supportedHashAlgorithms
      * 
-     * @param algorithm
+     * @param algorithm string value (ex. SHA-256)
      * @return boolean that describes whether an algorithm is supported
-     * @throws NullPointerException
+     * @throws NullPointerException algorithm supplied cannot be null
      */
     public boolean isValidAlgorithm(String algorithm) throws NullPointerException {
         if (algorithm == null) {
@@ -254,18 +262,15 @@ public class HashFileStore {
         if (algorithm.trim().isEmpty()) {
             throw new IllegalArgumentException("Algorithm value supplied is empty");
         }
-        if (!Arrays.asList(this.supportedHashAlgorithms).contains(algorithm) && algorithm != null) {
-            return false;
-        } else {
-            return true;
-        }
+        boolean isValid = Arrays.asList(this.supportedHashAlgorithms).contains(algorithm);
+        return isValid;
     }
 
     /**
      * Given a string and supported algorithm returns the hex digest
      * 
      * @param string    authority based identifier or persistent identifier
-     * @param algorithm
+     * @param algorithm string value (ex. SHA-256)
      * 
      * @return Hex digest of the given string in lower-case
      * @throws IllegalArgumentException String or algorithm cannot be null or empty
@@ -297,13 +302,13 @@ public class HashFileStore {
      * Generates a hierarchical path by dividing a given digest into tokens
      * of fixed width, and concatenating them with '/' as the delimiter.
      *
-     * @param depth
-     * @param width
-     * @param digest
+     * @param depth  integer to represent number of directories
+     * @param width  width of each directory
+     * @param digest value to shard
      * @return String
      */
     protected String shard(int depth, int width, String digest) {
-        List<String> tokens = new ArrayList<String>();
+        List<String> tokens = new ArrayList<>();
         int digestLength = digest.length();
         for (int i = 0; i < depth; i++) {
             int start = i * width;
@@ -313,7 +318,7 @@ public class HashFileStore {
         if (depth * width < digestLength) {
             tokens.add(digest.substring(depth * width));
         }
-        List<String> stringArray = new ArrayList<String>();
+        List<String> stringArray = new ArrayList<>();
         for (String str : tokens) {
             if (!str.trim().isEmpty()) {
                 stringArray.add(str);
@@ -326,8 +331,8 @@ public class HashFileStore {
     /**
      * Creates an empty file in a given location
      * 
-     * @param prefix
-     * @param directory
+     * @param prefix    string to prepend before tmp file
+     * @param directory location to create tmp file
      * 
      * @return Temporary file (File) ready to write into
      * @throws IOException       Issues with generating tmpFile
@@ -335,12 +340,11 @@ public class HashFileStore {
      */
     protected File generateTmpFile(String prefix, Path directory) throws IOException, SecurityException {
         String newPrefix = prefix + "-" + System.currentTimeMillis();
-        String suffix = null;
-        File newFile = null;
-        Path newPath = null;
         try {
-            newPath = Files.createTempFile(directory, newPrefix, suffix);
-            newFile = newPath.toFile();
+            Path newPath = Files.createTempFile(directory, newPrefix, null);
+            File newFile = newPath.toFile();
+            logHashFileStore.debug("HashFileStore.generateTmpFile - tmpFile generated: " + newFile.getAbsolutePath());
+            return newFile;
         } catch (IOException ioe) {
             logHashFileStore.error("HashFileStore.generateTmpFile - Unable to generate tmpFile: " + ioe.getMessage());
             throw new IOException("Unable to generate tmpFile. IOException: " + ioe.getMessage());
@@ -348,8 +352,6 @@ public class HashFileStore {
             logHashFileStore.error("HashFileStore.generateTmpFile - Unable to generate tmpFile: " + se.getMessage());
             throw new SecurityException("File not allowed (security manager exists): " + se.getMessage());
         }
-        logHashFileStore.debug("HashFileStore.generateTmpFile - tmpFile generated: " + newFile.getAbsolutePath());
-        return newFile;
     }
 
     /**
@@ -360,9 +362,9 @@ public class HashFileStore {
      * 
      * Default algorithms: MD5, SHA-1, SHA-256, SHA-384, SHA-512
      * 
-     * @param tmpFile
-     * @param dataStream
-     * @param additionalAlgorithm
+     * @param tmpFile             file to write input stream data into
+     * @param dataStream          input stream of data to store
+     * @param additionalAlgorithm additional algorithm to include in hex digest map
      * 
      * @return A map containing the hex digests of the default algorithms
      * @throws NoSuchAlgorithmException Unable to generate new instance of supplied
@@ -416,15 +418,14 @@ public class HashFileStore {
                     extraAlgo.update(buffer, 0, bytesRead);
                 }
             }
+        } catch (IOException ioe) {
+            logHashFileStore.error(
+                    "HashFileStore.writeToTmpFileAndGenerateChecksums - IOException encountered (os.flush/close or write related): "
+                            + ioe.getMessage());
+            throw ioe;
         } finally {
-            try {
-                os.flush();
-                os.close();
-            } catch (Exception e) {
-                logHashFileStore.error("HashFileStore.writeToTmpFileAndGenerateChecksums - Unable to os.flush/close(): "
-                        + e.getMessage());
-                throw e;
-            }
+            os.flush();
+            os.close();
         }
 
         logHashFileStore.info("HashFileStore.writeToTmpFileAndGenerateChecksums - Object has been written to tmpFile");
@@ -449,8 +450,8 @@ public class HashFileStore {
     /**
      * Moves an object from one location to another if the object does not exist
      * 
-     * @param source
-     * @param target
+     * @param source file to move
+     * @param target where to move the file
      * 
      * @return fileMoved (boolean) to confirm file is not a duplicate and has been
      *         moved
@@ -458,33 +459,32 @@ public class HashFileStore {
      * @throws SecurityException Insufficient permissions to move file
      */
     protected boolean move(File source, File target) throws IOException, SecurityException {
-        boolean fileMoved = false;
         if (target.exists()) {
-            return fileMoved;
-        } else {
-            File destinationDirectory = new File(target.getParent());
-            // Create parent directory if it doesn't exist
-            if (!destinationDirectory.exists()) {
-                Path destinationDirectoryPath = destinationDirectory.toPath();
-                Files.createDirectories(destinationDirectoryPath);
-            }
-
-            // Move file
-            Path sourceFilePath = source.toPath();
-            Path targetFilePath = target.toPath();
-            fileMoved = true;
-            try {
-                Files.move(sourceFilePath, targetFilePath, StandardCopyOption.ATOMIC_MOVE);
-            } catch (AtomicMoveNotSupportedException amnse) {
-                logHashFileStore.warn(
-                        "HashFileStore.move - StandardCopyOption.ATOMIC_MOVE failed, trying again without CopyOption.");
-                Files.move(sourceFilePath, targetFilePath);
-            } catch (IOException ioe) {
-                logHashFileStore.error("HashFileStore.move - Unable to move file. Source: " + source.toString()
-                        + ". Target: " + target.toString());
-                throw ioe;
-            }
+            return false;
         }
-        return fileMoved;
+
+        File destinationDirectory = new File(target.getParent());
+        // Create parent directory if it doesn't exist
+        if (!destinationDirectory.exists()) {
+            Path destinationDirectoryPath = destinationDirectory.toPath();
+            Files.createDirectories(destinationDirectoryPath);
+        }
+
+        // Move file
+        Path sourceFilePath = source.toPath();
+        Path targetFilePath = target.toPath();
+        try {
+            Files.move(sourceFilePath, targetFilePath, StandardCopyOption.ATOMIC_MOVE);
+            return true;
+        } catch (AtomicMoveNotSupportedException amnse) {
+            logHashFileStore.warn(
+                    "HashFileStore.move - StandardCopyOption.ATOMIC_MOVE failed, trying again without CopyOption.");
+            Files.move(sourceFilePath, targetFilePath);
+            return true;
+        } catch (IOException ioe) {
+            logHashFileStore.error("HashFileStore.move - Unable to move file. Source: " + source
+                    + ". Target: " + target);
+            throw ioe;
+        }
     }
 }

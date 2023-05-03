@@ -1,7 +1,6 @@
 package org.dataone.hashstore.hashfs;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -54,8 +53,7 @@ public class HashFileStoreProtectedTest {
      */
     public File generateTemporaryFile() throws Exception {
         Path directory = tempFolder.getRoot().toPath();
-        File newFile = null;
-        newFile = this.hashFileStore.generateTmpFile("testfile", directory);
+        File newFile = this.hashFileStore.generateTmpFile("testfile", directory);
         return newFile;
     }
 
@@ -155,12 +153,12 @@ public class HashFileStoreProtectedTest {
             // Get test file
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pidFormatted);
             String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-            File testDataFile = new File(testdataAbsolutePath);
+            Path testDataFile = new File(testdataAbsolutePath).toPath();
 
             // Extra algo to calculate - MD2
             String addAlgo = "MD2";
 
-            InputStream dataStream = new FileInputStream(testDataFile);
+            InputStream dataStream = Files.newInputStream(testDataFile);
             Map<String, String> hexDigests = this.hashFileStore.writeToTmpFileAndGenerateChecksums(newTmpFile,
                     dataStream,
                     addAlgo);
@@ -191,15 +189,15 @@ public class HashFileStoreProtectedTest {
             // Get test file
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pidFormatted);
             String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-            File testDataFile = new File(testdataAbsolutePath);
+            Path testDataFile = new File(testdataAbsolutePath).toPath();
 
             // Extra algo to calculate - MD2
             String addAlgo = "MD2";
 
-            InputStream dataStream = new FileInputStream(testDataFile);
+            InputStream dataStream = Files.newInputStream(testDataFile);
             this.hashFileStore.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream, addAlgo);
 
-            long testDataFileSize = Files.size(testDataFile.toPath());
+            long testDataFileSize = Files.size(testDataFile);
             Path tmpFilePath = newTmpFile.toPath();
             long tmpFileSize = Files.size(tmpFilePath);
             assertEquals(testDataFileSize, tmpFileSize);
@@ -218,12 +216,12 @@ public class HashFileStoreProtectedTest {
             // Get test file
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pidFormatted);
             String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-            File testDataFile = new File(testdataAbsolutePath);
+            Path testDataFile = new File(testdataAbsolutePath).toPath();
 
             // Extra algo to calculate - MD2
             String addAlgo = "MD2";
 
-            InputStream dataStream = new FileInputStream(testDataFile);
+            InputStream dataStream = Files.newInputStream(testDataFile);
             Map<String, String> hexDigests = this.hashFileStore.writeToTmpFileAndGenerateChecksums(newTmpFile,
                     dataStream,
                     addAlgo);
@@ -246,12 +244,12 @@ public class HashFileStoreProtectedTest {
             // Get test file
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pidFormatted);
             String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-            File testDataFile = new File(testdataAbsolutePath);
+            Path testDataFile = new File(testdataAbsolutePath).toPath();
 
             // Extra algo to calculate - MD2
             String addAlgo = "SM2";
 
-            InputStream dataStream = new FileInputStream(testDataFile);
+            InputStream dataStream = Files.newInputStream(testDataFile);
             this.hashFileStore.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream, addAlgo);
         }
     }

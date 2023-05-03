@@ -23,13 +23,13 @@ public interface HashStoreInterface {
      * address.
      * 
      * @param object              Input stream to file
-     * @param pid                 Authority-based idenetifier
+     * @param pid                 Authority-based identifier
      * @param additionalAlgorithm Additional hex digest to include in hexDigests
      * @param checksum            Value of checksum to validate against
      * @param checksumAlgorithm   Algorithm of checksum submitted
-     * @return
+     * @return HashAddress object encapsulating file information
      * @throws Exception Various exceptions depending on the implementation
      */
-    public HashAddress storeObject(InputStream object, String pid, String additionalAlgorithm, String checksum,
+    HashAddress storeObject(InputStream object, String pid, String additionalAlgorithm, String checksum,
             String checksumAlgorithm) throws Exception;
 }

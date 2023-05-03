@@ -24,20 +24,19 @@ import org.dataone.hashstore.interfaces.HashStoreInterface;
  */
 public class HashStore implements HashStoreInterface {
     private static final Log logHashStore = LogFactory.getLog(HashStore.class);
-    private HashFileStore hashfs;
+    private final HashFileStore hashfs;
     private final int depth = 3;
     private final int width = 2;
-    private final String sysmetaNameSpace = "http://ns.dataone.org/service/types/v2.0";
     private final String algorithm = "SHA-256";
     private final static int TIME_OUT_MILLISEC = 1000;
-    private final static ArrayList<String> objectLockedIds = new ArrayList<String>(100);
+    private final static ArrayList<String> objectLockedIds = new ArrayList<>(100);
 
     /**
      * Default constructor for HashStore
      * 
      * @param storeDirectory Full file path (ex. /usr/org/metacat/objects)
-     * @throws IllegalArgumentException
-     * @throws IOException
+     * @throws IllegalArgumentException Depth, width must be greater than 0
+     * @throws IOException              Issue when creating storeDirectory
      */
     public HashStore(Path storeDirectory)
             throws IllegalArgumentException, IOException {
@@ -189,17 +188,15 @@ public class HashStore implements HashStoreInterface {
             logHashStore.error("HashStore.storeObject - Cannot store object for pid: " + pid
                     + ". SecurityException: " + se.getMessage());
             throw se;
+        } catch (RuntimeException re) {
+            logHashStore.error("HashStore.storeObject - Object was stored for : " + pid
+                    + ". But encountered RuntimeException when releasing object lock: " + re.getMessage());
+            throw re;
         } finally {
             // Release lock
-            try {
-                synchronized (objectLockedIds) {
-                    objectLockedIds.remove(pid);
-                    objectLockedIds.notifyAll();
-                }
-            } catch (RuntimeException re) {
-                logHashStore.error("HashStore.storeObject - Object was stored for : " + pid
-                        + ". But encountered RuntimeException when releasing object lock: " + re.getMessage());
-                throw re;
+            synchronized (objectLockedIds) {
+                objectLockedIds.remove(pid);
+                objectLockedIds.notifyAll();
             }
         }
     }
