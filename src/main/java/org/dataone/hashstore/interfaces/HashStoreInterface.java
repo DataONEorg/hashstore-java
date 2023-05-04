@@ -10,17 +10,26 @@ public interface HashStoreInterface {
      * successful storage, the method returns a HashAddress object containing
      * relevant file information, such as the file's id, relative path, absolute
      * path, duplicate object status, and hex digest map of algorithms and
-     * checksums.
+     * checksums. `storeObject` also ensures that an object is stored only once by
+     * synchronizing multiple calls and rejecting calls to store duplicate objects.
      * 
-     * The file's id is determined using the SHA-256 hex digest of the provided pid,
-     * which is also used as the permanent address of the file. The method ensures
-     * that an object is stored only once by synchronizing multiple calls and
-     * rejecting the ones with already-existing objects. If an additionalAlgorithm
-     * is provided, storeObject adds the algorithm and its corresponding hex digest
-     * to the hex digest map if it is supported. Similarly, if a checksum and a
-     * supported checksumAlgorithm are provided, the method validates the object to
-     * ensure it matches what is provided before moving the file to its permanent
-     * address.
+     * The file's id is determined by calculating the SHA-256 hex digest of the
+     * provided pid, which is also used as the permanent address of the file. The
+     * file's identifier is then sharded using a depth of 3 and width of 2,
+     * delimited by '/' and concatenated to produce the final permanent address
+     * and is stored in the `/[...storeDirectory]/objects/` directory.
+     * 
+     * By default, the hex digest map includes the following hash algorithms: MD5,
+     * SHA-1, SHA-256, SHA-384 and SHA-512, which are the most commonly used
+     * algorithms in dataset submissions to DataONE and the Arctic Data Center. If
+     * an additional algorithm is provided, the `storeObject` method checks if it is
+     * supported and adds it to the map along with its corresponding hex digest. An
+     * algorithm is considered "supported" if it is recognized as a valid hash
+     * algorithm in the `java.security.MessageDigest` class.
+     * 
+     * Similarly, if a checksum and a checksumAlgorithm value are provided,
+     * `storeObject` validates the object to ensure it matches what is provided
+     * before moving the file to its permanent address.
      * 
      * @param object              Input stream to file
      * @param pid                 Authority-based identifier
