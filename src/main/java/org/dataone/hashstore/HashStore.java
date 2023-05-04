@@ -28,7 +28,6 @@ public class HashStore implements HashStoreInterface {
     private final int depth = 3;
     private final int width = 2;
     private final String algorithm = "SHA-256";
-    private final static int TIME_OUT_MILLISEC = 1000;
     private final static ArrayList<String> objectLockedIds = new ArrayList<>(100);
 
     /**
@@ -78,13 +77,14 @@ public class HashStore implements HashStoreInterface {
      * @throws IllegalArgumentException   When signature values are unexpectedly
      *                                    empty (checksum, pid, etc.)
      * @throws NullPointerException       Arguments are null for pid or object
-     * @throws InterruptedException       Synchronization issue with objectLockedIds
+     * @throws RunTimeException           When attempting to store pid object that
+     *                                    is already in progress
      */
     @Override
     public HashAddress storeObject(InputStream object, String pid, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
             throws NoSuchAlgorithmException, IOException, SecurityException, FileNotFoundException,
-            FileAlreadyExistsException, IllegalArgumentException, NullPointerException, InterruptedException {
+            FileAlreadyExistsException, IllegalArgumentException, NullPointerException, RuntimeException {
         logHashStore.info("HashStore.storeObject - Called to store object for pid: " + pid);
         // Begin input validation
         if (object == null) {
@@ -114,17 +114,9 @@ public class HashStore implements HashStoreInterface {
         // A pid can only be stored once and only once, subsequent calls will
         // be accepted but will be rejected if pid hash object exists
         synchronized (objectLockedIds) {
-            while (objectLockedIds.contains(pid)) {
-                try {
-                    logHashStore.warn("HashStore.storeObject - Duplicate object request encountered for pid: " + pid
-                            + ". Lock is waiting for pid to be released.");
-                    objectLockedIds.wait(TIME_OUT_MILLISEC);
-                } catch (InterruptedException ie) {
-                    logHashStore.error(
-                            "HashStore.storeObject - objectLockedIds synchronization has been interrupted for pid: "
-                                    + pid + ". Exception: " + ie.getMessage());
-                    throw ie;
-                }
+            if (objectLockedIds.contains(pid)) {
+                logHashStore.warn("HashStore.storeObject - Duplicate object request encountered for pid: " + pid);
+                throw new RuntimeException("HashStore.storeObject request for pid: " + pid + " already in progress.");
             }
             objectLockedIds.add(pid);
         }

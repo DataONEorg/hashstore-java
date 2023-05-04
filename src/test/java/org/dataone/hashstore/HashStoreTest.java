@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.dataone.hashstore.hashfs.HashAddress;
@@ -415,14 +416,14 @@ public class HashStoreTest {
     }
 
     /**
-     * Check store object pid lock for duplicate object exception
+     * Check store object pid lock for RunTimException
      * 
-     * Two futures (threads) will run concurrently, one of which will encounter an
+     * Three futures (threads) will run concurrently, one of which will encounter an
      * ExecutionException. The future that yields the exception is then checked to
-     * confirm that a FileAlreadyExistsException exception is thrown.
+     * confirm that a RunTimeException is thrown.
      */
     @Test
-    public void storeObject_objectLockedIdsFileExistsException() throws Exception {
+    public void storeObject_objectLockedIdsRunTimeException() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
@@ -433,24 +434,38 @@ public class HashStoreTest {
         ExecutorService executorService = Executors.newFixedThreadPool(2);
 
         // Submit 2 threads, each calling storeObject
-        executorService.submit(() -> {
+        Future<?> future1 = executorService.submit(() -> {
             try {
+                // Path oneGbFile = this.generateRandomFile("doutest").toPath();
                 InputStream dataStream = Files.newInputStream(testDataFile);
                 hashStore.storeObject(dataStream, pid, null, null, null);
             } catch (Exception e) {
-                assertTrue(e instanceof FileAlreadyExistsException);
+                assertTrue(e instanceof RuntimeException);
             }
         });
-        executorService.submit(() -> {
+        Future<?> future2 = executorService.submit(() -> {
             try {
                 InputStream dataStreamDup = Files.newInputStream(testDataFile);
                 hashStore.storeObject(dataStreamDup, pid, null, null, null);
             } catch (Exception e) {
-                assertTrue(e instanceof FileAlreadyExistsException);
+                assertTrue(e instanceof RuntimeException);
+            }
+        });
+        Future<?> future3 = executorService.submit(() -> {
+            try {
+                InputStream dataStreamDupTwo = Files.newInputStream(testDataFile);
+                hashStore.storeObject(dataStreamDupTwo, pid, null, null, null);
+            } catch (Exception e) {
+                assertTrue(e instanceof RuntimeException);
             }
         });
 
-        // Wait for all tasks to complete
+        // Wait for all tasks to complete and check results
+        // Calling .get() on the future ensures that all tasks complete before the test
+        // ends and will re-throw an exception if one has been encountered
+        future1.get();
+        future2.get();
+        future3.get();
         executorService.shutdown();
         executorService.awaitTermination(1, TimeUnit.MINUTES);
     }
