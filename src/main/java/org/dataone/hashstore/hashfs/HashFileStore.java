@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import javax.xml.bind.DatatypeConverter;
 
@@ -340,7 +341,9 @@ public class HashFileStore {
      * @throws SecurityException Insufficient permissions to create tmpFile
      */
     protected File generateTmpFile(String prefix, Path directory) throws IOException, SecurityException {
-        String newPrefix = prefix + "-" + System.currentTimeMillis();
+        Random rand = new Random();
+        int randomNumber = rand.nextInt(1000000);
+        String newPrefix = prefix + "-" + System.currentTimeMillis() + randomNumber;
         try {
             Path newPath = Files.createTempFile(directory, newPrefix, null);
             File newFile = newPath.toFile();
