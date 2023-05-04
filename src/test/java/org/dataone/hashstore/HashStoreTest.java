@@ -312,6 +312,21 @@ public class HashStoreTest {
     }
 
     /**
+     * Verify exception thrown when checksum is null and algorithm supported
+     */
+    @Test(expected = NullPointerException.class)
+    public void storeObject_nullChecksumValue() throws Exception {
+        // Get test file to "upload"
+        String pid = "jtao.1700.1";
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
+        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+        Path testDataFile = new File(testdataAbsolutePath).toPath();
+
+        InputStream dataStream = Files.newInputStream(testDataFile);
+        hashStore.storeObject(dataStream, pid, "MD2", null, "SHA-512/224");
+    }
+
+    /**
      * Verify exception thrown when unsupported additional algorithm provided
      */
     @Test(expected = IllegalArgumentException.class)

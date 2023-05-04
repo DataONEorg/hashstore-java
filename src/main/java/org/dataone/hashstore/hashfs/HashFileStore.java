@@ -149,41 +149,8 @@ public class HashFileStore {
             logHashFileStore.error("HashFileStore.putObject - pid cannot be null or empty. pid: " + pid);
             throw new IllegalArgumentException("The pid cannot be null or empty");
         }
-        // Checksum cannot be empty or null if checksumAlgorithm is passed
-        if (checksumAlgorithm != null & checksum != null) {
-            if (checksum.trim().isEmpty()) {
-                logHashFileStore
-                        .error("HashFileStore.putObject - checksum cannot be empty if checksumAlgorithm is supplied, pid: "
-                                + pid);
-                throw new IllegalArgumentException(
-                        "Checksum cannot be empty when a checksumAlgorithm is supplied.");
-            }
-        }
-        // Cannot generate additional or checksum algorithm if it is not supported
-        if (additionalAlgorithm != null) {
-            boolean algorithmSupported = this.isValidAlgorithm(additionalAlgorithm);
-            if (!algorithmSupported) {
-                logHashFileStore.error("HashFileStore.putObject - additionalAlgorithm is not supported."
-                        + "additionalAlgorithm: " + additionalAlgorithm + ". pid: " + pid);
-                throw new IllegalArgumentException(
-                        "Additional algorithm not supported - unable to generate additional hex digest value. additionalAlgorithm: "
-                                + additionalAlgorithm + ". Supported algorithms: "
-                                + Arrays.toString(SUPPORTED_HASH_ALGORITHMS));
-            }
-        }
-        // Check support for checksumAlgorithm
-        if (checksumAlgorithm != null) {
-            boolean checksumAlgorithmSupported = this.isValidAlgorithm(checksumAlgorithm);
-            if (!checksumAlgorithmSupported) {
-                logHashFileStore
-                        .error("HashFileStore.putObject - checksumAlgorithm not supported, checksumAlgorithm: "
-                                + checksumAlgorithm + ". pid: " + pid);
-                throw new IllegalArgumentException(
-                        "Checksum algorithm not supported - cannot be used to validate object. checksumAlgorithm: "
-                                + checksumAlgorithm + ". Supported algorithms: "
-                                + Arrays.toString(SUPPORTED_HASH_ALGORITHMS));
-            }
-        }
+        // checksumAlgorithm and checksum must both be present if validation is desired
+        this.validateChecksumParameters(checksum, checksumAlgorithm);
 
         // Gather HashAddress elements and prepare object permanent address
         String objAuthorityId = this.getHexDigest(pid, this.objectStoreAlgorithm);
@@ -245,6 +212,40 @@ public class HashFileStore {
         HashAddress hashAddress = new HashAddress(objAuthorityId, objShardString, objAbsolutePathString, isNotDuplicate,
                 hexDigests);
         return hashAddress;
+    }
+
+    public void validateChecksumParameters(String checksum, String checksumAlgorithm) {
+        if (checksum != null && !checksum.trim().isEmpty()) {
+            if (checksumAlgorithm == null) {
+                // ChecksumAlgorithm cannot be null if checksum is supplied
+                logHashFileStore.error(
+                        "HashFileStore.validateChecksumParameters - checksumAlgorithm cannot be null if checksum is supplied");
+                throw new NullPointerException(
+                        "checksumAlgorithm cannot be null if checksum is supplied, checksum and checksumAlgorithm must both be null if validation is not desired.");
+            } else if (checksumAlgorithm.trim().isEmpty()) {
+                // ChecksumAlgorithm cannot be empty when checksum supplied
+                logHashFileStore.error(
+                        "HashFileStore.validateChecksumParameters - checksumAlgorithm cannot be empty if checksum is supplied");
+                throw new IllegalArgumentException(
+                        "checksumAlgorithm cannot be empty when checksum supplied, checksum and checksumAlgorithm must both be null if unused.");
+            } else if (!this.isValidAlgorithm(checksumAlgorithm)) {
+                // ChecksumAlgorithm not supported
+                logHashFileStore.error(
+                        "HashFileStore.validateChecksumParameters - checksumAlgorithm not supported, checksumAlgorithm: "
+                                + checksumAlgorithm);
+                throw new IllegalArgumentException(
+                        "Checksum algorithm not supported - cannot be used to validate object. checksumAlgorithm: "
+                                + checksumAlgorithm + ". Supported algorithms: "
+                                + Arrays.toString(SUPPORTED_HASH_ALGORITHMS));
+            }
+        } else if (checksumAlgorithm != null && !checksumAlgorithm.trim().isEmpty()) {
+            // checksum cannot be null or empty if checksumAlgorithm is supplied
+            if (checksum == null) {
+                logHashFileStore.error(
+                        "HashFileStore.validateChecksumParameters - checksum cannot be null if checksumAlgorithm supplied.");
+                throw new NullPointerException("Checksum cannot be null if checksumAlgorithm is supplied.");
+            }
+        }
     }
 
     /**

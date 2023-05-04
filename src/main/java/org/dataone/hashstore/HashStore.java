@@ -95,16 +95,6 @@ public class HashStore implements HashStoreInterface {
             logHashStore.error("HashStore.storeObject - pid cannot be null or empty, pid: " + pid);
             throw new IllegalArgumentException("Pid cannot be null or empty, pid: " + pid);
         }
-        // Checksum cannot be empty or null if checksumAlgorithm is passed
-        if (checksumAlgorithm != null & checksum != null) {
-            if (checksum.trim().isEmpty()) {
-                logHashStore
-                        .error("HashStore.storeObject - checksum cannot be empty if checksumAlgorithm is supplied, pid: "
-                                + pid);
-                throw new IllegalArgumentException(
-                        "Checksum cannot be empty when checksumAlgorithm is supplied.");
-            }
-        }
         // Cannot generate additional or checksum algorithm if it is not supported
         if (additionalAlgorithm != null) {
             boolean algorithmSupported = this.hashfs.isValidAlgorithm(additionalAlgorithm);
@@ -117,19 +107,8 @@ public class HashStore implements HashStoreInterface {
                                 + Arrays.toString(HashFileStore.SUPPORTED_HASH_ALGORITHMS));
             }
         }
-        // Check support for checksumAlgorithm
-        if (checksumAlgorithm != null) {
-            boolean checksumAlgorithmSupported = this.hashfs.isValidAlgorithm(checksumAlgorithm);
-            if (!checksumAlgorithmSupported) {
-                logHashStore
-                        .error("HashStore.storeObject - checksumAlgorithm not supported, checksumAlgorithm: "
-                                + checksumAlgorithm + ". pid: " + pid);
-                throw new IllegalArgumentException(
-                        "Checksum algorithm not supported - cannot be used to validate object. checksumAlgorithm: "
-                                + checksumAlgorithm + ". Supported algorithms: "
-                                + Arrays.toString(HashFileStore.SUPPORTED_HASH_ALGORITHMS));
-            }
-        }
+        // checksumAlgorithm and checksum must both be present if validation is desired
+        this.hashfs.validateChecksumParameters(checksum, checksumAlgorithm);
 
         // Lock pid for thread safety, transaction control and atomic writing
         // A pid can only be stored once and only once, subsequent calls will
