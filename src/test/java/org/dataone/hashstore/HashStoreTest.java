@@ -372,7 +372,7 @@ public class HashStoreTest {
      * that the file has been written and moved as intended.
      */
     @Test
-    public void storeObject_objectLockedIdsPidFileMoved() throws Exception {
+    public void storeObject_objectLockedIdsFileMoved() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
@@ -383,7 +383,7 @@ public class HashStoreTest {
         ExecutorService executorService = Executors.newFixedThreadPool(2);
 
         // Submit 2 threads, each calling storeObject
-        executorService.submit(() -> {
+        Future<?> future1 = executorService.submit(() -> {
             try {
                 InputStream dataStream = Files.newInputStream(testDataFile);
                 HashAddress objInfo = hashStore.storeObject(dataStream, pid, null, null, null);
@@ -393,10 +393,10 @@ public class HashStoreTest {
                     assertTrue(permAddress.exists());
                 }
             } catch (Exception e) {
-                fail("future - Unexpected Exception: " + e.getMessage());
+                assertTrue(e instanceof RuntimeException);
             }
         });
-        executorService.submit(() -> {
+        Future<?> future2 = executorService.submit(() -> {
             try {
                 InputStream dataStreamDup = Files.newInputStream(testDataFile);
                 HashAddress objInfoDup = hashStore.storeObject(dataStreamDup, pid, null, null, null);
@@ -406,11 +406,15 @@ public class HashStoreTest {
                     assertTrue(permAddress.exists());
                 }
             } catch (Exception e) {
-                fail("future_dup - Unexpected Exception: " + e.getMessage());
+                assertTrue(e instanceof RuntimeException);
             }
         });
 
-        // Wait for all tasks to complete
+        // Wait for all tasks to complete and check results
+        // Calling .get() on the future ensures that all tasks complete before the test
+        // ends and will re-throw an exception if one has been encountered
+        future1.get();
+        future2.get();
         executorService.shutdown();
         executorService.awaitTermination(1, TimeUnit.MINUTES);
     }
