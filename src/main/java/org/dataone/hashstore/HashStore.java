@@ -3,6 +3,7 @@ package org.dataone.hashstore;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
@@ -66,19 +67,22 @@ public class HashStore implements HashStoreInterface {
      * @return A HashAddress object that contains the file id, relative path,
      *         absolute path, duplicate status and a checksum map based on the
      *         default algorithm list.
-     * @throws NoSuchAlgorithmException   When additiionalAlgorithm or
-     *                                    checksumAlgorithm is invalid
-     * @throws IOException                I/O Error when writing file, generating
-     *                                    checksums and moving file
-     * @throws SecurityException          Insufficient permissions to read/access
-     *                                    files or when generating/writing to a file
-     * @throws FileNotFoundException      When file tmpFile not found during store
-     * @throws FileAlreadyExistsException Duplicate object in store exists
-     * @throws IllegalArgumentException   When signature values are unexpectedly
-     *                                    empty (checksum, pid, etc.)
-     * @throws NullPointerException       Arguments are null for pid or object
-     * @throws RuntimeException           When attempting to store pid object that
-     *                                    is already in progress
+     * @throws NoSuchAlgorithmException        When additiionalAlgorithm or
+     *                                         checksumAlgorithm is invalid
+     * @throws IOException                     I/O Error when writing file,
+     *                                         generating checksums and moving file
+     * @throws SecurityException               Insufficient permissions to
+     *                                         read/access files or when
+     *                                         generating/writing to a file
+     * @throws FileNotFoundException           When tmpFile not found during store
+     * @throws FileAlreadyExistsException      Duplicate object in store exists
+     * @throws IllegalArgumentException        When signature values are empty
+     *                                         (checksum, pid, etc.)
+     * @throws NullPointerException            Arguments are null for pid or object
+     * @throws RuntimeException                When attempting to store pid object
+     *                                         that is already in progress
+     * @throws AtomicMoveNotSupportedException When attempting to move files across
+     *                                         file systems
      */
     @Override
     public HashAddress storeObject(InputStream object, String pid, String additionalAlgorithm, String checksum,

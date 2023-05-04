@@ -122,23 +122,27 @@ public class HashFileStore {
      * @return A HashAddress object that contains the file id, relative path,
      *         absolute path, duplicate status and a checksum map based on the
      *         default algorithm list.
-     * @throws IOException                I/O Error when writing file, generating
-     *                                    checksums and moving file or deleting
-     *                                    tmpFile upon duplicate found
-     * @throws NoSuchAlgorithmException   When additiionalAlgorithm or
-     *                                    checksumAlgorithm is invalid
-     * @throws SecurityException          Insufficient permissions to read/access
-     *                                    files or when generating/writing to a file
-     * @throws FileNotFoundException      When file tmpFile not found during store
-     * @throws FileAlreadyExistsException Duplicate object in store exists
-     * @throws IllegalArgumentException   When signature values are unexpectedly
-     *                                    empty (checksum, pid, etc.)
-     * @throws NullPointerException       Arguments are null for pid or object
+     * @throws IOException                     I/O Error when writing file,
+     *                                         generating checksums, moving file or
+     *                                         deleting tmpFile upon duplicate found
+     * @throws NoSuchAlgorithmException        When additiionalAlgorithm or
+     *                                         checksumAlgorithm is invalid
+     * @throws SecurityException               Insufficient permissions to
+     *                                         read/access files or when
+     *                                         generating/writing to a file
+     * @throws FileNotFoundException           tmpFile not found during store
+     * @throws FileAlreadyExistsException      Duplicate object in store exists
+     * @throws IllegalArgumentException        When signature values are empty
+     *                                         (checksum, pid, etc.)
+     * @throws NullPointerException            Arguments are null for pid or object
+     * @throws AtomicMoveNotSupportedException When attempting to move files across
+     *                                         file systems
      */
     public HashAddress putObject(InputStream object, String pid, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
             throws IOException, NoSuchAlgorithmException, SecurityException, FileNotFoundException,
-            FileAlreadyExistsException, IllegalArgumentException, NullPointerException {
+            FileAlreadyExistsException, IllegalArgumentException, NullPointerException,
+            AtomicMoveNotSupportedException {
         logHashFileStore.info("HashFileStore.putObject - Called to put object for pid: " + pid);
         // Begin input validation
         if (object == null) {
@@ -459,10 +463,14 @@ public class HashFileStore {
      * 
      * @return fileMoved (boolean) to confirm file is not a duplicate and has been
      *         moved
-     * @throws IOException       Unable to create parent directory
-     * @throws SecurityException Insufficient permissions to move file
+     * @throws IOException                     Unable to create parent directory
+     * @throws SecurityException               Insufficient permissions to move file
+     * @throws AtomicMoveNotSupportedException When ATOMIC_MOVE is not supported
+     *                                         (usually encountered when moving
+     *                                         across file systems)
      */
-    protected boolean move(File source, File target) throws IOException, SecurityException {
+    protected boolean move(File source, File target)
+            throws IOException, SecurityException, AtomicMoveNotSupportedException {
         if (target.exists()) {
             return false;
         }
@@ -482,9 +490,9 @@ public class HashFileStore {
             return true;
         } catch (AtomicMoveNotSupportedException amnse) {
             logHashFileStore.warn(
-                    "HashFileStore.move - StandardCopyOption.ATOMIC_MOVE failed, trying again without CopyOption.");
-            Files.move(sourceFilePath, targetFilePath);
-            return true;
+                    "HashFileStore.move - StandardCopyOption.ATOMIC_MOVE failed. Source: " + source
+                            + ". Target: " + target);
+            throw amnse;
         } catch (IOException ioe) {
             logHashFileStore.error("HashFileStore.move - Unable to move file. Source: " + source
                     + ". Target: " + target);
