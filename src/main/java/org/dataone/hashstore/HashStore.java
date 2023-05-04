@@ -77,7 +77,7 @@ public class HashStore implements HashStoreInterface {
      * @throws IllegalArgumentException   When signature values are unexpectedly
      *                                    empty (checksum, pid, etc.)
      * @throws NullPointerException       Arguments are null for pid or object
-     * @throws RunTimeException           When attempting to store pid object that
+     * @throws RuntimeException           When attempting to store pid object that
      *                                    is already in progress
      */
     @Override
