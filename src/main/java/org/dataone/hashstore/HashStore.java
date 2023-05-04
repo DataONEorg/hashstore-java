@@ -114,7 +114,7 @@ public class HashStore implements HashStoreInterface {
                 throw new IllegalArgumentException(
                         "Additional algorithm not supported - unable to generate additional hex digest value. additionalAlgorithm: "
                                 + additionalAlgorithm + ". Supported algorithms: "
-                                + Arrays.toString(this.hashfs.supportedHashAlgorithms));
+                                + Arrays.toString(HashFileStore.SUPPORTED_HASH_ALGORITHMS));
             }
         }
         // Check support for checksumAlgorithm
@@ -127,7 +127,7 @@ public class HashStore implements HashStoreInterface {
                 throw new IllegalArgumentException(
                         "Checksum algorithm not supported - cannot be used to validate object. checksumAlgorithm: "
                                 + checksumAlgorithm + ". Supported algorithms: "
-                                + Arrays.toString(this.hashfs.supportedHashAlgorithms));
+                                + Arrays.toString(HashFileStore.SUPPORTED_HASH_ALGORITHMS));
             }
         }
 

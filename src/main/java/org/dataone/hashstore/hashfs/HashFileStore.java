@@ -41,8 +41,8 @@ public class HashFileStore {
     private final String objectStoreAlgorithm;
     private final Path objectStoreDirectory;
     private final Path tmpFileDirectory;
-    public String[] supportedHashAlgorithms = { "MD2", "MD5", "SHA-1", "SHA-256", "SHA-384", "SHA-512", "SHA-512/224",
-            "SHA-512/256" };
+    public static final String[] SUPPORTED_HASH_ALGORITHMS = { "MD2", "MD5", "SHA-1", "SHA-256", "SHA-384", "SHA-512",
+            "SHA-512/224", "SHA-512/256" };
 
     /**
      * Constructor to initialize HashStore fields and object store directory. If
@@ -74,7 +74,7 @@ public class HashFileStore {
         if (!algorithmSupported) {
             throw new IllegalArgumentException(
                     "Algorithm not supported. Supported algorithms: " +
-                            Arrays.toString(this.supportedHashAlgorithms));
+                            Arrays.toString(SUPPORTED_HASH_ALGORITHMS));
         }
 
         // If no path provided, create default path with user.dir root + /HashFileStore
@@ -168,7 +168,7 @@ public class HashFileStore {
                 throw new IllegalArgumentException(
                         "Additional algorithm not supported - unable to generate additional hex digest value. additionalAlgorithm: "
                                 + additionalAlgorithm + ". Supported algorithms: "
-                                + Arrays.toString(this.supportedHashAlgorithms));
+                                + Arrays.toString(SUPPORTED_HASH_ALGORITHMS));
             }
         }
         // Check support for checksumAlgorithm
@@ -181,7 +181,7 @@ public class HashFileStore {
                 throw new IllegalArgumentException(
                         "Checksum algorithm not supported - cannot be used to validate object. checksumAlgorithm: "
                                 + checksumAlgorithm + ". Supported algorithms: "
-                                + Arrays.toString(this.supportedHashAlgorithms));
+                                + Arrays.toString(SUPPORTED_HASH_ALGORITHMS));
             }
         }
 
@@ -262,7 +262,7 @@ public class HashFileStore {
         if (algorithm.trim().isEmpty()) {
             throw new IllegalArgumentException("Algorithm value supplied is empty");
         }
-        boolean isValid = Arrays.asList(this.supportedHashAlgorithms).contains(algorithm);
+        boolean isValid = Arrays.asList(SUPPORTED_HASH_ALGORITHMS).contains(algorithm);
         return isValid;
     }
 
@@ -289,7 +289,7 @@ public class HashFileStore {
         boolean algorithmSupported = this.isValidAlgorithm(algorithm);
         if (!algorithmSupported) {
             throw new NoSuchAlgorithmException(
-                    "Algorithm not supported. Supported algorithms: " + Arrays.toString(supportedHashAlgorithms));
+                    "Algorithm not supported. Supported algorithms: " + Arrays.toString(SUPPORTED_HASH_ALGORITHMS));
         }
         MessageDigest stringMessageDigest = MessageDigest.getInstance(algorithm);
         byte[] bytes = string.getBytes(StandardCharsets.UTF_8);
@@ -384,7 +384,7 @@ public class HashFileStore {
             boolean algorithmSupported = this.isValidAlgorithm(additionalAlgorithm);
             if (!algorithmSupported) {
                 throw new IllegalArgumentException(
-                        "Algorithm not supported. Supported algorithms: " + Arrays.toString(supportedHashAlgorithms));
+                        "Algorithm not supported. Supported algorithms: " + Arrays.toString(SUPPORTED_HASH_ALGORITHMS));
             }
         }
 
