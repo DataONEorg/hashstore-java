@@ -273,20 +273,20 @@ public class HashFileStore {
     /**
      * Given a string and supported algorithm returns the hex digest
      * 
-     * @param string    authority based identifier or persistent identifier
+     * @param pid       authority based identifier or persistent identifier
      * @param algorithm string value (ex. SHA-256)
      * 
      * @return Hex digest of the given string in lower-case
      * @throws IllegalArgumentException String or algorithm cannot be null or empty
      * @throws NoSuchAlgorithmException Algorithm not supported
      */
-    protected String getHexDigest(String string, String algorithm)
+    protected String getHexDigest(String pid, String algorithm)
             throws NoSuchAlgorithmException, IllegalArgumentException {
         if (algorithm == null || algorithm.trim().isEmpty()) {
             throw new IllegalArgumentException(
                     "Algorithm cannot be null or empty");
         }
-        if (string == null || string.trim().isEmpty()) {
+        if (pid == null || pid.trim().isEmpty()) {
             throw new IllegalArgumentException(
                     "String cannot be null or empty");
         }
@@ -296,7 +296,7 @@ public class HashFileStore {
                     "Algorithm not supported. Supported algorithms: " + Arrays.toString(SUPPORTED_HASH_ALGORITHMS));
         }
         MessageDigest stringMessageDigest = MessageDigest.getInstance(algorithm);
-        byte[] bytes = string.getBytes(StandardCharsets.UTF_8);
+        byte[] bytes = pid.getBytes(StandardCharsets.UTF_8);
         stringMessageDigest.update(bytes);
         String stringDigest = DatatypeConverter.printHexBinary(stringMessageDigest.digest()).toLowerCase();
         return stringDigest;
