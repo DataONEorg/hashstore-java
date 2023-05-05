@@ -123,7 +123,7 @@ public class HashFileStore {
      * @throws IOException                     I/O Error when writing file,
      *                                         generating checksums, moving file or
      *                                         deleting tmpFile upon duplicate found
-     * @throws NoSuchAlgorithmException        When additiionalAlgorithm or
+     * @throws NoSuchAlgorithmException        When additionalAlgorithm or
      *                                         checksumAlgorithm is invalid
      * @throws SecurityException               Insufficient permissions to
      *                                         read/access files or when
@@ -380,7 +380,7 @@ public class HashFileStore {
      * 
      * @return A map containing the hex digests of the default algorithms
      * @throws NoSuchAlgorithmException Unable to generate new instance of supplied
-     *                                  algoritm
+     *                                  algorithm
      * @throws IOException              Issue with writing file from InputStream
      * @throws SecurityException        Unable to write to tmpFile
      * @throws FileNotFoundException    tmnpFile cannot be found

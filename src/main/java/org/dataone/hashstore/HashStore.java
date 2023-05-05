@@ -61,7 +61,7 @@ public class HashStore implements HashStoreInterface {
      * algorithm list.
      * 
      * @param object              Input stream to file
-     * @param pid                 Authority-based idenetifier
+     * @param pid                 Authority-based identifier
      * @param additionalAlgorithm Additional hex digest to include in hexDigests
      * @param checksum            Value of checksum to validate against
      * @param checksumAlgorithm   Algorithm of checksum submitted
@@ -69,7 +69,7 @@ public class HashStore implements HashStoreInterface {
      * @return A HashAddress object that contains the file id, relative path,
      *         absolute path, duplicate status and a checksum map based on the
      *         default algorithm list.
-     * @throws NoSuchAlgorithmException        When additiionalAlgorithm or
+     * @throws NoSuchAlgorithmException        When additionalAlgorithm or
      *                                         checksumAlgorithm is invalid
      * @throws IOException                     I/O Error when writing file,
      *                                         generating checksums and moving file
