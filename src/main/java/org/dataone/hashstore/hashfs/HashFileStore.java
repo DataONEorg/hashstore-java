@@ -460,8 +460,9 @@ public class HashFileStore {
      * @param source file to move
      * @param target where to move the file
      * 
-     * @return fileMoved (boolean) to confirm file is not a duplicate and has been
-     *         moved
+     * @return true if file has been moved
+     * 
+     * @throws FileAlreadyExistsException      Target file already exists
      * @throws IOException                     Unable to create parent directory
      * @throws SecurityException               Insufficient permissions to move file
      * @throws AtomicMoveNotSupportedException When ATOMIC_MOVE is not supported
@@ -469,9 +470,9 @@ public class HashFileStore {
      *                                         across file systems)
      */
     protected boolean move(File source, File target)
-            throws IOException, SecurityException, AtomicMoveNotSupportedException {
+            throws IOException, SecurityException, AtomicMoveNotSupportedException, FileAlreadyExistsException {
         if (target.exists()) {
-            return false;
+            throw new FileAlreadyExistsException("File already exists for target: " + target);
         }
 
         File destinationDirectory = new File(target.getParent());
@@ -488,9 +489,9 @@ public class HashFileStore {
             Files.move(sourceFilePath, targetFilePath, StandardCopyOption.ATOMIC_MOVE);
             return true;
         } catch (AtomicMoveNotSupportedException amnse) {
-            logHashFileStore.warn(
-                    "HashFileStore.move - StandardCopyOption.ATOMIC_MOVE failed. Source: " + source
-                            + ". Target: " + target);
+            logHashFileStore.error(
+                    "HashFileStore.move - StandardCopyOption.ATOMIC_MOVE failed. AtomicMove is not supported across file systems. Source: "
+                            + source + ". Target: " + target);
             throw amnse;
         } catch (IOException ioe) {
             logHashFileStore.error("HashFileStore.move - Unable to move file. Source: " + source

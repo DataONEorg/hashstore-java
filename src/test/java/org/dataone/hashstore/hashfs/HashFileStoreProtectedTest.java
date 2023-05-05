@@ -3,6 +3,7 @@ package org.dataone.hashstore.hashfs;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -265,5 +266,19 @@ public class HashFileStoreProtectedTest {
 
         this.hashFileStore.move(newTmpFile, targetFile);
         assertTrue(targetFile.exists());
+    }
+
+    /**
+     * Confirm that FileAlreadyExistsException is thrown when target already exists
+     */
+    @Test(expected = FileAlreadyExistsException.class)
+    public void testMove_targetExists() throws Exception {
+        File newTmpFile = generateTemporaryFile();
+        String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
+        File targetFile = new File(targetString);
+        this.hashFileStore.move(newTmpFile, targetFile);
+
+        File newTmpFileTwo = generateTemporaryFile();
+        this.hashFileStore.move(newTmpFileTwo, targetFile);
     }
 }
