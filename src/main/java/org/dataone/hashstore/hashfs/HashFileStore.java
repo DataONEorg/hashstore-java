@@ -157,7 +157,7 @@ public class HashFileStore {
         // If validation is desired, checksumAlgorithm and checksum must both be present
         // and additionalChecksum must be equal to checksumAlgorithm if the
         // checksumAlgorithm is not included in the default hex digest map
-        this.validateChecksumParameters(checksum, checksumAlgorithm, additionalAlgorithm);
+        boolean requestValidation = this.validateChecksumParameters(checksum, checksumAlgorithm, additionalAlgorithm);
 
         // Gather HashAddress elements and prepare object permanent address
         String objAuthorityId = this.getHexDigest(pid, this.objectStoreAlgorithm);
@@ -179,7 +179,7 @@ public class HashFileStore {
                 additionalAlgorithm);
 
         // Validate object if checksum and checksum algorithm is passed
-        if (checksumAlgorithm != null && checksum != null) {
+        if (requestValidation) {
             logHashFileStore.info("HashFileStore.putObject - Validating object");
             String digestFromHexDigests = hexDigests.get(checksumAlgorithm);
             if (digestFromHexDigests == null) {
@@ -235,7 +235,8 @@ public class HashFileStore {
         return hashAddress;
     }
 
-    public void validateChecksumParameters(String checksum, String checksumAlgorithm, String additionalAlgorithm) {
+    public boolean validateChecksumParameters(String checksum, String checksumAlgorithm, String additionalAlgorithm) {
+        boolean requestValidation = false;
         if (checksum != null && !checksum.trim().isEmpty()) {
             if (checksumAlgorithm == null) {
                 // ChecksumAlgorithm cannot be null if checksum is supplied
@@ -288,8 +289,10 @@ public class HashFileStore {
                                         + additionalAlgorithm + ". checksumAlgorithm: " + checksumAlgorithm);
                     }
                 }
+                requestValidation = true;
             }
         }
+        return requestValidation;
     }
 
     /**
