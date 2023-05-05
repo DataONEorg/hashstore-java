@@ -385,10 +385,10 @@ public class HashStoreTest {
         String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
         Path testDataFile = new File(testdataAbsolutePath).toPath();
 
-        // Create a thread pool with 2 threads
+        // Create a thread pool with 3 threads
         ExecutorService executorService = Executors.newFixedThreadPool(3);
 
-        // Submit 2 threads, each calling storeObject
+        // Submit 3 threads, each calling storeObject
         Future<?> future1 = executorService.submit(() -> {
             try {
                 InputStream dataStream = Files.newInputStream(testDataFile);
