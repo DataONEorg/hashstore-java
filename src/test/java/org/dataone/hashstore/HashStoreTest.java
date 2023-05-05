@@ -260,7 +260,48 @@ public class HashStoreTest {
     }
 
     /**
-     * Verify that additional checksum is generated/validated
+     * Verify that storeObject stores an object with a good checksum value
+     */
+    @Test
+    public void storeObject_validateChecksumValue() throws Exception {
+        // Get test file to "upload"
+        String pid = "jtao.1700.1";
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
+        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+        Path testDataFile = new File(testdataAbsolutePath).toPath();
+
+        String checksumCorrect = "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
+
+        InputStream dataStream = Files.newInputStream(testDataFile);
+        HashAddress address = hashStore.storeObject(dataStream, pid, null, checksumCorrect, "SHA-256");
+
+        File objAbsPath = new File(address.getAbsPath());
+        assertTrue(objAbsPath.exists());
+    }
+
+    /**
+     * Verify that storeObject throws an exception when expected to validate object
+     * but checksum is not available/part of the hex digest map
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void storeObject_missingChecksumValue() throws Exception {
+        // Get test file to "upload"
+        String pid = "jtao.1700.1";
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
+        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+        Path testDataFile = new File(testdataAbsolutePath).toPath();
+
+        String checksumCorrect = "9c25df1c8ba1d2e57bb3fd4785878b85";
+
+        InputStream dataStream = Files.newInputStream(testDataFile);
+        HashAddress address = hashStore.storeObject(dataStream, pid, null, checksumCorrect, "MD2");
+
+        File objAbsPath = new File(address.getAbsPath());
+        assertTrue(objAbsPath.exists());
+    }
+
+    /**
+     * Verify that storeObject generates an additional checksum
      */
     @Test
     public void storeObject_correctChecksumValue() throws Exception {
@@ -273,7 +314,7 @@ public class HashStoreTest {
         String checksumCorrect = "9c25df1c8ba1d2e57bb3fd4785878b85";
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        hashStore.storeObject(dataStream, pid, "MD2", checksumCorrect, "MD2");
+        hashStore.storeObject(dataStream, pid, "MD2", null, null);
 
         String md2 = this.testData.pidData.get(pid).get("md2");
         assertEquals(checksumCorrect, md2);
@@ -290,10 +331,10 @@ public class HashStoreTest {
         String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
         Path testDataFile = new File(testdataAbsolutePath).toPath();
 
-        String checksumIncorrect = "1c25df1c8ba1d2e57bb3fd4785878b85";
+        String checksumIncorrect = "aaf9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        hashStore.storeObject(dataStream, pid, "MD2", checksumIncorrect, "MD2");
+        hashStore.storeObject(dataStream, pid, null, checksumIncorrect, "SHA-256");
     }
 
     /**
@@ -310,7 +351,7 @@ public class HashStoreTest {
         String checksumEmpty = "";
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        hashStore.storeObject(dataStream, pid, "MD2", checksumEmpty, "MD2");
+        hashStore.storeObject(dataStream, pid, null, checksumEmpty, "MD2");
     }
 
     /**
@@ -325,7 +366,7 @@ public class HashStoreTest {
         Path testDataFile = new File(testdataAbsolutePath).toPath();
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        hashStore.storeObject(dataStream, pid, "MD2", null, "SHA-512/224");
+        hashStore.storeObject(dataStream, pid, null, null, "SHA-512/224");
     }
 
     /**

@@ -114,7 +114,7 @@ public class HashStore implements HashStoreInterface {
             }
         }
         // checksumAlgorithm and checksum must both be present if validation is desired
-        this.hashfs.validateChecksumParameters(checksum, checksumAlgorithm);
+        this.hashfs.validateChecksumParameters(checksum, checksumAlgorithm, additionalAlgorithm);
 
         // Lock pid for thread safety, transaction control and atomic writing
         // A pid can only be stored once and only once, subsequent calls will

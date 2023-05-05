@@ -78,7 +78,7 @@ public class HashFileStorePublicTest {
     }
 
     /**
-     * Test invalid algorithm value
+     * Test unsupported algorithm value
      */
     @Test(expected = IllegalArgumentException.class)
     public void constructor_illegalAlgorithmArg() throws Exception {
@@ -223,6 +223,26 @@ public class HashFileStorePublicTest {
     }
 
     /**
+     * Verify that putObject stores object with good checksum value
+     */
+    @Test
+    public void putObject_validateChecksumValue() throws Exception {
+        // Get test file to "upload"
+        String pid = "jtao.1700.1";
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
+        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+        Path testDataFile = Paths.get(testdataAbsolutePath);
+
+        String checksumCorrect = "9c25df1c8ba1d2e57bb3fd4785878b85";
+
+        InputStream dataStream = Files.newInputStream(testDataFile);
+        HashAddress address = hashFileStore.putObject(dataStream, pid, "MD2", checksumCorrect, "MD2");
+
+        File objAbsPath = new File(address.getAbsPath());
+        assertTrue(objAbsPath.exists());
+    }
+
+    /**
      * Verify that additional checksum is generated/validated
      */
     @Test
@@ -236,7 +256,7 @@ public class HashFileStorePublicTest {
         String checksumCorrect = "9c25df1c8ba1d2e57bb3fd4785878b85";
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        hashFileStore.putObject(dataStream, pid, "MD2", checksumCorrect, "MD2");
+        hashFileStore.putObject(dataStream, pid, "MD2", null, null);
 
         String md2 = this.testData.pidData.get(pid).get("md2");
         assertEquals(checksumCorrect, md2);
@@ -384,10 +404,8 @@ public class HashFileStorePublicTest {
         String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
         Path testDataFile = Paths.get(testdataAbsolutePath);
 
-        String checksumIncorrect = "1c25df1c8ba1d2e57bb3fd4785878b85";
-
         InputStream dataStream = Files.newInputStream(testDataFile);
-        hashFileStore.putObject(dataStream, pidEmpty, "MD2", checksumIncorrect, "MD2");
+        hashFileStore.putObject(dataStream, pidEmpty, null, null, null);
     }
 
     /**
@@ -401,10 +419,8 @@ public class HashFileStorePublicTest {
         String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
         Path testDataFile = Paths.get(testdataAbsolutePath);
 
-        String checksumIncorrect = "1c25df1c8ba1d2e57bb3fd4785878b85";
-
         InputStream dataStream = Files.newInputStream(testDataFile);
-        hashFileStore.putObject(dataStream, null, "MD2", checksumIncorrect, "MD2");
+        hashFileStore.putObject(dataStream, null, "MD2", null, null);
     }
 
     /**
@@ -415,7 +431,6 @@ public class HashFileStorePublicTest {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
 
-        String checksumIncorrect = "1c25df1c8ba1d2e57bb3fd4785878b85";
-        hashFileStore.putObject(null, pid, "MD2", checksumIncorrect, "MD2");
+        hashFileStore.putObject(null, pid, "MD2", null, null);
     }
 }
