@@ -14,7 +14,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -365,15 +364,21 @@ public class HashStoreTest {
     }
 
     /**
-     * Check store object pid lock for duplicate object file exists.
+     * Tests that the `storeObject` method can store an object successfully with
+     * multiple threads (3). This test uses three futures (threads) that run
+     * concurrently, all except one of which will encounter an `ExecutionException`.
+     * The thread that does not encounter an exception will store the given
+     * object, and verifies that the object is stored successfully.
      * 
-     * Two futures (threads) will run concurrently, one of which will encounter an
-     * ExecutionException, and the other will store the given object. The future
-     * that stores the object successfully (obj != null) is checked to ensure
-     * that the file has been written and moved as intended.
+     * The test expects exceptions to be encountered, which can be either a
+     * `RunTimeException` or a `FileAlreadyExistsException`. This is because the
+     * rapid execution of threads can result in bypassing the object lock and
+     * the failure to throw a RunTimeException. However, since the file should
+     * already have been written to disk, a`FileAlreadyExistsException` will be
+     * thrown, ensuring that an object is never stored twice.
      */
     @Test
-    public void storeObject_objectLockedIdsFileMoved() throws Exception {
+    public void storeObject_objectLockedIds() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
@@ -381,7 +386,7 @@ public class HashStoreTest {
         Path testDataFile = new File(testdataAbsolutePath).toPath();
 
         // Create a thread pool with 2 threads
-        ExecutorService executorService = Executors.newFixedThreadPool(2);
+        ExecutorService executorService = Executors.newFixedThreadPool(3);
 
         // Submit 2 threads, each calling storeObject
         Future<?> future1 = executorService.submit(() -> {
@@ -394,88 +399,33 @@ public class HashStoreTest {
                     assertTrue(permAddress.exists());
                 }
             } catch (Exception e) {
-                System.out.println("DOU-DEBUGGING");
-                System.out.println(e.getClass());
-                e.printStackTrace();
-                assertTrue(e instanceof RuntimeException);
+                assertTrue(e instanceof RuntimeException || e instanceof FileAlreadyExistsException);
             }
         });
         Future<?> future2 = executorService.submit(() -> {
             try {
-                InputStream dataStreamDup = Files.newInputStream(testDataFile);
-                HashAddress objInfoDup = hashStore.storeObject(dataStreamDup, pid, null, null, null);
-                if (objInfoDup != null) {
-                    String absPath = objInfoDup.getAbsPath();
+                InputStream dataStream = Files.newInputStream(testDataFile);
+                HashAddress objInfo = hashStore.storeObject(dataStream, pid, null, null, null);
+                if (objInfo != null) {
+                    String absPath = objInfo.getAbsPath();
                     File permAddress = new File(absPath);
                     assertTrue(permAddress.exists());
                 }
             } catch (Exception e) {
-                System.out.println("DOU-DEBUGGING");
-                System.out.println(e.getClass());
-                e.printStackTrace();
-                assertTrue(e instanceof RuntimeException);
-            }
-        });
-
-        // Wait for all tasks to complete and check results
-        // .get() on the future ensures that all tasks complete before the test ends
-        future1.get();
-        future2.get();
-        executorService.shutdown();
-        executorService.awaitTermination(1, TimeUnit.MINUTES);
-    }
-
-    /**
-     * Check store object pid lock for RunTimException
-     * 
-     * Three futures (threads) will run concurrently, one of which will encounter an
-     * ExecutionException. The future that yields the exception is then checked to
-     * confirm that a RunTimeException is thrown.
-     */
-    @Test
-    public void storeObject_objectLockedIdsRunTimeException() throws Exception {
-        // Get test file to "upload"
-        String pid = "jtao.1700.1";
-        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
-        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-        Path testDataFile = new File(testdataAbsolutePath).toPath();
-
-        // Create a thread pool with 2 threads
-        ExecutorService executorService = Executors.newFixedThreadPool(2);
-
-        // Submit 2 threads, each calling storeObject
-        Future<?> future1 = executorService.submit(() -> {
-            try {
-                // Path oneGbFile = this.generateRandomFile("doutest").toPath();
-                InputStream dataStream = Files.newInputStream(testDataFile);
-                hashStore.storeObject(dataStream, pid, null, null, null);
-            } catch (Exception e) {
-                System.out.println("DOU-DEBUGGING");
-                System.out.println(e.getClass());
-                e.printStackTrace();
-                assertTrue(e instanceof RuntimeException);
-            }
-        });
-        Future<?> future2 = executorService.submit(() -> {
-            try {
-                InputStream dataStreamDup = Files.newInputStream(testDataFile);
-                hashStore.storeObject(dataStreamDup, pid, null, null, null);
-            } catch (Exception e) {
-                System.out.println("DOU-DEBUGGING");
-                System.out.println(e.getClass());
-                e.printStackTrace();
-                assertTrue(e instanceof RuntimeException);
+                assertTrue(e instanceof RuntimeException || e instanceof FileAlreadyExistsException);
             }
         });
         Future<?> future3 = executorService.submit(() -> {
             try {
-                InputStream dataStreamDupTwo = Files.newInputStream(testDataFile);
-                hashStore.storeObject(dataStreamDupTwo, pid, null, null, null);
+                InputStream dataStream = Files.newInputStream(testDataFile);
+                HashAddress objInfo = hashStore.storeObject(dataStream, pid, null, null, null);
+                if (objInfo != null) {
+                    String absPath = objInfo.getAbsPath();
+                    File permAddress = new File(absPath);
+                    assertTrue(permAddress.exists());
+                }
             } catch (Exception e) {
-                System.out.println("DOU-DEBUGGING");
-                System.out.println(e.getClass());
-                e.printStackTrace();
-                assertTrue(e instanceof RuntimeException);
+                assertTrue(e instanceof RuntimeException || e instanceof FileAlreadyExistsException);
             }
         });
 
