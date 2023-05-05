@@ -157,7 +157,8 @@ public class HashFileStore {
 
         // Gather HashAddress elements and prepare object permanent address
         String objAuthorityId = this.getHexDigest(pid, this.objectStoreAlgorithm);
-        String objShardString = this.shard(this.directoryDepth, this.directoryWidth, objAuthorityId);
+        String objShardString = this.getHierarchicalPathString(this.directoryDepth, this.directoryWidth,
+                objAuthorityId);
         String objAbsolutePathString = this.objectStoreDirectory.toString() + "/" + objShardString;
         File objHashAddress = new File(objAbsolutePathString);
         // If file (pid hash) exists, reject request immediately
@@ -306,21 +307,21 @@ public class HashFileStore {
      * Generates a hierarchical path by dividing a given digest into tokens
      * of fixed width, and concatenating them with '/' as the delimiter.
      *
-     * @param depth  integer to represent number of directories
-     * @param width  width of each directory
-     * @param digest value to shard
+     * @param dirDepth integer to represent number of directories
+     * @param dirWidth width of each directory
+     * @param digest   value to shard
      * @return String
      */
-    protected String shard(int depth, int width, String digest) {
+    protected String getHierarchicalPathString(int dirDepth, int dirWidth, String digest) {
         List<String> tokens = new ArrayList<>();
         int digestLength = digest.length();
-        for (int i = 0; i < depth; i++) {
-            int start = i * width;
-            int end = Math.min((i + 1) * width, digestLength);
+        for (int i = 0; i < dirDepth; i++) {
+            int start = i * dirWidth;
+            int end = Math.min((i + 1) * dirWidth, digestLength);
             tokens.add(digest.substring(start, end));
         }
-        if (depth * width < digestLength) {
-            tokens.add(digest.substring(depth * width));
+        if (dirDepth * dirWidth < digestLength) {
+            tokens.add(digest.substring(dirDepth * dirWidth));
         }
         List<String> stringArray = new ArrayList<>();
         for (String str : tokens) {

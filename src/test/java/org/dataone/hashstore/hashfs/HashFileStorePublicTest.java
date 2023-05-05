@@ -141,7 +141,7 @@ public class HashFileStorePublicTest {
 
             // Check relative path
             String objAuthorityId = this.testData.pidData.get(pid).get("s_cid");
-            String objRelPath = hashFileStore.shard(3, 2, objAuthorityId);
+            String objRelPath = hashFileStore.getHierarchicalPathString(3, 2, objAuthorityId);
             assertEquals(objRelPath, address.getRelPath());
         }
     }
