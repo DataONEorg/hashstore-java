@@ -83,7 +83,7 @@ public class HashAddressTest {
     @Test
     public void testHashAddressGetIsDuplicate() {
         HashAddress hashad = new HashAddress(this.id, this.relpath, this.abspath, this.isDuplicate, this.hexDigests);
-        boolean hashad_isDuplicate = hashad.getIsNotDuplicate();
+        boolean hashad_isDuplicate = hashad.getIsDuplicate();
         assertEquals(hashad_isDuplicate, isDuplicate);
     }
 
