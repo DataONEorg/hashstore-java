@@ -10,6 +10,7 @@ import java.nio.file.Paths;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -170,7 +171,7 @@ public class HashFileStorePublicTest {
 
     /**
      * Verify that test data files are put (moved) to its permanent address and
-     * isDuplicate is correct
+     * isDuplicate is false
      */
     @Test
     public void putObject_testHarness_isDuplicate() throws Exception {
@@ -185,7 +186,7 @@ public class HashFileStorePublicTest {
             HashAddress address = hashFileStore.putObject(dataStream, pid, null, null, null);
 
             // Check duplicate status
-            assertTrue(address.getIsNotDuplicate());
+            assertFalse(address.getIsDuplicate());
         }
     }
 
@@ -290,7 +291,7 @@ public class HashFileStorePublicTest {
         HashAddress address = hashFileStore.putObject(dataStream, pid, null, null, null);
 
         // Check duplicate status
-        assertTrue(address.getIsNotDuplicate());
+        assertFalse(address.getIsDuplicate());
 
         // Try duplicate upload
         InputStream dataStreamTwo = Files.newInputStream(testDataFile);

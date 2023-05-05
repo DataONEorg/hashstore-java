@@ -195,12 +195,10 @@ public class HashFileStore {
         }
 
         // Move object
+        boolean isDuplicate = true;
         logHashFileStore.debug("HashFileStore.putObject - Moving object: " + tmpFile.toString() + ". Destination: "
                 + objAbsolutePathString);
-        boolean isNotDuplicate = this.move(tmpFile, objHashAddress);
-        logHashFileStore
-                .info("HashFileStore.putObject - Move object success, permanent address: " + objAbsolutePathString);
-        if (!isNotDuplicate) {
+        if (objHashAddress.exists()) {
             boolean deleteStatus = tmpFile.delete();
             if (!deleteStatus) {
                 throw new IOException("Object is a duplicate. Attempted to delete tmpFile but failed: " + tmpFile);
@@ -210,10 +208,17 @@ public class HashFileStore {
             objAbsolutePathString = null;
             logHashFileStore.info(
                     "HashFileStore.putObject - Did not move object, duplicate file found for pid: " + pid);
+        } else {
+            boolean hasMoved = this.move(tmpFile, objHashAddress);
+            if (hasMoved) {
+                isDuplicate = false;
+            }
+            logHashFileStore
+                    .info("HashFileStore.putObject - Move object success, permanent address: " + objAbsolutePathString);
         }
 
         // Create HashAddress object to return with pertinent data
-        HashAddress hashAddress = new HashAddress(objAuthorityId, objShardString, objAbsolutePathString, isNotDuplicate,
+        HashAddress hashAddress = new HashAddress(objAuthorityId, objShardString, objAbsolutePathString, isDuplicate,
                 hexDigests);
         return hashAddress;
     }

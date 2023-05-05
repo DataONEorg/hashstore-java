@@ -1,6 +1,7 @@
 package org.dataone.hashstore;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -166,7 +167,7 @@ public class HashStoreTest {
      * Check that store object moves file successfully (isDuplicate == false)
      */
     @Test
-    public void storeObject_isNotDuplicate() throws Exception {
+    public void storeObject_isDuplicate() throws Exception {
         for (String pid : this.testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
@@ -178,7 +179,7 @@ public class HashStoreTest {
             HashAddress objInfo = hashStore.storeObject(dataStream, pid, null, null, null);
 
             // Check duplicate status
-            assertTrue(objInfo.getIsNotDuplicate());
+            assertFalse(objInfo.getIsDuplicate());
         }
     }
 
