@@ -112,7 +112,7 @@ public class HashFileStorePublicTest {
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
                     "testdata", pidFormatted);
             String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-            Path testDataFile = new File(testdataAbsolutePath).toPath();
+            Path testDataFile = Paths.get(testdataAbsolutePath);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             HashAddress address = hashFileStore.putObject(dataStream, pid, null, null, null);
@@ -134,7 +134,7 @@ public class HashFileStorePublicTest {
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
                     "testdata", pidFormatted);
             String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-            Path testDataFile = new File(testdataAbsolutePath).toPath();
+            Path testDataFile = Paths.get(testdataAbsolutePath);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             HashAddress address = hashFileStore.putObject(dataStream, pid, null, null, null);
@@ -157,7 +157,7 @@ public class HashFileStorePublicTest {
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
                     "testdata", pidFormatted);
             String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-            Path testDataFile = new File(testdataAbsolutePath).toPath();
+            Path testDataFile = Paths.get(testdataAbsolutePath);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             HashAddress address = hashFileStore.putObject(dataStream, pid, null, null, null);
@@ -179,7 +179,7 @@ public class HashFileStorePublicTest {
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
                     "testdata", pidFormatted);
             String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-            Path testDataFile = new File(testdataAbsolutePath).toPath();
+            Path testDataFile = Paths.get(testdataAbsolutePath);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             HashAddress address = hashFileStore.putObject(dataStream, pid, null, null, null);
@@ -200,7 +200,7 @@ public class HashFileStorePublicTest {
             Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
                     "testdata", pidFormatted);
             String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-            Path testDataFile = new File(testdataAbsolutePath).toPath();
+            Path testDataFile = Paths.get(testdataAbsolutePath);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             HashAddress address = hashFileStore.putObject(dataStream, pid, null, null, null);
@@ -230,7 +230,7 @@ public class HashFileStorePublicTest {
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
         String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-        Path testDataFile = new File(testdataAbsolutePath).toPath();
+        Path testDataFile = Paths.get(testdataAbsolutePath);
 
         String checksumCorrect = "9c25df1c8ba1d2e57bb3fd4785878b85";
 
@@ -250,7 +250,7 @@ public class HashFileStorePublicTest {
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
         String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-        Path testDataFile = new File(testdataAbsolutePath).toPath();
+        Path testDataFile = Paths.get(testdataAbsolutePath);
 
         String checksumIncorrect = "1c25df1c8ba1d2e57bb3fd4785878b85";
 
@@ -267,7 +267,7 @@ public class HashFileStorePublicTest {
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
         String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-        Path testDataFile = new File(testdataAbsolutePath).toPath();
+        Path testDataFile = Paths.get(testdataAbsolutePath);
 
         String checksumEmpty = "";
 
@@ -284,7 +284,7 @@ public class HashFileStorePublicTest {
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
         String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-        Path testDataFile = new File(testdataAbsolutePath).toPath();
+        Path testDataFile = Paths.get(testdataAbsolutePath);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
         HashAddress address = hashFileStore.putObject(dataStream, pid, null, null, null);
@@ -306,7 +306,7 @@ public class HashFileStorePublicTest {
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
         String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-        Path testDataFile = new File(testdataAbsolutePath).toPath();
+        Path testDataFile = Paths.get(testdataAbsolutePath);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
         hashFileStore.putObject(dataStream, pid, "SM2", null, null);
@@ -321,7 +321,7 @@ public class HashFileStorePublicTest {
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
         String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-        Path testDataFile = new File(testdataAbsolutePath).toPath();
+        Path testDataFile = Paths.get(testdataAbsolutePath);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
         hashFileStore.putObject(dataStream, pid, "   ", null, null);
@@ -337,7 +337,7 @@ public class HashFileStorePublicTest {
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
         String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-        Path testDataFile = new File(testdataAbsolutePath).toPath();
+        Path testDataFile = Paths.get(testdataAbsolutePath);
 
         String checksumIncorrect = "1c25df1c8ba1d2e57bb3fd4785878b85";
 
@@ -354,7 +354,7 @@ public class HashFileStorePublicTest {
         String pid = "jtao.1700.1";
         Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
         String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-        Path testDataFile = new File(testdataAbsolutePath).toPath();
+        Path testDataFile = Paths.get(testdataAbsolutePath);
 
         String checksumIncorrect = "1c25df1c8ba1d2e57bb3fd4785878b85";
 
