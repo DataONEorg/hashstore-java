@@ -43,7 +43,9 @@ public class HashStore implements HashStoreInterface {
         try {
             this.hashfs = new HashFileStore(this.depth, this.width, this.algorithm, storeDirectory);
         } catch (IllegalArgumentException iae) {
-            logHashStore.error("Unable to initialize HashFileStore - Illegal Argument Exception: " + iae.getMessage());
+            logHashStore
+                    .error("Unable to initialize HashFileStore - storeDirectory supplied: " + storeDirectory.toString()
+                            + ". Illegal Argument Exception: " + iae.getMessage());
             throw iae;
         }
     }
