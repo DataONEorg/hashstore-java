@@ -14,6 +14,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -393,6 +394,9 @@ public class HashStoreTest {
                     assertTrue(permAddress.exists());
                 }
             } catch (Exception e) {
+                System.out.println("DOU-DEBUGGING");
+                System.out.println(e.getClass());
+                e.printStackTrace();
                 assertTrue(e instanceof RuntimeException);
             }
         });
@@ -406,13 +410,15 @@ public class HashStoreTest {
                     assertTrue(permAddress.exists());
                 }
             } catch (Exception e) {
+                System.out.println("DOU-DEBUGGING");
+                System.out.println(e.getClass());
+                e.printStackTrace();
                 assertTrue(e instanceof RuntimeException);
             }
         });
 
         // Wait for all tasks to complete and check results
-        // Calling .get() on the future ensures that all tasks complete before the test
-        // ends and will re-throw an exception if one has been encountered
+        // .get() on the future ensures that all tasks complete before the test ends
         future1.get();
         future2.get();
         executorService.shutdown();
@@ -444,6 +450,9 @@ public class HashStoreTest {
                 InputStream dataStream = Files.newInputStream(testDataFile);
                 hashStore.storeObject(dataStream, pid, null, null, null);
             } catch (Exception e) {
+                System.out.println("DOU-DEBUGGING");
+                System.out.println(e.getClass());
+                e.printStackTrace();
                 assertTrue(e instanceof RuntimeException);
             }
         });
@@ -452,6 +461,9 @@ public class HashStoreTest {
                 InputStream dataStreamDup = Files.newInputStream(testDataFile);
                 hashStore.storeObject(dataStreamDup, pid, null, null, null);
             } catch (Exception e) {
+                System.out.println("DOU-DEBUGGING");
+                System.out.println(e.getClass());
+                e.printStackTrace();
                 assertTrue(e instanceof RuntimeException);
             }
         });
@@ -460,13 +472,15 @@ public class HashStoreTest {
                 InputStream dataStreamDupTwo = Files.newInputStream(testDataFile);
                 hashStore.storeObject(dataStreamDupTwo, pid, null, null, null);
             } catch (Exception e) {
+                System.out.println("DOU-DEBUGGING");
+                System.out.println(e.getClass());
+                e.printStackTrace();
                 assertTrue(e instanceof RuntimeException);
             }
         });
 
         // Wait for all tasks to complete and check results
-        // Calling .get() on the future ensures that all tasks complete before the test
-        // ends and will re-throw an exception if one has been encountered
+        // .get() on the future ensures that all tasks complete before the test ends
         future1.get();
         future2.get();
         future3.get();
