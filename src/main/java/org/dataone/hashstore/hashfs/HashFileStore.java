@@ -46,7 +46,7 @@ public class HashFileStore {
     /**
      * Constructor to initialize HashStore fields and object store directory. If
      * storeDirectory is null or an empty string, a default path will be generated
-     * based on the user's root folder + "/HashFileStore".
+     * based on the user's working directory + "/HashFileStore".
      * 
      * Two directories will be created based on the given storeDirectory string:
      * - .../objects
@@ -247,12 +247,20 @@ public class HashFileStore {
                                 + checksumAlgorithm + ". Supported algorithms: "
                                 + Arrays.toString(SUPPORTED_HASH_ALGORITHMS));
             }
-        } else if (checksumAlgorithm != null && !checksumAlgorithm.trim().isEmpty()) {
+        }
+        if (checksumAlgorithm != null && !checksumAlgorithm.trim().isEmpty()) {
             // checksum cannot be null or empty if checksumAlgorithm is supplied
             if (checksum == null) {
                 logHashFileStore.error(
                         "HashFileStore.validateChecksumParameters - checksum cannot be null if checksumAlgorithm supplied.");
-                throw new NullPointerException("Checksum cannot be null if checksumAlgorithm is supplied.");
+                throw new NullPointerException(
+                        "Checksum cannot be null if checksumAlgorithm is supplied, checksum and checksumAlgorithm must both be null if unused.");
+            } else if (checksum.trim().isEmpty()) {
+                // ChecksumAlgorithm cannot be empty when checksum supplied
+                logHashFileStore.error(
+                        "HashFileStore.validateChecksumParameters - checksum cannot be empty if checksumAlgorithm is supplied");
+                throw new IllegalArgumentException(
+                        "checksum cannot be empty when checksumAlgorithm supplied, checksum and checksumAlgorithm must both be null if unused.");
             }
         }
     }

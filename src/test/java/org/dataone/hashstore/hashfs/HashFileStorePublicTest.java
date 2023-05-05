@@ -270,10 +270,54 @@ public class HashFileStorePublicTest {
         String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
         Path testDataFile = Paths.get(testdataAbsolutePath);
 
-        String checksumEmpty = "";
+        InputStream dataStream = Files.newInputStream(testDataFile);
+        hashFileStore.putObject(dataStream, pid, "MD2", "   ", "MD2");
+    }
+
+    /**
+     * Verify exception thrown when checksum is null and algorithm supported
+     */
+    @Test(expected = NullPointerException.class)
+    public void putObject_nullChecksumValue() throws Exception {
+        // Get test file to "upload"
+        String pid = "jtao.1700.1";
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
+        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+        Path testDataFile = Paths.get(testdataAbsolutePath);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        hashFileStore.putObject(dataStream, pid, "MD2", checksumEmpty, "MD2");
+        hashFileStore.putObject(dataStream, pid, "MD2", null, "MD2");
+    }
+
+    /**
+     * Verify exception thrown when checksumAlgorithm is empty and checksum is
+     * supplied
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void putObject_emptyChecksumAlgorithmValue() throws Exception {
+        // Get test file to "upload"
+        String pid = "jtao.1700.1";
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
+        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+        Path testDataFile = Paths.get(testdataAbsolutePath);
+
+        InputStream dataStream = Files.newInputStream(testDataFile);
+        hashFileStore.putObject(dataStream, pid, "MD2", "abc", "   ");
+    }
+
+    /**
+     * Verify exception thrown when checksumAlgorithm is null and checksum supplied
+     */
+    @Test(expected = NullPointerException.class)
+    public void putObject_nullChecksumAlgorithmValue() throws Exception {
+        // Get test file to "upload"
+        String pid = "jtao.1700.1";
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
+        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+        Path testDataFile = Paths.get(testdataAbsolutePath);
+
+        InputStream dataStream = Files.newInputStream(testDataFile);
+        hashFileStore.putObject(dataStream, pid, "MD2", "abc", null);
     }
 
     /**
