@@ -27,12 +27,10 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 /**
- * HashFileStore is a class that enables the storing of objects to disk by
- * utilizing the SHA-256 hex digest of an authority-based identifier as a key,
- * which typically takes the form of a persistent identifier (pid). This class
- * is responsible for managing the underlying storage implementation, as well as
- * providing an interface for interacting with stored objects and their
- * associated metadata.
+ * HashFileStore is a class that manages storage of objects to disk using
+ * SHA-256 hex digest of an authority-based identifier as a key (usually in the
+ * form of a pid). It also provides an interface for interacting with stored
+ * objects and metadata.
  *
  */
 public class HashFileStore {
