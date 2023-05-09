@@ -10,7 +10,7 @@ import org.dataone.hashstore.hashfs.HashAddress;
 
 public interface HashStoreInterface {
     /**
-     * The storeObject method is responsible for the atomic storage of objects to
+     * The `storeObject` method is responsible for the atomic storage of objects to
      * disk using a given InputStream and a persistent identifier (pid). Upon
      * successful storage, the method returns a HashAddress object containing
      * relevant file information, such as the file's id, relative path, absolute
@@ -65,4 +65,24 @@ public interface HashStoreInterface {
             String checksumAlgorithm)
             throws NoSuchAlgorithmException, IOException, SecurityException, FileNotFoundException,
             FileAlreadyExistsException, IllegalArgumentException, NullPointerException, RuntimeException;
+
+    /**
+     * The `storeSysmeta` method is responsible for adding and/or updating metadata
+     * (`sysmeta`) to disk using a given InputStream and a persistent identifier
+     * (pid). The metadata object consists of a header and body portion. The header
+     * is formed by writing the namespace/format (utf-8) of the metadata document
+     * and ends with a null character `\x00` and the body follows immediately after.
+     * 
+     * Upon successful storage of sysmeta, the method returns a String that
+     * represents the file's permanent address, and similarly to storeObject, this
+     * permanent address is determined by calculating the SHA-256 hex digest of the
+     * provided pid. Finally, sysmeta are stored in parallel to objects in the
+     * `/[...storeDirectory]/sysmeta/` directory.
+     * 
+     * @param sysmeta Input stream to metadata document
+     * @param pid     Authority-based identifier
+     * @return
+     * @throws Exception TODO: Add specific exceptions
+     */
+    String storeSysmeta(InputStream sysmeta, String pid) throws Exception;
 }
