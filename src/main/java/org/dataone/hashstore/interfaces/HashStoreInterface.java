@@ -1,6 +1,11 @@
 package org.dataone.hashstore.interfaces;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.FileAlreadyExistsException;
+import java.security.NoSuchAlgorithmException;
+
 import org.dataone.hashstore.hashfs.HashAddress;
 
 public interface HashStoreInterface {
@@ -57,5 +62,7 @@ public interface HashStoreInterface {
      *                                         file systems
      */
     HashAddress storeObject(InputStream object, String pid, String additionalAlgorithm, String checksum,
-            String checksumAlgorithm) throws Exception;
+            String checksumAlgorithm)
+            throws NoSuchAlgorithmException, IOException, SecurityException, FileNotFoundException,
+            FileAlreadyExistsException, IllegalArgumentException, NullPointerException, RuntimeException;
 }
