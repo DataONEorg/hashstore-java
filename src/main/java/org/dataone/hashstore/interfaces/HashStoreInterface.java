@@ -1,5 +1,6 @@
 package org.dataone.hashstore.interfaces;
 
+import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -71,7 +72,7 @@ public interface HashStoreInterface {
      * (`sysmeta`) to disk using a given InputStream and a persistent identifier
      * (pid). The metadata object consists of a header and body portion. The header
      * is formed by writing the namespace/format (utf-8) of the metadata document
-     * and ends with a null character `\x00` and the body follows immediately after.
+     * followed by a null character `\x00` and the body follows immediately after.
      * 
      * Upon successful storage of sysmeta, the method returns a String that
      * represents the file's permanent address, and similarly to storeObject, this
@@ -81,8 +82,21 @@ public interface HashStoreInterface {
      * 
      * @param sysmeta Input stream to metadata document
      * @param pid     Authority-based identifier
-     * @return
+     * @return String representing metadata address
      * @throws Exception TODO: Add specific exceptions
      */
     String storeSysmeta(InputStream sysmeta, String pid) throws Exception;
+
+    /**
+     * The `retrieveObject` method retrieves an object from disk using a given
+     * persistent identifier (pid). If the object exists (determined by calculating
+     * the object's permanent address using the SHA-256 hash of the given pid), the
+     * method will open and return a buffered object stream ready to read from.
+     * 
+     * @param pid Authority-based identifier
+     * @return A buffered stream of the object
+     * @throws Exception TODO: Add specific exceptions
+     */
+    BufferedReader retrieveObject(String pid) throws Exception;
+
 }
