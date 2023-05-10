@@ -1,5 +1,6 @@
 package org.dataone.hashstore;
 
+import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -139,5 +140,41 @@ public class HashStore implements HashStoreInterface {
                 objectLockedIds.notifyAll();
             }
         }
+    }
+
+    @Override
+    public String storeSysmeta(InputStream sysmeta, String pid) throws Exception {
+        // TODO: Implement method
+        return null;
+    }
+
+    @Override
+    public BufferedReader retrieveObject(String pid) throws Exception {
+        // TODO: Implement method
+        return null;
+    }
+
+    @Override
+    public String retrieveSysmeta(String pid) throws Exception {
+        // TODO: Implement method
+        return null;
+    }
+
+    @Override
+    public boolean deleteObject(String pid) throws Exception {
+        // TODO: Implement method
+        return false;
+    }
+
+    @Override
+    public boolean deleteSysmeta(String pid) throws Exception {
+        // TODO: Implement method
+        return false;
+    }
+
+    @Override
+    public String getHexDigest(String pid, String algorithm) throws Exception {
+        // TODO: Implement method
+        return null;
     }
 }
