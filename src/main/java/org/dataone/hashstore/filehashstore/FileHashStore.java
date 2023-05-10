@@ -1,5 +1,6 @@
 package org.dataone.hashstore.filehashstore;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -25,6 +26,7 @@ import javax.xml.bind.DatatypeConverter;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.dataone.hashstore.interfaces.HashStoreInterface;
 
 /**
  * FileHashStore is a class that manages storage of objects to disk using
@@ -33,13 +35,14 @@ import org.apache.commons.logging.LogFactory;
  * objects and metadata.
  *
  */
-public class FileHashStore {
+public class FileHashStore implements HashStoreInterface {
     private static final Log logFileHashStore = LogFactory.getLog(FileHashStore.class);
     private final int directoryDepth;
     private final int directoryWidth;
     private final String objectStoreAlgorithm;
     private final Path objectStoreDirectory;
     private final Path tmpFileDirectory;
+    private static final ArrayList<String> objectLockedIds = new ArrayList<>(100);
     public static final String[] SUPPORTED_HASH_ALGORITHMS = { "MD2", "MD5", "SHA-1", "SHA-256", "SHA-384", "SHA-512",
             "SHA-512/224", "SHA-512/256" };
     public static final String[] DEFAULT_HASH_ALGORITHMS = { "MD5", "SHA-1", "SHA-256", "SHA-384", "SHA-512" };
@@ -102,6 +105,136 @@ public class FileHashStore {
         this.objectStoreAlgorithm = algorithm;
     }
 
+    @Override
+    public HashAddress storeObject(InputStream object, String pid, String additionalAlgorithm, String checksum,
+            String checksumAlgorithm)
+            throws NoSuchAlgorithmException, IOException, SecurityException, FileNotFoundException,
+            FileAlreadyExistsException, IllegalArgumentException, NullPointerException, RuntimeException {
+        logFileHashStore.info("FileHashStore.storeObject - Called to store object for pid: " + pid);
+        // Begin input validation
+        if (object == null) {
+            logFileHashStore.error("FileHashStore.storeObject - InputStream cannot be null, pid: " + pid);
+            throw new NullPointerException("Invalid input stream, data is null.");
+        }
+        if (pid == null || pid.trim().isEmpty()) {
+            logFileHashStore.error("FileHashStore.storeObject - pid cannot be null or empty, pid: " + pid);
+            throw new IllegalArgumentException("Pid cannot be null or empty, pid: " + pid);
+        }
+        // Cannot generate additional or checksum algorithm if it is not supported
+        if (additionalAlgorithm != null) {
+            boolean algorithmSupported = this.isValidAlgorithm(additionalAlgorithm);
+            if (!algorithmSupported) {
+                logFileHashStore.error("FileHashStore.storeObject - additionalAlgorithm is not supported."
+                        + "additionalAlgorithm: " + additionalAlgorithm + ". pid: " + pid);
+                throw new IllegalArgumentException(
+                        "Additional algorithm not supported - unable to generate additional hex digest value. additionalAlgorithm: "
+                                + additionalAlgorithm + ". Supported algorithms: "
+                                + Arrays.toString(FileHashStore.SUPPORTED_HASH_ALGORITHMS));
+            }
+        }
+        // checksumAlgorithm and checksum must both be present if validation is desired
+        this.validateChecksumParameters(checksum, checksumAlgorithm, additionalAlgorithm);
+
+        // Lock pid for thread safety, transaction control and atomic writing
+        // A pid can only be stored once and only once, subsequent calls will
+        // be accepted but will be rejected if pid hash object exists
+        synchronized (objectLockedIds) {
+            if (objectLockedIds.contains(pid)) {
+                logFileHashStore
+                        .warn("FileHashStore.storeObject - Duplicate object request encountered for pid: " + pid);
+                throw new RuntimeException(
+                        "FileHashStore.storeObject request for pid: " + pid + " already in progress.");
+            }
+            objectLockedIds.add(pid);
+        }
+
+        try {
+            logFileHashStore.debug("FileHashStore.storeObject - filehs.putObject request for pid: " + pid
+                    + ". additionalAlgorithm: " + additionalAlgorithm + ". checksum: " + checksum
+                    + ". checksumAlgorithm: " + checksumAlgorithm);
+            // Store object
+            HashAddress objInfo = this.putObject(object, pid, additionalAlgorithm, checksum, checksumAlgorithm);
+            logFileHashStore.info(
+                    "FileHashStore.storeObject - Object stored for pid: " + pid + ". Permanent address: "
+                            + objInfo.getAbsPath());
+            return objInfo;
+        } catch (NullPointerException npe) {
+            logFileHashStore.error("FileHashStore.storeObject - Cannot store object for pid: " + pid
+                    + ". NullPointerException: " + npe.getMessage());
+            throw npe;
+        } catch (IllegalArgumentException iae) {
+            logFileHashStore.error("FileHashStore.storeObject - Cannot store object for pid: " + pid
+                    + ". IllegalArgumentException: " + iae.getMessage());
+            throw iae;
+        } catch (NoSuchAlgorithmException nsae) {
+            logFileHashStore.error("FileHashStore.storeObject - Cannot store object for pid: " + pid
+                    + ". NoSuchAlgorithmException: " + nsae.getMessage());
+            throw nsae;
+        } catch (FileAlreadyExistsException faee) {
+            logFileHashStore.error("FileHashStore.storeObject - Cannot store object for pid: " + pid
+                    + ". FileAlreadyExistsException: " + faee.getMessage());
+            throw faee;
+        } catch (FileNotFoundException fnfe) {
+            logFileHashStore.error("FileHashStore.storeObject - Cannot store object for pid: " + pid
+                    + ". FileNotFoundException: " + fnfe.getMessage());
+            throw fnfe;
+        } catch (IOException ioe) {
+            logFileHashStore.error("FileHashStore.storeObject - Cannot store object for pid: " + pid
+                    + ". IOException: " + ioe.getMessage());
+            throw ioe;
+        } catch (SecurityException se) {
+            logFileHashStore.error("FileHashStore.storeObject - Cannot store object for pid: " + pid
+                    + ". SecurityException: " + se.getMessage());
+            throw se;
+        } catch (RuntimeException re) {
+            logFileHashStore.error("FileHashStore.storeObject - Object was stored for : " + pid
+                    + ". But encountered RuntimeException when releasing object lock: " + re.getMessage());
+            throw re;
+        } finally {
+            // Release lock
+            synchronized (objectLockedIds) {
+                objectLockedIds.remove(pid);
+                objectLockedIds.notifyAll();
+            }
+        }
+    }
+
+    @Override
+    public String storeSysmeta(InputStream sysmeta, String pid) throws Exception {
+        // TODO: Implement method
+        return null;
+    }
+
+    @Override
+    public BufferedReader retrieveObject(String pid) throws Exception {
+        // TODO: Implement method
+        return null;
+    }
+
+    @Override
+    public String retrieveSysmeta(String pid) throws Exception {
+        // TODO: Implement method
+        return null;
+    }
+
+    @Override
+    public boolean deleteObject(String pid) throws Exception {
+        // TODO: Implement method
+        return false;
+    }
+
+    @Override
+    public boolean deleteSysmeta(String pid) throws Exception {
+        // TODO: Implement method
+        return false;
+    }
+
+    @Override
+    public String getHexDigest(String pid, String algorithm) throws Exception {
+        // TODO: Implement method
+        return null;
+    }
+
     /**
      * Takes a given input stream and writes it to its permanent address on disk
      * based on the SHA-256 hex digest value of an authority based identifier,
@@ -160,7 +293,7 @@ public class FileHashStore {
         boolean requestValidation = this.validateChecksumParameters(checksum, checksumAlgorithm, additionalAlgorithm);
 
         // Gather HashAddress elements and prepare object permanent address
-        String objAuthorityId = this.getHexDigest(pid, this.objectStoreAlgorithm);
+        String objAuthorityId = this.getPidHexDigest(pid, this.objectStoreAlgorithm);
         String objShardString = this.getHierarchicalPathString(this.directoryDepth, this.directoryWidth,
                 objAuthorityId);
         String objAbsolutePathString = this.objectStoreDirectory.toString() + "/" + objShardString;
@@ -344,7 +477,7 @@ public class FileHashStore {
      * @throws IllegalArgumentException String or algorithm cannot be null or empty
      * @throws NoSuchAlgorithmException Algorithm not supported
      */
-    protected String getHexDigest(String pid, String algorithm)
+    protected String getPidHexDigest(String pid, String algorithm)
             throws NoSuchAlgorithmException, IllegalArgumentException {
         if (algorithm == null || algorithm.trim().isEmpty()) {
             throw new IllegalArgumentException(

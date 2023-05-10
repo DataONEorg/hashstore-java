@@ -124,9 +124,9 @@ public class FileHashStoreProtectedTest {
      * Check for correct hex digest value
      */
     @Test
-    public void getHexDigest() throws Exception {
+    public void getPidHexDigest() throws Exception {
         for (String pid : this.testData.pidList) {
-            String abIdDigest = this.fileHashStore.getHexDigest(pid, "SHA-256");
+            String abIdDigest = this.fileHashStore.getPidHexDigest(pid, "SHA-256");
             String abIdTestData = this.testData.pidData.get(pid).get("s_cid");
             assertEquals(abIdDigest, abIdTestData);
         }
@@ -136,9 +136,9 @@ public class FileHashStoreProtectedTest {
      * Check for NoSuchAlgorithmException
      */
     @Test(expected = NoSuchAlgorithmException.class)
-    public void getHexDigest_badAlgorithm() throws Exception {
+    public void getPidHexDigest_badAlgorithm() throws Exception {
         for (String pid : this.testData.pidList) {
-            this.fileHashStore.getHexDigest(pid, "SM2");
+            this.fileHashStore.getPidHexDigest(pid, "SM2");
         }
     }
 
