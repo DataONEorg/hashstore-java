@@ -1,9 +1,9 @@
 package org.dataone.hashstore;
 
+import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
@@ -50,42 +50,6 @@ public class HashStore implements HashStoreInterface {
         }
     }
 
-    /**
-     * Store an object to the storeDirectory.
-     * 
-     * The permanent address is the SHA-256 hex digest of a given string that
-     * represents an authority based identifier (ex. pid)
-     * 
-     * Returns a HashAddress object that contains the file id, relative path,
-     * absolute path, duplicate status and a checksum map based on a default
-     * algorithm list.
-     * 
-     * @param object              Input stream to file
-     * @param pid                 Authority-based identifier
-     * @param additionalAlgorithm Additional hex digest to include in hexDigests
-     * @param checksum            Value of checksum to validate against
-     * @param checksumAlgorithm   Algorithm of checksum submitted
-     * 
-     * @return A HashAddress object that contains the file id, relative path,
-     *         absolute path, duplicate status and a checksum map based on the
-     *         default algorithm list.
-     * @throws NoSuchAlgorithmException        When additionalAlgorithm or
-     *                                         checksumAlgorithm is invalid
-     * @throws IOException                     I/O Error when writing file,
-     *                                         generating checksums and moving file
-     * @throws SecurityException               Insufficient permissions to
-     *                                         read/access files or when
-     *                                         generating/writing to a file
-     * @throws FileNotFoundException           When tmpFile not found during store
-     * @throws FileAlreadyExistsException      Duplicate object in store exists
-     * @throws IllegalArgumentException        When signature values are empty
-     *                                         (checksum, pid, etc.)
-     * @throws NullPointerException            Arguments are null for pid or object
-     * @throws RuntimeException                When attempting to store pid object
-     *                                         that is already in progress
-     * @throws AtomicMoveNotSupportedException When attempting to move files across
-     *                                         file systems
-     */
     @Override
     public HashAddress storeObject(InputStream object, String pid, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
@@ -176,5 +140,41 @@ public class HashStore implements HashStoreInterface {
                 objectLockedIds.notifyAll();
             }
         }
+    }
+
+    @Override
+    public String storeSysmeta(InputStream sysmeta, String pid) throws Exception {
+        // TODO: Implement method
+        return null;
+    }
+
+    @Override
+    public BufferedReader retrieveObject(String pid) throws Exception {
+        // TODO: Implement method
+        return null;
+    }
+
+    @Override
+    public String retrieveSysmeta(String pid) throws Exception {
+        // TODO: Implement method
+        return null;
+    }
+
+    @Override
+    public boolean deleteObject(String pid) throws Exception {
+        // TODO: Implement method
+        return false;
+    }
+
+    @Override
+    public boolean deleteSysmeta(String pid) throws Exception {
+        // TODO: Implement method
+        return false;
+    }
+
+    @Override
+    public String getHexDigest(String pid, String algorithm) throws Exception {
+        // TODO: Implement method
+        return null;
     }
 }
