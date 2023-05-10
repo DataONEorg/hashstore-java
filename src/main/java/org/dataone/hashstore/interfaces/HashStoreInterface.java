@@ -108,4 +108,35 @@ public interface HashStoreInterface {
      * @throws Exception TODO: Add specific exceptions
      */
     String retrieveSysmeta(String pid) throws Exception;
+
+    /**
+     * The 'deleteObject' method deletes an object permanently from disk using a
+     * given persistent identifier.
+     * 
+     * @param pid Authority-based identifier
+     * @return
+     * @throws Exception TODO: Add specific exceptions
+     */
+    boolean deleteObject(String pid) throws Exception;
+
+    /**
+     * The 'deleteSysmeta' method deletes an metadata document (sysmeta) permanently
+     * from disk using a given persistent identifier.
+     * 
+     * @param pid Authority-based identifier
+     * @return
+     * @throws Exception TODO: Add specific exceptions
+     */
+    boolean deleteSysmeta(String pid) throws Exception;
+
+    /**
+     * The 'getHexDigest' method calculates the hex digest of an object that exists
+     * in HashStore using a given persistent identifier and hash algorithm.
+     * 
+     * @param pid       Authority-based identifier
+     * @param algorithm Algorithm of desired hex digest
+     * @return
+     * @throws Exception TODO: Add specific exceptions
+     */
+    String getHexDigest(String pid, String algorithm) throws Exception;
 }
