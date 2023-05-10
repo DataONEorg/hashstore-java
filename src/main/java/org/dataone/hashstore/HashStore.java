@@ -12,8 +12,8 @@ import java.util.Arrays;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.dataone.hashstore.hashfs.HashAddress;
-import org.dataone.hashstore.hashfs.HashFileStore;
+import org.dataone.hashstore.filehashstore.FileHashStore;
+import org.dataone.hashstore.filehashstore.HashAddress;
 import org.dataone.hashstore.interfaces.HashStoreInterface;
 
 /**
@@ -25,7 +25,7 @@ import org.dataone.hashstore.interfaces.HashStoreInterface;
  */
 public class HashStore implements HashStoreInterface {
     private static final Log logHashStore = LogFactory.getLog(HashStore.class);
-    private final HashFileStore hashfs;
+    private final FileHashStore filehs;
     private final int depth = 3;
     private final int width = 2;
     private final String algorithm = "SHA-256";
@@ -41,10 +41,10 @@ public class HashStore implements HashStoreInterface {
     public HashStore(Path storeDirectory)
             throws IllegalArgumentException, IOException {
         try {
-            this.hashfs = new HashFileStore(this.depth, this.width, this.algorithm, storeDirectory);
+            this.filehs = new FileHashStore(this.depth, this.width, this.algorithm, storeDirectory);
         } catch (IllegalArgumentException iae) {
             logHashStore
-                    .error("Unable to initialize HashFileStore - storeDirectory supplied: " + storeDirectory.toString()
+                    .error("Unable to initialize FileHashStore - storeDirectory supplied: " + storeDirectory.toString()
                             + ". Illegal Argument Exception: " + iae.getMessage());
             throw iae;
         }
@@ -67,18 +67,18 @@ public class HashStore implements HashStoreInterface {
         }
         // Cannot generate additional or checksum algorithm if it is not supported
         if (additionalAlgorithm != null) {
-            boolean algorithmSupported = this.hashfs.isValidAlgorithm(additionalAlgorithm);
+            boolean algorithmSupported = this.filehs.isValidAlgorithm(additionalAlgorithm);
             if (!algorithmSupported) {
                 logHashStore.error("HashStore.storeObject - additionalAlgorithm is not supported."
                         + "additionalAlgorithm: " + additionalAlgorithm + ". pid: " + pid);
                 throw new IllegalArgumentException(
                         "Additional algorithm not supported - unable to generate additional hex digest value. additionalAlgorithm: "
                                 + additionalAlgorithm + ". Supported algorithms: "
-                                + Arrays.toString(HashFileStore.SUPPORTED_HASH_ALGORITHMS));
+                                + Arrays.toString(FileHashStore.SUPPORTED_HASH_ALGORITHMS));
             }
         }
         // checksumAlgorithm and checksum must both be present if validation is desired
-        this.hashfs.validateChecksumParameters(checksum, checksumAlgorithm, additionalAlgorithm);
+        this.filehs.validateChecksumParameters(checksum, checksumAlgorithm, additionalAlgorithm);
 
         // Lock pid for thread safety, transaction control and atomic writing
         // A pid can only be stored once and only once, subsequent calls will
@@ -92,11 +92,11 @@ public class HashStore implements HashStoreInterface {
         }
 
         try {
-            logHashStore.debug("HashStore.storeObject - hashfs.putObject request for pid: " + pid
+            logHashStore.debug("HashStore.storeObject - filehs.putObject request for pid: " + pid
                     + ". additionalAlgorithm: " + additionalAlgorithm + ". checksum: " + checksum
                     + ". checksumAlgorithm: " + checksumAlgorithm);
             // Store object
-            HashAddress objInfo = this.hashfs.putObject(object, pid, additionalAlgorithm, checksum, checksumAlgorithm);
+            HashAddress objInfo = this.filehs.putObject(object, pid, additionalAlgorithm, checksum, checksumAlgorithm);
             logHashStore.info(
                     "HashStore.storeObject - Object stored for pid: " + pid + ". Permanent address: "
                             + objInfo.getAbsPath());

@@ -1,4 +1,4 @@
-package org.dataone.hashstore.hashfs;
+package org.dataone.hashstore.filehashstore;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,20 +21,20 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 /**
- * Test class for HashFileStore public members
+ * Test class for FileHashStore public members
  */
-public class HashFileStorePublicTest {
-    public HashFileStore hashFileStore;
+public class FileHashStorePublicTest {
+    public FileHashStore fileHashStore;
     public Path objStringFull;
     public Path tmpStringFull;
     public Path rootPathFull;
     public TestDataHarness testData = new TestDataHarness();
 
     /**
-     * Initialize HashFileStore for test efficiency purposes (creates directories)
+     * Initialize FileHashStore for test efficiency purposes (creates directories)
      */
     @Before
-    public void initializeHashFileStore() {
+    public void initializeFileHashStore() {
         Path rootDirectory = this.tempFolder.getRoot().toPath();
         String rootString = rootDirectory.toString();
         String rootStringFull = rootString + "/metacat";
@@ -42,7 +42,7 @@ public class HashFileStorePublicTest {
         this.tmpStringFull = Paths.get(rootStringFull + "/objects/tmp");
         this.rootPathFull = Paths.get(rootStringFull);
         try {
-            this.hashFileStore = new HashFileStore(3, 2, "SHA-256", rootPathFull);
+            this.fileHashStore = new FileHashStore(3, 2, "SHA-256", rootPathFull);
         } catch (IOException e) {
             fail("IOException encountered: " + e.getMessage());
         }
@@ -74,7 +74,7 @@ public class HashFileStorePublicTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void constructor_illegalDepthArg() throws Exception {
-        new HashFileStore(0, 2, "SHA-256", this.rootPathFull);
+        new FileHashStore(0, 2, "SHA-256", this.rootPathFull);
     }
 
     /**
@@ -82,7 +82,7 @@ public class HashFileStorePublicTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void constructor_illegalAlgorithmArg() throws Exception {
-        new HashFileStore(2, 2, "SM2", this.rootPathFull);
+        new FileHashStore(2, 2, "SM2", this.rootPathFull);
     }
 
     /**
@@ -90,10 +90,10 @@ public class HashFileStorePublicTest {
      */
     @Test
     public void defaultStore_directoryNull() throws Exception {
-        new HashFileStore(3, 2, "SHA-256", null);
+        new FileHashStore(3, 2, "SHA-256", null);
 
         String rootDirectory = System.getProperty("user.dir");
-        String objectPath = "HashFileStore";
+        String objectPath = "FileHashStore";
 
         Path defaultObjDirectoryPath = Paths.get(rootDirectory).resolve(objectPath).resolve("objects");
         assertTrue(Files.exists(defaultObjDirectoryPath));
@@ -116,7 +116,7 @@ public class HashFileStorePublicTest {
             Path testDataFile = Paths.get(testdataAbsolutePath);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            HashAddress address = hashFileStore.putObject(dataStream, pid, null, null, null);
+            HashAddress address = fileHashStore.putObject(dataStream, pid, null, null, null);
 
             // Check id (sha-256 hex digest of the ab_id, aka s_cid)
             String objAuthorityId = this.testData.pidData.get(pid).get("s_cid");
@@ -138,11 +138,11 @@ public class HashFileStorePublicTest {
             Path testDataFile = Paths.get(testdataAbsolutePath);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            HashAddress address = hashFileStore.putObject(dataStream, pid, null, null, null);
+            HashAddress address = fileHashStore.putObject(dataStream, pid, null, null, null);
 
             // Check relative path
             String objAuthorityId = this.testData.pidData.get(pid).get("s_cid");
-            String objRelPath = hashFileStore.getHierarchicalPathString(3, 2, objAuthorityId);
+            String objRelPath = fileHashStore.getHierarchicalPathString(3, 2, objAuthorityId);
             assertEquals(objRelPath, address.getRelPath());
         }
     }
@@ -161,7 +161,7 @@ public class HashFileStorePublicTest {
             Path testDataFile = Paths.get(testdataAbsolutePath);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            HashAddress address = hashFileStore.putObject(dataStream, pid, null, null, null);
+            HashAddress address = fileHashStore.putObject(dataStream, pid, null, null, null);
 
             // Check absolute path
             File objAbsPath = new File(address.getAbsPath());
@@ -183,7 +183,7 @@ public class HashFileStorePublicTest {
             Path testDataFile = Paths.get(testdataAbsolutePath);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            HashAddress address = hashFileStore.putObject(dataStream, pid, null, null, null);
+            HashAddress address = fileHashStore.putObject(dataStream, pid, null, null, null);
 
             // Check duplicate status
             assertFalse(address.getIsDuplicate());
@@ -204,7 +204,7 @@ public class HashFileStorePublicTest {
             Path testDataFile = Paths.get(testdataAbsolutePath);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            HashAddress address = hashFileStore.putObject(dataStream, pid, null, null, null);
+            HashAddress address = fileHashStore.putObject(dataStream, pid, null, null, null);
 
             Map<String, String> hexDigests = address.getHexDigests();
 
@@ -236,7 +236,7 @@ public class HashFileStorePublicTest {
         String checksumCorrect = "9c25df1c8ba1d2e57bb3fd4785878b85";
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        HashAddress address = hashFileStore.putObject(dataStream, pid, "MD2", checksumCorrect, "MD2");
+        HashAddress address = fileHashStore.putObject(dataStream, pid, "MD2", checksumCorrect, "MD2");
 
         File objAbsPath = new File(address.getAbsPath());
         assertTrue(objAbsPath.exists());
@@ -256,7 +256,7 @@ public class HashFileStorePublicTest {
         String checksumCorrect = "9c25df1c8ba1d2e57bb3fd4785878b85";
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        hashFileStore.putObject(dataStream, pid, "MD2", null, null);
+        fileHashStore.putObject(dataStream, pid, "MD2", null, null);
 
         String md2 = this.testData.pidData.get(pid).get("md2");
         assertEquals(checksumCorrect, md2);
@@ -276,7 +276,7 @@ public class HashFileStorePublicTest {
         String checksumIncorrect = "1c25df1c8ba1d2e57bb3fd4785878b85";
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        hashFileStore.putObject(dataStream, pid, "MD2", checksumIncorrect, "MD2");
+        fileHashStore.putObject(dataStream, pid, "MD2", checksumIncorrect, "MD2");
     }
 
     /**
@@ -291,7 +291,7 @@ public class HashFileStorePublicTest {
         Path testDataFile = Paths.get(testdataAbsolutePath);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        hashFileStore.putObject(dataStream, pid, "MD2", "   ", "MD2");
+        fileHashStore.putObject(dataStream, pid, "MD2", "   ", "MD2");
     }
 
     /**
@@ -306,7 +306,7 @@ public class HashFileStorePublicTest {
         Path testDataFile = Paths.get(testdataAbsolutePath);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        hashFileStore.putObject(dataStream, pid, "MD2", null, "MD2");
+        fileHashStore.putObject(dataStream, pid, "MD2", null, "MD2");
     }
 
     /**
@@ -322,7 +322,7 @@ public class HashFileStorePublicTest {
         Path testDataFile = Paths.get(testdataAbsolutePath);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        hashFileStore.putObject(dataStream, pid, "MD2", "abc", "   ");
+        fileHashStore.putObject(dataStream, pid, "MD2", "abc", "   ");
     }
 
     /**
@@ -337,7 +337,7 @@ public class HashFileStorePublicTest {
         Path testDataFile = Paths.get(testdataAbsolutePath);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        hashFileStore.putObject(dataStream, pid, "MD2", "abc", null);
+        fileHashStore.putObject(dataStream, pid, "MD2", "abc", null);
     }
 
     /**
@@ -352,14 +352,14 @@ public class HashFileStorePublicTest {
         Path testDataFile = Paths.get(testdataAbsolutePath);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        HashAddress address = hashFileStore.putObject(dataStream, pid, null, null, null);
+        HashAddress address = fileHashStore.putObject(dataStream, pid, null, null, null);
 
         // Check duplicate status
         assertFalse(address.getIsDuplicate());
 
         // Try duplicate upload
         InputStream dataStreamTwo = Files.newInputStream(testDataFile);
-        hashFileStore.putObject(dataStreamTwo, pid, null, null, null);
+        fileHashStore.putObject(dataStreamTwo, pid, null, null, null);
     }
 
     /**
@@ -374,7 +374,7 @@ public class HashFileStorePublicTest {
         Path testDataFile = Paths.get(testdataAbsolutePath);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        hashFileStore.putObject(dataStream, pid, "SM2", null, null);
+        fileHashStore.putObject(dataStream, pid, "SM2", null, null);
     }
 
     /**
@@ -389,7 +389,7 @@ public class HashFileStorePublicTest {
         Path testDataFile = Paths.get(testdataAbsolutePath);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        hashFileStore.putObject(dataStream, pid, "   ", null, null);
+        fileHashStore.putObject(dataStream, pid, "   ", null, null);
     }
 
     /**
@@ -405,7 +405,7 @@ public class HashFileStorePublicTest {
         Path testDataFile = Paths.get(testdataAbsolutePath);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        hashFileStore.putObject(dataStream, pidEmpty, null, null, null);
+        fileHashStore.putObject(dataStream, pidEmpty, null, null, null);
     }
 
     /**
@@ -420,7 +420,7 @@ public class HashFileStorePublicTest {
         Path testDataFile = Paths.get(testdataAbsolutePath);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        hashFileStore.putObject(dataStream, null, "MD2", null, null);
+        fileHashStore.putObject(dataStream, null, "MD2", null, null);
     }
 
     /**
@@ -431,6 +431,6 @@ public class HashFileStorePublicTest {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
 
-        hashFileStore.putObject(null, pid, "MD2", null, null);
+        fileHashStore.putObject(null, pid, "MD2", null, null);
     }
 }

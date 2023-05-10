@@ -7,7 +7,7 @@ import java.io.InputStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.security.NoSuchAlgorithmException;
 
-import org.dataone.hashstore.hashfs.HashAddress;
+import org.dataone.hashstore.filehashstore.HashAddress;
 
 public interface HashStoreInterface {
     /**
