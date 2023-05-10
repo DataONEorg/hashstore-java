@@ -99,4 +99,13 @@ public interface HashStoreInterface {
      */
     BufferedReader retrieveObject(String pid) throws Exception;
 
+    /**
+     * The 'retrieveSysmeta' method retrieves the metadata content from disk and
+     * returns it in the form of a String using a given persistent identifier.
+     * 
+     * @param pid Authority-based identifier
+     * @return Sysmeta (metadata) document of given pid
+     * @throws Exception TODO: Add specific exceptions
+     */
+    String retrieveSysmeta(String pid) throws Exception;
 }
