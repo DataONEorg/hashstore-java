@@ -1,4 +1,4 @@
-package org.dataone.hashstore.filehashstore;
+package org.dataone.hashstore;
 
 import java.util.Map;
 

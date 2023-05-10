@@ -26,6 +26,7 @@ import javax.xml.bind.DatatypeConverter;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.dataone.hashstore.HashAddress;
 import org.dataone.hashstore.interfaces.HashStoreInterface;
 
 /**
