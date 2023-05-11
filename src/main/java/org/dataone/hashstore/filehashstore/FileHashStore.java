@@ -110,7 +110,8 @@ public class FileHashStore implements HashStoreInterface {
     public HashAddress storeObject(InputStream object, String pid, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
             throws NoSuchAlgorithmException, IOException, SecurityException, FileNotFoundException,
-            FileAlreadyExistsException, IllegalArgumentException, NullPointerException, RuntimeException {
+            FileAlreadyExistsException, IllegalArgumentException, NullPointerException, RuntimeException,
+            AtomicMoveNotSupportedException {
         logFileHashStore.info("FileHashStore.storeObject - Called to store object for pid: " + pid);
         // Begin input validation
         if (object == null) {

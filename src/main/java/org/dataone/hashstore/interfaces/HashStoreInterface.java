@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.security.NoSuchAlgorithmException;
 
@@ -65,7 +66,8 @@ public interface HashStoreInterface {
     HashAddress storeObject(InputStream object, String pid, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
             throws NoSuchAlgorithmException, IOException, SecurityException, FileNotFoundException,
-            FileAlreadyExistsException, IllegalArgumentException, NullPointerException, RuntimeException;
+            FileAlreadyExistsException, IllegalArgumentException, NullPointerException, RuntimeException,
+            AtomicMoveNotSupportedException;
 
     /**
      * The `storeSysmeta` method is responsible for adding and/or updating metadata
