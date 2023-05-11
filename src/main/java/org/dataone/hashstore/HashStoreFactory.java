@@ -12,8 +12,8 @@ import org.dataone.hashstore.filehashstore.FileHashStore;
  * content-addressable file management system that utilizes a persistent
  * identifier (PID) in the form of a hex digest value to address files. The
  * system stores files in a file store and provides an API for interacting with
- * the store. The API should implement the HashStoreInterface to ensure proper
- * usage of the system.
+ * the store. HashStore storage classes (like `FileHashStore`) must implement
+ * the HashStoreInterface to ensure proper usage of the system.
  */
 public class HashStoreFactory {
     private static final Log logHashStore = LogFactory.getLog(HashStoreFactory.class);
