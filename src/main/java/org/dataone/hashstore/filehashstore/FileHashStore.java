@@ -180,6 +180,10 @@ public class FileHashStore implements HashStoreInterface {
             logFileHashStore.error("FileHashStore.storeObject - Cannot store object for pid: " + pid
                     + ". FileNotFoundException: " + fnfe.getMessage());
             throw fnfe;
+        } catch (AtomicMoveNotSupportedException amnse) {
+            logFileHashStore.error("FileHashStore.storeObject - Cannot store object for pid: " + pid
+                    + ". AtomicMoveNotSupportedException: " + amnse.getMessage());
+            throw amnse;
         } catch (IOException ioe) {
             logFileHashStore.error("FileHashStore.storeObject - Cannot store object for pid: " + pid
                     + ". IOException: " + ioe.getMessage());
@@ -273,7 +277,7 @@ public class FileHashStore implements HashStoreInterface {
      * @throws AtomicMoveNotSupportedException When attempting to move files across
      *                                         file systems
      */
-    public HashAddress putObject(InputStream object, String pid, String additionalAlgorithm, String checksum,
+    protected HashAddress putObject(InputStream object, String pid, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
             throws IOException, NoSuchAlgorithmException, SecurityException, FileNotFoundException,
             FileAlreadyExistsException, IllegalArgumentException, NullPointerException,
@@ -370,7 +374,8 @@ public class FileHashStore implements HashStoreInterface {
         return hashAddress;
     }
 
-    public boolean validateChecksumParameters(String checksum, String checksumAlgorithm, String additionalAlgorithm) {
+    protected boolean validateChecksumParameters(String checksum, String checksumAlgorithm,
+            String additionalAlgorithm) {
         boolean requestValidation = false;
         if (checksum != null && !checksum.trim().isEmpty()) {
             if (checksumAlgorithm == null) {
@@ -439,7 +444,7 @@ public class FileHashStore implements HashStoreInterface {
      * @throws NullPointerException     algorithm cannot be null
      * @throws IllegalArgumentException algorithm cannot be empty
      */
-    public boolean isValidAlgorithm(String algorithm) throws NullPointerException {
+    protected boolean isValidAlgorithm(String algorithm) throws NullPointerException {
         if (algorithm == null) {
             throw new NullPointerException("Algorithm value supplied is null");
         }
@@ -458,7 +463,7 @@ public class FileHashStore implements HashStoreInterface {
      * @throws NullPointerException     algorithm cannot be null
      * @throws IllegalArgumentException algorithm cannot be empty
      */
-    public boolean isDefaultAlgorithm(String algorithm) throws NullPointerException {
+    protected boolean isDefaultAlgorithm(String algorithm) throws NullPointerException {
         if (algorithm == null) {
             throw new NullPointerException("Algorithm value supplied is null");
         }
