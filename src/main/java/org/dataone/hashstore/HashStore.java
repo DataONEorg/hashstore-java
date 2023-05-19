@@ -8,6 +8,13 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.security.NoSuchAlgorithmException;
 
+/**
+ * HashStore is a content-addressable file management system that utilizes a
+ * persistent identifier (PID) in the form of a hex digest value to address
+ * files. The system stores files in a file store and provides an API for
+ * interacting with the store. HashStore storage classes (like `FileHashStore`)
+ * must implement the HashStore interface to ensure proper usage of the system.
+ */
 public interface HashStore {
     /**
      * The `storeObject` method is responsible for the atomic storage of objects to
