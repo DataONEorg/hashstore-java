@@ -92,5 +92,9 @@ public class FileHashStorePublicTest {
 
         Path defaultTmpDirectoryPath = defaultObjDirectoryPath.resolve("tmp");
         assertTrue(Files.exists(defaultTmpDirectoryPath));
+
+        // Delete the folders
+        Files.deleteIfExists(defaultTmpDirectoryPath);
+        Files.deleteIfExists(defaultObjDirectoryPath);
     }
 }
