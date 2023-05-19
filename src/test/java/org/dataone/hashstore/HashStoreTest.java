@@ -7,7 +7,7 @@ import org.junit.Test;
 /**
  * Test class for HashStoreFactory
  */
-public class HashStoreFactoryTest {
+public class HashStoreTest {
     /**
      * Rigorous Test :-)
      */

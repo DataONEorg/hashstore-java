@@ -1,4 +1,4 @@
-package org.dataone.hashstore.interfaces;
+package org.dataone.hashstore;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -8,9 +8,7 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.security.NoSuchAlgorithmException;
 
-import org.dataone.hashstore.HashAddress;
-
-public interface HashStoreInterface {
+public interface HashStore {
     /**
      * The `storeObject` method is responsible for the atomic storage of objects to
      * disk using a given InputStream and a persistent identifier (pid). Upon

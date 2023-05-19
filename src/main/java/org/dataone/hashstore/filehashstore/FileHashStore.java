@@ -27,7 +27,7 @@ import javax.xml.bind.DatatypeConverter;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.dataone.hashstore.HashAddress;
-import org.dataone.hashstore.interfaces.HashStoreInterface;
+import org.dataone.hashstore.HashStore;
 
 /**
  * FileHashStore is a class that manages storage of objects to disk using
@@ -36,7 +36,7 @@ import org.dataone.hashstore.interfaces.HashStoreInterface;
  * objects and metadata.
  *
  */
-public class FileHashStore implements HashStoreInterface {
+public class FileHashStore implements HashStore {
     private static final Log logFileHashStore = LogFactory.getLog(FileHashStore.class);
     private final int directoryDepth;
     private final int directoryWidth;
