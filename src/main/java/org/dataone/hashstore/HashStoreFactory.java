@@ -5,6 +5,7 @@ import java.nio.file.Path;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.dataone.hashstore.exceptions.HashStoreFactoryException;
 import org.dataone.hashstore.filehashstore.FileHashStore;
 
 /**
@@ -13,39 +14,26 @@ import org.dataone.hashstore.filehashstore.FileHashStore;
  */
 public class HashStoreFactory {
     private static final Log logHashStore = LogFactory.getLog(HashStoreFactory.class);
-    // Get properties from configuration file and refactor
-    private final FileHashStore filehs;
-    private final int depth = 3;
-    private final int width = 2;
-    private final String algorithm = "SHA-256";
 
     /**
-     * Default constructor for HashStoreFactory
+     * Factory method to generate a Hashstore
      * 
-     * @param storeDirectory Full file path (ex. /usr/org/metacat/objects)
-     * @throws IllegalArgumentException Depth, width must be greater than 0
-     * @throws IOException              Issue when creating storeDirectory
-     */
-    public HashStoreFactory(Path storeDirectory)
-            throws IllegalArgumentException, IOException {
-        // TODO: Revise constructor
-        try {
-            this.filehs = new FileHashStore(this.depth, this.width, this.algorithm, storeDirectory);
-        } catch (IllegalArgumentException iae) {
-            logHashStore
-                    .error("Unable to initialize FileHashStore - storeDirectory supplied: " + storeDirectory.toString()
-                            + ". Illegal Argument Exception: " + iae.getMessage());
-            throw iae;
-        }
-    }
-
-    /**
-     * TODO: Revise factory method
-     * 
+     * @param store_type Type of store desired (ex. "FileHashStore")
      * @return
      */
-    public FileHashStore createHashStore() {
-        return this.filehs;
+    public static HashStore getHashStore(String store_type) {
+        HashStore hashstore = null;
+        store_type.toLowerCase();
+        if (store_type == "filehashstore") {
+            logHashStore.debug("Creating new 'FileHashStore' hashstore");
+            try {
+                hashstore = new FileHashStore();
+            } catch (HashStoreFactoryException hsfe) {
+                logHashStore.error("HashStoreFactory - Unable to generate 'filehashstore'. " + hsfe.getMessage());
+                throw hsfe;
+            }
+        }
+        return hashstore;
     }
 
 }
