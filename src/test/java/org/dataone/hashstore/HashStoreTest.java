@@ -19,7 +19,6 @@ import org.junit.Test;
  * Test class for HashStoreFactory
  */
 public class HashStoreTest {
-    public static HashStoreFactory hashStore = new HashStoreFactory();
     private static HashStore mystore;
 
     @BeforeClass
