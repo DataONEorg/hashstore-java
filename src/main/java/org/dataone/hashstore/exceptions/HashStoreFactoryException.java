@@ -1,16 +1,14 @@
 package org.dataone.hashstore.exceptions;
 
+import java.io.IOException;
+
 /**
- * Custom exception class for HashStoreFactory
+ * Custom exception class for HashStoreFactory when it's unable to initialize
+ * because properties are unavailable or fault.
  */
-public class HashStoreFactoryException extends Exception {
+public class HashStoreFactoryException extends IOException {
     public HashStoreFactoryException(String message) {
         super(message);
-    }
-
-    public HashStoreFactoryException(String message, Throwable cause, boolean enableSuppression,
-            boolean writableStackTrace) {
-        super(message, cause, enableSuppression, writableStackTrace);
     }
 
     public HashStoreFactoryException(String message, Throwable cause) {
