@@ -23,7 +23,6 @@ public class HashStoreFactory {
      * Factory method to generate a Hashstore
      * 
      * @param store_type Ex. "filehashstore"
-     * @return
      * @throws HashStoreFactoryException Factory method cannot instantiate a store
      * @throws IOException               When properties cannot be retrieved
      */
@@ -47,7 +46,6 @@ public class HashStoreFactory {
 
             // Get path of store, create parent folder if it doesn't already exist
             hashstore_path = Paths.get(fhsProperties.getProperty("filehashstore.storepath"));
-            hashstore_path = null;
 
             // Get and set default and supported hash algorithm property values
             String[] default_algorithm_list = fhsProperties.getProperty("filehashstore.default_algorithms").split(",");
@@ -55,7 +53,8 @@ public class HashStoreFactory {
                     .split(",");
         } catch (IOException e) {
             logHashStore.error(
-                    "FileHashStore - Cannot configure FileHashStore. Error reading properties file: " + e.getMessage());
+                    "HashStoreFactory - Cannot configure FileHashStore. Error reading properties file: "
+                            + e.getMessage());
         }
 
         // Get HashStore
