@@ -27,7 +27,7 @@ public class HashStoreTest {
             mystore = HashStoreFactory.getHashStore("filehashstore");
         } catch (Exception e) {
             e.printStackTrace();
-            fail("Exception encountered: " + e.getMessage());
+            fail("HashStoreTest - Exception encountered: " + e.getMessage());
         }
     }
 
@@ -54,10 +54,9 @@ public class HashStoreTest {
                     .forEach(java.io.File::delete);
             System.out.println("Folder deleted successfully: " + folder);
         } catch (HashStoreFactoryException hsfe) {
-            fail("HashStoreFactoryException encountered: " + hsfe.getMessage());
+            fail("HashStoreTest - HashStoreFactoryException encountered: " + hsfe.getMessage());
         } catch (IOException ioe) {
-            ioe.printStackTrace();
-            fail("IOException encountered: " + ioe.getMessage());
+            fail("HashStoreTest - deleteHashStore: IOException encountered: " + ioe.getMessage());
         }
     }
 }

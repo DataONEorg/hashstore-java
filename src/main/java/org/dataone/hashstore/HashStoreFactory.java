@@ -1,7 +1,7 @@
 package org.dataone.hashstore;
 
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -33,11 +33,11 @@ public class HashStoreFactory {
         Path hashstore_path = Paths.get("Test");
         // Get properties
         Properties fhsProperties = new Properties();
-        String fileName = "FileHashStore.properties";
-        URL resourceUrl = FileHashStore.class.getResource(fileName);
-        try {
-            FileInputStream fileInputStream = new FileInputStream(resourceUrl.getPath());
-            fhsProperties.load(fileInputStream);
+        String fileName = "HashStore.properties";
+        URL resourceUrl = HashStore.class.getClassLoader().getResource(fileName);
+        System.out.println(resourceUrl);
+        try (InputStream inputStream = resourceUrl.openStream()) {
+            fhsProperties.load(inputStream);
 
             // Get depth, width and hashing algorithm for permanent address
             hashstore_depth = Integer.parseInt(fhsProperties.getProperty("filehashstore.depth"));
@@ -63,6 +63,8 @@ public class HashStoreFactory {
         if (store_type == "filehashstore") {
             logHashStore.debug("Creating new 'FileHashStore' hashstore");
             try {
+                // hashstore = new FileHashStore(3, 2, "SHA-256",
+                // Paths.get("/tmp/filehashstore"));
                 hashstore = new FileHashStore(hashstore_depth, hashstore_width, hashstore_algorithm, hashstore_path);
             } catch (IOException ioe) {
                 logHashStore.error("HashStoreFactory - Unable to generate 'filehashstore'. " + ioe.getMessage());
