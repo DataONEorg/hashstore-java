@@ -25,8 +25,9 @@ public class HashStoreTest {
     public static void getHashStore() {
         try {
             mystore = HashStoreFactory.getHashStore("filehashstore");
-        } catch (IOException ioe) {
-            fail("IOException encountered: " + ioe.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Exception encountered: " + e.getMessage());
         }
     }
 
@@ -55,6 +56,7 @@ public class HashStoreTest {
         } catch (HashStoreFactoryException hsfe) {
             fail("HashStoreFactoryException encountered: " + hsfe.getMessage());
         } catch (IOException ioe) {
+            ioe.printStackTrace();
             fail("IOException encountered: " + ioe.getMessage());
         }
     }
