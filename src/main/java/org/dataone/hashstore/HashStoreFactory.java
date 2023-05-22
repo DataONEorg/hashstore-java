@@ -27,16 +27,17 @@ public class HashStoreFactory {
      * @throws IOException               When properties cannot be retrieved
      */
     public static HashStore getHashStore(String store_type) throws HashStoreFactoryException, IOException {
-        int hashstore_depth = 0;
-        int hashstore_width = 0;
-        String hashstore_algorithm = "";
-        Path hashstore_path = Paths.get("Test");
-        // Get properties
-        Properties fhsProperties = new Properties();
-        String fileName = "HashStore.properties";
-        URL resourceUrl = HashStore.class.getClassLoader().getResource(fileName);
-        System.out.println(resourceUrl);
-        try (InputStream inputStream = resourceUrl.openStream()) {
+        int hashstore_depth;
+        int hashstore_width;
+        String hashstore_algorithm;
+        Path hashstore_path;
+
+        try {
+            // Get properties
+            Properties fhsProperties = new Properties();
+            String fileName = "HashStore.properties";
+            URL resourceUrl = HashStore.class.getClassLoader().getResource(fileName);
+            InputStream inputStream = resourceUrl.openStream();
             fhsProperties.load(inputStream);
 
             // Get depth, width and hashing algorithm for permanent address
@@ -47,28 +48,29 @@ public class HashStoreFactory {
             // Get path of store, create parent folder if it doesn't already exist
             hashstore_path = Paths.get(fhsProperties.getProperty("filehashstore.storepath"));
 
-            // Get and set default and supported hash algorithm property values
-            String[] default_algorithm_list = fhsProperties.getProperty("filehashstore.default_algorithms").split(",");
-            String[] supported_algorithm_list = fhsProperties.getProperty("filehashstore.supported_algorithms")
-                    .split(",");
-        } catch (IOException e) {
+        } catch (NullPointerException npe) {
+            logHashStore.error(
+                    "HashStoreFactory - Cannot configure FileHashStore. Properties file is null: "
+                            + npe.getMessage());
+            throw new HashStoreFactoryException("Properties file not found (null). " + npe.getMessage());
+        } catch (IOException ioe) {
             logHashStore.error(
                     "HashStoreFactory - Cannot configure FileHashStore. Error reading properties file: "
-                            + e.getMessage());
+                            + ioe.getMessage());
+            throw new HashStoreFactoryException("Unable to load properties. " + ioe.getMessage());
         }
 
         // Get HashStore
         HashStore hashstore = null;
         store_type.toLowerCase();
-        if (store_type == "filehashstore") {
+        if (store_type.equals("filehashstore")) {
             logHashStore.debug("Creating new 'FileHashStore' hashstore");
             try {
-                // hashstore = new FileHashStore(3, 2, "SHA-256",
-                // Paths.get("/tmp/filehashstore"));
                 hashstore = new FileHashStore(hashstore_depth, hashstore_width, hashstore_algorithm, hashstore_path);
             } catch (IOException ioe) {
                 logHashStore.error("HashStoreFactory - Unable to generate 'filehashstore'. " + ioe.getMessage());
-                throw new HashStoreFactoryException(ioe.getMessage());
+                throw new HashStoreFactoryException(
+                        "Unable to generate 'filehashstore' HashStore. " + ioe.getMessage());
             }
         }
         return hashstore;

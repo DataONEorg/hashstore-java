@@ -4,10 +4,13 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Comparator;
+import java.util.stream.Stream;
 
 import org.dataone.hashstore.exceptions.HashStoreFactoryException;
 import org.dataone.hashstore.filehashstore.FileHashStore;
@@ -45,13 +48,12 @@ public class HashStoreTest {
      */
     @AfterClass
     public static void deleteHashStore() {
-        try {
-            String tmpHashstoreFolderPath = "/tmp/filehashstore"; // Path set in properties file
-            Path folder = Paths.get(tmpHashstoreFolderPath);
-            Files.walk(folder)
-                    .sorted(java.util.Comparator.reverseOrder())
+        String tmpHashstoreFolderPath = "/tmp/filehashstore"; // Path set in properties file
+        Path folder = Paths.get(tmpHashstoreFolderPath);
+        try (Stream<Path> pathStream = Files.walk(folder)) {
+            pathStream.sorted(Comparator.reverseOrder())
                     .map(Path::toFile)
-                    .forEach(java.io.File::delete);
+                    .forEach(File::delete);
             System.out.println("Folder deleted successfully: " + folder);
         } catch (HashStoreFactoryException hsfe) {
             fail("HashStoreTest - HashStoreFactoryException encountered: " + hsfe.getMessage());

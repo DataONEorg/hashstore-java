@@ -8,47 +8,49 @@ import java.nio.file.Paths;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import org.junit.Before;
-import org.junit.Rule;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 /**
- * Test class for FileHashStore public members
+ * Test class for FileHashStore constructor
  */
 public class FileHashStorePublicTest {
-    public FileHashStore fileHashStore;
-    public Path objStringFull;
-    public Path tmpStringFull;
-    public Path rootPathFull;
+    private static Path objStringFull;
+    private static Path tmpStringFull;
+    private static Path rootPathFull;
 
     /**
-     * Initialize FileHashStore for test efficiency purposes (creates directories)
+     * Initialize FileHashStore
      */
-    @Before
-    public void initializeFileHashStore() {
-        Path rootDirectory = this.tempFolder.getRoot().toPath();
+    @BeforeClass
+    public static void initializeFileHashStore() {
+        Path rootDirectory = tempFolder.getRoot().toPath();
         String rootString = rootDirectory.toString();
         String rootStringFull = rootString + "/metacat";
-        this.objStringFull = Paths.get(rootStringFull + "/objects");
-        this.tmpStringFull = Paths.get(rootStringFull + "/objects/tmp");
-        this.rootPathFull = Paths.get(rootStringFull);
+        objStringFull = Paths.get(rootStringFull + "/objects");
+        tmpStringFull = Paths.get(rootStringFull + "/objects/tmp");
+        rootPathFull = Paths.get(rootStringFull);
         try {
-            this.fileHashStore = new FileHashStore(3, 2, "SHA-256", rootPathFull);
+            new FileHashStore(3, 2, "SHA-256", rootPathFull);
         } catch (IOException e) {
             fail("IOException encountered: " + e.getMessage());
         }
     }
 
-    @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
+    /**
+     * Temporary folder for tests to run in
+     */
+    @ClassRule
+    public static TemporaryFolder tempFolder = new TemporaryFolder();
 
     /**
      * Check object store directory are created after initialization
      */
     @Test
-    public void createObjDirectory() {
-        Path checkStorePath = this.objStringFull;
+    public void initObjDirectory() {
+        Path checkStorePath = objStringFull;
         assertTrue(Files.exists(checkStorePath));
     }
 
@@ -56,8 +58,8 @@ public class FileHashStorePublicTest {
      * Check object store tmp directory are created after initialization
      */
     @Test
-    public void createObjTmpDirectory() {
-        Path checkTmpPath = this.tmpStringFull;
+    public void initObjTmpDirectory() {
+        Path checkTmpPath = tmpStringFull;
         assertTrue(Files.exists(checkTmpPath));
     }
 
@@ -66,7 +68,15 @@ public class FileHashStorePublicTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void constructor_illegalDepthArg() throws Exception {
-        new FileHashStore(0, 2, "SHA-256", this.rootPathFull);
+        new FileHashStore(0, 2, "SHA-256", rootPathFull);
+    }
+
+    /**
+     * Test invalid width value
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void constructor_illegalWidthArg() throws Exception {
+        new FileHashStore(2, 0, "SHA-256", rootPathFull);
     }
 
     /**
@@ -74,14 +84,14 @@ public class FileHashStorePublicTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void constructor_illegalAlgorithmArg() throws Exception {
-        new FileHashStore(2, 2, "SM2", this.rootPathFull);
+        new FileHashStore(2, 2, "SM2", rootPathFull);
     }
 
     /**
      * Confirm default file directories are created when storeDirectory is null
      */
     @Test
-    public void defaultStore_directoryNull() throws Exception {
+    public void initDefaultStore_directoryNull() throws Exception {
         new FileHashStore(3, 2, "SHA-256", null);
 
         String rootDirectory = System.getProperty("user.dir");

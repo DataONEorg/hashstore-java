@@ -29,23 +29,18 @@ import org.junit.rules.TemporaryFolder;
  * Test class for FileHashStore HashStoreInterface override methods
  */
 public class FileHashStoreInterfaceTest {
-    public FileHashStore fileHashStore;
-    public Path objStringFull;
-    public Path tmpStringFull;
-    public Path rootPathFull;
-    public TestDataHarness testData = new TestDataHarness();
+    private FileHashStore fileHashStore;
+    private static final TestDataHarness testData = new TestDataHarness();
 
     /**
-     * Initialize FileHashStore for test efficiency purposes (creates directories)
+     * Initialize FileHashStore before each test to creates tmp directories
      */
     @Before
     public void initializeFileHashStore() {
         Path rootDirectory = this.tempFolder.getRoot().toPath();
         String rootString = rootDirectory.toString();
         String rootStringFull = rootString + "/metacat";
-        this.objStringFull = Paths.get(rootStringFull + "/objects");
-        this.tmpStringFull = Paths.get(rootStringFull + "/objects/tmp");
-        this.rootPathFull = Paths.get(rootStringFull);
+        Path rootPathFull = Paths.get(rootStringFull);
         try {
             this.fileHashStore = new FileHashStore(3, 2, "SHA-256", rootPathFull);
         } catch (IOException e) {
@@ -53,6 +48,9 @@ public class FileHashStoreInterfaceTest {
         }
     }
 
+    /**
+     * Temporary folder for tests to run in
+     */
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
@@ -61,18 +59,15 @@ public class FileHashStoreInterfaceTest {
      */
     @Test
     public void storeObject() throws Exception {
-        for (String pid : this.testData.pidList) {
+        for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
-            Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
-                    "testdata", pidFormatted);
-            String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-            Path testDataFile = new File(testdataAbsolutePath).toPath();
+            Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
 
             // Check id (sha-256 hex digest of the ab_id, aka s_cid)
-            String objAuthorityId = this.testData.pidData.get(pid).get("s_cid");
+            String objAuthorityId = testData.pidData.get(pid).get("s_cid");
             assertEquals(objAuthorityId, objInfo.getId());
         }
     }
@@ -82,18 +77,15 @@ public class FileHashStoreInterfaceTest {
      */
     @Test
     public void storeObject_relPath() throws Exception {
-        for (String pid : this.testData.pidList) {
+        for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
-            Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
-                    "testdata", pidFormatted);
-            String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-            Path testDataFile = new File(testdataAbsolutePath).toPath();
+            Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
 
             // Check relative path
-            String objAuthorityId = this.testData.pidData.get(pid).get("s_cid");
+            String objAuthorityId = testData.pidData.get(pid).get("s_cid");
             String objRelPath = fileHashStore.getHierarchicalPathString(3, 2, objAuthorityId);
             assertEquals(objRelPath, objInfo.getRelPath());
         }
@@ -104,12 +96,9 @@ public class FileHashStoreInterfaceTest {
      */
     @Test
     public void storeObject_absPath() throws Exception {
-        for (String pid : this.testData.pidList) {
+        for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
-            Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
-                    "testdata", pidFormatted);
-            String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-            Path testDataFile = new File(testdataAbsolutePath).toPath();
+            Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
@@ -125,12 +114,9 @@ public class FileHashStoreInterfaceTest {
      */
     @Test
     public void storeObject_isDuplicate() throws Exception {
-        for (String pid : this.testData.pidList) {
+        for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
-            Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
-                    "testdata", pidFormatted);
-            String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-            Path testDataFile = new File(testdataAbsolutePath).toPath();
+            Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
@@ -145,12 +131,9 @@ public class FileHashStoreInterfaceTest {
      */
     @Test
     public void storeObject_hexDigests() throws Exception {
-        for (String pid : this.testData.pidList) {
+        for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
-            Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
-                    "testdata", pidFormatted);
-            String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-            Path testDataFile = new File(testdataAbsolutePath).toPath();
+            Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
@@ -158,11 +141,11 @@ public class FileHashStoreInterfaceTest {
             Map<String, String> hexDigests = objInfo.getHexDigests();
 
             // Validate checksum values
-            String md5 = this.testData.pidData.get(pid).get("md5");
-            String sha1 = this.testData.pidData.get(pid).get("sha1");
-            String sha256 = this.testData.pidData.get(pid).get("sha256");
-            String sha384 = this.testData.pidData.get(pid).get("sha384");
-            String sha512 = this.testData.pidData.get(pid).get("sha512");
+            String md5 = testData.pidData.get(pid).get("md5");
+            String sha1 = testData.pidData.get(pid).get("sha1");
+            String sha256 = testData.pidData.get(pid).get("sha256");
+            String sha384 = testData.pidData.get(pid).get("sha384");
+            String sha512 = testData.pidData.get(pid).get("sha512");
             assertEquals(md5, hexDigests.get("MD5"));
             assertEquals(sha1, hexDigests.get("SHA-1"));
             assertEquals(sha256, hexDigests.get("SHA-256"));
@@ -185,12 +168,9 @@ public class FileHashStoreInterfaceTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void storeObject_nullPid() throws Exception {
-        for (String pid : this.testData.pidList) {
+        for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
-            Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
-                    "testdata", pidFormatted);
-            String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-            Path testDataFile = new File(testdataAbsolutePath).toPath();
+            Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             fileHashStore.storeObject(dataStream, null, null, null, null);
@@ -203,12 +183,9 @@ public class FileHashStoreInterfaceTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void storeObject_emptyPid() throws Exception {
-        for (String pid : this.testData.pidList) {
+        for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
-            Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
-                    "testdata", pidFormatted);
-            String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-            Path testDataFile = new File(testdataAbsolutePath).toPath();
+            Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             fileHashStore.storeObject(dataStream, "", null, null, null);
@@ -223,9 +200,7 @@ public class FileHashStoreInterfaceTest {
     public void storeObject_validateChecksumValue() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
-        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
-        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-        Path testDataFile = new File(testdataAbsolutePath).toPath();
+        Path testDataFile = testData.getTestFile(pid);
 
         String checksumCorrect = "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
 
@@ -244,9 +219,7 @@ public class FileHashStoreInterfaceTest {
     public void storeObject_missingChecksumValue() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
-        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
-        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-        Path testDataFile = new File(testdataAbsolutePath).toPath();
+        Path testDataFile = testData.getTestFile(pid);
 
         String checksumCorrect = "9c25df1c8ba1d2e57bb3fd4785878b85";
 
@@ -264,16 +237,14 @@ public class FileHashStoreInterfaceTest {
     public void storeObject_correctChecksumValue() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
-        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
-        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-        Path testDataFile = new File(testdataAbsolutePath).toPath();
+        Path testDataFile = testData.getTestFile(pid);
 
         String checksumCorrect = "9c25df1c8ba1d2e57bb3fd4785878b85";
 
         InputStream dataStream = Files.newInputStream(testDataFile);
         fileHashStore.storeObject(dataStream, pid, "MD2", null, null);
 
-        String md2 = this.testData.pidData.get(pid).get("md2");
+        String md2 = testData.pidData.get(pid).get("md2");
         assertEquals(checksumCorrect, md2);
     }
 
@@ -284,9 +255,7 @@ public class FileHashStoreInterfaceTest {
     public void storeObject_incorrectChecksumValue() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
-        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
-        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-        Path testDataFile = new File(testdataAbsolutePath).toPath();
+        Path testDataFile = testData.getTestFile(pid);
 
         String checksumIncorrect = "aaf9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
 
@@ -301,9 +270,7 @@ public class FileHashStoreInterfaceTest {
     public void storeObject_emptyChecksumValue() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
-        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
-        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-        Path testDataFile = new File(testdataAbsolutePath).toPath();
+        Path testDataFile = testData.getTestFile(pid);
 
         String checksumEmpty = "";
 
@@ -316,11 +283,9 @@ public class FileHashStoreInterfaceTest {
      */
     @Test(expected = NullPointerException.class)
     public void storeObject_nullChecksumValue() throws Exception {
-        // Get test file to "upload"
+        // Get single test file to "upload"
         String pid = "jtao.1700.1";
-        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
-        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-        Path testDataFile = new File(testdataAbsolutePath).toPath();
+        Path testDataFile = testData.getTestFile(pid);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
         fileHashStore.storeObject(dataStream, pid, null, null, "SHA-512/224");
@@ -331,11 +296,9 @@ public class FileHashStoreInterfaceTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void put_invalidAlgorithm() throws Exception {
-        // Get test file to "upload"
+        // Get single test file to "upload"
         String pid = "jtao.1700.1";
-        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
-        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-        Path testDataFile = new File(testdataAbsolutePath).toPath();
+        Path testDataFile = testData.getTestFile(pid);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
         fileHashStore.storeObject(dataStream, pid, "SM2", null, null);
@@ -347,12 +310,9 @@ public class FileHashStoreInterfaceTest {
      */
     @Test(expected = FileAlreadyExistsException.class)
     public void storeObject_duplicate() throws Exception {
-        for (String pid : this.testData.pidList) {
+        for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
-            Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore",
-                    "testdata", pidFormatted);
-            String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-            Path testDataFile = new File(testdataAbsolutePath).toPath();
+            Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             fileHashStore.storeObject(dataStream, pid, null, null, null);
@@ -378,11 +338,9 @@ public class FileHashStoreInterfaceTest {
      */
     @Test
     public void storeObject_objectLockedIds() throws Exception {
-        // Get test file to "upload"
+        // Get single test file to "upload"
         String pid = "jtao.1700.1";
-        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
-        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
-        Path testDataFile = new File(testdataAbsolutePath).toPath();
+        Path testDataFile = testData.getTestFile(pid);
 
         // Create a thread pool with 3 threads
         ExecutorService executorService = Executors.newFixedThreadPool(3);
