@@ -62,8 +62,7 @@ public class HashStoreFactory {
 
         // Get HashStore
         HashStore hashstore = null;
-        store_type.toLowerCase();
-        if (store_type.equals("filehashstore")) {
+        if (store_type.equalsIgnoreCase("filehashstore")) {
             logHashStore.debug("Creating new 'FileHashStore' hashstore");
             try {
                 hashstore = new FileHashStore(hashstore_depth, hashstore_width, hashstore_algorithm, hashstore_path);
