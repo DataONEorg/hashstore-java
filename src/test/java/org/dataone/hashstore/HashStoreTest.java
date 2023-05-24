@@ -1,11 +1,13 @@
 package org.dataone.hashstore;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -14,6 +16,7 @@ import java.util.stream.Stream;
 
 import org.dataone.hashstore.exceptions.HashStoreFactoryException;
 import org.dataone.hashstore.filehashstore.FileHashStore;
+import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -23,6 +26,7 @@ import org.junit.Test;
  */
 public class HashStoreTest {
     private static HashStore mystore;
+    private static final TestDataHarness testData = new TestDataHarness();
 
     @BeforeClass
     public static void getHashStore() {
@@ -44,7 +48,26 @@ public class HashStoreTest {
     }
 
     /**
-     * Delete tmp folder that HashStore created in "/tmp/filehashstore"
+     * Test mystore stores file successfully
+     */
+    @Test
+    public void hashStore_storeObjects() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            HashAddress objInfo = mystore.storeObject(dataStream, pid, null, null, null);
+
+            // Check id (sha-256 hex digest of the ab_id, aka s_cid)
+            String objAuthorityId = testData.pidData.get(pid).get("s_cid");
+            assertEquals(objAuthorityId, objInfo.getId());
+            assertTrue(Files.exists(Paths.get(objInfo.getAbsPath())));
+        }
+    }
+
+    /**
+     * Delete tmp folder and files that HashStore created in "/tmp/filehashstore"
      */
     @AfterClass
     public static void deleteHashStore() {
