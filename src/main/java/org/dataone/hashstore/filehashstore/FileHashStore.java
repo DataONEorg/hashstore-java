@@ -57,24 +57,29 @@ public class FileHashStore implements HashStore {
      * - .../objects
      * - .../objects/tmp
      * 
-     * @param depth          Number of directories created from a given hex digest
-     * @param width          Width of the directories
-     * @param algorithm      Algorithm used for the permanent address
-     * @param storeDirectory Desired absolute file path (ex. /usr/org/)
+     * @param properties HashMap of the HashStore required properties:
+     *                   (Path) storePath, (int) storeDepth, (int) StoreWidth, (int)
+     *                   storeAlgorithm
      * @throws IllegalArgumentException Constructor arguments cannot be null, empty
      *                                  or less than 0
      * @throws IOException              Issue with creating directories
      */
-    public FileHashStore(int depth, int width, String algorithm, Path storeDirectory)
+    public FileHashStore(HashMap<String, Object> properties)
             throws IllegalArgumentException, IOException {
+        // Get properties
+        Path storePath = (Path) properties.get("storePath");
+        int storeDepth = (int) properties.get("storeDepth");
+        int storeWidth = (int) properties.get("storeWidth");
+        String storeAlgorithm = (String) properties.get("storeAlgorithm");
+
         // Validate input parameters
-        if (depth <= 0 || width <= 0) {
+        if (storeDepth <= 0 || storeWidth <= 0) {
             throw new IllegalArgumentException("Depth and width must be greater than 0.");
         }
-        if (algorithm == null || algorithm.trim().isEmpty()) {
+        if (storeAlgorithm == null || storeAlgorithm.trim().isEmpty()) {
             throw new IllegalArgumentException("Algorithm cannot be null or empty.");
         }
-        boolean algorithmSupported = this.isValidAlgorithm(algorithm);
+        boolean algorithmSupported = this.isValidAlgorithm(storeAlgorithm);
         if (!algorithmSupported) {
             throw new IllegalArgumentException(
                     "Algorithm not supported. Supported algorithms: " +
@@ -82,12 +87,12 @@ public class FileHashStore implements HashStore {
         }
 
         // If no path provided, create default path with user.dir root + /FileHashStore
-        if (storeDirectory == null) {
+        if (storePath == null) {
             String rootDirectory = System.getProperty("user.dir");
             String defaultPath = "FileHashStore";
             this.objectStoreDirectory = Paths.get(rootDirectory).resolve(defaultPath).resolve("objects");
         } else {
-            this.objectStoreDirectory = storeDirectory.resolve("objects");
+            this.objectStoreDirectory = storePath.resolve("objects");
         }
         // Resolve tmp object directory path
         this.tmpFileDirectory = this.objectStoreDirectory.resolve("tmp");
@@ -101,9 +106,9 @@ public class FileHashStore implements HashStore {
             throw ioe;
         }
         // Finalize instance variables
-        this.directoryDepth = depth;
-        this.directoryWidth = width;
-        this.objectStoreAlgorithm = algorithm;
+        this.directoryDepth = storeDepth;
+        this.directoryWidth = storeWidth;
+        this.objectStoreAlgorithm = storeAlgorithm;
     }
 
     @Override

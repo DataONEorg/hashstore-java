@@ -7,6 +7,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,8 +42,15 @@ public class FileHashStoreInterfaceTest {
         String rootString = rootDirectory.toString();
         String rootStringFull = rootString + "/metacat";
         Path rootPathFull = Paths.get(rootStringFull);
+
+        HashMap<String, Object> storeProperties = new HashMap<>();
+        storeProperties.put("storePath", rootPathFull);
+        storeProperties.put("storeDepth", 3);
+        storeProperties.put("storeWidth", 2);
+        storeProperties.put("storeAlgorithm", "SHA-256");
+
         try {
-            this.fileHashStore = new FileHashStore(3, 2, "SHA-256", rootPathFull);
+            this.fileHashStore = new FileHashStore(storeProperties);
         } catch (IOException e) {
             fail("IOException encountered: " + e.getMessage());
         }

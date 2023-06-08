@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -32,8 +33,15 @@ public class FileHashStorePublicTest {
         objStringFull = Paths.get(rootStringFull + "/objects");
         tmpStringFull = Paths.get(rootStringFull + "/objects/tmp");
         rootPathFull = Paths.get(rootStringFull);
+
+        HashMap<String, Object> storeProperties = new HashMap<>();
+        storeProperties.put("storePath", rootPathFull);
+        storeProperties.put("storeDepth", 3);
+        storeProperties.put("storeWidth", 2);
+        storeProperties.put("storeAlgorithm", "SHA-256");
+
         try {
-            new FileHashStore(3, 2, "SHA-256", rootPathFull);
+            new FileHashStore(storeProperties);
         } catch (IOException e) {
             fail("IOException encountered: " + e.getMessage());
         }
@@ -68,7 +76,12 @@ public class FileHashStorePublicTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void constructor_illegalDepthArg() throws Exception {
-        new FileHashStore(0, 2, "SHA-256", rootPathFull);
+        HashMap<String, Object> storeProperties = new HashMap<>();
+        storeProperties.put("storePath", rootPathFull);
+        storeProperties.put("storeDepth", 0);
+        storeProperties.put("storeWidth", 2);
+        storeProperties.put("storeAlgorithm", "SHA-256");
+        new FileHashStore(storeProperties);
     }
 
     /**
@@ -76,7 +89,12 @@ public class FileHashStorePublicTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void constructor_illegalWidthArg() throws Exception {
-        new FileHashStore(2, 0, "SHA-256", rootPathFull);
+        HashMap<String, Object> storeProperties = new HashMap<>();
+        storeProperties.put("storePath", rootPathFull);
+        storeProperties.put("storeDepth", 2);
+        storeProperties.put("storeWidth", 0);
+        storeProperties.put("storeAlgorithm", "SHA-256");
+        new FileHashStore(storeProperties);
     }
 
     /**
@@ -84,7 +102,12 @@ public class FileHashStorePublicTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void constructor_illegalAlgorithmArg() throws Exception {
-        new FileHashStore(2, 2, "SM2", rootPathFull);
+        HashMap<String, Object> storeProperties = new HashMap<>();
+        storeProperties.put("storePath", rootPathFull);
+        storeProperties.put("storeDepth", 2);
+        storeProperties.put("storeWidth", 0);
+        storeProperties.put("storeAlgorithm", "SM2");
+        new FileHashStore(storeProperties);
     }
 
     /**
@@ -92,7 +115,12 @@ public class FileHashStorePublicTest {
      */
     @Test
     public void initDefaultStore_directoryNull() throws Exception {
-        new FileHashStore(3, 2, "SHA-256", null);
+        HashMap<String, Object> storeProperties = new HashMap<>();
+        storeProperties.put("storePath", null);
+        storeProperties.put("storeDepth", 3);
+        storeProperties.put("storeWidth", 2);
+        storeProperties.put("storeAlgorithm", "SHA-256");
+        new FileHashStore(storeProperties);
 
         String rootDirectory = System.getProperty("user.dir");
         String objectPath = "FileHashStore";
