@@ -66,6 +66,11 @@ public class FileHashStore implements HashStore {
      */
     public FileHashStore(HashMap<String, Object> properties)
             throws IllegalArgumentException, IOException {
+        if (properties == null) {
+            logFileHashStore.error("FileHashStore - properties cannot be null.");
+            throw new IllegalArgumentException("FileHashStore - properties cannot be null.");
+
+        }
         // Get properties
         Path storePath = (Path) properties.get("storePath");
         int storeDepth = (int) properties.get("storeDepth");

@@ -3,7 +3,6 @@ package org.dataone.hashstore;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Path;
 import java.util.HashMap;
 
 import org.apache.commons.logging.Log;
@@ -20,7 +19,13 @@ public class HashStoreFactory {
     /**
      * Factory method to generate a Hashstore
      * 
-     * @param classPackage Ex. "org.dataone.hashstore.filehashstore.FileHashStore"
+     * @param classPackage    String of the package name, ex.
+     *                        "org.dataone.hashstore.filehashstore.FileHashStore"
+     * @param storeProperties HashMap of the HashStore required properties:
+     *                        (Path) storePath, (int) storeDepth, (int) StoreWidth,
+     *                        (int)
+     *                        storeAlgorithm
+     * 
      * @return
      * @throws HashStoreFactoryException When HashStore fails to initialize due to
      *                                   permissions or class-related issues
@@ -28,9 +33,17 @@ public class HashStoreFactory {
      */
     public static HashStore getHashStore(String classPackage, HashMap<String, Object> storeProperties)
             throws HashStoreFactoryException, IOException {
+        // Validate input parameters
+        if (classPackage == null || classPackage.trim().isEmpty()) {
+            logHashStore.error("HashStoreFactory - classPackage cannot be null or empty.");
+            throw new HashStoreFactoryException("HashStoreFactory - classPackage cannot be null or empty.");
 
-        // Validate String classPackage
-        // Check for null before instantiating
+        }
+        if (storeProperties == null) {
+            logHashStore.error("HashStoreFactory - storeProperties cannot be null.");
+            throw new HashStoreFactoryException("HashStoreFactory - storeProperties cannot be null.");
+
+        }
 
         // Get HashStore
         logHashStore.debug("Creating new 'HashStore' from package: " + classPackage);

@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 
+import org.dataone.hashstore.exceptions.HashStoreFactoryException;
 import org.dataone.hashstore.filehashstore.FileHashStore;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.Before;
@@ -22,7 +23,7 @@ import org.junit.rules.TemporaryFolder;
  * Test class for HashStoreFactory
  */
 public class HashStoreTest {
-    private static HashStore mystore;
+    private static HashStore hashStore;
     private static final TestDataHarness testData = new TestDataHarness();
 
     @Before
@@ -41,7 +42,7 @@ public class HashStoreTest {
         storeProperties.put("storeAlgorithm", "SHA-256");
 
         try {
-            mystore = HashStoreFactory.getHashStore(classPackage, storeProperties);
+            hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
         } catch (Exception e) {
             e.printStackTrace();
             fail("HashStoreTest - Exception encountered: " + e.getMessage());
@@ -59,8 +60,30 @@ public class HashStoreTest {
      */
     @Test
     public void isHashStore() {
-        assertNotNull(mystore);
-        assertTrue(mystore instanceof FileHashStore);
+        assertNotNull(hashStore);
+        assertTrue(hashStore instanceof FileHashStore);
+    }
+
+    /**
+     * Check that getHashStore throws exception when classPackage is null
+     */
+    @Test(expected = HashStoreFactoryException.class)
+    public void hashStore_nullClassPackage() throws Exception {
+        HashMap<String, Object> storeProperties = new HashMap<>();
+        storeProperties.put("storePath", "/test");
+        storeProperties.put("storeDepth", 3);
+        storeProperties.put("storeWidth", 2);
+        storeProperties.put("storeAlgorithm", "SHA-256");
+        hashStore = HashStoreFactory.getHashStore(null, storeProperties);
+    }
+
+    /**
+     * Check that getHashStore throws exception when classPackage is null
+     */
+    @Test(expected = HashStoreFactoryException.class)
+    public void hashStore_nullStoreProperties() throws Exception {
+        String classPackage = "org.dataone.hashstore.filehashstore.FileHashStore";
+        hashStore = HashStoreFactory.getHashStore(classPackage, null);
     }
 
     /**
@@ -73,7 +96,7 @@ public class HashStoreTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            HashAddress objInfo = mystore.storeObject(dataStream, pid, null, null, null);
+            HashAddress objInfo = hashStore.storeObject(dataStream, pid, null, null, null);
 
             // Check id (sha-256 hex digest of the ab_id, aka s_cid)
             String objAuthorityId = testData.pidData.get(pid).get("s_cid");
