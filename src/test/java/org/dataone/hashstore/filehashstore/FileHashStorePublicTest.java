@@ -19,7 +19,7 @@ import org.junit.rules.TemporaryFolder;
  */
 public class FileHashStorePublicTest {
     private static Path objStringFull;
-    private static Path tmpStringFull;
+    private static Path objTmpStringFull;
     private static Path rootPathFull;
 
     /**
@@ -27,15 +27,13 @@ public class FileHashStorePublicTest {
      */
     @BeforeClass
     public static void initializeFileHashStore() {
-        Path rootDirectory = tempFolder.getRoot().toPath();
-        String rootString = rootDirectory.toString();
-        String rootStringFull = rootString + "/metacat";
-        objStringFull = Paths.get(rootStringFull + "/objects");
-        tmpStringFull = Paths.get(rootStringFull + "/objects/tmp");
-        rootPathFull = Paths.get(rootStringFull);
+        Path root = tempFolder.getRoot().toPath();
+        Path rootDirectory = root.resolve("metacat");
+        objStringFull = rootDirectory.resolve("objects");
+        objTmpStringFull = rootDirectory.resolve("objects/tmp");
 
         HashMap<String, Object> storeProperties = new HashMap<>();
-        storeProperties.put("storePath", rootPathFull);
+        storeProperties.put("storePath", rootDirectory);
         storeProperties.put("storeDepth", 3);
         storeProperties.put("storeWidth", 2);
         storeProperties.put("storeAlgorithm", "SHA-256");
@@ -67,7 +65,7 @@ public class FileHashStorePublicTest {
      */
     @Test
     public void initObjTmpDirectory() {
-        Path checkTmpPath = tmpStringFull;
+        Path checkTmpPath = objTmpStringFull;
         assertTrue(Files.exists(checkTmpPath));
     }
 

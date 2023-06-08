@@ -29,14 +29,10 @@ public class HashStoreTest {
     @Before
     public void getHashStore() {
         String classPackage = "org.dataone.hashstore.filehashstore.FileHashStore";
-
-        Path rootDirectory = this.tempFolder.getRoot().toPath();
-        String rootString = rootDirectory.toString();
-        String rootStringFull = rootString + "/metacat";
-        Path rootPathFull = Paths.get(rootStringFull);
+        Path rootDirectory = this.tempFolder.getRoot().toPath().resolve("metacat");
 
         HashMap<String, Object> storeProperties = new HashMap<>();
-        storeProperties.put("storePath", rootPathFull);
+        storeProperties.put("storePath", rootDirectory);
         storeProperties.put("storeDepth", 3);
         storeProperties.put("storeWidth", 2);
         storeProperties.put("storeAlgorithm", "SHA-256");
