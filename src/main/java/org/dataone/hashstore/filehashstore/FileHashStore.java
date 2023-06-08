@@ -48,6 +48,13 @@ public class FileHashStore implements HashStore {
             "SHA-512/224", "SHA-512/256" };
     public static final String[] DEFAULT_HASH_ALGORITHMS = { "MD5", "SHA-1", "SHA-256", "SHA-384", "SHA-512" };
 
+    enum HashStoreProperties {
+        storePath,
+        storeDepth,
+        storeWidth,
+        storeAlgorithm
+    }
+
     /**
      * Constructor to initialize HashStore fields and object store directory. If
      * storeDirectory is null or an empty string, a default path will be generated
@@ -57,25 +64,27 @@ public class FileHashStore implements HashStore {
      * - .../objects
      * - .../objects/tmp
      * 
-     * @param properties HashMap of the HashStore required properties:
-     *                   (Path) storePath, (int) storeDepth, (int) StoreWidth, (int)
-     *                   storeAlgorithm
+     * @param hashstoreProperties HashMap of the HashStore required keys:
+     *                            (Path) storePath,
+     *                            (int) storeDepth,
+     *                            (int) storeWidth
+     *                            (String) storeAlgorithm
      * @throws IllegalArgumentException Constructor arguments cannot be null, empty
      *                                  or less than 0
      * @throws IOException              Issue with creating directories
      */
-    public FileHashStore(HashMap<String, Object> properties)
+    public FileHashStore(HashMap<String, Object> hashstoreProperties)
             throws IllegalArgumentException, IOException {
-        if (properties == null) {
+        if (hashstoreProperties == null) {
             logFileHashStore.error("FileHashStore - properties cannot be null.");
             throw new IllegalArgumentException("FileHashStore - properties cannot be null.");
 
         }
         // Get properties
-        Path storePath = (Path) properties.get("storePath");
-        int storeDepth = (int) properties.get("storeDepth");
-        int storeWidth = (int) properties.get("storeWidth");
-        String storeAlgorithm = (String) properties.get("storeAlgorithm");
+        Path storePath = (Path) hashstoreProperties.get(HashStoreProperties.storePath.name());
+        int storeDepth = (int) hashstoreProperties.get(HashStoreProperties.storeDepth.name());
+        int storeWidth = (int) hashstoreProperties.get(HashStoreProperties.storeWidth.name());
+        String storeAlgorithm = (String) hashstoreProperties.get(HashStoreProperties.storeAlgorithm.name());
 
         // Validate input parameters
         if (storeDepth <= 0 || storeWidth <= 0) {
