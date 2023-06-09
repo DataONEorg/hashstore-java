@@ -21,7 +21,6 @@ import org.junit.rules.TemporaryFolder;
 public class FileHashStorePublicTest {
     private static Path objStringFull;
     private static Path objTmpStringFull;
-    private static Path rootPathFull;
 
     /**
      * Initialize FileHashStore
@@ -78,7 +77,7 @@ public class FileHashStorePublicTest {
     @Test(expected = IllegalArgumentException.class)
     public void constructor_illegalDepthArg() throws Exception {
         HashMap<String, Object> storeProperties = new HashMap<>();
-        storeProperties.put("storePath", rootPathFull);
+        storeProperties.put("storePath", Paths.get("/test/path"));
         storeProperties.put("storeDepth", 0);
         storeProperties.put("storeWidth", 2);
         storeProperties.put("storeAlgorithm", "SHA-256");
@@ -91,7 +90,7 @@ public class FileHashStorePublicTest {
     @Test(expected = IllegalArgumentException.class)
     public void constructor_illegalWidthArg() throws Exception {
         HashMap<String, Object> storeProperties = new HashMap<>();
-        storeProperties.put("storePath", rootPathFull);
+        storeProperties.put("storePath", Paths.get("/test/path"));
         storeProperties.put("storeDepth", 2);
         storeProperties.put("storeWidth", 0);
         storeProperties.put("storeAlgorithm", "SHA-256");
@@ -104,7 +103,7 @@ public class FileHashStorePublicTest {
     @Test(expected = IllegalArgumentException.class)
     public void constructor_illegalAlgorithmArg() throws Exception {
         HashMap<String, Object> storeProperties = new HashMap<>();
-        storeProperties.put("storePath", rootPathFull);
+        storeProperties.put("storePath", Paths.get("/test/path"));
         storeProperties.put("storeDepth", 2);
         storeProperties.put("storeWidth", 0);
         storeProperties.put("storeAlgorithm", "SM2");

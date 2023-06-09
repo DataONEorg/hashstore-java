@@ -51,7 +51,7 @@ public class FileHashStoreInterfaceTest {
         } catch (IOException ioe) {
             fail("IOException encountered: " + ioe.getMessage());
         } catch (NoSuchAlgorithmException nsae) {
-            fail("IOException encountered: " + nsae.getMessage());
+            fail("NoSuchAlgorithmException encountered: " + nsae.getMessage());
         }
     }
 

@@ -56,8 +56,8 @@ public class FileHashStoreProtectedTest {
      */
     public File generateTemporaryFile() throws Exception {
         Path directory = tempFolder.getRoot().toPath();
-        File newFile = this.fileHashStore.generateTmpFile("testfile", directory);
-        return newFile;
+        // newFile
+        return this.fileHashStore.generateTmpFile("testfile", directory);
     }
 
     /**

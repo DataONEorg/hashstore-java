@@ -320,12 +320,12 @@ public class FileHashStore implements HashStore {
         String objAuthorityId = this.getPidHexDigest(pid, this.OBJECT_STORE_ALGORITHM);
         String objShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
                 objAuthorityId);
-        String objAbsolutePathString = this.OBJECT_STORE_DIRECTORY.toString() + "/" + objShardString;
-        File objHashAddress = new File(objAbsolutePathString);
+        Path objHashAddressPath = Paths.get(this.OBJECT_STORE_DIRECTORY + objShardString);
+        String objHashAddressString = objHashAddressPath.toString();
         // If file (pid hash) exists, reject request immediately
-        if (objHashAddress.exists()) {
+        if (Files.exists(objHashAddressPath)) {
             logFileHashStore.error("FileHashStore.putObject - File already exists for pid: " + pid
-                    + ". Object address: " + objAbsolutePathString);
+                    + ". Object address: " + objHashAddressString);
             throw new FileAlreadyExistsException("File already exists for pid: " + pid);
         }
 
@@ -366,29 +366,59 @@ public class FileHashStore implements HashStore {
         // Move object
         boolean isDuplicate = true;
         logFileHashStore.debug("FileHashStore.putObject - Moving object: " + tmpFile.toString() + ". Destination: "
-                + objAbsolutePathString);
-        if (objHashAddress.exists()) {
+                + objHashAddressString);
+        if (Files.exists(objHashAddressPath)) {
             boolean deleteStatus = tmpFile.delete();
             if (!deleteStatus) {
                 throw new IOException("Object is a duplicate. Attempted to delete tmpFile but failed: " + tmpFile);
             }
             objAuthorityId = null;
             objShardString = null;
-            objAbsolutePathString = null;
+            objHashAddressString = null;
             logFileHashStore.info(
                     "FileHashStore.putObject - Did not move object, duplicate file found for pid: " + pid);
         } else {
-            boolean hasMoved = this.move(tmpFile, objHashAddress);
+            File permFile = objHashAddressPath.toFile();
+            boolean hasMoved = this.move(tmpFile, permFile);
             if (hasMoved) {
                 isDuplicate = false;
             }
             logFileHashStore
-                    .info("FileHashStore.putObject - Move object success, permanent address: " + objAbsolutePathString);
+                    .info("FileHashStore.putObject - Move object success, permanent address: " + objHashAddressString);
         }
 
         // Create HashAddress object to return with pertinent data
-        return new HashAddress(objAuthorityId, objShardString, objAbsolutePathString, isDuplicate,
+        return new HashAddress(objAuthorityId, objShardString, objHashAddressString, isDuplicate,
                 hexDigests);
+    }
+
+    /**
+     * Checks whether a given algorithm is supported based on class variable
+     * supportedHashAlgorithms
+     * 
+     * @param algorithm string value (ex. SHA-256)
+     * @return True if an algorithm is supported
+     * @throws NullPointerException     algorithm cannot be null
+     * @throws IllegalArgumentException algorithm cannot be empty
+     * @throws NoSuchAlgorithmException algorithm not supported
+     */
+    protected boolean validateAlgorithm(String algorithm)
+            throws NullPointerException, IllegalArgumentException, NoSuchAlgorithmException {
+        if (algorithm == null) {
+            logFileHashStore.error("FileHashStore.validateAlgorithm - algorithm is null.");
+            throw new NullPointerException("Algorithm value supplied is null");
+        }
+        if (algorithm.trim().isEmpty()) {
+            logFileHashStore.error("FileHashStore.validateAlgorithm - algorithm is empty.");
+            throw new IllegalArgumentException("Algorithm value supplied is empty");
+        }
+        boolean algorithmSupported = Arrays.asList(SUPPORTED_HASH_ALGORITHMS).contains(algorithm);
+        if (!algorithmSupported) {
+            throw new NoSuchAlgorithmException(
+                    "Algorithm not supported: " + algorithm + ". Supported algorithms: " +
+                            Arrays.toString(SUPPORTED_HASH_ALGORITHMS));
+        }
+        return true;
     }
 
     /**
@@ -435,35 +465,6 @@ public class FileHashStore implements HashStore {
             }
         }
         return requestValidation;
-    }
-
-    /**
-     * Checks whether a given algorithm is supported based on class variable
-     * supportedHashAlgorithms
-     * 
-     * @param algorithm string value (ex. SHA-256)
-     * @return True if an algorithm is supported
-     * @throws NullPointerException     algorithm cannot be null
-     * @throws IllegalArgumentException algorithm cannot be empty
-     * @throws NoSuchAlgorithmException algorithm not supported
-     */
-    protected boolean validateAlgorithm(String algorithm)
-            throws NullPointerException, IllegalArgumentException, NoSuchAlgorithmException {
-        if (algorithm == null) {
-            logFileHashStore.error("FileHashStore.validateAlgorithm - algorithm is null.");
-            throw new NullPointerException("Algorithm value supplied is null");
-        }
-        if (algorithm.trim().isEmpty()) {
-            logFileHashStore.error("FileHashStore.validateAlgorithm - algorithm is empty.");
-            throw new IllegalArgumentException("Algorithm value supplied is empty");
-        }
-        boolean algorithmSupported = Arrays.asList(SUPPORTED_HASH_ALGORITHMS).contains(algorithm);
-        if (!algorithmSupported) {
-            throw new NoSuchAlgorithmException(
-                    "Algorithm not supported: " + algorithm + ". Supported algorithms: " +
-                            Arrays.toString(SUPPORTED_HASH_ALGORITHMS));
-        }
-        return true;
     }
 
     /**
@@ -583,11 +584,7 @@ public class FileHashStore implements HashStore {
                 throw new IllegalArgumentException(
                         "Additional algorithm cannot be empty");
             }
-            boolean algorithmSupported = this.validateAlgorithm(additionalAlgorithm);
-            if (!algorithmSupported) {
-                throw new IllegalArgumentException(
-                        "Algorithm not supported. Supported algorithms: " + Arrays.toString(SUPPORTED_HASH_ALGORITHMS));
-            }
+            this.validateAlgorithm(additionalAlgorithm);
         }
 
         MessageDigest extraAlgo = null;
