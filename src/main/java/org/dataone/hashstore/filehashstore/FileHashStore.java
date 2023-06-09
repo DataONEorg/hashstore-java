@@ -84,9 +84,9 @@ public class FileHashStore implements HashStore {
     public FileHashStore(HashMap<String, Object> hashstoreProperties)
             throws IllegalArgumentException, IOException, NoSuchAlgorithmException {
         if (hashstoreProperties == null) {
-            logFileHashStore.error("FileHashStore - properties cannot be null.");
-            throw new IllegalArgumentException("FileHashStore - properties cannot be null.");
-
+            String errMsg = "FileHashStore - Properties cannot be null.";
+            logFileHashStore.fatal(errMsg);
+            throw new IllegalArgumentException(errMsg);
         }
         // Get properties
         Path storePath = (Path) hashstoreProperties.get(HashStoreProperties.storePath.name());
@@ -96,13 +96,17 @@ public class FileHashStore implements HashStore {
 
         // Validate input parameters
         if (storeDepth <= 0 || storeWidth <= 0) {
-            throw new IllegalArgumentException("Depth and width must be greater than 0.");
+            String errMsg = "FileHashStore - Depth and width must be greater than 0. Depth: " + storeDepth + ". Width: "
+                    + storeWidth;
+            logFileHashStore.fatal(errMsg);
+            throw new IllegalArgumentException(errMsg);
         }
         // Ensure algorithm supplied is not empty, not null and supported
         this.validateAlgorithm(storeAlgorithm);
 
         // If no path provided, create default path with user.dir root + /FileHashStore
         if (storePath == null) {
+            logFileHashStore.debug("FileHashStore - storePath is null, creating store root with default setitngs.");
             String rootDirectory = System.getProperty("user.dir");
             String defaultPath = "FileHashStore";
             this.OBJECT_STORE_DIRECTORY = Paths.get(rootDirectory).resolve(defaultPath).resolve("objects");
@@ -115,15 +119,19 @@ public class FileHashStore implements HashStore {
         try {
             Files.createDirectories(this.OBJECT_STORE_DIRECTORY);
             Files.createDirectories(this.OBJECT_TMP_FILE_DIRECTORY);
+            logFileHashStore.debug("FileHashStore - Created store and store tmp directories.");
         } catch (IOException ioe) {
-            logFileHashStore.error("Failed to initialize FileHashStore - unable to create directories. Exception: "
-                    + ioe.getMessage());
+            logFileHashStore.fatal(
+                    "FileHashStore - Failed to initialize FileHashStore - unable to create directories. Exception: "
+                            + ioe.getMessage());
             throw ioe;
         }
         // Finalize instance variables
         this.DIRECTORY_DEPTH = storeDepth;
         this.DIRECTORY_WIDTH = storeWidth;
         this.OBJECT_STORE_ALGORITHM = storeAlgorithm;
+        logFileHashStore.debug("FileHashStore - HashStore initialized. Store Depth: " + storeDepth + ". Store Width: "
+                + storeWidth + ". Store Algorithm: " + storeAlgorithm);
     }
 
     @Override
@@ -132,15 +140,17 @@ public class FileHashStore implements HashStore {
             throws NoSuchAlgorithmException, IOException, SecurityException, FileNotFoundException,
             FileAlreadyExistsException, IllegalArgumentException, NullPointerException, RuntimeException,
             AtomicMoveNotSupportedException {
-        logFileHashStore.info("FileHashStore.storeObject - Called to store object for pid: " + pid);
+        logFileHashStore.debug("FileHashStore.storeObject - Called to store object for pid: " + pid);
         // Begin input validation
         if (object == null) {
-            logFileHashStore.error("FileHashStore.storeObject - InputStream cannot be null, pid: " + pid);
-            throw new NullPointerException("Invalid input stream, data is null.");
+            String errMsg = "FileHashStore.storeObject - InputStream cannot be null, request for storing pid: " + pid;
+            logFileHashStore.error(errMsg);
+            throw new NullPointerException(errMsg);
         }
         if (pid == null || pid.trim().isEmpty()) {
-            logFileHashStore.error("FileHashStore.storeObject - pid cannot be null or empty, pid: " + pid);
-            throw new IllegalArgumentException("Pid cannot be null or empty, pid: " + pid);
+            String errMsg = "FileHashStore.storeObject - pid cannot be null or empty, pid: " + pid;
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
         }
         // Validate algorithms if not null or empty, throws exception if not supported
         if (additionalAlgorithm != null && additionalAlgorithm.trim().isEmpty()) {
@@ -155,16 +165,17 @@ public class FileHashStore implements HashStore {
         // be accepted but will be rejected if pid hash object exists
         synchronized (objectLockedIds) {
             if (objectLockedIds.contains(pid)) {
-                logFileHashStore
-                        .warn("FileHashStore.storeObject - Duplicate object request encountered for pid: " + pid);
-                throw new RuntimeException(
-                        "FileHashStore.storeObject request for pid: " + pid + " already in progress.");
+                String errMsg = "FileHashStore.storeObject - Duplicate object request encountered for pid: " + pid
+                        + ". Already in progress.";
+                logFileHashStore.warn(errMsg);
+                throw new RuntimeException(errMsg);
             }
+            logFileHashStore.debug("FileHashStore.storeObject - Synchronizing objectLockedIds for pid: " + pid);
             objectLockedIds.add(pid);
         }
 
         try {
-            logFileHashStore.debug("FileHashStore.storeObject - filehs.putObject request for pid: " + pid
+            logFileHashStore.debug("FileHashStore.storeObject - .putObject() request for pid: " + pid
                     + ". additionalAlgorithm: " + additionalAlgorithm + ". checksum: " + checksum
                     + ". checksumAlgorithm: " + checksumAlgorithm);
             // Store object
@@ -212,6 +223,7 @@ public class FileHashStore implements HashStore {
         } finally {
             // Release lock
             synchronized (objectLockedIds) {
+                logFileHashStore.debug("FileHashStore.storeObject - Releasing objectLockedIds for pid: " + pid);
                 objectLockedIds.remove(pid);
                 objectLockedIds.notifyAll();
             }
@@ -295,16 +307,18 @@ public class FileHashStore implements HashStore {
             throws IOException, NoSuchAlgorithmException, SecurityException, FileNotFoundException,
             FileAlreadyExistsException, IllegalArgumentException, NullPointerException,
             AtomicMoveNotSupportedException {
-        logFileHashStore.info("FileHashStore.putObject - Called to put object for pid: " + pid);
+        logFileHashStore.debug("FileHashStore.putObject - Called to put object for pid: " + pid);
         // Begin input validation
         if (object == null) {
-            logFileHashStore.error("FileHashStore.putObject - InputStream cannot be null, pid: " + pid);
-            throw new NullPointerException("Invalid input stream, data is null.");
+            String errMsg = "FileHashStore.putObject - InputStream cannot be null, pid: " + pid;
+            logFileHashStore.error(errMsg);
+            throw new NullPointerException(errMsg);
         }
         // pid cannot be empty or null
         if (pid == null || pid.trim().isEmpty()) {
-            logFileHashStore.error("FileHashStore.putObject - pid cannot be null or empty. pid: " + pid);
-            throw new IllegalArgumentException("The pid cannot be null or empty");
+            String errMsg = "FileHashStore.putObject - pid cannot be null or empty. pid: " + pid;
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
         }
         // Validate algorithms if not null or empty, throws exception if not supported
         if (additionalAlgorithm != null && !additionalAlgorithm.trim().isEmpty()) {
@@ -324,9 +338,10 @@ public class FileHashStore implements HashStore {
         String objHashAddressString = objHashAddressPath.toString();
         // If file (pid hash) exists, reject request immediately
         if (Files.exists(objHashAddressPath)) {
-            logFileHashStore.error("FileHashStore.putObject - File already exists for pid: " + pid
-                    + ". Object address: " + objHashAddressString);
-            throw new FileAlreadyExistsException("File already exists for pid: " + pid);
+            String errMsg = "FileHashStore.putObject - File already exists for pid: " + pid
+                    + ". Object address: " + objHashAddressString + ". Aborting request.";
+            logFileHashStore.warn(errMsg);
+            throw new FileAlreadyExistsException(errMsg);
         }
 
         // Generate tmp file and write to it
@@ -337,29 +352,29 @@ public class FileHashStore implements HashStore {
 
         // Validate object if checksum and checksum algorithm is passed
         if (requestValidation) {
-            logFileHashStore.info("FileHashStore.putObject - Validating object");
+            logFileHashStore
+                    .info("FileHashStore.putObject - Validating object - checksum and checksumAlgorithm supplied and valid.");
             String digestFromHexDigests = hexDigests.get(checksumAlgorithm);
             if (digestFromHexDigests == null) {
-                logFileHashStore.error(
-                        "FileHashStore.putObject - checksum not found in hex digest map when validating object. checksumAlgorithm checked: "
-                                + checksumAlgorithm);
-                throw new NoSuchAlgorithmException(
-                        "FileHashStore.putObject - checksum not found in hex digest map when validating object, checksumAlgorithm checked: "
-                                + checksumAlgorithm);
+                String errMsg = "FileHashStore.putObject - checksum not found in hex digest map when validating object. checksumAlgorithm checked: "
+                        + checksumAlgorithm;
+                logFileHashStore.error(errMsg);
+                throw new NoSuchAlgorithmException(errMsg);
             }
             if (!checksum.equals(digestFromHexDigests)) {
                 // Delete tmp File
                 boolean deleteStatus = tmpFile.delete();
                 if (!deleteStatus) {
-                    throw new IOException("Object cannot be validated and failed to delete tmpFile: " + tmpFile);
+                    String errMsg = "FileHashStore.putObject - Object cannot be validated and failed to delete tmpFile: "
+                            + tmpFile.getName();
+                    logFileHashStore.error(errMsg);
+                    throw new IOException(errMsg);
                 }
-                logFileHashStore.error(
-                        "FileHashStore.putObject - Checksum supplied does not equal to the calculated hex digest: "
-                                + digestFromHexDigests + ". Checksum provided: " + checksum + ". Deleting tmpFile: "
-                                + tmpFile);
-                throw new IllegalArgumentException(
-                        "Checksum supplied does not equal to the calculated hex digest: " + digestFromHexDigests
-                                + ". Checksum provided: " + checksum + ". Deleting tmpFile: " + tmpFile);
+                String errMsg = "FileHashStore.putObject - Checksum supplied does not equal to the calculated hex digest: "
+                        + digestFromHexDigests + ". Checksum provided: " + checksum + ". Deleting tmpFile: "
+                        + tmpFile.getName();
+                logFileHashStore.error(errMsg);
+                throw new IllegalArgumentException(errMsg);
             }
         }
 
@@ -370,13 +385,17 @@ public class FileHashStore implements HashStore {
         if (Files.exists(objHashAddressPath)) {
             boolean deleteStatus = tmpFile.delete();
             if (!deleteStatus) {
-                throw new IOException("Object is a duplicate. Attempted to delete tmpFile but failed: " + tmpFile);
+                String errMsg = "FileHashStore.putObject - Object is found to be a duplicate after writing tmpFile. Attempted to delete tmpFile but failed: "
+                        + tmpFile.getName();
+                logFileHashStore.error(errMsg);
+                throw new IOException(errMsg);
             }
             objAuthorityId = null;
             objShardString = null;
             objHashAddressString = null;
             logFileHashStore.info(
-                    "FileHashStore.putObject - Did not move object, duplicate file found for pid: " + pid);
+                    "FileHashStore.putObject - Did not move object, duplicate file found for pid: " + pid
+                            + ". Deleted tmpFile: " + tmpFile.getName());
         } else {
             File permFile = objHashAddressPath.toFile();
             boolean hasMoved = this.move(tmpFile, permFile);
@@ -384,7 +403,7 @@ public class FileHashStore implements HashStore {
                 isDuplicate = false;
             }
             logFileHashStore
-                    .info("FileHashStore.putObject - Move object success, permanent address: " + objHashAddressString);
+                    .debug("FileHashStore.putObject - Move object success, permanent address: " + objHashAddressString);
         }
 
         // Create HashAddress object to return with pertinent data
@@ -405,18 +424,21 @@ public class FileHashStore implements HashStore {
     protected boolean validateAlgorithm(String algorithm)
             throws NullPointerException, IllegalArgumentException, NoSuchAlgorithmException {
         if (algorithm == null) {
-            logFileHashStore.error("FileHashStore.validateAlgorithm - algorithm is null.");
-            throw new NullPointerException("Algorithm value supplied is null");
+            String errMsg = "FileHashStore.validateAlgorithm - algorithm is null.";
+            logFileHashStore.error(errMsg);
+            throw new NullPointerException(errMsg);
         }
         if (algorithm.trim().isEmpty()) {
-            logFileHashStore.error("FileHashStore.validateAlgorithm - algorithm is empty.");
-            throw new IllegalArgumentException("Algorithm value supplied is empty");
+            String errMsg = "FileHashStore.validateAlgorithm - algorithm is empty.";
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
         }
         boolean algorithmSupported = Arrays.asList(SUPPORTED_HASH_ALGORITHMS).contains(algorithm);
         if (!algorithmSupported) {
-            throw new NoSuchAlgorithmException(
-                    "Algorithm not supported: " + algorithm + ". Supported algorithms: " +
-                            Arrays.toString(SUPPORTED_HASH_ALGORITHMS));
+            String errMsg = "Algorithm not supported: " + algorithm + ". Supported algorithms: "
+                    + Arrays.toString(SUPPORTED_HASH_ALGORITHMS);
+            logFileHashStore.error(errMsg);
+            throw new NoSuchAlgorithmException(errMsg);
         }
         return true;
     }
@@ -436,31 +458,31 @@ public class FileHashStore implements HashStore {
         // If checksum is supplied, checksumAlgorithm cannot be empty
         if (checksum != null && !checksum.trim().isEmpty()) {
             if (checksumAlgorithm == null) {
-                logFileHashStore
-                        .error("FileHashStore.verifyChecksumParameters - Validation requested but checksumAlgorithm is null.");
-                throw new IllegalArgumentException("Validation requested but checksum is empty.");
+                String errMsg = "FileHashStore.verifyChecksumParameters - Validation requested but checksumAlgorithm is null.";
+                logFileHashStore.error(errMsg);
+                throw new IllegalArgumentException(errMsg);
             }
             if (checksumAlgorithm.trim().isEmpty()) {
-                logFileHashStore
-                        .error("FileHashStore.verifyChecksumParameters - Validation requested but checksumAlgorithm is empty.");
-                throw new IllegalArgumentException("Validation requested but checksum is empty.");
+                String errMsg = "FileHashStore.verifyChecksumParameters - Validation requested but checksumAlgorithm is empty.";
+                logFileHashStore.error(errMsg);
+                throw new IllegalArgumentException(errMsg);
             }
         }
         // Ensure algorithm is supported, not null and not empty
         boolean requestValidation = false;
         if (checksumAlgorithm != null && !checksumAlgorithm.trim().isEmpty()) {
             requestValidation = this.validateAlgorithm(checksumAlgorithm);
-            // Ensure checksum is not null or empty if checksumAlgorithm is supplied
+            // Ensure checksum is not null or empty if checksumAlgorithm is supplied in
             if (requestValidation) {
                 if (checksum == null) {
-                    logFileHashStore
-                            .error("FileHashStore.verifyChecksumParameters - Validation requested but checksum is null.");
-                    throw new NullPointerException("Validation requested but checksum is null.");
+                    String errMsg = "FileHashStore.verifyChecksumParameters - Validation requested but checksum is null.";
+                    logFileHashStore.error(errMsg);
+                    throw new NullPointerException(errMsg);
                 }
                 if (checksum.trim().isEmpty()) {
-                    logFileHashStore
-                            .error("FileHashStore.verifyChecksumParameters - Validation requested but checksum is empty.");
-                    throw new IllegalArgumentException("Validation requested but checksum is empty.");
+                    String errMsg = "FileHashStore.verifyChecksumParameters - Validation requested but checksum is empty.";
+                    logFileHashStore.error(errMsg);
+                    throw new IllegalArgumentException(errMsg);
                 }
             }
         }
@@ -546,14 +568,18 @@ public class FileHashStore implements HashStore {
         try {
             Path newPath = Files.createTempFile(directory, newPrefix, null);
             File newFile = newPath.toFile();
-            logFileHashStore.debug("FileHashStore.generateTmpFile - tmpFile generated: " + newFile.getAbsolutePath());
+            logFileHashStore.trace("FileHashStore.generateTmpFile - tmpFile generated: " + newFile.getAbsolutePath());
             return newFile;
         } catch (IOException ioe) {
-            logFileHashStore.error("FileHashStore.generateTmpFile - Unable to generate tmpFile: " + ioe.getMessage());
-            throw new IOException("Unable to generate tmpFile. IOException: " + ioe.getMessage());
+            String errMsg = "FileHashStore.generateTmpFile - Unable to generate tmpFile, IOException: "
+                    + ioe.getMessage();
+            logFileHashStore.error(errMsg);
+            throw new IOException(errMsg);
         } catch (SecurityException se) {
-            logFileHashStore.error("FileHashStore.generateTmpFile - Unable to generate tmpFile: " + se.getMessage());
-            throw new SecurityException("File not allowed (security manager exists): " + se.getMessage());
+            String errMsg = "FileHashStore.generateTmpFile - Unable to generate tmpFile, SecurityException: "
+                    + se.getMessage();
+            logFileHashStore.error(errMsg);
+            throw new SecurityException(errMsg);
         }
     }
 
@@ -598,7 +624,7 @@ public class FileHashStore implements HashStore {
         MessageDigest sha384 = MessageDigest.getInstance(DefaultHashAlgorithms.SHA_384.name().replace("_", "-"));
         MessageDigest sha512 = MessageDigest.getInstance(DefaultHashAlgorithms.SHA_512.name().replace("_", "-"));
         if (additionalAlgorithm != null) {
-            logFileHashStore.info(
+            logFileHashStore.debug(
                     "FileHashStore.writeToTmpFileAndGenerateChecksums - Adding additional algorithm to hex digest map, algorithm: "
                             + additionalAlgorithm);
             extraAlgo = MessageDigest.getInstance(additionalAlgorithm);
@@ -628,7 +654,6 @@ public class FileHashStore implements HashStore {
             os.close();
         }
 
-        logFileHashStore.info("FileHashStore.writeToTmpFileAndGenerateChecksums - Object has been written to tmpFile");
         String md5Digest = DatatypeConverter.printHexBinary(md5.digest()).toLowerCase();
         String sha1Digest = DatatypeConverter.printHexBinary(sha1.digest()).toLowerCase();
         String sha256Digest = DatatypeConverter.printHexBinary(sha256.digest()).toLowerCase();
@@ -643,6 +668,8 @@ public class FileHashStore implements HashStore {
             String extraDigest = DatatypeConverter.printHexBinary(extraAlgo.digest()).toLowerCase();
             hexDigests.put(additionalAlgorithm, extraDigest);
         }
+        logFileHashStore.debug("FileHashStore.writeToTmpFileAndGenerateChecksums - Object has been written to tmpFile: "
+                + tmpFile.getName() + ". To be moved to: " + sha256Digest);
 
         return hexDigests;
     }
@@ -665,7 +692,9 @@ public class FileHashStore implements HashStore {
     protected boolean move(File source, File target)
             throws IOException, SecurityException, AtomicMoveNotSupportedException, FileAlreadyExistsException {
         if (target.exists()) {
-            throw new FileAlreadyExistsException("File already exists for target: " + target);
+            String errMsg = "FileHashStore.move - File already exists for target: " + target;
+            logFileHashStore.debug(errMsg);
+            throw new FileAlreadyExistsException(errMsg);
         }
 
         File destinationDirectory = new File(target.getParent());
@@ -680,6 +709,8 @@ public class FileHashStore implements HashStore {
         Path targetFilePath = target.toPath();
         try {
             Files.move(sourceFilePath, targetFilePath, StandardCopyOption.ATOMIC_MOVE);
+            logFileHashStore.debug("FileHashStore.move - file moved from: " + sourceFilePath.toString() + ", to: "
+                    + targetFilePath.toString());
             return true;
         } catch (AtomicMoveNotSupportedException amnse) {
             logFileHashStore.error(
