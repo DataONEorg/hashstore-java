@@ -4,177 +4,146 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.dataone.hashstore.hashfs.HashAddress;
-import org.dataone.hashstore.hashfs.HashFileStore;
-import org.dataone.hashstore.interfaces.HashStoreInterface;
 
 /**
  * HashStore is a content-addressable file management system that utilizes a
  * persistent identifier (PID) in the form of a hex digest value to address
  * files. The system stores files in a file store and provides an API for
- * interacting with the store. The API should implement the HashStoreInterface
- * to ensure proper usage of the system.
+ * interacting with the store. HashStore storage classes (like `FileHashStore`)
+ * must implement the HashStore interface to ensure proper usage of the system.
  */
-public class HashStore implements HashStoreInterface {
-    private static final Log logHashStore = LogFactory.getLog(HashStore.class);
-    private final HashFileStore hashfs;
-    private final int depth = 3;
-    private final int width = 2;
-    private final String algorithm = "SHA-256";
-    private final static ArrayList<String> objectLockedIds = new ArrayList<>(100);
-
+public interface HashStore {
     /**
-     * Default constructor for HashStore
+     * The `storeObject` method is responsible for the atomic storage of objects to
+     * disk using a given InputStream and a persistent identifier (pid). Upon
+     * successful storage, the method returns a HashAddress object containing
+     * relevant file information, such as the file's id, relative path, absolute
+     * path, duplicate object status, and hex digest map of algorithms and
+     * checksums. `storeObject` also ensures that an object is stored only once by
+     * synchronizing multiple calls and rejecting calls to store duplicate objects.
      * 
-     * @param storeDirectory Full file path (ex. /usr/org/metacat/objects)
-     * @throws IllegalArgumentException Depth, width must be greater than 0
-     * @throws IOException              Issue when creating storeDirectory
+     * The file's id is determined by calculating the SHA-256 hex digest of the
+     * provided pid, which is also used as the permanent address of the file. The
+     * file's identifier is then sharded using a depth of 3 and width of 2,
+     * delimited by '/' and concatenated to produce the final permanent address
+     * and is stored in the `/[...storeDirectory]/objects/` directory.
+     * 
+     * By default, the hex digest map includes the following hash algorithms: MD5,
+     * SHA-1, SHA-256, SHA-384 and SHA-512, which are the most commonly used
+     * algorithms in dataset submissions to DataONE and the Arctic Data Center. If
+     * an additional algorithm is provided, the `storeObject` method checks if it is
+     * supported and adds it to the map along with its corresponding hex digest. An
+     * algorithm is considered "supported" if it is recognized as a valid hash
+     * algorithm in the `java.security.MessageDigest` class.
+     * 
+     * Similarly, if a checksum and a checksumAlgorithm value are provided,
+     * `storeObject` validates the object to ensure it matches what is provided
+     * before moving the file to its permanent address.
+     * 
+     * @param object              Input stream to file
+     * @param pid                 Authority-based identifier
+     * @param additionalAlgorithm Additional hex digest to include in hexDigests
+     * @param checksum            Value of checksum to validate against
+     * @param checksumAlgorithm   Algorithm of checksum submitted
+     * @return HashAddress object encapsulating file information
+     * @throws NoSuchAlgorithmException        When additionalAlgorithm or
+     *                                         checksumAlgorithm is invalid
+     * @throws IOException                     I/O Error when writing file,
+     *                                         generating checksums and moving file
+     * @throws SecurityException               Insufficient permissions to
+     *                                         read/access files or when
+     *                                         generating/writing to a file
+     * @throws FileNotFoundException           tmpFile not found when writing
+     *                                         from stream
+     * @throws FileAlreadyExistsException      Duplicate object in store exists
+     *                                         during move call
+     * @throws IllegalArgumentException        Signature values are unexpectedly
+     *                                         empty (checksum, pid, etc.)
+     * @throws NullPointerException            Arguments are null for pid or object
+     * @throws RuntimeException                Attempting to store pid object
+     *                                         that is already in progress
+     * @throws AtomicMoveNotSupportedException Attempting to move files across
+     *                                         file systems
      */
-    public HashStore(Path storeDirectory)
-            throws IllegalArgumentException, IOException {
-        try {
-            this.hashfs = new HashFileStore(this.depth, this.width, this.algorithm, storeDirectory);
-        } catch (IllegalArgumentException iae) {
-            logHashStore
-                    .error("Unable to initialize HashFileStore - storeDirectory supplied: " + storeDirectory.toString()
-                            + ". Illegal Argument Exception: " + iae.getMessage());
-            throw iae;
-        }
-    }
-
-    @Override
-    public HashAddress storeObject(InputStream object, String pid, String additionalAlgorithm, String checksum,
+    HashAddress storeObject(InputStream object, String pid, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
             throws NoSuchAlgorithmException, IOException, SecurityException, FileNotFoundException,
-            FileAlreadyExistsException, IllegalArgumentException, NullPointerException, RuntimeException {
-        logHashStore.info("HashStore.storeObject - Called to store object for pid: " + pid);
-        // Begin input validation
-        if (object == null) {
-            logHashStore.error("HashStore.storeObject - InputStream cannot be null, pid: " + pid);
-            throw new NullPointerException("Invalid input stream, data is null.");
-        }
-        if (pid == null || pid.trim().isEmpty()) {
-            logHashStore.error("HashStore.storeObject - pid cannot be null or empty, pid: " + pid);
-            throw new IllegalArgumentException("Pid cannot be null or empty, pid: " + pid);
-        }
-        // Cannot generate additional or checksum algorithm if it is not supported
-        if (additionalAlgorithm != null) {
-            boolean algorithmSupported = this.hashfs.isValidAlgorithm(additionalAlgorithm);
-            if (!algorithmSupported) {
-                logHashStore.error("HashStore.storeObject - additionalAlgorithm is not supported."
-                        + "additionalAlgorithm: " + additionalAlgorithm + ". pid: " + pid);
-                throw new IllegalArgumentException(
-                        "Additional algorithm not supported - unable to generate additional hex digest value. additionalAlgorithm: "
-                                + additionalAlgorithm + ". Supported algorithms: "
-                                + Arrays.toString(HashFileStore.SUPPORTED_HASH_ALGORITHMS));
-            }
-        }
-        // checksumAlgorithm and checksum must both be present if validation is desired
-        this.hashfs.validateChecksumParameters(checksum, checksumAlgorithm, additionalAlgorithm);
+            FileAlreadyExistsException, IllegalArgumentException, NullPointerException, RuntimeException,
+            AtomicMoveNotSupportedException;
 
-        // Lock pid for thread safety, transaction control and atomic writing
-        // A pid can only be stored once and only once, subsequent calls will
-        // be accepted but will be rejected if pid hash object exists
-        synchronized (objectLockedIds) {
-            if (objectLockedIds.contains(pid)) {
-                logHashStore.warn("HashStore.storeObject - Duplicate object request encountered for pid: " + pid);
-                throw new RuntimeException("HashStore.storeObject request for pid: " + pid + " already in progress.");
-            }
-            objectLockedIds.add(pid);
-        }
+    /**
+     * The `storeSysmeta` method is responsible for adding and/or updating metadata
+     * (`sysmeta`) to disk using a given InputStream and a persistent identifier
+     * (pid). The metadata object consists of a header and body portion. The header
+     * is formed by writing the namespace/format (utf-8) of the metadata document
+     * followed by a null character `\x00` and the body follows immediately after.
+     * 
+     * Upon successful storage of sysmeta, the method returns a String that
+     * represents the file's permanent address, and similarly to storeObject, this
+     * permanent address is determined by calculating the SHA-256 hex digest of the
+     * provided pid. Finally, sysmeta are stored in parallel to objects in the
+     * `/[...storeDirectory]/sysmeta/` directory.
+     * 
+     * @param sysmeta Input stream to metadata document
+     * @param pid     Authority-based identifier
+     * @return String representing metadata address
+     * @throws Exception TODO: Add specific exceptions
+     */
+    String storeSysmeta(InputStream sysmeta, String pid) throws Exception;
 
-        try {
-            logHashStore.debug("HashStore.storeObject - hashfs.putObject request for pid: " + pid
-                    + ". additionalAlgorithm: " + additionalAlgorithm + ". checksum: " + checksum
-                    + ". checksumAlgorithm: " + checksumAlgorithm);
-            // Store object
-            HashAddress objInfo = this.hashfs.putObject(object, pid, additionalAlgorithm, checksum, checksumAlgorithm);
-            logHashStore.info(
-                    "HashStore.storeObject - Object stored for pid: " + pid + ". Permanent address: "
-                            + objInfo.getAbsPath());
-            return objInfo;
-        } catch (NullPointerException npe) {
-            logHashStore.error("HashStore.storeObject - Cannot store object for pid: " + pid
-                    + ". NullPointerException: " + npe.getMessage());
-            throw npe;
-        } catch (IllegalArgumentException iae) {
-            logHashStore.error("HashStore.storeObject - Cannot store object for pid: " + pid
-                    + ". IllegalArgumentException: " + iae.getMessage());
-            throw iae;
-        } catch (NoSuchAlgorithmException nsae) {
-            logHashStore.error("HashStore.storeObject - Cannot store object for pid: " + pid
-                    + ". NoSuchAlgorithmException: " + nsae.getMessage());
-            throw nsae;
-        } catch (FileAlreadyExistsException faee) {
-            logHashStore.error("HashStore.storeObject - Cannot store object for pid: " + pid
-                    + ". FileAlreadyExistsException: " + faee.getMessage());
-            throw faee;
-        } catch (FileNotFoundException fnfe) {
-            logHashStore.error("HashStore.storeObject - Cannot store object for pid: " + pid
-                    + ". FileNotFoundException: " + fnfe.getMessage());
-            throw fnfe;
-        } catch (IOException ioe) {
-            logHashStore.error("HashStore.storeObject - Cannot store object for pid: " + pid
-                    + ". IOException: " + ioe.getMessage());
-            throw ioe;
-        } catch (SecurityException se) {
-            logHashStore.error("HashStore.storeObject - Cannot store object for pid: " + pid
-                    + ". SecurityException: " + se.getMessage());
-            throw se;
-        } catch (RuntimeException re) {
-            logHashStore.error("HashStore.storeObject - Object was stored for : " + pid
-                    + ". But encountered RuntimeException when releasing object lock: " + re.getMessage());
-            throw re;
-        } finally {
-            // Release lock
-            synchronized (objectLockedIds) {
-                objectLockedIds.remove(pid);
-                objectLockedIds.notifyAll();
-            }
-        }
-    }
+    /**
+     * The `retrieveObject` method retrieves an object from disk using a given
+     * persistent identifier (pid). If the object exists (determined by calculating
+     * the object's permanent address using the SHA-256 hash of the given pid), the
+     * method will open and return a buffered object stream ready to read from.
+     * 
+     * @param pid Authority-based identifier
+     * @return A buffered stream of the object
+     * @throws Exception TODO: Add specific exceptions
+     */
+    BufferedReader retrieveObject(String pid) throws Exception;
 
-    @Override
-    public String storeSysmeta(InputStream sysmeta, String pid) throws Exception {
-        // TODO: Implement method
-        return null;
-    }
+    /**
+     * The 'retrieveSysmeta' method retrieves the metadata content from disk and
+     * returns it in the form of a String using a given persistent identifier.
+     * 
+     * @param pid Authority-based identifier
+     * @return Sysmeta (metadata) document of given pid
+     * @throws Exception TODO: Add specific exceptions
+     */
+    String retrieveSysmeta(String pid) throws Exception;
 
-    @Override
-    public BufferedReader retrieveObject(String pid) throws Exception {
-        // TODO: Implement method
-        return null;
-    }
+    /**
+     * The 'deleteObject' method deletes an object permanently from disk using a
+     * given persistent identifier.
+     * 
+     * @param pid Authority-based identifier
+     * @return
+     * @throws Exception TODO: Add specific exceptions
+     */
+    boolean deleteObject(String pid) throws Exception;
 
-    @Override
-    public String retrieveSysmeta(String pid) throws Exception {
-        // TODO: Implement method
-        return null;
-    }
+    /**
+     * The 'deleteSysmeta' method deletes an metadata document (sysmeta) permanently
+     * from disk using a given persistent identifier.
+     * 
+     * @param pid Authority-based identifier
+     * @return
+     * @throws Exception TODO: Add specific exceptions
+     */
+    boolean deleteSysmeta(String pid) throws Exception;
 
-    @Override
-    public boolean deleteObject(String pid) throws Exception {
-        // TODO: Implement method
-        return false;
-    }
-
-    @Override
-    public boolean deleteSysmeta(String pid) throws Exception {
-        // TODO: Implement method
-        return false;
-    }
-
-    @Override
-    public String getHexDigest(String pid, String algorithm) throws Exception {
-        // TODO: Implement method
-        return null;
-    }
+    /**
+     * The 'getHexDigest' method calculates the hex digest of an object that exists
+     * in HashStore using a given persistent identifier and hash algorithm.
+     * 
+     * @param pid       Authority-based identifier
+     * @param algorithm Algorithm of desired hex digest
+     * @return
+     * @throws Exception TODO: Add specific exceptions
+     */
+    String getHexDigest(String pid, String algorithm) throws Exception;
 }

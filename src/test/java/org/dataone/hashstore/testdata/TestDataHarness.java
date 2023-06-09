@@ -1,5 +1,8 @@
 package org.dataone.hashstore.testdata;
 
+import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -51,5 +54,12 @@ public class TestDataHarness {
         pidsAndHexDigests.put("urn:uuid:1b35d0a5-b17a-423b-a2ed-de2b18dc367a", values3);
 
         this.pidData = pidsAndHexDigests;
+    }
+
+    public Path getTestFile(String pid) {
+        Path testdataDirectory = Paths.get("src/test/java/org/dataone/hashstore", "testdata", pid);
+        String testdataAbsolutePath = testdataDirectory.toFile().getAbsolutePath();
+        Path testDataFile = new File(testdataAbsolutePath).toPath();
+        return testDataFile;
     }
 }
