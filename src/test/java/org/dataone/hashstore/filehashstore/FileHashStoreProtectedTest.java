@@ -46,6 +46,8 @@ public class FileHashStoreProtectedTest {
             this.fileHashStore = new FileHashStore(storeProperties);
         } catch (IOException e) {
             fail("IOException encountered: " + e.getMessage());
+        } catch (NoSuchAlgorithmException nsae) {
+            fail("NoSuchAlgorithmException encountered: " + nsae.getMessage());
         }
     }
 
@@ -69,30 +71,42 @@ public class FileHashStoreProtectedTest {
      */
     @Test
     public void isValidAlgorithm_supported() {
-        String md2 = "MD2";
-        boolean supported = this.fileHashStore.isValidAlgorithm(md2);
-        assertTrue(supported);
+        try {
+            String md2 = "MD2";
+            boolean supported = this.fileHashStore.validateAlgorithm(md2);
+            assertTrue(supported);
+        } catch (NoSuchAlgorithmException nsae) {
+            fail("NoSuchAlgorithmException encountered: " + nsae.getMessage());
+        }
     }
 
     /**
      * Check algorithm support for unsupported algorithm
      */
-    @Test
-    public void isValidAlgorithm_notSupported() {
-        String sm3 = "SM3";
-        boolean not_supported = this.fileHashStore.isValidAlgorithm(sm3);
-        assertFalse(not_supported);
+    @Test(expected = NoSuchAlgorithmException.class)
+    public void isValidAlgorithm_notSupported() throws NoSuchAlgorithmException {
+        try {
+            String sm3 = "SM3";
+            boolean not_supported = this.fileHashStore.validateAlgorithm(sm3);
+            assertFalse(not_supported);
+        } catch (NoSuchAlgorithmException nsae) {
+            throw new NoSuchAlgorithmException("NoSuchAlgorithmException encountered: " + nsae.getMessage());
+        }
     }
 
     /**
      * Check algorithm support for unsupported algorithm with lower cases
      */
-    @Test
-    public void isValidAlgorithm_notSupportedLowerCase() {
-        // Must match string to reduce complexity, no string formatting
-        String md2_lowercase = "md2";
-        boolean lowercase_not_supported = this.fileHashStore.isValidAlgorithm(md2_lowercase);
-        assertFalse(lowercase_not_supported);
+    @Test(expected = NoSuchAlgorithmException.class)
+    public void isValidAlgorithm_notSupportedLowerCase() throws NoSuchAlgorithmException {
+        try {
+            // Must match string to reduce complexity, no string formatting
+            String md2_lowercase = "md2";
+            boolean lowercase_not_supported = this.fileHashStore.validateAlgorithm(md2_lowercase);
+            assertFalse(lowercase_not_supported);
+        } catch (NoSuchAlgorithmException nsae) {
+            throw new NoSuchAlgorithmException("NoSuchAlgorithmException encountered: " + nsae.getMessage());
+        }
     }
 
     /**
@@ -100,7 +114,11 @@ public class FileHashStoreProtectedTest {
      */
     @Test(expected = NullPointerException.class)
     public void isValidAlgorithm_algorithmNull() {
-        this.fileHashStore.isValidAlgorithm(null);
+        try {
+            this.fileHashStore.validateAlgorithm(null);
+        } catch (NoSuchAlgorithmException nsae) {
+            fail("NoSuchAlgorithmException encountered: " + nsae.getMessage());
+        }
     }
 
     /**
@@ -344,7 +362,7 @@ public class FileHashStoreProtectedTest {
     /**
      * Verify exception thrown when checksumAlgorithm is null and checksum supplied
      */
-    @Test(expected = NullPointerException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void putObject_nullChecksumAlgorithmValue() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
@@ -376,7 +394,7 @@ public class FileHashStoreProtectedTest {
     /**
      * Verify exception thrown when unsupported additional algorithm provided
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = NoSuchAlgorithmException.class)
     public void putObject_invalidAlgorithm() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
@@ -525,7 +543,7 @@ public class FileHashStoreProtectedTest {
     /**
      * Check that exception is thrown when unsupported algorithm supplied
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = NoSuchAlgorithmException.class)
     public void writeToTempFileAndGenerateChecksums_invalidAlgo() throws Exception {
         for (String pid : testData.pidList) {
             File newTmpFile = generateTemporaryFile();

@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -47,8 +48,10 @@ public class FileHashStoreInterfaceTest {
 
         try {
             this.fileHashStore = new FileHashStore(storeProperties);
-        } catch (IOException e) {
-            fail("IOException encountered: " + e.getMessage());
+        } catch (IOException ioe) {
+            fail("IOException encountered: " + ioe.getMessage());
+        } catch (NoSuchAlgorithmException nsae) {
+            fail("IOException encountered: " + nsae.getMessage());
         }
     }
 
@@ -219,7 +222,7 @@ public class FileHashStoreInterfaceTest {
      * Verify that storeObject throws an exception when expected to validate object
      * but checksum is not available/part of the hex digest map
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = NoSuchAlgorithmException.class)
     public void storeObject_missingChecksumValue() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
@@ -298,7 +301,7 @@ public class FileHashStoreInterfaceTest {
     /**
      * Verify exception thrown when unsupported additional algorithm provided
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = NoSuchAlgorithmException.class)
     public void put_invalidAlgorithm() throws Exception {
         // Get single test file to "upload"
         String pid = "jtao.1700.1";

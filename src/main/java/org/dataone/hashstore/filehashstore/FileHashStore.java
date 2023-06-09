@@ -38,15 +38,23 @@ import org.dataone.hashstore.HashStore;
  */
 public class FileHashStore implements HashStore {
     private static final Log logFileHashStore = LogFactory.getLog(FileHashStore.class);
-    private final int directoryDepth;
-    private final int directoryWidth;
-    private final String objectStoreAlgorithm;
-    private final Path objectStoreDirectory;
-    private final Path tmpFileDirectory;
     private static final ArrayList<String> objectLockedIds = new ArrayList<>(100);
+    private final int DIRECTORY_DEPTH;
+    private final int DIRECTORY_WIDTH;
+    private final String OBJECT_STORE_ALGORITHM;
+    private final Path OBJECT_STORE_DIRECTORY;
+    private final Path OBJECT_TMP_FILE_DIRECTORY;
+
     public static final String[] SUPPORTED_HASH_ALGORITHMS = { "MD2", "MD5", "SHA-1", "SHA-256", "SHA-384", "SHA-512",
             "SHA-512/224", "SHA-512/256" };
-    public static final String[] DEFAULT_HASH_ALGORITHMS = { "MD5", "SHA-1", "SHA-256", "SHA-384", "SHA-512" };
+
+    enum DefaultHashAlgorithms {
+        MD5,
+        SHA_1,
+        SHA_256,
+        SHA_384,
+        SHA_512
+    }
 
     enum HashStoreProperties {
         storePath,
@@ -74,7 +82,7 @@ public class FileHashStore implements HashStore {
      * @throws IOException              Issue with creating directories
      */
     public FileHashStore(HashMap<String, Object> hashstoreProperties)
-            throws IllegalArgumentException, IOException {
+            throws IllegalArgumentException, IOException, NoSuchAlgorithmException {
         if (hashstoreProperties == null) {
             logFileHashStore.error("FileHashStore - properties cannot be null.");
             throw new IllegalArgumentException("FileHashStore - properties cannot be null.");
@@ -90,39 +98,32 @@ public class FileHashStore implements HashStore {
         if (storeDepth <= 0 || storeWidth <= 0) {
             throw new IllegalArgumentException("Depth and width must be greater than 0.");
         }
-        if (storeAlgorithm == null || storeAlgorithm.trim().isEmpty()) {
-            throw new IllegalArgumentException("Algorithm cannot be null or empty.");
-        }
-        boolean algorithmSupported = this.isValidAlgorithm(storeAlgorithm);
-        if (!algorithmSupported) {
-            throw new IllegalArgumentException(
-                    "Algorithm not supported. Supported algorithms: " +
-                            Arrays.toString(SUPPORTED_HASH_ALGORITHMS));
-        }
+        // Ensure algorithm supplied is not empty, not null and supported
+        this.validateAlgorithm(storeAlgorithm);
 
         // If no path provided, create default path with user.dir root + /FileHashStore
         if (storePath == null) {
             String rootDirectory = System.getProperty("user.dir");
             String defaultPath = "FileHashStore";
-            this.objectStoreDirectory = Paths.get(rootDirectory).resolve(defaultPath).resolve("objects");
+            this.OBJECT_STORE_DIRECTORY = Paths.get(rootDirectory).resolve(defaultPath).resolve("objects");
         } else {
-            this.objectStoreDirectory = storePath.resolve("objects");
+            this.OBJECT_STORE_DIRECTORY = storePath.resolve("objects");
         }
         // Resolve tmp object directory path
-        this.tmpFileDirectory = this.objectStoreDirectory.resolve("tmp");
+        this.OBJECT_TMP_FILE_DIRECTORY = this.OBJECT_STORE_DIRECTORY.resolve("tmp");
         // Physically create store and tmp directory
         try {
-            Files.createDirectories(this.objectStoreDirectory);
-            Files.createDirectories(this.tmpFileDirectory);
+            Files.createDirectories(this.OBJECT_STORE_DIRECTORY);
+            Files.createDirectories(this.OBJECT_TMP_FILE_DIRECTORY);
         } catch (IOException ioe) {
             logFileHashStore.error("Failed to initialize FileHashStore - unable to create directories. Exception: "
                     + ioe.getMessage());
             throw ioe;
         }
         // Finalize instance variables
-        this.directoryDepth = storeDepth;
-        this.directoryWidth = storeWidth;
-        this.objectStoreAlgorithm = storeAlgorithm;
+        this.DIRECTORY_DEPTH = storeDepth;
+        this.DIRECTORY_WIDTH = storeWidth;
+        this.OBJECT_STORE_ALGORITHM = storeAlgorithm;
     }
 
     @Override
@@ -141,20 +142,13 @@ public class FileHashStore implements HashStore {
             logFileHashStore.error("FileHashStore.storeObject - pid cannot be null or empty, pid: " + pid);
             throw new IllegalArgumentException("Pid cannot be null or empty, pid: " + pid);
         }
-        // Cannot generate additional or checksum algorithm if it is not supported
-        if (additionalAlgorithm != null) {
-            boolean algorithmSupported = this.isValidAlgorithm(additionalAlgorithm);
-            if (!algorithmSupported) {
-                logFileHashStore.error("FileHashStore.storeObject - additionalAlgorithm is not supported."
-                        + "additionalAlgorithm: " + additionalAlgorithm + ". pid: " + pid);
-                throw new IllegalArgumentException(
-                        "Additional algorithm not supported - unable to generate additional hex digest value. additionalAlgorithm: "
-                                + additionalAlgorithm + ". Supported algorithms: "
-                                + Arrays.toString(FileHashStore.SUPPORTED_HASH_ALGORITHMS));
-            }
+        // Validate algorithms if not null or empty, throws exception if not supported
+        if (additionalAlgorithm != null && additionalAlgorithm.trim().isEmpty()) {
+            this.validateAlgorithm(additionalAlgorithm);
         }
-        // checksumAlgorithm and checksum must both be present if validation is desired
-        this.validateChecksumParameters(checksum, checksumAlgorithm, additionalAlgorithm);
+        if (checksumAlgorithm != null && checksumAlgorithm.trim().isEmpty()) {
+            this.validateAlgorithm(checksumAlgorithm);
+        }
 
         // Lock pid for thread safety, transaction control and atomic writing
         // A pid can only be stored once and only once, subsequent calls will
@@ -312,16 +306,21 @@ public class FileHashStore implements HashStore {
             logFileHashStore.error("FileHashStore.putObject - pid cannot be null or empty. pid: " + pid);
             throw new IllegalArgumentException("The pid cannot be null or empty");
         }
+        // Validate algorithms if not null or empty, throws exception if not supported
+        if (additionalAlgorithm != null && !additionalAlgorithm.trim().isEmpty()) {
+            this.validateAlgorithm(additionalAlgorithm);
+        }
+        if (checksumAlgorithm != null && !checksumAlgorithm.trim().isEmpty()) {
+            this.validateAlgorithm(checksumAlgorithm);
+        }
         // If validation is desired, checksumAlgorithm and checksum must both be present
-        // and additionalChecksum must be equal to checksumAlgorithm if the
-        // checksumAlgorithm is not included in the default hex digest map
-        boolean requestValidation = this.validateChecksumParameters(checksum, checksumAlgorithm, additionalAlgorithm);
+        boolean requestValidation = this.verifyChecksumParameters(checksum, checksumAlgorithm);
 
         // Gather HashAddress elements and prepare object permanent address
-        String objAuthorityId = this.getPidHexDigest(pid, this.objectStoreAlgorithm);
-        String objShardString = this.getHierarchicalPathString(this.directoryDepth, this.directoryWidth,
+        String objAuthorityId = this.getPidHexDigest(pid, this.OBJECT_STORE_ALGORITHM);
+        String objShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
                 objAuthorityId);
-        String objAbsolutePathString = this.objectStoreDirectory.toString() + "/" + objShardString;
+        String objAbsolutePathString = this.OBJECT_STORE_DIRECTORY.toString() + "/" + objShardString;
         File objHashAddress = new File(objAbsolutePathString);
         // If file (pid hash) exists, reject request immediately
         if (objHashAddress.exists()) {
@@ -332,7 +331,7 @@ public class FileHashStore implements HashStore {
 
         // Generate tmp file and write to it
         logFileHashStore.debug("FileHashStore.putObject - Generating tmpFile");
-        File tmpFile = this.generateTmpFile("tmp", this.tmpFileDirectory);
+        File tmpFile = this.generateTmpFile("tmp", this.OBJECT_TMP_FILE_DIRECTORY);
         Map<String, String> hexDigests = this.writeToTmpFileAndGenerateChecksums(tmpFile, object,
                 additionalAlgorithm);
 
@@ -388,109 +387,83 @@ public class FileHashStore implements HashStore {
         }
 
         // Create HashAddress object to return with pertinent data
-        HashAddress hashAddress = new HashAddress(objAuthorityId, objShardString, objAbsolutePathString, isDuplicate,
+        return new HashAddress(objAuthorityId, objShardString, objAbsolutePathString, isDuplicate,
                 hexDigests);
-        return hashAddress;
     }
 
-    protected boolean validateChecksumParameters(String checksum, String checksumAlgorithm,
-            String additionalAlgorithm) {
-        boolean requestValidation = false;
+    /**
+     * Determines whether an object will be verified with a given checksum and
+     * checksumAlgorithm
+     * 
+     * @param checksum          Value of checksum
+     * @param checksumAlgorithm Ex. "SHA-256"
+     * @return True if validation is required
+     * @throws NoSuchAlgorithmException If checksumAlgorithm supplied is not
+     *                                  supported
+     */
+    protected boolean verifyChecksumParameters(String checksum, String checksumAlgorithm)
+            throws NoSuchAlgorithmException {
+        // If checksum is supplied, checksumAlgorithm cannot be empty
         if (checksum != null && !checksum.trim().isEmpty()) {
             if (checksumAlgorithm == null) {
-                // ChecksumAlgorithm cannot be null if checksum is supplied
-                logFileHashStore.error(
-                        "FileHashStore.validateChecksumParameters - checksumAlgorithm cannot be null if checksum is supplied");
-                throw new NullPointerException(
-                        "checksumAlgorithm cannot be null if checksum is supplied, checksum and checksumAlgorithm must both be null if validation is not desired.");
-            } else if (checksumAlgorithm.trim().isEmpty()) {
-                // ChecksumAlgorithm cannot be empty when checksum supplied
-                logFileHashStore.error(
-                        "FileHashStore.validateChecksumParameters - checksumAlgorithm cannot be empty if checksum is supplied");
-                throw new IllegalArgumentException(
-                        "checksumAlgorithm cannot be empty when checksum supplied, checksum and checksumAlgorithm must both be null if unused.");
-            } else if (!this.isValidAlgorithm(checksumAlgorithm)) {
-                // ChecksumAlgorithm not supported
-                logFileHashStore.error(
-                        "FileHashStore.validateChecksumParameters - checksumAlgorithm not supported, checksumAlgorithm: "
-                                + checksumAlgorithm);
-                throw new IllegalArgumentException(
-                        "Checksum algorithm not supported - cannot be used to validate object. checksumAlgorithm: "
-                                + checksumAlgorithm + ". Supported algorithms: "
-                                + Arrays.toString(SUPPORTED_HASH_ALGORITHMS));
+                logFileHashStore
+                        .error("FileHashStore.verifyChecksumParameters - Validation requested but checksumAlgorithm is null.");
+                throw new IllegalArgumentException("Validation requested but checksum is empty.");
+            }
+            if (checksumAlgorithm.trim().isEmpty()) {
+                logFileHashStore
+                        .error("FileHashStore.verifyChecksumParameters - Validation requested but checksumAlgorithm is empty.");
+                throw new IllegalArgumentException("Validation requested but checksum is empty.");
             }
         }
+        // Ensure algorithm is supported, not null and not empty
+        boolean requestValidation = false;
         if (checksumAlgorithm != null && !checksumAlgorithm.trim().isEmpty()) {
-            // checksum cannot be null or empty if checksumAlgorithm is supplied
-            if (checksum == null) {
-                logFileHashStore.error(
-                        "FileHashStore.validateChecksumParameters - checksum cannot be null if checksumAlgorithm supplied.");
-                throw new NullPointerException(
-                        "Checksum cannot be null if checksumAlgorithm is supplied, checksum and checksumAlgorithm must both be null if unused.");
-            } else if (checksum.trim().isEmpty()) {
-                // ChecksumAlgorithm cannot be empty when checksum supplied
-                logFileHashStore.error(
-                        "FileHashStore.validateChecksumParameters - checksum cannot be empty if checksumAlgorithm is supplied");
-                throw new IllegalArgumentException(
-                        "checksum cannot be empty when checksumAlgorithm supplied, checksum and checksumAlgorithm must both be null if unused.");
-            }
-        }
-        if (checksumAlgorithm != null || checksum != null) {
-            if (!checksumAlgorithm.trim().isEmpty() || !checksum.trim().isEmpty()) {
-                boolean includedAlgo = this.isDefaultAlgorithm(checksumAlgorithm);
-                if (!includedAlgo) {
-                    if (!checksumAlgorithm.equals(additionalAlgorithm)) {
-                        logFileHashStore.error(
-                                "FileHashStore.putObject - checksumAlgorithm is supported but not included in the default list. additionalAlgorithm must be equal to checksumAlgorithm in order to proceed with object validation. additionalAlgorithm: "
-                                        + additionalAlgorithm + ". checksumAlgorithm: " + checksumAlgorithm);
-                        throw new IllegalArgumentException(
-                                "checksumAlgorithm is supported but not included in the default list. additionalAlgorithm must be equal to checksumAlgorithm in order to proceed with object validation. additionalAlgorithm: "
-                                        + additionalAlgorithm + ". checksumAlgorithm: " + checksumAlgorithm);
-                    }
+            requestValidation = this.validateAlgorithm(checksumAlgorithm);
+            // Ensure checksum is not null or empty if checksumAlgorithm is supplied
+            if (requestValidation) {
+                if (checksum == null) {
+                    logFileHashStore
+                            .error("FileHashStore.verifyChecksumParameters - Validation requested but checksum is null.");
+                    throw new NullPointerException("Validation requested but checksum is null.");
                 }
-                requestValidation = true;
+                if (checksum.trim().isEmpty()) {
+                    logFileHashStore
+                            .error("FileHashStore.verifyChecksumParameters - Validation requested but checksum is empty.");
+                    throw new IllegalArgumentException("Validation requested but checksum is empty.");
+                }
             }
         }
         return requestValidation;
     }
 
     /**
-     * Checks whether a given algorithm is supported based on the HashUtil class
-     * variable supportedHashAlgorithms
+     * Checks whether a given algorithm is supported based on class variable
+     * supportedHashAlgorithms
      * 
      * @param algorithm string value (ex. SHA-256)
-     * @return true if an algorithm is supported
+     * @return True if an algorithm is supported
      * @throws NullPointerException     algorithm cannot be null
      * @throws IllegalArgumentException algorithm cannot be empty
+     * @throws NoSuchAlgorithmException algorithm not supported
      */
-    protected boolean isValidAlgorithm(String algorithm) throws NullPointerException {
+    protected boolean validateAlgorithm(String algorithm)
+            throws NullPointerException, IllegalArgumentException, NoSuchAlgorithmException {
         if (algorithm == null) {
+            logFileHashStore.error("FileHashStore.validateAlgorithm - algorithm is null.");
             throw new NullPointerException("Algorithm value supplied is null");
         }
         if (algorithm.trim().isEmpty()) {
+            logFileHashStore.error("FileHashStore.validateAlgorithm - algorithm is empty.");
             throw new IllegalArgumentException("Algorithm value supplied is empty");
         }
-        boolean isValid = Arrays.asList(SUPPORTED_HASH_ALGORITHMS).contains(algorithm);
-        return isValid;
-    }
-
-    /**
-     * Checks whether a given algorithm is included in the default algorithm list
-     * 
-     * @param algorithm string value (ex. SHA-256)
-     * @return true if an algorithm is part of the default list
-     * @throws NullPointerException     algorithm cannot be null
-     * @throws IllegalArgumentException algorithm cannot be empty
-     */
-    protected boolean isDefaultAlgorithm(String algorithm) throws NullPointerException {
-        if (algorithm == null) {
-            throw new NullPointerException("Algorithm value supplied is null");
+        boolean algorithmSupported = Arrays.asList(SUPPORTED_HASH_ALGORITHMS).contains(algorithm);
+        if (!algorithmSupported) {
+            throw new NoSuchAlgorithmException(
+                    "Algorithm not supported: " + algorithm + ". Supported algorithms: " +
+                            Arrays.toString(SUPPORTED_HASH_ALGORITHMS));
         }
-        if (algorithm.trim().isEmpty()) {
-            throw new IllegalArgumentException("Algorithm value supplied is empty");
-        }
-        boolean isDefault = Arrays.asList(DEFAULT_HASH_ALGORITHMS).contains(algorithm);
-        return isDefault;
+        return true;
     }
 
     /**
@@ -513,7 +486,7 @@ public class FileHashStore implements HashStore {
             throw new IllegalArgumentException(
                     "String cannot be null or empty");
         }
-        boolean algorithmSupported = this.isValidAlgorithm(algorithm);
+        boolean algorithmSupported = this.validateAlgorithm(algorithm);
         if (!algorithmSupported) {
             throw new NoSuchAlgorithmException(
                     "Algorithm not supported. Supported algorithms: " + Arrays.toString(SUPPORTED_HASH_ALGORITHMS));
@@ -521,8 +494,8 @@ public class FileHashStore implements HashStore {
         MessageDigest stringMessageDigest = MessageDigest.getInstance(algorithm);
         byte[] bytes = pid.getBytes(StandardCharsets.UTF_8);
         stringMessageDigest.update(bytes);
-        String stringDigest = DatatypeConverter.printHexBinary(stringMessageDigest.digest()).toLowerCase();
-        return stringDigest;
+        // stringDigest
+        return DatatypeConverter.printHexBinary(stringMessageDigest.digest()).toLowerCase();
     }
 
     /**
@@ -551,8 +524,8 @@ public class FileHashStore implements HashStore {
                 stringArray.add(str);
             }
         }
-        String stringShard = String.join("/", stringArray);
-        return stringShard;
+        // stringShard
+        return String.join("/", stringArray);
     }
 
     /**
@@ -610,7 +583,7 @@ public class FileHashStore implements HashStore {
                 throw new IllegalArgumentException(
                         "Additional algorithm cannot be empty");
             }
-            boolean algorithmSupported = this.isValidAlgorithm(additionalAlgorithm);
+            boolean algorithmSupported = this.validateAlgorithm(additionalAlgorithm);
             if (!algorithmSupported) {
                 throw new IllegalArgumentException(
                         "Algorithm not supported. Supported algorithms: " + Arrays.toString(SUPPORTED_HASH_ALGORITHMS));
@@ -621,11 +594,12 @@ public class FileHashStore implements HashStore {
         Map<String, String> hexDigests = new HashMap<>();
 
         FileOutputStream os = new FileOutputStream(tmpFile);
-        MessageDigest md5 = MessageDigest.getInstance("MD5");
-        MessageDigest sha1 = MessageDigest.getInstance("SHA-1");
-        MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
-        MessageDigest sha384 = MessageDigest.getInstance("SHA-384");
-        MessageDigest sha512 = MessageDigest.getInstance("SHA-512");
+        // Replace `_` with `-` in order to get valid MessageDigest objects
+        MessageDigest md5 = MessageDigest.getInstance(DefaultHashAlgorithms.MD5.name());
+        MessageDigest sha1 = MessageDigest.getInstance(DefaultHashAlgorithms.SHA_1.name().replace("_", "-"));
+        MessageDigest sha256 = MessageDigest.getInstance(DefaultHashAlgorithms.SHA_256.name().replace("_", "-"));
+        MessageDigest sha384 = MessageDigest.getInstance(DefaultHashAlgorithms.SHA_384.name().replace("_", "-"));
+        MessageDigest sha512 = MessageDigest.getInstance(DefaultHashAlgorithms.SHA_512.name().replace("_", "-"));
         if (additionalAlgorithm != null) {
             logFileHashStore.info(
                     "FileHashStore.writeToTmpFileAndGenerateChecksums - Adding additional algorithm to hex digest map, algorithm: "

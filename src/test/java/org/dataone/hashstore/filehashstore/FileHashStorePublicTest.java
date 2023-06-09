@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 
 import static org.junit.Assert.assertTrue;
@@ -42,6 +43,8 @@ public class FileHashStorePublicTest {
             new FileHashStore(storeProperties);
         } catch (IOException e) {
             fail("IOException encountered: " + e.getMessage());
+        } catch (NoSuchAlgorithmException nsae) {
+            fail("NoSuchAlgorithmException encountered: " + nsae.getMessage());
         }
     }
 
