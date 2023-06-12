@@ -1,11 +1,13 @@
 package org.dataone.hashstore.filehashstore;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileAlreadyExistsException;
@@ -133,6 +135,69 @@ public class FileHashStore implements HashStore {
         logFileHashStore.debug("FileHashStore - HashStore initialized. Store Depth: " + storeDepth + ". Store Width: "
                 + storeWidth + ". Store Algorithm: " + storeAlgorithm);
     }
+
+    // Configuration Methods
+
+    /**
+     * Write a 'hashstore.yaml' file to the given store (root) path
+     * 
+     * @param yamlString Content of the HashStore configuration
+     * @param storePath  Root directory of Store
+     * @throws IOException If unable to write `hashtore.yaml`
+     */
+    protected static void writeHashStoreYaml(String yamlString, Path storePath) throws IOException {
+        Path hashstoreYamlFilePath = Paths.get(storePath + "/hashstore.yaml");
+        try (BufferedWriter writer = new BufferedWriter(
+                new OutputStreamWriter(Files.newOutputStream(hashstoreYamlFilePath), StandardCharsets.UTF_8))) {
+            writer.write(yamlString);
+        } catch (IOException ioe) {
+            logFileHashStore
+                    .fatal("FileHashStore.writeHashStoreYaml() - Unable to write 'hashstore.yaml'. IOException: "
+                            + ioe.getMessage());
+            throw ioe;
+        }
+    }
+
+    /**
+     * Build the string content of the configuration file for HashStore -
+     * 'hashstore.yaml'
+     * 
+     * @param storePath      Root path of store
+     * @param storeDepth     Depth of store
+     * @param storeWidth     Width of store
+     * @param storeAlgorithm Algorithm to use to calculate the hex digest for the
+     *                       permanent address of a data sobject
+     * @return String that representing the contents of 'hashstore.yaml'
+     */
+    protected static String buildHashStoreYamlString(Path storePath, int storeDepth, int storeWidth,
+            String storeAlgorithm) {
+        return String.format(
+                "# Default configuration variables for HashStore\n\n" +
+                        "############### Store Path ###############\n" +
+                        "# Default path for `FileHashStore` if no path is provided\n" +
+                        "store_path: \"%s\"\n\n" +
+                        "############### Directory Structure ###############\n" +
+                        "# Desired amount of directories when sharding an object to form the permanent address\n" +
+                        "store_depth: %d  # WARNING: DO NOT CHANGE UNLESS SETTING UP NEW HASHSTORE\n" +
+                        "# Width of directories created when sharding an object to form the permanent address\n" +
+                        "store_width: %d  # WARNING: DO NOT CHANGE UNLESS SETTING UP NEW HASHSTORE\n" +
+                        "# Example:\n" +
+                        "# Below, objects are shown listed in directories that are 3 levels deep (DIR_DEPTH=3),\n" +
+                        "# with each directory consisting of 2 characters (DIR_WIDTH=2).\n" +
+                        "#    /var/filehashstore/objects\n" +
+                        "#    ├── 7f\n" +
+                        "#    │   └── 5c\n" +
+                        "#    │       └── c1\n" +
+                        "#    │           └── 8f0b04e812a3b4c8f686ce34e6fec558804bf61e54b176742a7f6368d6\n\n" +
+                        "############### Format of the Metadata ###############\n" +
+                        "store_sysmeta_namespace: \"http://ns.dataone.org/service/types/v2.0\"\n\n" +
+                        "############### Hash Algorithms ###############\n" +
+                        "# Hash algorithm to use when calculating object's hex digest for the permanent address\n" +
+                        "store_algorithm: \"%s\"\n",
+                storePath, storeDepth, storeWidth, storeAlgorithm);
+    }
+
+    // Public API Methods
 
     @Override
     public HashAddress storeObject(InputStream object, String pid, String additionalAlgorithm, String checksum,

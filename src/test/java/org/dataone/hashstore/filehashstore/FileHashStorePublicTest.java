@@ -19,6 +19,7 @@ import org.junit.rules.TemporaryFolder;
  * Test class for FileHashStore constructor
  */
 public class FileHashStorePublicTest {
+    private static Path rootDirectory;
     private static Path objStringFull;
     private static Path objTmpStringFull;
 
@@ -28,7 +29,7 @@ public class FileHashStorePublicTest {
     @BeforeClass
     public static void initializeFileHashStore() {
         Path root = tempFolder.getRoot().toPath();
-        Path rootDirectory = root.resolve("metacat");
+        rootDirectory = root.resolve("metacat");
         objStringFull = rootDirectory.resolve("objects");
         objTmpStringFull = rootDirectory.resolve("objects/tmp");
 
@@ -134,5 +135,18 @@ public class FileHashStorePublicTest {
         // Delete the folders
         Files.deleteIfExists(defaultTmpDirectoryPath);
         Files.deleteIfExists(defaultObjDirectoryPath);
+    }
+
+    /**
+     * Check that a hashstore configuration file is written and exists
+     */
+    @Test
+    public void testWriteHashstoreYaml() throws Exception {
+        String storeAlgorithm = "SHA-256";
+        String hashstoreYaml = FileHashStore.buildHashStoreYamlString(rootDirectory, 3, 2, storeAlgorithm);
+        FileHashStore.writeHashStoreYaml(hashstoreYaml, rootDirectory);
+
+        Path hashstoreYamlFilePath = Paths.get(rootDirectory + "/hashstore.yaml");
+        assertTrue(Files.exists(hashstoreYamlFilePath));
     }
 }
