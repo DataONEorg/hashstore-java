@@ -709,8 +709,8 @@ public class FileHashStore implements HashStore {
         Path targetFilePath = target.toPath();
         try {
             Files.move(sourceFilePath, targetFilePath, StandardCopyOption.ATOMIC_MOVE);
-            logFileHashStore.debug("FileHashStore.move - file moved from: " + sourceFilePath.toString() + ", to: "
-                    + targetFilePath.toString());
+            logFileHashStore.debug("FileHashStore.move - file moved from: " + sourceFilePath + ", to: "
+                    + targetFilePath);
             return true;
         } catch (AtomicMoveNotSupportedException amnse) {
             logFileHashStore.error(
