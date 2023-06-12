@@ -134,6 +134,14 @@ public class FileHashStore implements HashStore {
         this.OBJECT_STORE_ALGORITHM = storeAlgorithm;
         logFileHashStore.debug("FileHashStore - HashStore initialized. Store Depth: " + storeDepth + ". Store Width: "
                 + storeWidth + ". Store Algorithm: " + storeAlgorithm);
+
+        // Write configuration file 'hashstore.yaml'
+        Path hashstoreYamlFilePath = Paths.get(storePath + "/hashstore.yaml");
+        if (!Files.exists(hashstoreYamlFilePath)) {
+            String hashstoreYamlContent = FileHashStore.buildHashStoreYamlString(storePath, 3, 2, storeAlgorithm);
+            FileHashStore.writeHashStoreYaml(hashstoreYamlContent, storePath);
+            logFileHashStore.info("FileHashStore - 'hashstore.yaml' written to storePath: " + hashstoreYamlFilePath);
+        }
     }
 
     // Configuration Methods

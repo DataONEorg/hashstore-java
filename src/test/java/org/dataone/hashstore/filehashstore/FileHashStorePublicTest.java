@@ -142,10 +142,6 @@ public class FileHashStorePublicTest {
      */
     @Test
     public void testWriteHashstoreYaml() throws Exception {
-        String storeAlgorithm = "SHA-256";
-        String hashstoreYaml = FileHashStore.buildHashStoreYamlString(rootDirectory, 3, 2, storeAlgorithm);
-        FileHashStore.writeHashStoreYaml(hashstoreYaml, rootDirectory);
-
         Path hashstoreYamlFilePath = Paths.get(rootDirectory + "/hashstore.yaml");
         assertTrue(Files.exists(hashstoreYamlFilePath));
     }
