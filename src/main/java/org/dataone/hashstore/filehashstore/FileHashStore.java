@@ -110,6 +110,47 @@ public class FileHashStore implements HashStore {
         // Ensure algorithm supplied is not empty, not null and supported
         this.validateAlgorithm(storeAlgorithm);
 
+        // Check to see if configuration exists before instantiating
+        Path hashstoreYamlPredictedPath = Paths.get(storePath + "/hashstore.yaml");
+        if (Files.exists(hashstoreYamlPredictedPath)) {
+            // If 'hashstore.yaml' is found, verify given properties before init
+            HashMap<String, Object> hsProperties = this.getHashStoreYaml();
+            Path existingStorePath = (Path) hsProperties.get("store_path");
+            int existingStoreDepth = (int) hsProperties.get("store_depth");
+            int existingStoreWidth = (int) hsProperties.get("store_width");
+            String existingStoreAlgorithm = (String) hsProperties.get("store_algorithm");
+
+            if (!storePath.equals(existingStorePath)) {
+                String errMsg = "FileHashStore - Supplied store path: " + storePath
+                        + " is not equal to the existing configuration: " + existingStorePath;
+                logFileHashStore.fatal(errMsg);
+                throw new IllegalArgumentException(errMsg);
+            }
+            if (storeDepth != existingStoreDepth) {
+                String errMsg = "FileHashStore - Supplied store depth: " + storeDepth
+                        + " is not equal to the existing configuration: " + existingStoreDepth;
+                logFileHashStore.fatal(errMsg);
+                throw new IllegalArgumentException(errMsg);
+            }
+            if (storeWidth != existingStoreWidth) {
+                String errMsg = "FileHashStore - Supplied store width: " + storeWidth
+                        + " is not equal to the existing configuration: " + existingStoreWidth;
+                logFileHashStore.fatal(errMsg);
+                throw new IllegalArgumentException(errMsg);
+            }
+            if (!storeAlgorithm.equals(existingStoreAlgorithm)) {
+                String errMsg = "FileHashStore - Supplied store algorithm: " + storeAlgorithm
+                        + " is not equal to the existing configuration: " + existingStoreAlgorithm;
+                logFileHashStore.fatal(errMsg);
+                throw new IllegalArgumentException(errMsg);
+            }
+
+        } else {
+            // Check if HashStore exists and throw exception if found
+            System.out.println("Check to see if objects and/or directories exist");
+        }
+
+        // HashStore configuration has been reviewed, proceed with initialization
         // If no path provided, create default path with user.dir root + /FileHashStore
         if (storePath == null) {
             String rootDirectory = System.getProperty("user.dir");
