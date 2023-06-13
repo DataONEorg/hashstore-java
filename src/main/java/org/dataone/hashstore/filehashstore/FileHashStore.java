@@ -44,7 +44,6 @@ public class FileHashStore implements HashStore {
     private static final Log logFileHashStore = LogFactory.getLog(FileHashStore.class);
     private static final ArrayList<String> objectLockedIds = new ArrayList<>(100);
     private final Path STORE_ROOT;
-    private final Path HASHSTORE_YAML;
     private final int DIRECTORY_DEPTH;
     private final int DIRECTORY_WIDTH;
     private final String OBJECT_STORE_ALGORITHM;
@@ -119,12 +118,11 @@ public class FileHashStore implements HashStore {
         Path hashstoreYamlPredictedPath = Paths.get(storePath + "/hashstore.yaml");
         if (Files.exists(hashstoreYamlPredictedPath)) {
             // If 'hashstore.yaml' is found, verify given properties before init
-            HashMap<String, Object> hsProperties = this.getHashStoreYaml();
-            Path existingStorePath = (Path) hsProperties.get("store_path");
-            int existingStoreDepth = (int) hsProperties.get("store_depth");
-            int existingStoreWidth = (int) hsProperties.get("store_width");
-            String existingStoreAlgorithm = (String) hsProperties.get("store_algorithm");
-
+            HashMap<String, Object> hsProperties = this.getHashStoreYaml(storePath);
+            Path existingStorePath = (Path) hsProperties.get("storePath");
+            int existingStoreDepth = (int) hsProperties.get("storeDepth");
+            int existingStoreWidth = (int) hsProperties.get("storeWidth");
+            String existingStoreAlgorithm = (String) hsProperties.get("storeAlgorithm");
             if (!storePath.equals(existingStorePath)) {
                 String errMsg = "FileHashStore - Supplied store path: " + storePath
                         + " is not equal to the existing configuration: " + existingStorePath;
@@ -152,10 +150,10 @@ public class FileHashStore implements HashStore {
 
         } else {
             // Check if HashStore exists and throw exception if found
-            System.out.println("Check to see if objects and/or directories exist");
+            System.out.println("Else Statement Reached. Check to see if objects and/or directories exist");
         }
 
-        // HashStore configuration has been reviewed, proceed with initialization
+        // HashStore configuration has been checked, proceed with initialization
         this.STORE_ROOT = storePath;
         this.OBJECT_STORE_DIRECTORY = storePath.resolve("objects");
         // Resolve tmp object directory path
@@ -179,12 +177,14 @@ public class FileHashStore implements HashStore {
                 + storeWidth + ". Store Algorithm: " + storeAlgorithm);
 
         // Write configuration file 'hashstore.yaml'
-        this.HASHSTORE_YAML = this.STORE_ROOT.resolve("hashstore.yaml");
+        Path hashstoreYaml = this.STORE_ROOT.resolve("hashstore.yaml");
         System.out.println(this.STORE_ROOT);
-        if (!Files.exists(this.HASHSTORE_YAML)) {
+        if (!Files.exists(hashstoreYaml)) {
             String hashstoreYamlContent = FileHashStore.buildHashStoreYamlString(storePath, 3, 2, storeAlgorithm);
             this.putHashStoreYaml(hashstoreYamlContent);
-            logFileHashStore.info("FileHashStore - 'hashstore.yaml' written to storePath: " + this.HASHSTORE_YAML);
+            logFileHashStore.info("FileHashStore - 'hashstore.yaml' written to storePath: " + hashstoreYaml);
+        } else {
+            logFileHashStore.info("FileHashStore - 'hashstore.yaml' exists. Instantiating FileHashStore.");
         }
     }
 
@@ -192,16 +192,20 @@ public class FileHashStore implements HashStore {
 
     /**
      * Get the properties of HashStore from 'hashstore.yaml'
-     * 
+     *
+     * @param storePath Path to root of store
      * @return HashMap of the properties
      */
-    protected HashMap<String, Object> getHashStoreYaml() {
-        File hashStoreYaml = this.HASHSTORE_YAML.toFile();
+    protected HashMap<String, Object> getHashStoreYaml(Path storePath) {
+        Path hashstoreYaml = storePath.resolve("hashstore.yaml");
+        File hashStoreYaml = hashstoreYaml.toFile();
+
         ObjectMapper om = new ObjectMapper(new YAMLFactory());
         HashMap<String, Object> hsProperties = new HashMap<>();
         try {
             HashMap<?, ?> hashStoreYamlProperties = om.readValue(hashStoreYaml, HashMap.class);
-            hsProperties.put("storePath", hashStoreYamlProperties.get("store_path"));
+            String yamlStorePath = (String) hashStoreYamlProperties.get("store_path");
+            hsProperties.put("storePath", Paths.get(yamlStorePath));
             hsProperties.put("storeDepth", hashStoreYamlProperties.get("store_depth"));
             hsProperties.put("storeWidth", hashStoreYamlProperties.get("store_width"));
             hsProperties.put("storeAlgorithm", hashStoreYamlProperties.get("store_algorithm"));
@@ -220,8 +224,9 @@ public class FileHashStore implements HashStore {
      * @throws IOException If unable to write `hashtore.yaml`
      */
     protected void putHashStoreYaml(String yamlString) throws IOException {
+        Path hashstoreYaml = this.STORE_ROOT.resolve("hashstore.yaml");
         try (BufferedWriter writer = new BufferedWriter(
-                new OutputStreamWriter(Files.newOutputStream(this.HASHSTORE_YAML), StandardCharsets.UTF_8))) {
+                new OutputStreamWriter(Files.newOutputStream(hashstoreYaml), StandardCharsets.UTF_8))) {
             writer.write(yamlString);
         } catch (IOException ioe) {
             logFileHashStore
