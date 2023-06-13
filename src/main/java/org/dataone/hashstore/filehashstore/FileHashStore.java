@@ -44,6 +44,7 @@ public class FileHashStore implements HashStore {
     private static final Log logFileHashStore = LogFactory.getLog(FileHashStore.class);
     private static final ArrayList<String> objectLockedIds = new ArrayList<>(100);
     private final Path STORE_ROOT;
+    private final Path HASHSTORE_YAML;
     private final int DIRECTORY_DEPTH;
     private final int DIRECTORY_WIDTH;
     private final String OBJECT_STORE_ALGORITHM;
@@ -141,11 +142,12 @@ public class FileHashStore implements HashStore {
                 + storeWidth + ". Store Algorithm: " + storeAlgorithm);
 
         // Write configuration file 'hashstore.yaml'
-        Path hashstoreYamlFilePath = Paths.get(this.STORE_ROOT + "/hashstore.yaml");
-        if (!Files.exists(hashstoreYamlFilePath)) {
+        this.HASHSTORE_YAML = this.STORE_ROOT.resolve("hashstore.yaml");
+        System.out.println(this.STORE_ROOT);
+        if (!Files.exists(this.HASHSTORE_YAML)) {
             String hashstoreYamlContent = FileHashStore.buildHashStoreYamlString(storePath, 3, 2, storeAlgorithm);
-            FileHashStore.putHashStoreYaml(hashstoreYamlContent, this.STORE_ROOT);
-            logFileHashStore.info("FileHashStore - 'hashstore.yaml' written to storePath: " + hashstoreYamlFilePath);
+            this.putHashStoreYaml(hashstoreYamlContent);
+            logFileHashStore.info("FileHashStore - 'hashstore.yaml' written to storePath: " + this.HASHSTORE_YAML);
         }
     }
 
@@ -157,8 +159,7 @@ public class FileHashStore implements HashStore {
      * @return HashMap of the properties
      */
     protected HashMap<String, Object> getHashStoreYaml() {
-        Path hashStoreYamlFilePath = Paths.get(this.STORE_ROOT + "/hashstore.yaml");
-        File hashStoreYaml = hashStoreYamlFilePath.toFile();
+        File hashStoreYaml = this.HASHSTORE_YAML.toFile();
         ObjectMapper om = new ObjectMapper(new YAMLFactory());
         HashMap<String, Object> hsProperties = new HashMap<>();
         try {
@@ -179,13 +180,11 @@ public class FileHashStore implements HashStore {
      * Write a 'hashstore.yaml' file to the given store (root) path
      * 
      * @param yamlString Content of the HashStore configuration
-     * @param storePath  Root directory of Store
      * @throws IOException If unable to write `hashtore.yaml`
      */
-    protected static void putHashStoreYaml(String yamlString, Path storePath) throws IOException {
-        Path hashstoreYamlFilePath = Paths.get(storePath + "/hashstore.yaml");
+    protected void putHashStoreYaml(String yamlString) throws IOException {
         try (BufferedWriter writer = new BufferedWriter(
-                new OutputStreamWriter(Files.newOutputStream(hashstoreYamlFilePath), StandardCharsets.UTF_8))) {
+                new OutputStreamWriter(Files.newOutputStream(this.HASHSTORE_YAML), StandardCharsets.UTF_8))) {
             writer.write(yamlString);
         } catch (IOException ioe) {
             logFileHashStore
