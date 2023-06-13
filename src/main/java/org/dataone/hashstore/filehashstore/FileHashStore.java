@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import javax.xml.bind.DatatypeConverter;
 
 import org.apache.commons.logging.Log;
@@ -41,6 +43,7 @@ import org.dataone.hashstore.HashStore;
 public class FileHashStore implements HashStore {
     private static final Log logFileHashStore = LogFactory.getLog(FileHashStore.class);
     private static final ArrayList<String> objectLockedIds = new ArrayList<>(100);
+    private final Path STORE_ROOT;
     private final int DIRECTORY_DEPTH;
     private final int DIRECTORY_WIDTH;
     private final String OBJECT_STORE_ALGORITHM;
@@ -108,11 +111,13 @@ public class FileHashStore implements HashStore {
 
         // If no path provided, create default path with user.dir root + /FileHashStore
         if (storePath == null) {
-            logFileHashStore.debug("FileHashStore - storePath is null, creating store root with default setitngs.");
             String rootDirectory = System.getProperty("user.dir");
-            String defaultPath = "FileHashStore";
-            this.OBJECT_STORE_DIRECTORY = Paths.get(rootDirectory).resolve(defaultPath).resolve("objects");
+            this.STORE_ROOT = Paths.get(rootDirectory).resolve("FileHashStore");
+            this.OBJECT_STORE_DIRECTORY = this.STORE_ROOT.resolve("objects");
+            logFileHashStore.debug("FileHashStore - storePath is null, directory created at: "
+                    + this.OBJECT_STORE_DIRECTORY);
         } else {
+            this.STORE_ROOT = storePath;
             this.OBJECT_STORE_DIRECTORY = storePath.resolve("objects");
         }
         // Resolve tmp object directory path
@@ -136,15 +141,39 @@ public class FileHashStore implements HashStore {
                 + storeWidth + ". Store Algorithm: " + storeAlgorithm);
 
         // Write configuration file 'hashstore.yaml'
-        Path hashstoreYamlFilePath = Paths.get(storePath + "/hashstore.yaml");
+        Path hashstoreYamlFilePath = Paths.get(this.STORE_ROOT + "/hashstore.yaml");
         if (!Files.exists(hashstoreYamlFilePath)) {
             String hashstoreYamlContent = FileHashStore.buildHashStoreYamlString(storePath, 3, 2, storeAlgorithm);
-            FileHashStore.writeHashStoreYaml(hashstoreYamlContent, storePath);
+            FileHashStore.putHashStoreYaml(hashstoreYamlContent, this.STORE_ROOT);
             logFileHashStore.info("FileHashStore - 'hashstore.yaml' written to storePath: " + hashstoreYamlFilePath);
         }
     }
 
     // Configuration Methods
+
+    /**
+     * Get the properties of HashStore from 'hashstore.yaml'
+     * 
+     * @return HashMap of the properties
+     */
+    protected HashMap<String, Object> getHashStoreYaml() {
+        Path hashStoreYamlFilePath = Paths.get(this.STORE_ROOT + "/hashstore.yaml");
+        File hashStoreYaml = hashStoreYamlFilePath.toFile();
+        ObjectMapper om = new ObjectMapper(new YAMLFactory());
+        HashMap<String, Object> hsProperties = new HashMap<>();
+        try {
+            HashMap<?, ?> hashStoreYamlProperties = om.readValue(hashStoreYaml, HashMap.class);
+            hsProperties.put("storePath", hashStoreYamlProperties.get("store_path"));
+            hsProperties.put("storeDepth", hashStoreYamlProperties.get("store_depth"));
+            hsProperties.put("storeWidth", hashStoreYamlProperties.get("store_width"));
+            hsProperties.put("storeAlgorithm", hashStoreYamlProperties.get("store_algorithm"));
+        } catch (IOException ioe) {
+            logFileHashStore
+                    .fatal("FileHashStore.getHashStoreYaml() - Unable to retrieve 'hashstore.yaml'. IOException: "
+                            + ioe.getMessage());
+        }
+        return hsProperties;
+    }
 
     /**
      * Write a 'hashstore.yaml' file to the given store (root) path
@@ -153,7 +182,7 @@ public class FileHashStore implements HashStore {
      * @param storePath  Root directory of Store
      * @throws IOException If unable to write `hashtore.yaml`
      */
-    protected static void writeHashStoreYaml(String yamlString, Path storePath) throws IOException {
+    protected static void putHashStoreYaml(String yamlString, Path storePath) throws IOException {
         Path hashstoreYamlFilePath = Paths.get(storePath + "/hashstore.yaml");
         try (BufferedWriter writer = new BufferedWriter(
                 new OutputStreamWriter(Files.newOutputStream(hashstoreYamlFilePath), StandardCharsets.UTF_8))) {

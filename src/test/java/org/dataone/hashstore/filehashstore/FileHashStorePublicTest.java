@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -22,6 +23,7 @@ public class FileHashStorePublicTest {
     private static Path rootDirectory;
     private static Path objStringFull;
     private static Path objTmpStringFull;
+    private static FileHashStore fileHashStore;
 
     /**
      * Initialize FileHashStore
@@ -40,7 +42,7 @@ public class FileHashStorePublicTest {
         storeProperties.put("storeAlgorithm", "SHA-256");
 
         try {
-            new FileHashStore(storeProperties);
+            fileHashStore = new FileHashStore(storeProperties);
         } catch (IOException e) {
             fail("IOException encountered: " + e.getMessage());
         } catch (NoSuchAlgorithmException nsae) {
@@ -123,26 +125,40 @@ public class FileHashStorePublicTest {
         storeProperties.put("storeAlgorithm", "SHA-256");
         new FileHashStore(storeProperties);
 
-        String rootDirectory = System.getProperty("user.dir");
-        String objectPath = "FileHashStore";
+        // String rootDirectory = System.getProperty("user.dir");
+        Path userDirectory = Paths.get(System.getProperty("user.dir"));
+        Path rootDirectory = userDirectory.resolve("FileHashStore");
 
-        Path defaultObjDirectoryPath = Paths.get(rootDirectory).resolve(objectPath).resolve("objects");
+        Path defaultObjDirectoryPath = rootDirectory.resolve("objects");
         assertTrue(Files.exists(defaultObjDirectoryPath));
 
         Path defaultTmpDirectoryPath = defaultObjDirectoryPath.resolve("tmp");
         assertTrue(Files.exists(defaultTmpDirectoryPath));
 
-        // Delete the folders
+        // Delete the folders and config file
         Files.deleteIfExists(defaultTmpDirectoryPath);
         Files.deleteIfExists(defaultObjDirectoryPath);
+        Files.deleteIfExists(Paths.get(rootDirectory + "/hashstore.yaml"));
     }
 
     /**
      * Check that a hashstore configuration file is written and exists
      */
     @Test
-    public void testWriteHashstoreYaml() throws Exception {
-        Path hashstoreYamlFilePath = Paths.get(rootDirectory + "/hashstore.yaml");
-        assertTrue(Files.exists(hashstoreYamlFilePath));
+    public void testPutHashStoreYaml() {
+        Path hashStoreYamlFilePath = Paths.get(rootDirectory + "/hashstore.yaml");
+        assertTrue(Files.exists(hashStoreYamlFilePath));
+    }
+
+    /**
+     * Confirm retrieved 'hashstore.yaml' file content is accurate
+     */
+    @Test
+    public void testGetHashStoreYaml() {
+        HashMap<String, Object> hsProperties = fileHashStore.getHashStoreYaml();
+        assertEquals(hsProperties.get("storePath"), rootDirectory.toString());
+        assertEquals(hsProperties.get("storeDepth"), 3);
+        assertEquals(hsProperties.get("storeWidth"), 2);
+        assertEquals(hsProperties.get("storeAlgorithm"), "SHA-256");
     }
 }
