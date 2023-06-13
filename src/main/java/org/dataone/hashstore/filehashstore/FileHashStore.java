@@ -101,6 +101,11 @@ public class FileHashStore implements HashStore {
         String storeAlgorithm = (String) hashstoreProperties.get(HashStoreProperties.storeAlgorithm.name());
 
         // Validate input parameters
+        if (storePath == null) {
+            String errMsg = "FileHashStore - storePath cannot be null.";
+            logFileHashStore.error(errMsg);
+            throw new NullPointerException(errMsg);
+        }
         if (storeDepth <= 0 || storeWidth <= 0) {
             String errMsg = "FileHashStore - Depth and width must be greater than 0. Depth: " + storeDepth + ". Width: "
                     + storeWidth;
@@ -151,17 +156,8 @@ public class FileHashStore implements HashStore {
         }
 
         // HashStore configuration has been reviewed, proceed with initialization
-        // If no path provided, create default path with user.dir root + /FileHashStore
-        if (storePath == null) {
-            String rootDirectory = System.getProperty("user.dir");
-            this.STORE_ROOT = Paths.get(rootDirectory).resolve("FileHashStore");
-            this.OBJECT_STORE_DIRECTORY = this.STORE_ROOT.resolve("objects");
-            logFileHashStore.debug("FileHashStore - storePath is null, directory created at: "
-                    + this.OBJECT_STORE_DIRECTORY);
-        } else {
-            this.STORE_ROOT = storePath;
-            this.OBJECT_STORE_DIRECTORY = storePath.resolve("objects");
-        }
+        this.STORE_ROOT = storePath;
+        this.OBJECT_STORE_DIRECTORY = storePath.resolve("objects");
         // Resolve tmp object directory path
         this.OBJECT_TMP_FILE_DIRECTORY = this.OBJECT_STORE_DIRECTORY.resolve("tmp");
         // Physically create store and tmp directory

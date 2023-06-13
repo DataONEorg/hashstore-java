@@ -114,9 +114,9 @@ public class FileHashStorePublicTest {
     }
 
     /**
-     * Confirm default file directories are created when storeDirectory is null
+     * Confirm that exception is thrown when storeDirectory is null
      */
-    @Test
+    @Test(expected = NullPointerException.class)
     public void initDefaultStore_directoryNull() throws Exception {
         HashMap<String, Object> storeProperties = new HashMap<>();
         storeProperties.put("storePath", null);
@@ -124,21 +124,6 @@ public class FileHashStorePublicTest {
         storeProperties.put("storeWidth", 2);
         storeProperties.put("storeAlgorithm", "SHA-256");
         new FileHashStore(storeProperties);
-
-        // String rootDirectory = System.getProperty("user.dir");
-        Path userDirectory = Paths.get(System.getProperty("user.dir"));
-        Path rootDirectory = userDirectory.resolve("FileHashStore");
-
-        Path defaultObjDirectoryPath = rootDirectory.resolve("objects");
-        assertTrue(Files.exists(defaultObjDirectoryPath));
-
-        Path defaultTmpDirectoryPath = defaultObjDirectoryPath.resolve("tmp");
-        assertTrue(Files.exists(defaultTmpDirectoryPath));
-
-        // Delete the folders and config file
-        Files.deleteIfExists(defaultTmpDirectoryPath);
-        Files.deleteIfExists(defaultObjDirectoryPath);
-        Files.deleteIfExists(Paths.get(rootDirectory + "/hashstore.yaml"));
     }
 
     /**
