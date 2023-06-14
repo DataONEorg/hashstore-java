@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.stream.Stream;
 
@@ -132,33 +133,11 @@ public class FileHashStore implements HashStore {
             String existingStoreAlgorithm = (String) hsProperties.get("storeAlgorithm");
 
             // Verify properties when 'hashstore.yaml' found
-            if (!storePath.equals(existingStorePath)) {
-                String errMsg = "FileHashStore - Supplied store path: " + storePath
-                        + " is not equal to the existing configuration: " + existingStorePath;
-                logFileHashStore.fatal(errMsg);
-                throw new IllegalArgumentException(errMsg);
-            }
-
-            if (storeDepth != existingStoreDepth) {
-                String errMsg = "FileHashStore - Supplied store depth: " + storeDepth
-                        + " is not equal to the existing configuration: " + existingStoreDepth;
-                logFileHashStore.fatal(errMsg);
-                throw new IllegalArgumentException(errMsg);
-            }
-
-            if (storeWidth != existingStoreWidth) {
-                String errMsg = "FileHashStore - Supplied store width: " + storeWidth
-                        + " is not equal to the existing configuration: " + existingStoreWidth;
-                logFileHashStore.fatal(errMsg);
-                throw new IllegalArgumentException(errMsg);
-            }
-
-            if (!storeAlgorithm.equals(existingStoreAlgorithm)) {
-                String errMsg = "FileHashStore - Supplied store algorithm: " + storeAlgorithm
-                        + " is not equal to the existing configuration: " + existingStoreAlgorithm;
-                logFileHashStore.fatal(errMsg);
-                throw new IllegalArgumentException(errMsg);
-            }
+            checkConfigurationEquality("store path", storePath, existingStorePath);
+            checkConfigurationEquality("store depth", storeDepth, existingStoreDepth);
+            checkConfigurationEquality("store width", storeWidth, existingStoreWidth);
+            checkConfigurationEquality("store algorithm", storeAlgorithm,
+                    existingStoreAlgorithm);
 
         } else {
             // Check if HashStore exists at the given store path (and missing config)
@@ -166,17 +145,21 @@ public class FileHashStore implements HashStore {
                     "FileHashStore - 'hashstore.yaml' not found, check to see if objects and/or directories exist");
 
             if (Files.exists(storePath)) {
+                boolean hashStoreExists = false;
                 try (Stream<Path> walk = Files.walk(storePath)) {
                     if (walk.anyMatch(Files::exists)) {
-                        String errMsg = "FileHashStore - Missing 'hashstore.yaml' but HashStore directories and/or objects found";
-                        logFileHashStore.fatal(errMsg);
-                        throw new IllegalStateException(errMsg);
+                        hashStoreExists = true;
                     }
                 }
-            } else {
-                logFileHashStore.debug(
-                        "FileHashStore - 'hashstore.yaml' not found and store path not yet initialized.");
+                if (hashStoreExists) {
+                    String errMsg = "FileHashStore - Missing 'hashstore.yaml' but HashStore directories and/or objects found";
+                    logFileHashStore.fatal(errMsg);
+                    throw new IllegalStateException();
+                }
             }
+            logFileHashStore.debug(
+                    "FileHashStore - 'hashstore.yaml' not found and store path not yet initialized.");
+
         }
 
         // HashStore configuration has been checked, proceed with initialization
@@ -264,6 +247,25 @@ public class FileHashStore implements HashStore {
                     .fatal("FileHashStore.writeHashStoreYaml() - Unable to write 'hashstore.yaml'. IOException: "
                             + ioe.getMessage());
             throw ioe;
+        }
+    }
+
+    /**
+     * Checks the equality of a supplied value with an existing value for a specific
+     * configuration property.
+     *
+     * @param propertyName  The name of the config property being checked
+     * @param suppliedValue The value supplied for the config property
+     * @param existingValue The existing value of the config property
+     * @throws IllegalArgumentException If the supplied value is not equal to the
+     *                                  existing value
+     */
+    protected void checkConfigurationEquality(String propertyName, Object suppliedValue, Object existingValue) {
+        if (!Objects.equals(suppliedValue, existingValue)) {
+            String errMsg = "FileHashStore - Supplied " + propertyName + ": " + suppliedValue
+                    + " is not equal to the existing configuration: " + existingValue;
+            logFileHashStore.fatal(errMsg);
+            throw new IllegalArgumentException(errMsg);
         }
     }
 
