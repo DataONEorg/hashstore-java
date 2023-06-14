@@ -246,6 +246,7 @@ public class FileHashStorePublicTest {
             // Instantiate second HashStore
             new FileHashStore(storeProperties);
         } catch (Exception e) {
+            e.printStackTrace();
             assertEquals(e.getCause().getClass(), IllegalStateException.class);
             throw e;
         }
