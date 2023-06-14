@@ -77,15 +77,15 @@ public class FileHashStore implements HashStore {
      * accurate. It will only check for an existing configuration, directories or
      * objects before initializing.
      * 
-     * Two directories will be created based on the given storeDirectory string:
-     * - .../objects
-     * - .../objects/tmp
+     * Two directories will be created based on the given storePath string:
+     * - .../[storePath]/objects
+     * - .../[storePath]/objects/tmp
      * 
-     * @param hashstoreProperties HashMap of the HashStore required keys:
-     *                            (Path) storePath,
-     *                            (int) storeDepth,
-     *                            (int) storeWidth
-     *                            (String) storeAlgorithm
+     * @param hashstoreProperties HashMap<String, Object> of the following keys:
+     *                            storePath (Path)
+     *                            storeDepth (int)
+     *                            storeWidth (int)
+     *                            storeAlgorithm String)
      * @throws IllegalArgumentException Constructor arguments cannot be null, empty
      *                                  or less than 0
      * @throws IOException              Issue with creating directories
@@ -136,13 +136,12 @@ public class FileHashStore implements HashStore {
             checkConfigurationEquality("store path", storePath, existingStorePath);
             checkConfigurationEquality("store depth", storeDepth, existingStoreDepth);
             checkConfigurationEquality("store width", storeWidth, existingStoreWidth);
-            checkConfigurationEquality("store algorithm", storeAlgorithm,
-                    existingStoreAlgorithm);
+            checkConfigurationEquality("store algorithm", storeAlgorithm, existingStoreAlgorithm);
 
         } else {
-            // Check if HashStore exists at the given store path (and missing config)
+            // Check if HashStore exists at the given store path (and is missing config)
             logFileHashStore.debug(
-                    "FileHashStore - 'hashstore.yaml' not found, check to see if objects and/or directories exist");
+                    "FileHashStore - 'hashstore.yaml' not found, check store path for objects and directories");
 
             if (Files.exists(storePath)) {
                 boolean hashStoreExists = false;
@@ -262,8 +261,8 @@ public class FileHashStore implements HashStore {
      */
     protected void checkConfigurationEquality(String propertyName, Object suppliedValue, Object existingValue) {
         if (!Objects.equals(suppliedValue, existingValue)) {
-            String errMsg = "FileHashStore - Supplied " + propertyName + ": " + suppliedValue
-                    + " is not equal to the existing configuration: " + existingValue;
+            String errMsg = "FileHashStore.checkConfigurationEquality() - Supplied " + propertyName + ": "
+                    + suppliedValue + " does not match the existing configuration value: " + existingValue;
             logFileHashStore.fatal(errMsg);
             throw new IllegalArgumentException(errMsg);
         }
