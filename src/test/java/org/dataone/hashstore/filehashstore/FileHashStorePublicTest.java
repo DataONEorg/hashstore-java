@@ -1,6 +1,7 @@
 package org.dataone.hashstore.filehashstore;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -11,6 +12,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -24,6 +26,7 @@ public class FileHashStorePublicTest {
     private static Path objStringFull;
     private static Path objTmpStringFull;
     private static FileHashStore fileHashStore;
+    private static final TestDataHarness testData = new TestDataHarness();
 
     /**
      * Initialize FileHashStore
@@ -44,6 +47,7 @@ public class FileHashStorePublicTest {
         try {
             fileHashStore = new FileHashStore(storeProperties);
         } catch (IOException e) {
+            e.printStackTrace();
             fail("IOException encountered: " + e.getMessage());
         } catch (NoSuchAlgorithmException nsae) {
             fail("NoSuchAlgorithmException encountered: " + nsae.getMessage());
@@ -202,4 +206,48 @@ public class FileHashStorePublicTest {
         new FileHashStore(storeProperties);
     }
 
+    /**
+     * Check that exception is raised when HashStore present but missing
+     * configuration file 'hashstore.yaml'
+     *
+     * Note, we are checking for an IllegalArgumentException because the try block
+     * in the code when walking over files attempts to suppress the thrown
+     * 'IllegalStateException' (which won't retain the original exception).
+     * Expected exception is verified by asserting 'true' from when it is
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testExistingHashStoreConfiguration_missingYaml() throws Exception {
+        // Create separate store
+        HashMap<String, Object> storeProperties = new HashMap<>();
+        Path newStoreDirectory = rootDirectory.resolve("test");
+        storeProperties.put("storePath", newStoreDirectory);
+        storeProperties.put("storeDepth", 3);
+        storeProperties.put("storeWidth", 2);
+        storeProperties.put("storeAlgorithm", "SHA-256");
+        FileHashStore secondHashStore = new FileHashStore(storeProperties);
+
+        // Confirm config present
+        Path newStoreHashStoreYaml = newStoreDirectory.resolve("hashstore.yaml");
+        assertTrue(Files.exists(newStoreHashStoreYaml));
+
+        // Store objects
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            secondHashStore.storeObject(dataStream, pid, null, null, null);
+        }
+
+        // Delete configuration
+        Files.delete(newStoreHashStoreYaml);
+
+        try {
+            // Instantiate second HashStore
+            new FileHashStore(storeProperties);
+        } catch (Exception e) {
+            assertTrue(e.getCause().getClass().equals(IllegalStateException.class));
+            throw e;
+        }
+    }
 }

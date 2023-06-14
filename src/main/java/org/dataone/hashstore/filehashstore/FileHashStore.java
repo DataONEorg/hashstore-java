@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -150,9 +151,20 @@ public class FileHashStore implements HashStore {
             }
 
         } else {
-            // Check if HashStore exists and throw exception if found
+            // Check if HashStore exists at the given store path (and missing config)
             logFileHashStore.debug(
                     "FileHashStore - 'hashstore.yaml' not found, check to see if objects and/or directories exist");
+            if (Files.exists(storePath)) {
+                try (Stream<Path> walk = Files.walk(storePath)) {
+                    walk.forEach(path -> {
+                        if (!path.equals(storePath)) {
+                            String errMsg = "FileHashStore - Missing 'hashstore.yaml' but HashStore directories and objects found";
+                            logFileHashStore.fatal(errMsg);
+                            throw new IllegalStateException(errMsg);
+                        }
+                    });
+                }
+            }
         }
 
         // HashStore configuration has been checked, proceed with initialization
@@ -480,7 +492,7 @@ public class FileHashStore implements HashStore {
         String objAuthorityId = this.getPidHexDigest(pid, this.OBJECT_STORE_ALGORITHM);
         String objShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
                 objAuthorityId);
-        Path objHashAddressPath = Paths.get(this.OBJECT_STORE_DIRECTORY + objShardString);
+        Path objHashAddressPath = this.OBJECT_STORE_DIRECTORY.resolve(objShardString);
         String objHashAddressString = objHashAddressPath.toString();
         // If file (pid hash) exists, reject request immediately
         if (Files.exists(objHashAddressPath)) {
