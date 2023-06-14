@@ -215,7 +215,7 @@ public class FileHashStorePublicTest {
      * 'IllegalStateException' (which won't retain the original exception).
      * Expected exception is verified by asserting 'true' from when it is
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IllegalStateException.class)
     public void testExistingHashStoreConfiguration_missingYaml() throws Exception {
         // Create separate store
         HashMap<String, Object> storeProperties = new HashMap<>();
