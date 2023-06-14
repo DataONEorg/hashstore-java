@@ -114,15 +114,16 @@ public class FileHashStore implements HashStore {
         // Ensure algorithm supplied is not empty, not null and supported
         this.validateAlgorithm(storeAlgorithm);
 
-        // Check to see if configuration exists before instantiating
+        // Check to see if configuration exists before initializing
         Path hashstoreYamlPredictedPath = Paths.get(storePath + "/hashstore.yaml");
         if (Files.exists(hashstoreYamlPredictedPath)) {
-            // If 'hashstore.yaml' is found, verify given properties before init
+            logFileHashStore.debug("FileHashStore - 'hashstore.yaml' found, verifying properties.");
             HashMap<String, Object> hsProperties = this.getHashStoreYaml(storePath);
             Path existingStorePath = (Path) hsProperties.get("storePath");
             int existingStoreDepth = (int) hsProperties.get("storeDepth");
             int existingStoreWidth = (int) hsProperties.get("storeWidth");
             String existingStoreAlgorithm = (String) hsProperties.get("storeAlgorithm");
+            // Verify properties when 'hashstore.yaml' found
             if (!storePath.equals(existingStorePath)) {
                 String errMsg = "FileHashStore - Supplied store path: " + storePath
                         + " is not equal to the existing configuration: " + existingStorePath;
@@ -150,7 +151,8 @@ public class FileHashStore implements HashStore {
 
         } else {
             // Check if HashStore exists and throw exception if found
-            System.out.println("Else Statement Reached. Check to see if objects and/or directories exist");
+            logFileHashStore.debug(
+                    "FileHashStore - 'hashstore.yaml' not found, check to see if objects and/or directories exist");
         }
 
         // HashStore configuration has been checked, proceed with initialization
@@ -178,13 +180,14 @@ public class FileHashStore implements HashStore {
 
         // Write configuration file 'hashstore.yaml'
         Path hashstoreYaml = this.STORE_ROOT.resolve("hashstore.yaml");
-        System.out.println(this.STORE_ROOT);
         if (!Files.exists(hashstoreYaml)) {
-            String hashstoreYamlContent = FileHashStore.buildHashStoreYamlString(storePath, 3, 2, storeAlgorithm);
+            String hashstoreYamlContent = FileHashStore.buildHashStoreYamlString(this.STORE_ROOT, this.DIRECTORY_DEPTH,
+                    this.DIRECTORY_WIDTH, this.OBJECT_STORE_ALGORITHM);
             this.putHashStoreYaml(hashstoreYamlContent);
             logFileHashStore.info("FileHashStore - 'hashstore.yaml' written to storePath: " + hashstoreYaml);
         } else {
-            logFileHashStore.info("FileHashStore - 'hashstore.yaml' exists. Instantiating FileHashStore.");
+            logFileHashStore.info(
+                    "FileHashStore - 'hashstore.yaml' exists and has been verified. Initializing FileHashStore.");
         }
     }
 
@@ -260,7 +263,7 @@ public class FileHashStore implements HashStore {
                         "# Width of directories created when sharding an object to form the permanent address\n" +
                         "store_width: %d  # WARNING: DO NOT CHANGE UNLESS SETTING UP NEW HASHSTORE\n" +
                         "# Example:\n" +
-                        "# Below, objects are shown listed in directories that are 3 levels deep (DIR_DEPTH=3),\n" +
+                        "# Below, objects are shown listed in directories that are # levels deep (DIR_DEPTH=3),\n" +
                         "# with each directory consisting of 2 characters (DIR_WIDTH=2).\n" +
                         "#    /var/filehashstore/objects\n" +
                         "#    ├── 7f\n" +

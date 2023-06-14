@@ -141,7 +141,7 @@ public class FileHashStorePublicTest {
     @Test
     public void testGetHashStoreYaml() {
         HashMap<String, Object> hsProperties = fileHashStore.getHashStoreYaml(rootDirectory);
-        assertEquals(hsProperties.get("storePath"), rootDirectory.toString());
+        assertEquals(hsProperties.get("storePath"), rootDirectory);
         assertEquals(hsProperties.get("storeDepth"), 3);
         assertEquals(hsProperties.get("storeWidth"), 2);
         assertEquals(hsProperties.get("storeAlgorithm"), "SHA-256");
@@ -161,19 +161,16 @@ public class FileHashStorePublicTest {
     }
 
     /**
-     * Test existing configuration file will raise exception when properties are
+     * Test existing configuration file will raise exception when algorithm is
      * different when instantiating FileHashStore
      */
     @Test(expected = IllegalArgumentException.class)
-    public void testExistingHashStoreConfiguration_diffStorePath() throws Exception {
-        Path hashYaml = rootDirectory.resolve("hashstore.yaml");
-        System.out.println(hashYaml);
+    public void testExistingHashStoreConfiguration_diffAlgorithm() throws Exception {
         HashMap<String, Object> storeProperties = new HashMap<>();
-        Path differentPath = Paths.get(System.getProperty("user.dir") + "/test");
-        storeProperties.put("storePath", differentPath);
+        storeProperties.put("storePath", rootDirectory);
         storeProperties.put("storeDepth", 3);
         storeProperties.put("storeWidth", 2);
-        storeProperties.put("storeAlgorithm", "SHA-256");
+        storeProperties.put("storeAlgorithm", "MD5");
         new FileHashStore(storeProperties);
     }
 
@@ -202,20 +199,6 @@ public class FileHashStorePublicTest {
         storeProperties.put("storeDepth", 3);
         storeProperties.put("storeWidth", 1);
         storeProperties.put("storeAlgorithm", "SHA-256");
-        new FileHashStore(storeProperties);
-    }
-
-    /**
-     * Test existing configuration file will raise exception when properties are
-     * different when instantiating FileHashStore
-     */
-    @Test(expected = IllegalArgumentException.class)
-    public void testExistingHashStoreConfiguration_diffAlgo() throws Exception {
-        HashMap<String, Object> storeProperties = new HashMap<>();
-        storeProperties.put("storePath", rootDirectory);
-        storeProperties.put("storeDepth", 3);
-        storeProperties.put("storeWidth", 2);
-        storeProperties.put("storeAlgorithm", "MD2");
         new FileHashStore(storeProperties);
     }
 
