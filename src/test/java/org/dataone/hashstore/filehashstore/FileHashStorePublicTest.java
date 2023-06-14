@@ -242,13 +242,7 @@ public class FileHashStorePublicTest {
         // Delete configuration
         Files.delete(newStoreHashStoreYaml);
 
-        try {
-            // Instantiate second HashStore
-            new FileHashStore(storeProperties);
-        } catch (Exception e) {
-            e.printStackTrace();
-            assertEquals(e.getCause().getClass(), IllegalStateException.class);
-            throw e;
-        }
+        // Instantiate second HashStore
+        new FileHashStore(storeProperties);
     }
 }
