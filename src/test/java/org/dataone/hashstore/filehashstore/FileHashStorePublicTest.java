@@ -209,11 +209,6 @@ public class FileHashStorePublicTest {
     /**
      * Check that exception is raised when HashStore present but missing
      * configuration file 'hashstore.yaml'
-     *
-     * Note, we are checking for an IllegalArgumentException because the try block
-     * in the code when walking over files attempts to suppress the thrown
-     * 'IllegalStateException' (which won't retain the original exception).
-     * Expected exception is verified by asserting 'true' from when it is
      */
     @Test(expected = IllegalStateException.class)
     public void testExistingHashStoreConfiguration_missingYaml() throws Exception {
