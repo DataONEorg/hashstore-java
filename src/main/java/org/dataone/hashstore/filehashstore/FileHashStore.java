@@ -167,16 +167,16 @@ public class FileHashStore implements HashStore {
 
             if (Files.exists(storePath)) {
                 try (Stream<Path> walk = Files.walk(storePath)) {
-                    walk.forEach(path -> {
-                        if (!path.equals(storePath)) {
-                            String errMsg = "FileHashStore - Missing 'hashstore.yaml' but HashStore directories and objects found";
-                            logFileHashStore.fatal(errMsg);
-                            throw new IllegalStateException(errMsg);
-                        }
-                    });
+                    if (walk.anyMatch(Files::exists)) {
+                        String errMsg = "FileHashStore - Missing 'hashstore.yaml' but HashStore directories and/or objects found";
+                        logFileHashStore.fatal(errMsg);
+                        throw new IllegalStateException(errMsg);
+                    }
                 }
+            } else {
+                logFileHashStore.debug(
+                        "FileHashStore - 'hashstore.yaml' not found and store path not yet initialized.");
             }
-
         }
 
         // HashStore configuration has been checked, proceed with initialization
