@@ -49,30 +49,17 @@ public interface HashStore {
      * @param checksum            Value of checksum to validate against
      * @param checksumAlgorithm   Algorithm of checksum submitted
      * @return HashAddress object encapsulating file information
-     * @throws NoSuchAlgorithmException        When additionalAlgorithm or
-     *                                         checksumAlgorithm is invalid
-     * @throws IOException                     I/O Error when writing file,
-     *                                         generating checksums and moving file
-     * @throws SecurityException               Insufficient permissions to
-     *                                         read/access files or when
-     *                                         generating/writing to a file
-     * @throws FileNotFoundException           tmpFile not found when writing
-     *                                         from stream
-     * @throws FileAlreadyExistsException      Duplicate object in store exists
-     *                                         during move call
-     * @throws IllegalArgumentException        Signature values are unexpectedly
-     *                                         empty (checksum, pid, etc.)
-     * @throws NullPointerException            Arguments are null for pid or object
-     * @throws RuntimeException                Attempting to store pid object
-     *                                         that is already in progress
-     * @throws AtomicMoveNotSupportedException Attempting to move files across
-     *                                         file systems
+     * @throws NoSuchAlgorithmException When additionalAlgorithm or
+     *                                  checksumAlgorithm is invalid
+     * @throws IOException              I/O Error when writing file,
+     *                                  generating checksums and moving file
+     * @throws RuntimeException         Thrown when there is an issue with
+     *                                  permissions, illegal arguments (ex.
+     *                                  empty pid) or null pointers
      */
     HashAddress storeObject(InputStream object, String pid, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
-            throws NoSuchAlgorithmException, IOException, SecurityException, FileNotFoundException,
-            FileAlreadyExistsException, IllegalArgumentException, NullPointerException, RuntimeException,
-            AtomicMoveNotSupportedException;
+            throws NoSuchAlgorithmException, IOException, RuntimeException;
 
     /**
      * The `storeSysmeta` method is responsible for adding and/or updating metadata

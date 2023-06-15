@@ -84,7 +84,7 @@ public class FileHashStore implements HashStore {
      *                            storePath (Path)
      *                            storeDepth (int)
      *                            storeWidth (int)
-     *                            storeAlgorithm String)
+     *                            storeAlgorithm (String)
      * @throws IllegalArgumentException Constructor arguments cannot be null, empty
      *                                  or less than 0
      * @throws IOException              Issue with creating directories
@@ -304,9 +304,7 @@ public class FileHashStore implements HashStore {
     @Override
     public HashAddress storeObject(InputStream object, String pid, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
-            throws NoSuchAlgorithmException, IOException, SecurityException, FileNotFoundException,
-            FileAlreadyExistsException, IllegalArgumentException, NullPointerException, RuntimeException,
-            AtomicMoveNotSupportedException {
+            throws NoSuchAlgorithmException, IOException, RuntimeException {
         logFileHashStore.debug("FileHashStore.storeObject - Called to store object for pid: " + pid);
 
         // Begin input validation
@@ -355,41 +353,20 @@ public class FileHashStore implements HashStore {
                     "FileHashStore.storeObject - Object stored for pid: " + pid + ". Permanent address: "
                             + objInfo.getAbsPath());
             return objInfo;
-        } catch (NullPointerException npe) {
-            logFileHashStore.error("FileHashStore.storeObject - Cannot store object for pid: " + pid
-                    + ". NullPointerException: " + npe.getMessage());
-            throw npe;
-        } catch (IllegalArgumentException iae) {
-            logFileHashStore.error("FileHashStore.storeObject - Cannot store object for pid: " + pid
-                    + ". IllegalArgumentException: " + iae.getMessage());
-            throw iae;
         } catch (NoSuchAlgorithmException nsae) {
-            logFileHashStore.error("FileHashStore.storeObject - Cannot store object for pid: " + pid
+            logFileHashStore.error("FileHashStore.storeObject - Unable to store object for pid: " + pid
                     + ". NoSuchAlgorithmException: " + nsae.getMessage());
             throw nsae;
-        } catch (FileAlreadyExistsException faee) {
-            logFileHashStore.error("FileHashStore.storeObject - Cannot store object for pid: " + pid
-                    + ". FileAlreadyExistsException: " + faee.getMessage());
-            throw faee;
-        } catch (FileNotFoundException fnfe) {
-            logFileHashStore.error("FileHashStore.storeObject - Cannot store object for pid: " + pid
-                    + ". FileNotFoundException: " + fnfe.getMessage());
-            throw fnfe;
-        } catch (AtomicMoveNotSupportedException amnse) {
-            logFileHashStore.error("FileHashStore.storeObject - Cannot store object for pid: " + pid
-                    + ". AtomicMoveNotSupportedException: " + amnse.getMessage());
-            throw amnse;
         } catch (IOException ioe) {
-            logFileHashStore.error("FileHashStore.storeObject - Cannot store object for pid: " + pid
+            // Covers FileAlreadyExistsException, AtomicMoveNotSupportedException,
+            // FileNotFoundException
+            logFileHashStore.error("FileHashStore.storeObject - Unable to store object for pid: " + pid
                     + ". IOException: " + ioe.getMessage());
             throw ioe;
-        } catch (SecurityException se) {
-            logFileHashStore.error("FileHashStore.storeObject - Cannot store object for pid: " + pid
-                    + ". SecurityException: " + se.getMessage());
-            throw se;
         } catch (RuntimeException re) {
-            logFileHashStore.error("FileHashStore.storeObject - Object was stored for : " + pid
-                    + ". But encountered RuntimeException when releasing object lock: " + re.getMessage());
+            // Covers SecurityException, IllegalArgumentException, NullPointerException
+            logFileHashStore.error("FileHashStore.storeObject - Unable to store object for pid: " + pid
+                    + ". Runtime Exception: " + re.getMessage());
             throw re;
         } finally {
             // Release lock
