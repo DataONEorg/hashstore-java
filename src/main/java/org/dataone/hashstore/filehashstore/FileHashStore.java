@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
-import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -140,25 +139,18 @@ public class FileHashStore implements HashStore {
 
         } else {
             // Check if HashStore exists at the given store path (and is missing config)
-            logFileHashStore.debug(
-                    "FileHashStore - 'hashstore.yaml' not found, check store path for objects and directories");
+            logFileHashStore
+                    .debug("FileHashStore - 'hashstore.yaml' not found, check store path for objects and directories.");
 
-            if (Files.exists(storePath)) {
-                boolean hashStoreExists = false;
-                try (Stream<Path> walk = Files.walk(storePath)) {
-                    if (walk.anyMatch(Files::exists)) {
-                        hashStoreExists = true;
-                    }
-                }
-                if (hashStoreExists) {
-                    String errMsg = "FileHashStore - Missing 'hashstore.yaml' but HashStore directories and/or objects found";
+            if (Files.isDirectory(storePath)) {
+                File[] storePathFileList = storePath.toFile().listFiles();
+                if (storePathFileList == null || storePathFileList.length > 0) {
+                    String errMsg = "FileHashStore - Missing 'hashstore.yaml' but HashStore directories and/or objects found.";
                     logFileHashStore.fatal(errMsg);
-                    throw new IllegalStateException();
+                    throw new IllegalStateException(errMsg);
                 }
             }
-            logFileHashStore.debug(
-                    "FileHashStore - 'hashstore.yaml' not found and store path not yet initialized.");
-
+            logFileHashStore.debug("FileHashStore - 'hashstore.yaml' not found and store path not yet initialized.");
         }
 
         // HashStore configuration has been checked, proceed with initialization
