@@ -1,11 +1,13 @@
 package org.dataone.hashstore.filehashstore;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileAlreadyExistsException;
@@ -20,8 +22,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import javax.xml.bind.DatatypeConverter;
 
 import org.apache.commons.logging.Log;
@@ -39,6 +44,7 @@ import org.dataone.hashstore.HashStore;
 public class FileHashStore implements HashStore {
     private static final Log logFileHashStore = LogFactory.getLog(FileHashStore.class);
     private static final ArrayList<String> objectLockedIds = new ArrayList<>(100);
+    private final Path STORE_ROOT;
     private final int DIRECTORY_DEPTH;
     private final int DIRECTORY_WIDTH;
     private final String OBJECT_STORE_ALGORITHM;
@@ -64,19 +70,21 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Constructor to initialize HashStore fields and object store directory. If
-     * storeDirectory is null or an empty string, a default path will be generated
-     * based on the user's working directory + "/FileHashStore".
+     * Constructor to initialize HashStore, properties are required.
      * 
-     * Two directories will be created based on the given storeDirectory string:
-     * - .../objects
-     * - .../objects/tmp
+     * Note: HashStore is not responsible for ensuring that the given store path is
+     * accurate. It will only check for an existing configuration, directories or
+     * objects before initializing.
      * 
-     * @param hashstoreProperties HashMap of the HashStore required keys:
-     *                            (Path) storePath,
-     *                            (int) storeDepth,
-     *                            (int) storeWidth
-     *                            (String) storeAlgorithm
+     * Two directories will be created based on the given storePath string:
+     * - .../[storePath]/objects
+     * - .../[storePath]/objects/tmp
+     * 
+     * @param hashstoreProperties HashMap<String, Object> of the following keys:
+     *                            storePath (Path)
+     *                            storeDepth (int)
+     *                            storeWidth (int)
+     *                            storeAlgorithm String)
      * @throws IllegalArgumentException Constructor arguments cannot be null, empty
      *                                  or less than 0
      * @throws IOException              Issue with creating directories
@@ -88,6 +96,7 @@ public class FileHashStore implements HashStore {
             logFileHashStore.fatal(errMsg);
             throw new IllegalArgumentException(errMsg);
         }
+
         // Get properties
         Path storePath = (Path) hashstoreProperties.get(HashStoreProperties.storePath.name());
         int storeDepth = (int) hashstoreProperties.get(HashStoreProperties.storeDepth.name());
@@ -95,26 +104,61 @@ public class FileHashStore implements HashStore {
         String storeAlgorithm = (String) hashstoreProperties.get(HashStoreProperties.storeAlgorithm.name());
 
         // Validate input parameters
+        if (storePath == null) {
+            String errMsg = "FileHashStore - storePath cannot be null.";
+            logFileHashStore.error(errMsg);
+            throw new NullPointerException(errMsg);
+        }
+
         if (storeDepth <= 0 || storeWidth <= 0) {
             String errMsg = "FileHashStore - Depth and width must be greater than 0. Depth: " + storeDepth + ". Width: "
                     + storeWidth;
             logFileHashStore.fatal(errMsg);
             throw new IllegalArgumentException(errMsg);
         }
+
         // Ensure algorithm supplied is not empty, not null and supported
         this.validateAlgorithm(storeAlgorithm);
 
-        // If no path provided, create default path with user.dir root + /FileHashStore
-        if (storePath == null) {
-            logFileHashStore.debug("FileHashStore - storePath is null, creating store root with default setitngs.");
-            String rootDirectory = System.getProperty("user.dir");
-            String defaultPath = "FileHashStore";
-            this.OBJECT_STORE_DIRECTORY = Paths.get(rootDirectory).resolve(defaultPath).resolve("objects");
+        // Check to see if configuration exists before initializing
+        Path hashstoreYamlPredictedPath = Paths.get(storePath + "/hashstore.yaml");
+        if (Files.exists(hashstoreYamlPredictedPath)) {
+            logFileHashStore.debug("FileHashStore - 'hashstore.yaml' found, verifying properties.");
+
+            HashMap<String, Object> hsProperties = this.getHashStoreYaml(storePath);
+            Path existingStorePath = (Path) hsProperties.get("storePath");
+            int existingStoreDepth = (int) hsProperties.get("storeDepth");
+            int existingStoreWidth = (int) hsProperties.get("storeWidth");
+            String existingStoreAlgorithm = (String) hsProperties.get("storeAlgorithm");
+
+            // Verify properties when 'hashstore.yaml' found
+            checkConfigurationEquality("store path", storePath, existingStorePath);
+            checkConfigurationEquality("store depth", storeDepth, existingStoreDepth);
+            checkConfigurationEquality("store width", storeWidth, existingStoreWidth);
+            checkConfigurationEquality("store algorithm", storeAlgorithm, existingStoreAlgorithm);
+
         } else {
-            this.OBJECT_STORE_DIRECTORY = storePath.resolve("objects");
+            // Check if HashStore exists at the given store path (and is missing config)
+            logFileHashStore
+                    .debug("FileHashStore - 'hashstore.yaml' not found, check store path for objects and directories.");
+
+            if (Files.isDirectory(storePath)) {
+                File[] storePathFileList = storePath.toFile().listFiles();
+                if (storePathFileList == null || storePathFileList.length > 0) {
+                    String errMsg = "FileHashStore - Missing 'hashstore.yaml' but HashStore directories and/or objects found.";
+                    logFileHashStore.fatal(errMsg);
+                    throw new IllegalStateException(errMsg);
+                }
+            }
+            logFileHashStore.debug("FileHashStore - 'hashstore.yaml' not found and store path not yet initialized.");
         }
+
+        // HashStore configuration has been checked, proceed with initialization
+        this.STORE_ROOT = storePath;
+        this.OBJECT_STORE_DIRECTORY = storePath.resolve("objects");
         // Resolve tmp object directory path
         this.OBJECT_TMP_FILE_DIRECTORY = this.OBJECT_STORE_DIRECTORY.resolve("tmp");
+
         // Physically create store and tmp directory
         try {
             Files.createDirectories(this.OBJECT_STORE_DIRECTORY);
@@ -126,13 +170,136 @@ public class FileHashStore implements HashStore {
                             + ioe.getMessage());
             throw ioe;
         }
+
         // Finalize instance variables
         this.DIRECTORY_DEPTH = storeDepth;
         this.DIRECTORY_WIDTH = storeWidth;
         this.OBJECT_STORE_ALGORITHM = storeAlgorithm;
         logFileHashStore.debug("FileHashStore - HashStore initialized. Store Depth: " + storeDepth + ". Store Width: "
                 + storeWidth + ". Store Algorithm: " + storeAlgorithm);
+
+        // Write configuration file 'hashstore.yaml' to store root
+        Path hashstoreYaml = this.STORE_ROOT.resolve("hashstore.yaml");
+        if (!Files.exists(hashstoreYaml)) {
+            String hashstoreYamlContent = FileHashStore.buildHashStoreYamlString(this.STORE_ROOT, this.DIRECTORY_DEPTH,
+                    this.DIRECTORY_WIDTH, this.OBJECT_STORE_ALGORITHM);
+            this.putHashStoreYaml(hashstoreYamlContent);
+            logFileHashStore.info("FileHashStore - 'hashstore.yaml' written to storePath: " + hashstoreYaml);
+        } else {
+            logFileHashStore.info(
+                    "FileHashStore - 'hashstore.yaml' exists and has been verified. Initializing FileHashStore.");
+        }
     }
+
+    // Configuration Methods
+
+    /**
+     * Get the properties of HashStore from 'hashstore.yaml'
+     *
+     * @param storePath Path to root of store
+     * @return HashMap of the properties
+     */
+    protected HashMap<String, Object> getHashStoreYaml(Path storePath) {
+        Path hashstoreYaml = storePath.resolve("hashstore.yaml");
+        File hashStoreYaml = hashstoreYaml.toFile();
+        ObjectMapper om = new ObjectMapper(new YAMLFactory());
+        HashMap<String, Object> hsProperties = new HashMap<>();
+
+        try {
+            HashMap<?, ?> hashStoreYamlProperties = om.readValue(hashStoreYaml, HashMap.class);
+            String yamlStorePath = (String) hashStoreYamlProperties.get("store_path");
+            hsProperties.put("storePath", Paths.get(yamlStorePath));
+            hsProperties.put("storeDepth", hashStoreYamlProperties.get("store_depth"));
+            hsProperties.put("storeWidth", hashStoreYamlProperties.get("store_width"));
+            hsProperties.put("storeAlgorithm", hashStoreYamlProperties.get("store_algorithm"));
+        } catch (IOException ioe) {
+            logFileHashStore
+                    .fatal("FileHashStore.getHashStoreYaml() - Unable to retrieve 'hashstore.yaml'. IOException: "
+                            + ioe.getMessage());
+        }
+
+        return hsProperties;
+    }
+
+    /**
+     * Write a 'hashstore.yaml' file to this.STORE_ROOT
+     * 
+     * @param yamlString Content of the HashStore configuration
+     * @throws IOException If unable to write `hashtore.yaml`
+     */
+    protected void putHashStoreYaml(String yamlString) throws IOException {
+        Path hashstoreYaml = this.STORE_ROOT.resolve("hashstore.yaml");
+
+        try (BufferedWriter writer = new BufferedWriter(
+                new OutputStreamWriter(Files.newOutputStream(hashstoreYaml), StandardCharsets.UTF_8))) {
+            writer.write(yamlString);
+        } catch (IOException ioe) {
+            logFileHashStore
+                    .fatal("FileHashStore.writeHashStoreYaml() - Unable to write 'hashstore.yaml'. IOException: "
+                            + ioe.getMessage());
+            throw ioe;
+        }
+    }
+
+    /**
+     * Checks the equality of a supplied value with an existing value for a specific
+     * configuration property.
+     *
+     * @param propertyName  The name of the config property being checked
+     * @param suppliedValue The value supplied for the config property
+     * @param existingValue The existing value of the config property
+     * @throws IllegalArgumentException If the supplied value is not equal to the
+     *                                  existing value
+     */
+    protected void checkConfigurationEquality(String propertyName, Object suppliedValue, Object existingValue) {
+        if (!Objects.equals(suppliedValue, existingValue)) {
+            String errMsg = "FileHashStore.checkConfigurationEquality() - Supplied " + propertyName + ": "
+                    + suppliedValue + " does not match the existing configuration value: " + existingValue;
+            logFileHashStore.fatal(errMsg);
+            throw new IllegalArgumentException(errMsg);
+        }
+    }
+
+    /**
+     * Build the string content of the configuration file for HashStore -
+     * 'hashstore.yaml'
+     * 
+     * @param storePath      Root path of store
+     * @param storeDepth     Depth of store
+     * @param storeWidth     Width of store
+     * @param storeAlgorithm Algorithm to use to calculate the hex digest for the
+     *                       permanent address of a data sobject
+     * @return String that representing the contents of 'hashstore.yaml'
+     */
+    protected static String buildHashStoreYamlString(Path storePath, int storeDepth, int storeWidth,
+            String storeAlgorithm) {
+        return String.format(
+                "# Default configuration variables for HashStore\n\n" +
+                        "############### Store Path ###############\n" +
+                        "# Default path for `FileHashStore` if no path is provided\n" +
+                        "store_path: \"%s\"\n\n" +
+                        "############### Directory Structure ###############\n" +
+                        "# Desired amount of directories when sharding an object to form the permanent address\n" +
+                        "store_depth: %d  # WARNING: DO NOT CHANGE UNLESS SETTING UP NEW HASHSTORE\n" +
+                        "# Width of directories created when sharding an object to form the permanent address\n" +
+                        "store_width: %d  # WARNING: DO NOT CHANGE UNLESS SETTING UP NEW HASHSTORE\n" +
+                        "# Example:\n" +
+                        "# Below, objects are shown listed in directories that are # levels deep (DIR_DEPTH=3),\n" +
+                        "# with each directory consisting of 2 characters (DIR_WIDTH=2).\n" +
+                        "#    /var/filehashstore/objects\n" +
+                        "#    ├── 7f\n" +
+                        "#    │   └── 5c\n" +
+                        "#    │       └── c1\n" +
+                        "#    │           └── 8f0b04e812a3b4c8f686ce34e6fec558804bf61e54b176742a7f6368d6\n\n" +
+                        "############### Format of the Metadata ###############\n" +
+                        "store_sysmeta_namespace: \"http://ns.dataone.org/service/types/v2.0\"\n\n" +
+                        "############### Hash Algorithms ###############\n" +
+                        "# Hash algorithm to use when calculating object's hex digest for the permanent address\n" +
+                        "store_algorithm: \"%s\"\n",
+                storePath, storeDepth, storeWidth, storeAlgorithm);
+    }
+
+    // Public API Methods
 
     @Override
     public HashAddress storeObject(InputStream object, String pid, String additionalAlgorithm, String checksum,
@@ -141,21 +308,25 @@ public class FileHashStore implements HashStore {
             FileAlreadyExistsException, IllegalArgumentException, NullPointerException, RuntimeException,
             AtomicMoveNotSupportedException {
         logFileHashStore.debug("FileHashStore.storeObject - Called to store object for pid: " + pid);
+
         // Begin input validation
         if (object == null) {
             String errMsg = "FileHashStore.storeObject - InputStream cannot be null, request for storing pid: " + pid;
             logFileHashStore.error(errMsg);
             throw new NullPointerException(errMsg);
         }
+
         if (pid == null || pid.trim().isEmpty()) {
             String errMsg = "FileHashStore.storeObject - pid cannot be null or empty, pid: " + pid;
             logFileHashStore.error(errMsg);
             throw new IllegalArgumentException(errMsg);
         }
+
         // Validate algorithms if not null or empty, throws exception if not supported
         if (additionalAlgorithm != null && additionalAlgorithm.trim().isEmpty()) {
             this.validateAlgorithm(additionalAlgorithm);
         }
+
         if (checksumAlgorithm != null && checksumAlgorithm.trim().isEmpty()) {
             this.validateAlgorithm(checksumAlgorithm);
         }
@@ -308,25 +479,30 @@ public class FileHashStore implements HashStore {
             FileAlreadyExistsException, IllegalArgumentException, NullPointerException,
             AtomicMoveNotSupportedException {
         logFileHashStore.debug("FileHashStore.putObject - Called to put object for pid: " + pid);
+
         // Begin input validation
         if (object == null) {
             String errMsg = "FileHashStore.putObject - InputStream cannot be null, pid: " + pid;
             logFileHashStore.error(errMsg);
             throw new NullPointerException(errMsg);
         }
+
         // pid cannot be empty or null
         if (pid == null || pid.trim().isEmpty()) {
             String errMsg = "FileHashStore.putObject - pid cannot be null or empty. pid: " + pid;
             logFileHashStore.error(errMsg);
             throw new IllegalArgumentException(errMsg);
         }
+
         // Validate algorithms if not null or empty, throws exception if not supported
         if (additionalAlgorithm != null && !additionalAlgorithm.trim().isEmpty()) {
             this.validateAlgorithm(additionalAlgorithm);
         }
+
         if (checksumAlgorithm != null && !checksumAlgorithm.trim().isEmpty()) {
             this.validateAlgorithm(checksumAlgorithm);
         }
+
         // If validation is desired, checksumAlgorithm and checksum must both be present
         boolean requestValidation = this.verifyChecksumParameters(checksum, checksumAlgorithm);
 
@@ -334,8 +510,9 @@ public class FileHashStore implements HashStore {
         String objAuthorityId = this.getPidHexDigest(pid, this.OBJECT_STORE_ALGORITHM);
         String objShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
                 objAuthorityId);
-        Path objHashAddressPath = Paths.get(this.OBJECT_STORE_DIRECTORY + objShardString);
+        Path objHashAddressPath = this.OBJECT_STORE_DIRECTORY.resolve(objShardString);
         String objHashAddressString = objHashAddressPath.toString();
+
         // If file (pid hash) exists, reject request immediately
         if (Files.exists(objHashAddressPath)) {
             String errMsg = "FileHashStore.putObject - File already exists for pid: " + pid
@@ -428,11 +605,13 @@ public class FileHashStore implements HashStore {
             logFileHashStore.error(errMsg);
             throw new NullPointerException(errMsg);
         }
+
         if (algorithm.trim().isEmpty()) {
             String errMsg = "FileHashStore.validateAlgorithm - algorithm is empty.";
             logFileHashStore.error(errMsg);
             throw new IllegalArgumentException(errMsg);
         }
+
         boolean algorithmSupported = Arrays.asList(SUPPORTED_HASH_ALGORITHMS).contains(algorithm);
         if (!algorithmSupported) {
             String errMsg = "Algorithm not supported: " + algorithm + ". Supported algorithms: "
@@ -440,6 +619,7 @@ public class FileHashStore implements HashStore {
             logFileHashStore.error(errMsg);
             throw new NoSuchAlgorithmException(errMsg);
         }
+
         return true;
     }
 
@@ -462,6 +642,7 @@ public class FileHashStore implements HashStore {
                 logFileHashStore.error(errMsg);
                 throw new IllegalArgumentException(errMsg);
             }
+
             if (checksumAlgorithm.trim().isEmpty()) {
                 String errMsg = "FileHashStore.verifyChecksumParameters - Validation requested but checksumAlgorithm is empty.";
                 logFileHashStore.error(errMsg);
@@ -479,6 +660,7 @@ public class FileHashStore implements HashStore {
                     logFileHashStore.error(errMsg);
                     throw new NullPointerException(errMsg);
                 }
+
                 if (checksum.trim().isEmpty()) {
                     String errMsg = "FileHashStore.verifyChecksumParameters - Validation requested but checksum is empty.";
                     logFileHashStore.error(errMsg);
@@ -502,18 +684,19 @@ public class FileHashStore implements HashStore {
     protected String getPidHexDigest(String pid, String algorithm)
             throws NoSuchAlgorithmException, IllegalArgumentException {
         if (algorithm == null || algorithm.trim().isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Algorithm cannot be null or empty");
+            throw new IllegalArgumentException("Algorithm cannot be null or empty");
         }
+
         if (pid == null || pid.trim().isEmpty()) {
-            throw new IllegalArgumentException(
-                    "String cannot be null or empty");
+            throw new IllegalArgumentException("String cannot be null or empty");
         }
+
         boolean algorithmSupported = this.validateAlgorithm(algorithm);
         if (!algorithmSupported) {
             throw new NoSuchAlgorithmException(
                     "Algorithm not supported. Supported algorithms: " + Arrays.toString(SUPPORTED_HASH_ALGORITHMS));
         }
+
         MessageDigest stringMessageDigest = MessageDigest.getInstance(algorithm);
         byte[] bytes = pid.getBytes(StandardCharsets.UTF_8);
         stringMessageDigest.update(bytes);
@@ -538,9 +721,11 @@ public class FileHashStore implements HashStore {
             int end = Math.min((i + 1) * dirWidth, digestLength);
             tokens.add(digest.substring(start, end));
         }
+
         if (dirDepth * dirWidth < digestLength) {
             tokens.add(digest.substring(dirDepth * dirWidth));
         }
+
         List<String> stringArray = new ArrayList<>();
         for (String str : tokens) {
             if (!str.trim().isEmpty()) {
@@ -565,6 +750,7 @@ public class FileHashStore implements HashStore {
         Random rand = new Random();
         int randomNumber = rand.nextInt(1000000);
         String newPrefix = prefix + "-" + System.currentTimeMillis() + randomNumber;
+
         try {
             Path newPath = Files.createTempFile(directory, newPrefix, null);
             File newFile = newPath.toFile();
@@ -709,8 +895,8 @@ public class FileHashStore implements HashStore {
         Path targetFilePath = target.toPath();
         try {
             Files.move(sourceFilePath, targetFilePath, StandardCopyOption.ATOMIC_MOVE);
-            logFileHashStore.debug("FileHashStore.move - file moved from: " + sourceFilePath.toString() + ", to: "
-                    + targetFilePath.toString());
+            logFileHashStore.debug("FileHashStore.move - file moved from: " + sourceFilePath + ", to: "
+                    + targetFilePath);
             return true;
         } catch (AtomicMoveNotSupportedException amnse) {
             logFileHashStore.error(

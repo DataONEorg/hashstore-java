@@ -1,15 +1,18 @@
 package org.dataone.hashstore.filehashstore;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -19,8 +22,11 @@ import org.junit.rules.TemporaryFolder;
  * Test class for FileHashStore constructor
  */
 public class FileHashStorePublicTest {
+    private static Path rootDirectory;
     private static Path objStringFull;
     private static Path objTmpStringFull;
+    private static FileHashStore fileHashStore;
+    private static final TestDataHarness testData = new TestDataHarness();
 
     /**
      * Initialize FileHashStore
@@ -28,7 +34,7 @@ public class FileHashStorePublicTest {
     @BeforeClass
     public static void initializeFileHashStore() {
         Path root = tempFolder.getRoot().toPath();
-        Path rootDirectory = root.resolve("metacat");
+        rootDirectory = root.resolve("metacat");
         objStringFull = rootDirectory.resolve("objects");
         objTmpStringFull = rootDirectory.resolve("objects/tmp");
 
@@ -39,8 +45,9 @@ public class FileHashStorePublicTest {
         storeProperties.put("storeAlgorithm", "SHA-256");
 
         try {
-            new FileHashStore(storeProperties);
+            fileHashStore = new FileHashStore(storeProperties);
         } catch (IOException e) {
+            e.printStackTrace();
             fail("IOException encountered: " + e.getMessage());
         } catch (NoSuchAlgorithmException nsae) {
             fail("NoSuchAlgorithmException encountered: " + nsae.getMessage());
@@ -59,7 +66,7 @@ public class FileHashStorePublicTest {
     @Test
     public void initObjDirectory() {
         Path checkStorePath = objStringFull;
-        assertTrue(Files.exists(checkStorePath));
+        assertTrue(Files.isDirectory(checkStorePath));
     }
 
     /**
@@ -68,7 +75,7 @@ public class FileHashStorePublicTest {
     @Test
     public void initObjTmpDirectory() {
         Path checkTmpPath = objTmpStringFull;
-        assertTrue(Files.exists(checkTmpPath));
+        assertTrue(Files.isDirectory(checkTmpPath));
     }
 
     /**
@@ -111,9 +118,9 @@ public class FileHashStorePublicTest {
     }
 
     /**
-     * Confirm default file directories are created when storeDirectory is null
+     * Confirm that exception is thrown when storeDirectory is null
      */
-    @Test
+    @Test(expected = NullPointerException.class)
     public void initDefaultStore_directoryNull() throws Exception {
         HashMap<String, Object> storeProperties = new HashMap<>();
         storeProperties.put("storePath", null);
@@ -121,18 +128,116 @@ public class FileHashStorePublicTest {
         storeProperties.put("storeWidth", 2);
         storeProperties.put("storeAlgorithm", "SHA-256");
         new FileHashStore(storeProperties);
+    }
 
-        String rootDirectory = System.getProperty("user.dir");
-        String objectPath = "FileHashStore";
+    /**
+     * Check that a hashstore configuration file is written and exists
+     */
+    @Test
+    public void testPutHashStoreYaml() {
+        Path hashStoreYamlFilePath = Paths.get(rootDirectory + "/hashstore.yaml");
+        assertTrue(Files.exists(hashStoreYamlFilePath));
+    }
 
-        Path defaultObjDirectoryPath = Paths.get(rootDirectory).resolve(objectPath).resolve("objects");
-        assertTrue(Files.exists(defaultObjDirectoryPath));
+    /**
+     * Confirm retrieved 'hashstore.yaml' file content is accurate
+     */
+    @Test
+    public void testGetHashStoreYaml() {
+        HashMap<String, Object> hsProperties = fileHashStore.getHashStoreYaml(rootDirectory);
+        assertEquals(hsProperties.get("storePath"), rootDirectory);
+        assertEquals(hsProperties.get("storeDepth"), 3);
+        assertEquals(hsProperties.get("storeWidth"), 2);
+        assertEquals(hsProperties.get("storeAlgorithm"), "SHA-256");
+    }
 
-        Path defaultTmpDirectoryPath = defaultObjDirectoryPath.resolve("tmp");
-        assertTrue(Files.exists(defaultTmpDirectoryPath));
+    /**
+     * Test FileHashStore instantiates with matching config
+     */
+    @Test
+    public void testExistingHashStoreConfiguration_sameConfig() throws Exception {
+        HashMap<String, Object> storeProperties = new HashMap<>();
+        storeProperties.put("storePath", rootDirectory);
+        storeProperties.put("storeDepth", 3);
+        storeProperties.put("storeWidth", 2);
+        storeProperties.put("storeAlgorithm", "SHA-256");
+        new FileHashStore(storeProperties);
+    }
 
-        // Delete the folders
-        Files.deleteIfExists(defaultTmpDirectoryPath);
-        Files.deleteIfExists(defaultObjDirectoryPath);
+    /**
+     * Test existing configuration file will raise exception when algorithm is
+     * different when instantiating FileHashStore
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testExistingHashStoreConfiguration_diffAlgorithm() throws Exception {
+        HashMap<String, Object> storeProperties = new HashMap<>();
+        storeProperties.put("storePath", rootDirectory);
+        storeProperties.put("storeDepth", 3);
+        storeProperties.put("storeWidth", 2);
+        storeProperties.put("storeAlgorithm", "MD5");
+        new FileHashStore(storeProperties);
+    }
+
+    /**
+     * Test existing configuration file will raise exception when depth is
+     * different when instantiating FileHashStore
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testExistingHashStoreConfiguration_diffDepth() throws Exception {
+        HashMap<String, Object> storeProperties = new HashMap<>();
+        storeProperties.put("storePath", rootDirectory);
+        storeProperties.put("storeDepth", 2);
+        storeProperties.put("storeWidth", 2);
+        storeProperties.put("storeAlgorithm", "SHA-256");
+        new FileHashStore(storeProperties);
+    }
+
+    /**
+     * Test existing configuration file will raise exception when width is
+     * different when instantiating FileHashStore
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testExistingHashStoreConfiguration_diffWidth() throws Exception {
+        HashMap<String, Object> storeProperties = new HashMap<>();
+        storeProperties.put("storePath", rootDirectory);
+        storeProperties.put("storeDepth", 3);
+        storeProperties.put("storeWidth", 1);
+        storeProperties.put("storeAlgorithm", "SHA-256");
+        new FileHashStore(storeProperties);
+    }
+
+    /**
+     * Check that exception is raised when HashStore present but missing
+     * configuration file 'hashstore.yaml'
+     */
+    @Test(expected = IllegalStateException.class)
+    public void testExistingHashStoreConfiguration_missingYaml() throws Exception {
+        // Create separate store
+        HashMap<String, Object> storeProperties = new HashMap<>();
+        Path newStoreDirectory = rootDirectory.resolve("test");
+        storeProperties.put("storePath", newStoreDirectory);
+        storeProperties.put("storeDepth", 3);
+        storeProperties.put("storeWidth", 2);
+        storeProperties.put("storeAlgorithm", "SHA-256");
+        FileHashStore secondHashStore = new FileHashStore(storeProperties);
+
+        // Confirm config present
+        Path newStoreHashStoreYaml = newStoreDirectory.resolve("hashstore.yaml");
+        assertTrue(Files.exists(newStoreHashStoreYaml));
+
+        // Store objects
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            secondHashStore.storeObject(dataStream, pid, null, null, null);
+        }
+
+        // Delete configuration
+        Files.delete(newStoreHashStoreYaml);
+
+        // Instantiate second HashStore
+        new FileHashStore(storeProperties);
     }
 }
