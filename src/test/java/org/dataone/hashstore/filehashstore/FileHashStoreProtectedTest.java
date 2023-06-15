@@ -16,6 +16,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.dataone.hashstore.HashAddress;
+import org.dataone.hashstore.exceptions.PidObjectExistsException;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.Before;
 import org.junit.Rule;
@@ -374,7 +375,7 @@ public class FileHashStoreProtectedTest {
     /**
      * Verify that putObject throws exception when storing a duplicate object
      */
-    @Test(expected = FileAlreadyExistsException.class)
+    @Test(expected = PidObjectExistsException.class)
     public void putObject_duplicateObject() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";

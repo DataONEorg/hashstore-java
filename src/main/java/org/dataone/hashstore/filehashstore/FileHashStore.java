@@ -33,6 +33,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.dataone.hashstore.HashAddress;
 import org.dataone.hashstore.HashStore;
+import org.dataone.hashstore.exceptions.PidObjectExistsException;
 
 /**
  * FileHashStore is a class that manages storage of objects to disk using
@@ -84,7 +85,7 @@ public class FileHashStore implements HashStore {
      *                            storePath (Path)
      *                            storeDepth (int)
      *                            storeWidth (int)
-     *                            storeAlgorithm String)
+     *                            storeAlgorithm (String)
      * @throws IllegalArgumentException Constructor arguments cannot be null, empty
      *                                  or less than 0
      * @throws IOException              Issue with creating directories
@@ -164,6 +165,7 @@ public class FileHashStore implements HashStore {
             Files.createDirectories(this.OBJECT_STORE_DIRECTORY);
             Files.createDirectories(this.OBJECT_TMP_FILE_DIRECTORY);
             logFileHashStore.debug("FileHashStore - Created store and store tmp directories.");
+
         } catch (IOException ioe) {
             logFileHashStore.fatal(
                     "FileHashStore - Failed to initialize FileHashStore - unable to create directories. Exception: "
@@ -198,8 +200,9 @@ public class FileHashStore implements HashStore {
      *
      * @param storePath Path to root of store
      * @return HashMap of the properties
+     * @throws IOException If `hashstore.yaml` doesn't exist
      */
-    protected HashMap<String, Object> getHashStoreYaml(Path storePath) {
+    protected HashMap<String, Object> getHashStoreYaml(Path storePath) throws IOException {
         Path hashstoreYaml = storePath.resolve("hashstore.yaml");
         File hashStoreYaml = hashstoreYaml.toFile();
         ObjectMapper om = new ObjectMapper(new YAMLFactory());
@@ -212,10 +215,12 @@ public class FileHashStore implements HashStore {
             hsProperties.put("storeDepth", hashStoreYamlProperties.get("store_depth"));
             hsProperties.put("storeWidth", hashStoreYamlProperties.get("store_width"));
             hsProperties.put("storeAlgorithm", hashStoreYamlProperties.get("store_algorithm"));
+
         } catch (IOException ioe) {
             logFileHashStore
                     .fatal("FileHashStore.getHashStoreYaml() - Unable to retrieve 'hashstore.yaml'. IOException: "
                             + ioe.getMessage());
+            throw ioe;
         }
 
         return hsProperties;
@@ -233,6 +238,7 @@ public class FileHashStore implements HashStore {
         try (BufferedWriter writer = new BufferedWriter(
                 new OutputStreamWriter(Files.newOutputStream(hashstoreYaml), StandardCharsets.UTF_8))) {
             writer.write(yamlString);
+
         } catch (IOException ioe) {
             logFileHashStore
                     .fatal("FileHashStore.writeHashStoreYaml() - Unable to write 'hashstore.yaml'. IOException: "
@@ -304,9 +310,7 @@ public class FileHashStore implements HashStore {
     @Override
     public HashAddress storeObject(InputStream object, String pid, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
-            throws NoSuchAlgorithmException, IOException, SecurityException, FileNotFoundException,
-            FileAlreadyExistsException, IllegalArgumentException, NullPointerException, RuntimeException,
-            AtomicMoveNotSupportedException {
+            throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException {
         logFileHashStore.debug("FileHashStore.storeObject - Called to store object for pid: " + pid);
 
         // Begin input validation
@@ -355,42 +359,33 @@ public class FileHashStore implements HashStore {
                     "FileHashStore.storeObject - Object stored for pid: " + pid + ". Permanent address: "
                             + objInfo.getAbsPath());
             return objInfo;
-        } catch (NullPointerException npe) {
-            logFileHashStore.error("FileHashStore.storeObject - Cannot store object for pid: " + pid
-                    + ". NullPointerException: " + npe.getMessage());
-            throw npe;
-        } catch (IllegalArgumentException iae) {
-            logFileHashStore.error("FileHashStore.storeObject - Cannot store object for pid: " + pid
-                    + ". IllegalArgumentException: " + iae.getMessage());
-            throw iae;
+
         } catch (NoSuchAlgorithmException nsae) {
-            logFileHashStore.error("FileHashStore.storeObject - Cannot store object for pid: " + pid
-                    + ". NoSuchAlgorithmException: " + nsae.getMessage());
+            String errMsg = "FileHashStore.storeObject - Unable to store object for pid: " + pid
+                    + ". NoSuchAlgorithmException: " + nsae.getMessage();
+            logFileHashStore.error(errMsg);
             throw nsae;
-        } catch (FileAlreadyExistsException faee) {
-            logFileHashStore.error("FileHashStore.storeObject - Cannot store object for pid: " + pid
-                    + ". FileAlreadyExistsException: " + faee.getMessage());
-            throw faee;
-        } catch (FileNotFoundException fnfe) {
-            logFileHashStore.error("FileHashStore.storeObject - Cannot store object for pid: " + pid
-                    + ". FileNotFoundException: " + fnfe.getMessage());
-            throw fnfe;
-        } catch (AtomicMoveNotSupportedException amnse) {
-            logFileHashStore.error("FileHashStore.storeObject - Cannot store object for pid: " + pid
-                    + ". AtomicMoveNotSupportedException: " + amnse.getMessage());
-            throw amnse;
+
+        } catch (PidObjectExistsException poee) {
+            String errMsg = "FileHashStore.storeObject - Unable to store object for pid: " + pid
+                    + ". PidObjectExistsException: " + poee.getMessage();
+            logFileHashStore.error(errMsg);
+            throw poee;
+
         } catch (IOException ioe) {
-            logFileHashStore.error("FileHashStore.storeObject - Cannot store object for pid: " + pid
-                    + ". IOException: " + ioe.getMessage());
+            // Covers AtomicMoveNotSupportedException, FileNotFoundException
+            String errMsg = "FileHashStore.storeObject - Unable to store object for pid: " + pid
+                    + ". IOException: " + ioe.getMessage();
+            logFileHashStore.error(errMsg);
             throw ioe;
-        } catch (SecurityException se) {
-            logFileHashStore.error("FileHashStore.storeObject - Cannot store object for pid: " + pid
-                    + ". SecurityException: " + se.getMessage());
-            throw se;
+
         } catch (RuntimeException re) {
-            logFileHashStore.error("FileHashStore.storeObject - Object was stored for : " + pid
-                    + ". But encountered RuntimeException when releasing object lock: " + re.getMessage());
+            // Covers SecurityException, IllegalArgumentException, NullPointerException
+            String errMsg = "FileHashStore.storeObject - Unable to store object for pid: " + pid
+                    + ". Runtime Exception: " + re.getMessage();
+            logFileHashStore.error(errMsg);
             throw re;
+
         } finally {
             // Release lock
             synchronized (objectLockedIds) {
@@ -466,7 +461,7 @@ public class FileHashStore implements HashStore {
      *                                         read/access files or when
      *                                         generating/writing to a file
      * @throws FileNotFoundException           tmpFile not found during store
-     * @throws FileAlreadyExistsException      Duplicate object in store exists
+     * @throws PidObjectExistsException        Duplicate object in store exists
      * @throws IllegalArgumentException        When signature values are empty
      *                                         (checksum, pid, etc.)
      * @throws NullPointerException            Arguments are null for pid or object
@@ -476,7 +471,7 @@ public class FileHashStore implements HashStore {
     protected HashAddress putObject(InputStream object, String pid, String additionalAlgorithm, String checksum,
             String checksumAlgorithm)
             throws IOException, NoSuchAlgorithmException, SecurityException, FileNotFoundException,
-            FileAlreadyExistsException, IllegalArgumentException, NullPointerException,
+            PidObjectExistsException, IllegalArgumentException, NullPointerException,
             AtomicMoveNotSupportedException {
         logFileHashStore.debug("FileHashStore.putObject - Called to put object for pid: " + pid);
 
@@ -518,7 +513,7 @@ public class FileHashStore implements HashStore {
             String errMsg = "FileHashStore.putObject - File already exists for pid: " + pid
                     + ". Object address: " + objHashAddressString + ". Aborting request.";
             logFileHashStore.warn(errMsg);
-            throw new FileAlreadyExistsException(errMsg);
+            throw new PidObjectExistsException(errMsg);
         }
 
         // Generate tmp file and write to it
@@ -538,6 +533,7 @@ public class FileHashStore implements HashStore {
                 logFileHashStore.error(errMsg);
                 throw new NoSuchAlgorithmException(errMsg);
             }
+
             if (!checksum.equals(digestFromHexDigests)) {
                 // Delete tmp File
                 boolean deleteStatus = tmpFile.delete();
@@ -567,6 +563,7 @@ public class FileHashStore implements HashStore {
                 logFileHashStore.error(errMsg);
                 throw new IOException(errMsg);
             }
+
             objAuthorityId = null;
             objShardString = null;
             objHashAddressString = null;
@@ -693,8 +690,9 @@ public class FileHashStore implements HashStore {
 
         boolean algorithmSupported = this.validateAlgorithm(algorithm);
         if (!algorithmSupported) {
-            throw new NoSuchAlgorithmException(
-                    "Algorithm not supported. Supported algorithms: " + Arrays.toString(SUPPORTED_HASH_ALGORITHMS));
+            String errMsg = "Algorithm not supported. Supported algorithms: "
+                    + Arrays.toString(SUPPORTED_HASH_ALGORITHMS);
+            throw new NoSuchAlgorithmException(errMsg);
         }
 
         MessageDigest stringMessageDigest = MessageDigest.getInstance(algorithm);
@@ -756,16 +754,19 @@ public class FileHashStore implements HashStore {
             File newFile = newPath.toFile();
             logFileHashStore.trace("FileHashStore.generateTmpFile - tmpFile generated: " + newFile.getAbsolutePath());
             return newFile;
+
         } catch (IOException ioe) {
             String errMsg = "FileHashStore.generateTmpFile - Unable to generate tmpFile, IOException: "
                     + ioe.getMessage();
             logFileHashStore.error(errMsg);
             throw new IOException(errMsg);
+
         } catch (SecurityException se) {
             String errMsg = "FileHashStore.generateTmpFile - Unable to generate tmpFile, SecurityException: "
                     + se.getMessage();
             logFileHashStore.error(errMsg);
             throw new SecurityException(errMsg);
+
         }
     }
 
@@ -831,9 +832,9 @@ public class FileHashStore implements HashStore {
                 }
             }
         } catch (IOException ioe) {
-            logFileHashStore.error(
-                    "FileHashStore.writeToTmpFileAndGenerateChecksums - IOException encountered (os.flush/close or write related): "
-                            + ioe.getMessage());
+            String errMsg = "FileHashStore.writeToTmpFileAndGenerateChecksums - IOException encountered (os.flush/close or write related): "
+                    + ioe.getMessage();
+            logFileHashStore.error(errMsg);
             throw ioe;
         } finally {
             os.flush();
@@ -898,15 +899,18 @@ public class FileHashStore implements HashStore {
             logFileHashStore.debug("FileHashStore.move - file moved from: " + sourceFilePath + ", to: "
                     + targetFilePath);
             return true;
+
         } catch (AtomicMoveNotSupportedException amnse) {
             logFileHashStore.error(
                     "FileHashStore.move - StandardCopyOption.ATOMIC_MOVE failed. AtomicMove is not supported across file systems. Source: "
                             + source + ". Target: " + target);
             throw amnse;
+
         } catch (IOException ioe) {
             logFileHashStore.error("FileHashStore.move - Unable to move file. Source: " + source
                     + ". Target: " + target);
             throw ioe;
+
         }
     }
 }
