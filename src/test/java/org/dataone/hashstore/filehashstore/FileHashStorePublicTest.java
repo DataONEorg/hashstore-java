@@ -143,7 +143,7 @@ public class FileHashStorePublicTest {
      * Confirm retrieved 'hashstore.yaml' file content is accurate
      */
     @Test
-    public void testGetHashStoreYaml() {
+    public void testGetHashStoreYaml() throws IOException {
         HashMap<String, Object> hsProperties = fileHashStore.getHashStoreYaml(rootDirectory);
         assertEquals(hsProperties.get("storePath"), rootDirectory);
         assertEquals(hsProperties.get("storeDepth"), 3);

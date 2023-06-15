@@ -20,6 +20,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.dataone.hashstore.HashAddress;
+import org.dataone.hashstore.exceptions.PidObjectExistsException;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.Before;
 import org.junit.Rule;
@@ -315,7 +316,7 @@ public class FileHashStoreInterfaceTest {
      * Check that store object throws FileAlreadyExists error when storing duplicate
      * object
      */
-    @Test(expected = FileAlreadyExistsException.class)
+    @Test(expected = PidObjectExistsException.class)
     public void storeObject_duplicate() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
