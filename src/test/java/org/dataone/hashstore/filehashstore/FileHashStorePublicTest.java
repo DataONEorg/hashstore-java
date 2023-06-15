@@ -66,7 +66,7 @@ public class FileHashStorePublicTest {
     @Test
     public void initObjDirectory() {
         Path checkStorePath = objStringFull;
-        assertTrue(Files.exists(checkStorePath));
+        assertTrue(Files.isDirectory(checkStorePath));
     }
 
     /**
@@ -75,7 +75,7 @@ public class FileHashStorePublicTest {
     @Test
     public void initObjTmpDirectory() {
         Path checkTmpPath = objTmpStringFull;
-        assertTrue(Files.exists(checkTmpPath));
+        assertTrue(Files.isDirectory(checkTmpPath));
     }
 
     /**
