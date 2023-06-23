@@ -436,7 +436,7 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public String storeSysmeta(InputStream sysmeta, String pid) throws Exception {
+    public String storeMetadata(InputStream sysmeta, String pid, String formatId) throws Exception {
         // TODO: Implement method
         return null;
     }
@@ -448,7 +448,7 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public String retrieveSysmeta(String pid) throws Exception {
+    public String retrieveMetadata(String pid, String formatId) throws Exception {
         // TODO: Implement method
         return null;
     }
@@ -460,7 +460,7 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public boolean deleteSysmeta(String pid) throws Exception {
+    public boolean deleteMetadata(String pid, String formatId) throws Exception {
         // TODO: Implement method
         return false;
     }
