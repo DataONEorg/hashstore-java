@@ -520,7 +520,7 @@ public class FileHashStore implements HashStore {
         logFileHashStore.debug("FileHashStore.putObject - Generating tmpFile");
         File tmpFile = this.generateTmpFile("tmp", this.OBJECT_TMP_FILE_DIRECTORY);
         Map<String, String> hexDigests = this.writeToTmpFileAndGenerateChecksums(tmpFile, object,
-                additionalAlgorithm);
+                additionalAlgorithm, checksumAlgorithm);
 
         // Validate object if checksum and checksum algorithm is passed
         if (requestValidation) {
@@ -781,6 +781,8 @@ public class FileHashStore implements HashStore {
      * @param tmpFile             file to write input stream data into
      * @param dataStream          input stream of data to store
      * @param additionalAlgorithm additional algorithm to include in hex digest map
+     * @param checksumAlgorithm   checksum algorithm to calculate hex digest for
+     *                            to verifying object
      * 
      * @return A map containing the hex digests of the default algorithms
      * @throws NoSuchAlgorithmException Unable to generate new instance of supplied
@@ -790,7 +792,7 @@ public class FileHashStore implements HashStore {
      * @throws FileNotFoundException    tmnpFile cannot be found
      */
     protected Map<String, String> writeToTmpFileAndGenerateChecksums(File tmpFile, InputStream dataStream,
-            String additionalAlgorithm)
+            String additionalAlgorithm, String checksumAlgorithm)
             throws NoSuchAlgorithmException, IOException, FileNotFoundException, SecurityException {
         if (additionalAlgorithm != null) {
             if (additionalAlgorithm.trim().isEmpty()) {
@@ -799,8 +801,16 @@ public class FileHashStore implements HashStore {
             }
             this.validateAlgorithm(additionalAlgorithm);
         }
+        if (checksumAlgorithm != null) {
+            if (checksumAlgorithm.trim().isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Additional algorithm cannot be empty");
+            }
+            this.validateAlgorithm(checksumAlgorithm);
+        }
 
-        MessageDigest extraAlgo = null;
+        MessageDigest additionalAlgo = null;
+        MessageDigest checksumAlgo = null;
         Map<String, String> hexDigests = new HashMap<>();
 
         FileOutputStream os = new FileOutputStream(tmpFile);
@@ -814,7 +824,13 @@ public class FileHashStore implements HashStore {
             logFileHashStore.debug(
                     "FileHashStore.writeToTmpFileAndGenerateChecksums - Adding additional algorithm to hex digest map, algorithm: "
                             + additionalAlgorithm);
-            extraAlgo = MessageDigest.getInstance(additionalAlgorithm);
+            additionalAlgo = MessageDigest.getInstance(additionalAlgorithm);
+        }
+        if (checksumAlgorithm != null && checksumAlgorithm != additionalAlgorithm) {
+            logFileHashStore.debug(
+                    "FileHashStore.writeToTmpFileAndGenerateChecksums - Adding checksum algorithm to hex digest map, algorithm: "
+                            + checksumAlgorithm);
+            checksumAlgo = MessageDigest.getInstance(checksumAlgorithm);
         }
 
         try {
@@ -828,7 +844,10 @@ public class FileHashStore implements HashStore {
                 sha384.update(buffer, 0, bytesRead);
                 sha512.update(buffer, 0, bytesRead);
                 if (additionalAlgorithm != null) {
-                    extraAlgo.update(buffer, 0, bytesRead);
+                    additionalAlgo.update(buffer, 0, bytesRead);
+                }
+                if (checksumAlgorithm != null && checksumAlgorithm != additionalAlgorithm) {
+                    checksumAlgo.update(buffer, 0, bytesRead);
                 }
             }
         } catch (IOException ioe) {
@@ -852,8 +871,12 @@ public class FileHashStore implements HashStore {
         hexDigests.put("SHA-384", sha384Digest);
         hexDigests.put("SHA-512", sha512Digest);
         if (additionalAlgorithm != null) {
-            String extraDigest = DatatypeConverter.printHexBinary(extraAlgo.digest()).toLowerCase();
-            hexDigests.put(additionalAlgorithm, extraDigest);
+            String extraAlgoDigest = DatatypeConverter.printHexBinary(additionalAlgo.digest()).toLowerCase();
+            hexDigests.put(additionalAlgorithm, extraAlgoDigest);
+        }
+        if (checksumAlgorithm != null && checksumAlgorithm != additionalAlgorithm) {
+            String extraChecksumDigest = DatatypeConverter.printHexBinary(checksumAlgo.digest()).toLowerCase();
+            hexDigests.put(checksumAlgorithm, extraChecksumDigest);
         }
         logFileHashStore.debug("FileHashStore.writeToTmpFileAndGenerateChecksums - Object has been written to tmpFile: "
                 + tmpFile.getName() + ". To be moved to: " + sha256Digest);

@@ -220,25 +220,6 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Verify that storeObject throws an exception when expected to validate object
-     * but checksum is not available/part of the hex digest map
-     */
-    @Test(expected = NoSuchAlgorithmException.class)
-    public void storeObject_missingChecksumValue() throws Exception {
-        // Get test file to "upload"
-        String pid = "jtao.1700.1";
-        Path testDataFile = testData.getTestFile(pid);
-
-        String checksumCorrect = "9c25df1c8ba1d2e57bb3fd4785878b85";
-
-        InputStream dataStream = Files.newInputStream(testDataFile);
-        HashAddress address = fileHashStore.storeObject(dataStream, pid, null, checksumCorrect, "MD2");
-
-        File objAbsPath = new File(address.getAbsPath());
-        assertTrue(objAbsPath.exists());
-    }
-
-    /**
      * Verify that storeObject generates an additional checksum
      */
     @Test
