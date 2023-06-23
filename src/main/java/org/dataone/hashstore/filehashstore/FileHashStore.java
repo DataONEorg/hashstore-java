@@ -44,7 +44,9 @@ import org.dataone.hashstore.exceptions.PidObjectExistsException;
  */
 public class FileHashStore implements HashStore {
     private static final Log logFileHashStore = LogFactory.getLog(FileHashStore.class);
+    private static final int TIME_OUT_MILLISEC = 1000;
     private static final ArrayList<String> objectLockedIds = new ArrayList<>(100);
+    private static final ArrayList<String> metadataLockedIds = new ArrayList<>(100);
     private final Path STORE_ROOT;
     private final int DIRECTORY_DEPTH;
     private final int DIRECTORY_WIDTH;
@@ -436,9 +438,78 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public String storeMetadata(InputStream sysmeta, String pid, String formatId) throws Exception {
-        // TODO: Implement method
-        return null;
+    public String storeMetadata(InputStream metadata, String pid, String formatId)
+            throws IOException, IllegalArgumentException, NoSuchAlgorithmException, InterruptedException {
+        logFileHashStore.debug("FileHashStore.storeMetadata - Called to store metadata for pid: " + pid
+                + ", with formatId: " + formatId);
+
+        // Begin input validation
+        if (metadata == null) {
+            String errMsg = "FileHashStore.storeMetadata - InputStream cannot be null, request for storing pid: " + pid;
+            logFileHashStore.error(errMsg);
+            throw new NullPointerException(errMsg);
+        }
+
+        if (pid == null || pid.trim().isEmpty()) {
+            String errMsg = "FileHashStore.storeMetadata - pid cannot be null or empty, pid: " + pid;
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
+        }
+
+        // Determine metadata namespace
+        // If no formatId is supplied, use the default namespace to store metadata
+        String checkedFormatId;
+        if (formatId == null) {
+            checkedFormatId = this.METADATA_NAMESPACE;
+        } else if (formatId.trim().isEmpty()) {
+            String errMsg = "FileHashStore.storeMetadata - formatId (metadata namespace) cannot be empty, it must be"
+                    + " supplied or null for default store namespace.";
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
+        } else {
+            checkedFormatId = formatId;
+        }
+
+        // Lock pid for thread safety, transaction control and atomic writing
+        // Metadata storage requests for the same pid must be written serially
+        synchronized (metadataLockedIds) {
+            while (metadataLockedIds.contains(pid)) {
+                try {
+                    metadataLockedIds.wait(TIME_OUT_MILLISEC);
+                } catch (InterruptedException ie) {
+                    String errMsg = "FileHashStore.storeMetadata - Metadata lock was interrupted while storing metadata for: "
+                            + pid + ". InterruptedException: " + ie.getMessage();
+                    logFileHashStore.warn(errMsg);
+                    throw ie;
+                }
+            }
+            logFileHashStore.debug("FileHashStore.storeMetadata - Synchronizing metadataLockedIds for pid: " + pid);
+            metadataLockedIds.add(pid);
+        }
+
+        try {
+            logFileHashStore.debug("FileHashStore.storeMetadata - .putMetadata() request for pid: " + pid
+                    + ". formatId: " + checkedFormatId);
+            // Store metadata
+            String metadataCid = this.putMetadata(metadata, pid, checkedFormatId);
+            logFileHashStore.info(
+                    "FileHashStore.storeMetadata - Metadata stored for pid: " + pid
+                            + ". Metadata Content Identifier (metadataCid): " + metadataCid);
+            return metadataCid;
+
+        } catch (Exception e) {
+            String errMsg = "Placeholder";
+            logFileHashStore.error(errMsg);
+            throw e;
+
+        } finally {
+            // Release lock
+            synchronized (metadataLockedIds) {
+                logFileHashStore.debug("FileHashStore.storeMetadata - Releasing metadataLockedIds for pid: " + pid);
+                metadataLockedIds.remove(pid);
+                metadataLockedIds.notifyAll();
+            }
+        }
     }
 
     @Override
@@ -890,7 +961,7 @@ public class FileHashStore implements HashStore {
                 }
             }
         } catch (IOException ioe) {
-            String errMsg = "FileHashStore.writeToTmpFileAndGenerateChecksums - IOException encountered (os.flush/close or write related): "
+            String errMsg = "FileHashStore.writeToTmpFileAndGenerateChecksums - Unexpected IOException encountered: "
                     + ioe.getMessage();
             logFileHashStore.error(errMsg);
             throw ioe;
@@ -973,6 +1044,79 @@ public class FileHashStore implements HashStore {
                     + ". Target: " + target);
             throw ioe;
 
+        }
+    }
+
+    public String putMetadata(InputStream metadata, String pid, String formatId)
+            throws NoSuchAlgorithmException, IOException {
+        logFileHashStore.debug(
+                "FileHashStore.putMetadata - Called to put metadata for pid:" + pid + " , with metadata namespace: "
+                        + formatId);
+
+        // Begin input validation
+        if (metadata == null) {
+            String errMsg = "FileHashStore.putMetadata - InputStream cannot be null, request for storing pid: " + pid;
+            logFileHashStore.error(errMsg);
+            throw new NullPointerException(errMsg);
+        }
+
+        if (pid == null || pid.trim().isEmpty()) {
+            String errMsg = "FileHashStore.putMetadata - pid cannot be null or empty, pid: " + pid;
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
+        }
+
+        // Determine metadata namespace
+        // If no formatId is supplied, use the default namespace to store metadata
+        String checkedFormatId;
+        if (formatId == null) {
+            checkedFormatId = this.METADATA_NAMESPACE;
+        } else if (formatId.trim().isEmpty()) {
+            String errMsg = "FileHashStore.putMetadata - formatId (metadata namespace) cannot be empty, it must be"
+                    + " supplied or null for default store namespace.";
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
+        } else {
+            checkedFormatId = formatId;
+        }
+
+        // Get permanent address of the given metadata document
+        String metadataCid = this.getPidHexDigest(pid + checkedFormatId, this.OBJECT_STORE_ALGORITHM);
+        String metadataCidShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
+                metadataCid);
+        Path metadataCidAbsPath = this.METADATA_STORE_DIRECTORY.resolve(metadataCidShardString);
+
+        // Store metadata to tmpMetadataFile
+        File tmpMetadataFile = this.generateTmpFile("tmp", this.METADATA_TMP_FILE_DIRECTORY);
+        boolean tmpMetadataWritten = this.writeToTmpMetadataFile(tmpMetadataFile, metadata);
+        if (tmpMetadataWritten) {
+            File permMeadataFile = metadataCidAbsPath.toFile();
+            this.move(tmpMetadataFile, permMeadataFile);
+        }
+        logFileHashStore
+                .debug("FileHashStore.putObject - Move metadata success, permanent address: " + metadataCidAbsPath);
+        return metadataCid;
+    }
+
+    public boolean writeToTmpMetadataFile(File tmpFile, InputStream metadataStream)
+            throws IOException, FileNotFoundException {
+        FileOutputStream os = new FileOutputStream(tmpFile);
+
+        try {
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = metadataStream.read(buffer)) != -1) {
+                os.write(buffer, 0, bytesRead);
+            }
+            return true;
+        } catch (IOException ioe) {
+            String errMsg = "FileHashStore.writeToTmpMetadataFile - Unexpected IOException encountered: "
+                    + ioe.getMessage();
+            logFileHashStore.error(errMsg);
+            throw ioe;
+        } finally {
+            os.flush();
+            os.close();
         }
     }
 }
