@@ -865,7 +865,7 @@ public class FileHashStore implements HashStore {
                             + additionalAlgorithm);
             additionalAlgo = MessageDigest.getInstance(additionalAlgorithm);
         }
-        if (checksumAlgorithm != null && checksumAlgorithm != additionalAlgorithm) {
+        if (checksumAlgorithm != null && !checksumAlgorithm.equals(additionalAlgorithm)) {
             logFileHashStore.debug(
                     "FileHashStore.writeToTmpFileAndGenerateChecksums - Adding checksum algorithm to hex digest map, algorithm: "
                             + checksumAlgorithm);
@@ -885,7 +885,7 @@ public class FileHashStore implements HashStore {
                 if (additionalAlgorithm != null) {
                     additionalAlgo.update(buffer, 0, bytesRead);
                 }
-                if (checksumAlgorithm != null && checksumAlgorithm != additionalAlgorithm) {
+                if (checksumAlgorithm != null && !checksumAlgorithm.equals(additionalAlgorithm)) {
                     checksumAlgo.update(buffer, 0, bytesRead);
                 }
             }
@@ -913,7 +913,7 @@ public class FileHashStore implements HashStore {
             String extraAlgoDigest = DatatypeConverter.printHexBinary(additionalAlgo.digest()).toLowerCase();
             hexDigests.put(additionalAlgorithm, extraAlgoDigest);
         }
-        if (checksumAlgorithm != null && checksumAlgorithm != additionalAlgorithm) {
+        if (checksumAlgorithm != null && !checksumAlgorithm.equals(additionalAlgorithm)) {
             String extraChecksumDigest = DatatypeConverter.printHexBinary(checksumAlgo.digest()).toLowerCase();
             hexDigests.put(checksumAlgorithm, extraChecksumDigest);
         }
