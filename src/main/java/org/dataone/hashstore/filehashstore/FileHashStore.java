@@ -51,6 +51,9 @@ public class FileHashStore implements HashStore {
     private final String OBJECT_STORE_ALGORITHM;
     private final Path OBJECT_STORE_DIRECTORY;
     private final Path OBJECT_TMP_FILE_DIRECTORY;
+    private final String METADATA_NAMESPACE;
+    private final Path METADATA_STORE_DIRECTORY;
+    private final Path METADATA_TMP_FILE_DIRECTORY;
 
     public static final String[] SUPPORTED_HASH_ALGORITHMS = { "MD2", "MD5", "SHA-1", "SHA-256", "SHA-384", "SHA-512",
             "SHA-512/224", "SHA-512/256" };
@@ -67,7 +70,8 @@ public class FileHashStore implements HashStore {
         storePath,
         storeDepth,
         storeWidth,
-        storeAlgorithm
+        storeAlgorithm,
+        storeMetadataNamespace
     }
 
     /**
@@ -75,20 +79,24 @@ public class FileHashStore implements HashStore {
      * 
      * Note: HashStore is not responsible for ensuring that the given store path is
      * accurate. It will only check for an existing configuration, directories or
-     * objects before initializing.
+     * objects at the supplied store path before initializing.
      * 
-     * Two directories will be created based on the given storePath string:
+     * Four directories will be created based on the given storePath string:
      * - .../[storePath]/objects
      * - .../[storePath]/objects/tmp
+     * - .../[storePath]/metadata
+     * - .../[storePath]/metadata/tmp
      * 
      * @param hashstoreProperties HashMap<String, Object> of the following keys:
      *                            storePath (Path)
      *                            storeDepth (int)
      *                            storeWidth (int)
      *                            storeAlgorithm (String)
+     *                            storeMetadataNamespace (String)
      * @throws IllegalArgumentException Constructor arguments cannot be null, empty
      *                                  or less than 0
      * @throws IOException              Issue with creating directories
+     * @throws NoSuchAlgorithmException Unsupported store algorithm
      */
     public FileHashStore(HashMap<String, Object> hashstoreProperties)
             throws IllegalArgumentException, IOException, NoSuchAlgorithmException {
@@ -103,6 +111,8 @@ public class FileHashStore implements HashStore {
         int storeDepth = (int) hashstoreProperties.get(HashStoreProperties.storeDepth.name());
         int storeWidth = (int) hashstoreProperties.get(HashStoreProperties.storeWidth.name());
         String storeAlgorithm = (String) hashstoreProperties.get(HashStoreProperties.storeAlgorithm.name());
+        String storeMetadataNamespace = (String) hashstoreProperties
+                .get(HashStoreProperties.storeMetadataNamespace.name());
 
         // Validate input parameters
         if (storePath == null) {
@@ -121,6 +131,13 @@ public class FileHashStore implements HashStore {
         // Ensure algorithm supplied is not empty, not null and supported
         this.validateAlgorithm(storeAlgorithm);
 
+        if (storeMetadataNamespace == null || storeMetadataNamespace.trim().isEmpty()) {
+            String errMsg = "FileHashStore - Store metadata namespace (formatId) cannot be null or empty. Namespace: "
+                    + storeMetadataNamespace;
+            logFileHashStore.fatal(errMsg);
+            throw new IllegalArgumentException(errMsg);
+        }
+
         // Check to see if configuration exists before initializing
         Path hashstoreYamlPredictedPath = Paths.get(storePath + "/hashstore.yaml");
         if (Files.exists(hashstoreYamlPredictedPath)) {
@@ -131,12 +148,14 @@ public class FileHashStore implements HashStore {
             int existingStoreDepth = (int) hsProperties.get("storeDepth");
             int existingStoreWidth = (int) hsProperties.get("storeWidth");
             String existingStoreAlgorithm = (String) hsProperties.get("storeAlgorithm");
+            String existingStoreMetadataNs = (String) hsProperties.get("storeMetadataNamespace");
 
             // Verify properties when 'hashstore.yaml' found
             checkConfigurationEquality("store path", storePath, existingStorePath);
             checkConfigurationEquality("store depth", storeDepth, existingStoreDepth);
             checkConfigurationEquality("store width", storeWidth, existingStoreWidth);
             checkConfigurationEquality("store algorithm", storeAlgorithm, existingStoreAlgorithm);
+            checkConfigurationEquality("store algorithm", storeMetadataNamespace, existingStoreMetadataNs);
 
         } else {
             // Check if HashStore exists at the given store path (and is missing config)
@@ -156,14 +175,22 @@ public class FileHashStore implements HashStore {
 
         // HashStore configuration has been checked, proceed with initialization
         this.STORE_ROOT = storePath;
+        this.DIRECTORY_DEPTH = storeDepth;
+        this.DIRECTORY_WIDTH = storeWidth;
+        this.OBJECT_STORE_ALGORITHM = storeAlgorithm;
+        this.METADATA_NAMESPACE = storeMetadataNamespace;
+        // Resolve object/metadata directories
         this.OBJECT_STORE_DIRECTORY = storePath.resolve("objects");
-        // Resolve tmp object directory path
+        this.METADATA_STORE_DIRECTORY = storePath.resolve("metadata");
+        // Resolve tmp object/metadata directory paths
         this.OBJECT_TMP_FILE_DIRECTORY = this.OBJECT_STORE_DIRECTORY.resolve("tmp");
-
-        // Physically create store and tmp directory
+        this.METADATA_TMP_FILE_DIRECTORY = this.METADATA_STORE_DIRECTORY.resolve("tmp");
         try {
+            // Physically create object & metadata store and tmp directories
             Files.createDirectories(this.OBJECT_STORE_DIRECTORY);
+            Files.createDirectories(this.METADATA_STORE_DIRECTORY);
             Files.createDirectories(this.OBJECT_TMP_FILE_DIRECTORY);
+            Files.createDirectories(this.METADATA_TMP_FILE_DIRECTORY);
             logFileHashStore.debug("FileHashStore - Created store and store tmp directories.");
 
         } catch (IOException ioe) {
@@ -172,19 +199,16 @@ public class FileHashStore implements HashStore {
                             + ioe.getMessage());
             throw ioe;
         }
-
-        // Finalize instance variables
-        this.DIRECTORY_DEPTH = storeDepth;
-        this.DIRECTORY_WIDTH = storeWidth;
-        this.OBJECT_STORE_ALGORITHM = storeAlgorithm;
-        logFileHashStore.debug("FileHashStore - HashStore initialized. Store Depth: " + storeDepth + ". Store Width: "
-                + storeWidth + ". Store Algorithm: " + storeAlgorithm);
+        logFileHashStore
+                .debug("FileHashStore - HashStore initialized. Store Depth: " + this.DIRECTORY_DEPTH + ". Store Width: "
+                        + this.DIRECTORY_WIDTH + ". Store Algorithm: " + this.OBJECT_STORE_ALGORITHM
+                        + ". Store Metadata Namespace: " + this.METADATA_NAMESPACE);
 
         // Write configuration file 'hashstore.yaml' to store root
         Path hashstoreYaml = this.STORE_ROOT.resolve("hashstore.yaml");
         if (!Files.exists(hashstoreYaml)) {
             String hashstoreYamlContent = FileHashStore.buildHashStoreYamlString(this.STORE_ROOT, this.DIRECTORY_DEPTH,
-                    this.DIRECTORY_WIDTH, this.OBJECT_STORE_ALGORITHM);
+                    this.DIRECTORY_WIDTH, this.OBJECT_STORE_ALGORITHM, this.METADATA_NAMESPACE);
             this.putHashStoreYaml(hashstoreYamlContent);
             logFileHashStore.info("FileHashStore - 'hashstore.yaml' written to storePath: " + hashstoreYaml);
         } else {
@@ -215,6 +239,7 @@ public class FileHashStore implements HashStore {
             hsProperties.put("storeDepth", hashStoreYamlProperties.get("store_depth"));
             hsProperties.put("storeWidth", hashStoreYamlProperties.get("store_width"));
             hsProperties.put("storeAlgorithm", hashStoreYamlProperties.get("store_algorithm"));
+            hsProperties.put("storeMetadataNamespace", hashStoreYamlProperties.get("store_metadata_namespace"));
 
         } catch (IOException ioe) {
             logFileHashStore
@@ -270,15 +295,17 @@ public class FileHashStore implements HashStore {
      * Build the string content of the configuration file for HashStore -
      * 'hashstore.yaml'
      * 
-     * @param storePath      Root path of store
-     * @param storeDepth     Depth of store
-     * @param storeWidth     Width of store
-     * @param storeAlgorithm Algorithm to use to calculate the hex digest for the
-     *                       permanent address of a data sobject
+     * @param storePath              Root path of store
+     * @param storeDepth             Depth of store
+     * @param storeWidth             Width of store
+     * @param storeAlgorithm         Algorithm to use to calculate the hex digest
+     *                               for the
+     *                               permanent address of a data sobject
+     * @param storeMetadataNamespace default formatId of hashstore metadata
      * @return String that representing the contents of 'hashstore.yaml'
      */
     protected static String buildHashStoreYamlString(Path storePath, int storeDepth, int storeWidth,
-            String storeAlgorithm) {
+            String storeAlgorithm, String storeMetadataNamespace) {
         return String.format(
                 "# Default configuration variables for HashStore\n\n" +
                         "############### Store Path ###############\n" +
@@ -301,8 +328,20 @@ public class FileHashStore implements HashStore {
                         "store_sysmeta_namespace: \"http://ns.dataone.org/service/types/v2.0\"\n\n" +
                         "############### Hash Algorithms ###############\n" +
                         "# Hash algorithm to use when calculating object's hex digest for the permanent address\n" +
-                        "store_algorithm: \"%s\"\n",
-                storePath, storeDepth, storeWidth, storeAlgorithm);
+                        "store_algorithm: \"%s\"\n" +
+                        "############### Hash Algorithms ###############\n" +
+                        "# Hash algorithm to use when calculating object's hex digest for the permanent address\n" +
+                        "store_metadata_namespace: \"%s\"\n" +
+                        "# Algorithm values supported by python hashlib 3.9.0+ for File Hash Store (FHS)\n" +
+                        "# The default algorithm list includes the hash algorithms calculated when storing an\n" +
+                        "# object to disk and returned to the caller after successful storage.\n" +
+                        "store_default_algo_list:\n" +
+                        "- \"MD5\"\n" +
+                        "- \"SHA-1\"\n" +
+                        "- \"SHA-256\"\n" +
+                        "- \"SHA-384\"\n" +
+                        "- \"SHA-512\"\n",
+                storePath, storeDepth, storeWidth, storeAlgorithm, storeMetadataNamespace);
     }
 
     // Public API Methods

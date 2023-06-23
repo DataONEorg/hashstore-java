@@ -46,6 +46,7 @@ public class FileHashStoreInterfaceTest {
         storeProperties.put("storeDepth", 3);
         storeProperties.put("storeWidth", 2);
         storeProperties.put("storeAlgorithm", "SHA-256");
+        storeProperties.put("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
 
         try {
             this.fileHashStore = new FileHashStore(storeProperties);

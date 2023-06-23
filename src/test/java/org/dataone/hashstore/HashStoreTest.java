@@ -36,6 +36,7 @@ public class HashStoreTest {
         storeProperties.put("storeDepth", 3);
         storeProperties.put("storeWidth", 2);
         storeProperties.put("storeAlgorithm", "SHA-256");
+        storeProperties.put("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
 
         try {
             hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
@@ -70,6 +71,7 @@ public class HashStoreTest {
         storeProperties.put("storeDepth", 3);
         storeProperties.put("storeWidth", 2);
         storeProperties.put("storeAlgorithm", "SHA-256");
+        storeProperties.put("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
         hashStore = HashStoreFactory.getHashStore(null, storeProperties);
     }
 
@@ -83,7 +85,7 @@ public class HashStoreTest {
     }
 
     /**
-     * Test mystore stores file successfully
+     * Test hashStore instance stores file successfully
      */
     @Test
     public void hashStore_storeObjects() throws Exception {
