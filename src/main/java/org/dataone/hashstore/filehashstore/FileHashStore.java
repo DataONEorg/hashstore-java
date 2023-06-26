@@ -1102,7 +1102,7 @@ public class FileHashStore implements HashStore {
 
         // Store metadata to tmpMetadataFile
         File tmpMetadataFile = this.generateTmpFile("tmp", this.METADATA_TMP_FILE_DIRECTORY);
-        boolean tmpMetadataWritten = this.writeToTmpMetadataFile(tmpMetadataFile, metadata);
+        boolean tmpMetadataWritten = this.writeToTmpMetadataFile(tmpMetadataFile, metadata, checkedFormatId);
         if (tmpMetadataWritten) {
             File permMeadataFile = metadataCidAbsPath.toFile();
             this.move(tmpMetadataFile, permMeadataFile);
@@ -1117,26 +1117,37 @@ public class FileHashStore implements HashStore {
      * 
      * @param tmpFile        File to write into
      * @param metadataStream Stream of metadata content
+     * @param formatId       Namespace/format of metadata
+     * 
      * @return
      * @throws IOException           When an I/O error occurs
      * @throws FileNotFoundException When given file to write into is not found
      */
-    protected boolean writeToTmpMetadataFile(File tmpFile, InputStream metadataStream)
+    protected boolean writeToTmpMetadataFile(File tmpFile, InputStream metadataStream, String formatId)
             throws IOException, FileNotFoundException {
         FileOutputStream os = new FileOutputStream(tmpFile);
 
         try {
+            // Write formatId and null character (header)
+            byte[] metadataHeaderBytes = formatId.getBytes("UTF-8");
+            os.write(metadataHeaderBytes);
+            // Write null character
+            os.write('\0');
+
+            // Write metadata content (body)
             byte[] buffer = new byte[8192];
             int bytesRead;
             while ((bytesRead = metadataStream.read(buffer)) != -1) {
                 os.write(buffer, 0, bytesRead);
             }
             return true;
+
         } catch (IOException ioe) {
             String errMsg = "FileHashStore.writeToTmpMetadataFile - Unexpected IOException encountered: "
                     + ioe.getMessage();
             logFileHashStore.error(errMsg);
             throw ioe;
+
         } finally {
             os.flush();
             os.close();

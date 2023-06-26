@@ -732,12 +732,13 @@ public class FileHashStoreProtectedTest {
         for (String pid : testData.pidList) {
             File newTmpFile = generateTemporaryFile();
             String pidFormatted = pid.replace("/", "_");
+            String formatId = (String) this.fhsProperties.get("storeMetadataNamespace");
 
             // Get test metadata file
             Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
 
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
-            boolean metadataWritten = this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream);
+            boolean metadataWritten = this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream, formatId);
             assertTrue(metadataWritten);
         }
     }
@@ -753,12 +754,13 @@ public class FileHashStoreProtectedTest {
         for (String pid : testData.pidList) {
             File newTmpFile = generateTemporaryFile();
             String pidFormatted = pid.replace("/", "_");
+            String formatId = (String) this.fhsProperties.get("storeMetadataNamespace");
 
             // Get test metadata file
             Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
 
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
-            boolean metadataWritten = this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream);
+            boolean metadataWritten = this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream, formatId);
             assertTrue(metadataWritten);
 
             long tmpMetadataFileSize = Files.size(newTmpFile.toPath());
