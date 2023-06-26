@@ -461,7 +461,7 @@ public class FileHashStoreProtectedTest {
      * Check that default checksums are generated
      */
     @Test
-    public void writeToTempFileAndGenerateChecksums() throws Exception {
+    public void writeToTmpFileAndGenerateChecksums() throws Exception {
         for (String pid : testData.pidList) {
             File newTmpFile = generateTemporaryFile();
             String pidFormatted = pid.replace("/", "_");
@@ -471,10 +471,8 @@ public class FileHashStoreProtectedTest {
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             Map<String, String> hexDigests = this.fileHashStore.writeToTmpFileAndGenerateChecksums(newTmpFile,
-                    dataStream,
-                    null, null);
+                    dataStream, null, null);
 
-            System.out.println(hexDigests);
             // Validate checksum values
             String md5 = testData.pidData.get(pid).get("md5");
             String sha1 = testData.pidData.get(pid).get("sha1");
@@ -490,67 +488,10 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Check that checksums are generated when additional algorithm supplied.
-     */
-    @Test
-    public void writeToTempFileAndGenerateChecksums_addAlgo() throws Exception {
-        for (String pid : testData.pidList) {
-            File newTmpFile = generateTemporaryFile();
-            String pidFormatted = pid.replace("/", "_");
-
-            // Get test file
-            Path testDataFile = testData.getTestFile(pidFormatted);
-
-            // Extra algo to calculate - MD2
-            String addAlgo = "MD2";
-
-            InputStream dataStream = Files.newInputStream(testDataFile);
-            Map<String, String> hexDigests = this.fileHashStore.writeToTmpFileAndGenerateChecksums(newTmpFile,
-                    dataStream,
-                    addAlgo, null);
-
-            // Validate checksum values
-            String md2 = testData.pidData.get(pid).get("md2");
-            assertEquals(md2, hexDigests.get("MD2"));
-        }
-    }
-
-    /**
-     * Check that checksums are generated when both additional and checksum
-     * algorithm supplied
-     */
-    @Test
-    public void writeToTempFileAndGenerateChecksums_addAlgoChecksumAlgo() throws Exception {
-        for (String pid : testData.pidList) {
-            File newTmpFile = generateTemporaryFile();
-            String pidFormatted = pid.replace("/", "_");
-
-            // Get test file
-            Path testDataFile = testData.getTestFile(pidFormatted);
-
-            // Extra algo to calculate - MD2
-            String addAlgo = "MD2";
-            String checksumAlgo = "SHA-512/224";
-
-            InputStream dataStream = Files.newInputStream(testDataFile);
-            Map<String, String> hexDigests = this.fileHashStore.writeToTmpFileAndGenerateChecksums(newTmpFile,
-                    dataStream,
-                    addAlgo, checksumAlgo);
-
-            System.out.println(hexDigests);
-            // Validate checksum values
-            String md2 = testData.pidData.get(pid).get("md2");
-            String sha512224 = testData.pidData.get(pid).get("sha512-224");
-            assertEquals(md2, hexDigests.get("MD2"));
-            assertEquals(sha512224, hexDigests.get("SHA-512/224"));
-        }
-    }
-
-    /**
      * Check that the temporary file that has been written into is not empty
      */
     @Test
-    public void writeToTempFileAndGenerateChecksums_tmpFileSize() throws Exception {
+    public void writeToTmpFileAndGenerateChecksums_tmpFileSize() throws Exception {
         for (String pid : testData.pidList) {
             File newTmpFile = generateTemporaryFile();
             String pidFormatted = pid.replace("/", "_");
@@ -565,9 +506,87 @@ public class FileHashStoreProtectedTest {
             this.fileHashStore.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream, addAlgo, null);
 
             long testDataFileSize = Files.size(testDataFile);
-            Path tmpFilePath = newTmpFile.toPath();
-            long tmpFileSize = Files.size(tmpFilePath);
+            long tmpFileSize = Files.size(newTmpFile.toPath());
             assertEquals(testDataFileSize, tmpFileSize);
+        }
+    }
+
+    /**
+     * Check that checksums are generated when additional algorithm supplied.
+     */
+    @Test
+    public void writeToTmpFileAndGenerateChecksums_addAlgo() throws Exception {
+        for (String pid : testData.pidList) {
+            File newTmpFile = generateTemporaryFile();
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test file
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            // Extra algo to calculate - MD2
+            String addAlgo = "MD2";
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            Map<String, String> hexDigests = this.fileHashStore.writeToTmpFileAndGenerateChecksums(newTmpFile,
+                    dataStream, addAlgo, null);
+
+            // Validate checksum values
+            String md2 = testData.pidData.get(pid).get("md2");
+            assertEquals(md2, hexDigests.get("MD2"));
+        }
+    }
+
+    /**
+     * Check that checksums are generated when checksum algorithm supplied
+     */
+    @Test
+    public void writeToTmpFileAndGenerateChecksums_checksumAlgo() throws Exception {
+        for (String pid : testData.pidList) {
+            File newTmpFile = generateTemporaryFile();
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test file
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            // Extra algo to calculate - MD2
+            String checksumAlgo = "SHA-512/224";
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            Map<String, String> hexDigests = this.fileHashStore.writeToTmpFileAndGenerateChecksums(newTmpFile,
+                    dataStream, null, checksumAlgo);
+
+            // Validate checksum values
+            String sha512224 = testData.pidData.get(pid).get("sha512-224");
+            assertEquals(sha512224, hexDigests.get("SHA-512/224"));
+        }
+    }
+
+    /**
+     * Check that checksums are generated when both additional and checksum
+     * algorithm supplied
+     */
+    @Test
+    public void writeToTmpFileAndGenerateChecksums_addAlgoChecksumAlgo() throws Exception {
+        for (String pid : testData.pidList) {
+            File newTmpFile = generateTemporaryFile();
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test file
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            // Extra algo to calculate - MD2
+            String addAlgo = "MD2";
+            String checksumAlgo = "SHA-512/224";
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            Map<String, String> hexDigests = this.fileHashStore.writeToTmpFileAndGenerateChecksums(newTmpFile,
+                    dataStream, addAlgo, checksumAlgo);
+
+            // Validate checksum values
+            String md2 = testData.pidData.get(pid).get("md2");
+            String sha512224 = testData.pidData.get(pid).get("sha512-224");
+            assertEquals(md2, hexDigests.get("MD2"));
+            assertEquals(sha512224, hexDigests.get("SHA-512/224"));
         }
     }
 
@@ -575,7 +594,7 @@ public class FileHashStoreProtectedTest {
      * Check that exception is thrown when unsupported algorithm supplied
      */
     @Test(expected = NoSuchAlgorithmException.class)
-    public void writeToTempFileAndGenerateChecksums_invalidAlgo() throws Exception {
+    public void writeToTmpFileAndGenerateChecksums_invalidAlgo() throws Exception {
         for (String pid : testData.pidList) {
             File newTmpFile = generateTemporaryFile();
             String pidFormatted = pid.replace("/", "_");
@@ -616,5 +635,45 @@ public class FileHashStoreProtectedTest {
 
         File newTmpFileTwo = generateTemporaryFile();
         this.fileHashStore.move(newTmpFileTwo, targetFile);
+    }
+
+    /**
+     * Check that tmp metadata is written with good data
+     */
+    @Test
+    public void writeToTmpMetadataFile() throws Exception {
+        for (String pid : testData.pidList) {
+            File newTmpFile = generateTemporaryFile();
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            boolean metadataWritten = this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream);
+            assertTrue(metadataWritten);
+        }
+    }
+
+    /**
+     * Check that tmp metadata is actually written by verifying file size
+     */
+    @Test
+    public void writeToTmpMetadataFile_tmpFileSize() throws Exception {
+        for (String pid : testData.pidList) {
+            File newTmpFile = generateTemporaryFile();
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            boolean metadataWritten = this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream);
+            assertTrue(metadataWritten);
+
+            long testMetadataFileSize = Files.size(testMetaDataFile);
+            long tmpMetadataFileSize = Files.size(newTmpFile.toPath());
+            assertEquals(testMetadataFileSize, tmpMetadataFileSize);
+        }
     }
 }

@@ -1047,7 +1047,7 @@ public class FileHashStore implements HashStore {
         }
     }
 
-    public String putMetadata(InputStream metadata, String pid, String formatId)
+    protected String putMetadata(InputStream metadata, String pid, String formatId)
             throws NoSuchAlgorithmException, IOException {
         logFileHashStore.debug(
                 "FileHashStore.putMetadata - Called to put metadata for pid:" + pid + " , with metadata namespace: "
@@ -1072,8 +1072,8 @@ public class FileHashStore implements HashStore {
         if (formatId == null) {
             checkedFormatId = this.METADATA_NAMESPACE;
         } else if (formatId.trim().isEmpty()) {
-            String errMsg = "FileHashStore.putMetadata - formatId (metadata namespace) cannot be empty, it must be"
-                    + " supplied or null for default store namespace.";
+            String errMsg = "FileHashStore.putMetadata - formatId (metadata namespace) cannot be empty, it must"
+                    + " be supplied, or null for the default store namespace.";
             logFileHashStore.error(errMsg);
             throw new IllegalArgumentException(errMsg);
         } else {
@@ -1098,7 +1098,16 @@ public class FileHashStore implements HashStore {
         return metadataCid;
     }
 
-    public boolean writeToTmpMetadataFile(File tmpFile, InputStream metadataStream)
+    /**
+     * Write the contents of the given metadataStream into a file
+     * 
+     * @param tmpFile        File to write into
+     * @param metadataStream Stream of metadata content
+     * @return
+     * @throws IOException           When an I/O error occurs
+     * @throws FileNotFoundException When given file to write into is not found
+     */
+    protected boolean writeToTmpMetadataFile(File tmpFile, InputStream metadataStream)
             throws IOException, FileNotFoundException {
         FileOutputStream os = new FileOutputStream(tmpFile);
 
