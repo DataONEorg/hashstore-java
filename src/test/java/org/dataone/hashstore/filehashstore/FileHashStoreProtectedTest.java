@@ -1,6 +1,8 @@
 package org.dataone.hashstore.filehashstore;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.FileAlreadyExistsException;
@@ -9,6 +11,7 @@ import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Scanner;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -765,6 +768,94 @@ public class FileHashStoreProtectedTest {
 
             long tmpMetadataFileSize = Files.size(newTmpFile.toPath());
             assertTrue(tmpMetadataFileSize > 0);
+        }
+    }
+
+    /**
+     * Check that tmp metadata written contains correct header
+     */
+    @Test
+    public void writeToTmpMetadataFile_header() throws Exception {
+        for (String pid : testData.pidList) {
+            File newTmpFile = generateTemporaryFile();
+            String pidFormatted = pid.replace("/", "_");
+            String formatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream, formatId);
+
+            // Read the header
+            FileInputStream metadataInputStream = new FileInputStream(newTmpFile);
+            try (Scanner scanner = new Scanner(metadataInputStream, "UTF-8").useDelimiter("\u0000")) {
+                String header = scanner.next();
+                assertEquals(header, formatId);
+
+            } catch (IllegalArgumentException iae) {
+                iae.printStackTrace();
+                throw iae;
+
+            }
+
+        }
+    }
+
+    /**
+     * Check that tmp metadata written contains correct body. This test uses two
+     * approaches when reading the metadata file to cross-verify results.
+     */
+    @Test
+    public void writeToTmpMetadataFile_body() throws Exception {
+        for (String pid : testData.pidList) {
+            File newTmpFile = generateTemporaryFile();
+            String pidFormatted = pid.replace("/", "_");
+            String formatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+            // Write it to the tmpFile
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream, formatId);
+
+            // Confirm header and body
+            try (FileInputStream metadataInputStream = new FileInputStream(newTmpFile)) {
+                // Read the metadata content manually
+                ByteArrayOutputStream headerStream = new ByteArrayOutputStream();
+                int currentByte;
+                // The null character that splits the header/body is consumed in this while loop
+                while ((currentByte = metadataInputStream.read()) != -1 && currentByte != 0) {
+                    headerStream.write(currentByte);
+                }
+                String header = headerStream.toString("UTF-8");
+                assertEquals(header, formatId);
+
+                ByteArrayOutputStream bodyStream = new ByteArrayOutputStream();
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+                while ((bytesRead = metadataInputStream.read(buffer)) != -1) {
+                    bodyStream.write(buffer, 0, bytesRead);
+                }
+                String body = bodyStream.toString("UTF-8");
+
+                // Now confirm the body matches via higher level abstraction class 'Scanner'
+                InputStream metadataStreamTwo = Files.newInputStream(testMetaDataFile);
+                try (Scanner scanner = new Scanner(metadataStreamTwo, "UTF-8").useDelimiter("\u0000")) {
+                    String metadataBody = scanner.next();
+                    assertEquals(metadataBody, body);
+
+                } catch (IllegalArgumentException iae) {
+                    iae.printStackTrace();
+                    throw iae;
+
+                }
+
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
+                throw ioe;
+
+            }
         }
     }
 }

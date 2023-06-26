@@ -1113,7 +1113,8 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Write the contents of the given metadataStream into a file
+     * Write the given formatId, followed by a null character `\u0000`, and metadata
+     * content into a file
      * 
      * @param tmpFile        File to write into
      * @param metadataStream Stream of metadata content
@@ -1132,7 +1133,7 @@ public class FileHashStore implements HashStore {
             byte[] metadataHeaderBytes = formatId.getBytes("UTF-8");
             os.write(metadataHeaderBytes);
             // Write null character
-            os.write('\0');
+            os.write('\u0000');
 
             // Write metadata content (body)
             byte[] buffer = new byte[8192];
