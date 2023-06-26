@@ -640,7 +640,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Test putMetadata stores metadata as expceted
+     * Test putMetadata stores metadata as expected
      */
     @Test
     public void putMetadata() throws Exception {
@@ -744,6 +744,9 @@ public class FileHashStoreProtectedTest {
 
     /**
      * Check that tmp metadata is actually written by verifying file size
+     * 
+     * Reminder: We cannot do a size comparison directly because the metadata file
+     * stored contains the given namespace/formatId as well
      */
     @Test
     public void writeToTmpMetadataFile_tmpFileSize() throws Exception {
@@ -758,9 +761,8 @@ public class FileHashStoreProtectedTest {
             boolean metadataWritten = this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream);
             assertTrue(metadataWritten);
 
-            long testMetadataFileSize = Files.size(testMetaDataFile);
             long tmpMetadataFileSize = Files.size(newTmpFile.toPath());
-            assertEquals(testMetadataFileSize, tmpMetadataFileSize);
+            assertTrue(tmpMetadataFileSize > 0);
         }
     }
 }

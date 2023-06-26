@@ -32,6 +32,7 @@ import org.junit.rules.TemporaryFolder;
  */
 public class FileHashStoreInterfaceTest {
     private FileHashStore fileHashStore;
+    private HashMap<String, Object> fhsProperties;
     private static final TestDataHarness testData = new TestDataHarness();
 
     /**
@@ -49,6 +50,7 @@ public class FileHashStoreInterfaceTest {
         storeProperties.put("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
 
         try {
+            this.fhsProperties = storeProperties;
             this.fileHashStore = new FileHashStore(storeProperties);
         } catch (IOException ioe) {
             fail("IOException encountered: " + ioe.getMessage());
@@ -383,5 +385,90 @@ public class FileHashStoreInterfaceTest {
         future3.get();
         executorService.shutdown();
         executorService.awaitTermination(1, TimeUnit.MINUTES);
+    }
+
+    /**
+     * Test storeMetadata stores metadata as expected
+     */
+    @Test
+    public void storeMetadata() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, null);
+
+            // Get relative path
+            String metadataCidShardString = this.fileHashStore.getHierarchicalPathString(3, 2, metadataCid);
+            // Get absolute path
+            Path storePath = (Path) this.fhsProperties.get("storePath");
+            Path metadataCidAbsPath = storePath.resolve("metadata/" + metadataCidShardString);
+
+            assertTrue(Files.exists(metadataCidAbsPath));
+        }
+    }
+
+    /**
+     * Test storeMetadata throws exception when metadata is null
+     */
+    @Test(expected = NullPointerException.class)
+    public void storeMetadata_metadataNull() throws Exception {
+        for (String pid : testData.pidList) {
+            this.fileHashStore.storeMetadata(null, pid, null);
+        }
+    }
+
+    /**
+     * Test storeMetadata throws exception when pid is null
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void storeMetadata_pidNull() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+
+            this.fileHashStore.storeMetadata(metadataStream, null, null);
+        }
+    }
+
+    /**
+     * Test storeMetadata throws exception when pid is empty
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void storeMetadata_pidEmpty() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+
+            this.fileHashStore.storeMetadata(metadataStream, "", null);
+        }
+    }
+
+    /**
+     * Test storeMetadata throws exception when pid is empty with spaces
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void storeMetadata_pidEmptySpaces() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+
+            this.fileHashStore.storeMetadata(metadataStream, "     ", null);
+        }
     }
 }
