@@ -552,11 +552,11 @@ public class FileHashStore implements HashStore {
      * checksumAlgorithm is provided, FileHashStore will validate the given
      * checksum against the hex digest produced of the supplied checksumAlgorithm.
      * 
-     * @param object              inputstream for file
-     * @param pid                 authority based identifier
-     * @param additionalAlgorithm optional checksum value to generate in hex digests
-     * @param checksum            value of checksum to validate against
-     * @param checksumAlgorithm   algorithm of checksum submitted
+     * @param object              Inputstream for file
+     * @param pid                 Authority-based identifier
+     * @param additionalAlgorithm Optional checksum value to generate in hex digests
+     * @param checksum            Value of checksum to validate against
+     * @param checksumAlgorithm   Algorithm of checksum submitted
      * 
      * @return A HashAddress object that contains the file id, relative path,
      *         absolute path, duplicate status and a checksum map based on the
@@ -699,11 +699,11 @@ public class FileHashStore implements HashStore {
      * Checks whether a given algorithm is supported based on class variable
      * supportedHashAlgorithms
      * 
-     * @param algorithm string value (ex. SHA-256)
+     * @param algorithm String value (ex. SHA-256)
      * @return True if an algorithm is supported
-     * @throws NullPointerException     algorithm cannot be null
-     * @throws IllegalArgumentException algorithm cannot be empty
-     * @throws NoSuchAlgorithmException algorithm not supported
+     * @throws NullPointerException     Algorithm cannot be null
+     * @throws IllegalArgumentException Algorithm cannot be empty
+     * @throws NoSuchAlgorithmException Algorithm not supported
      */
     protected boolean validateAlgorithm(String algorithm)
             throws NullPointerException, IllegalArgumentException, NoSuchAlgorithmException {
@@ -1047,6 +1047,20 @@ public class FileHashStore implements HashStore {
         }
     }
 
+    /**
+     * Takes a given input stream and writes it to its permanent address on disk
+     * based on the SHA-256 hex digest of the given pid + formatId. If no formatId
+     * is supplied, it will use the default store namespace as defined by
+     * `hashstore.yaml`
+     * 
+     * @param metadata Inputstream to metadata
+     * @param pid      Authority-based identifier
+     * @param formatId Metadata formatId or namespace
+     * @return
+     * @throws NoSuchAlgorithmException When the algorithm used to calculate
+     *                                  permanent address is not supported
+     * @throws IOException              I/O error when writing to tmp file
+     */
     protected String putMetadata(InputStream metadata, String pid, String formatId)
             throws NoSuchAlgorithmException, IOException {
         logFileHashStore.debug(
@@ -1094,7 +1108,7 @@ public class FileHashStore implements HashStore {
             this.move(tmpMetadataFile, permMeadataFile);
         }
         logFileHashStore
-                .debug("FileHashStore.putObject - Move metadata success, permanent address: " + metadataCidAbsPath);
+                .info("FileHashStore.putObject - Move metadata success, permanent address: " + metadataCidAbsPath);
         return metadataCid;
     }
 
