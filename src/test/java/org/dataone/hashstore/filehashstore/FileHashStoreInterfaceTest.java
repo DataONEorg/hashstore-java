@@ -350,7 +350,7 @@ public class FileHashStoreInterfaceTest {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-                assertTrue(e instanceof RuntimeException || e instanceof FileAlreadyExistsException);
+                assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
             }
         });
         Future<?> future2 = executorService.submit(() -> {
@@ -364,7 +364,7 @@ public class FileHashStoreInterfaceTest {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-                assertTrue(e instanceof RuntimeException || e instanceof FileAlreadyExistsException);
+                assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
             }
         });
         Future<?> future3 = executorService.submit(() -> {
@@ -378,7 +378,7 @@ public class FileHashStoreInterfaceTest {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-                assertTrue(e instanceof RuntimeException || e instanceof FileAlreadyExistsException);
+                assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
             }
         });
 
