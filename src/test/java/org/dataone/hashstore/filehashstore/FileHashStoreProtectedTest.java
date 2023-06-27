@@ -1,6 +1,8 @@
 package org.dataone.hashstore.filehashstore;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.FileAlreadyExistsException;
@@ -9,6 +11,7 @@ import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Scanner;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -28,6 +31,7 @@ import org.junit.rules.TemporaryFolder;
  */
 public class FileHashStoreProtectedTest {
     private FileHashStore fileHashStore;
+    private HashMap<String, Object> fhsProperties;
     private static final TestDataHarness testData = new TestDataHarness();
 
     /**
@@ -42,8 +46,10 @@ public class FileHashStoreProtectedTest {
         storeProperties.put("storeDepth", 3);
         storeProperties.put("storeWidth", 2);
         storeProperties.put("storeAlgorithm", "SHA-256");
+        storeProperties.put("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
 
         try {
+            this.fhsProperties = storeProperties;
             this.fileHashStore = new FileHashStore(storeProperties);
         } catch (IOException e) {
             fail("IOException encountered: " + e.getMessage());
@@ -281,7 +287,7 @@ public class FileHashStoreProtectedTest {
         String checksumCorrect = "9c25df1c8ba1d2e57bb3fd4785878b85";
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        HashAddress address = fileHashStore.putObject(dataStream, pid, "MD2", checksumCorrect, "MD2");
+        HashAddress address = fileHashStore.putObject(dataStream, pid, null, checksumCorrect, "MD2");
 
         File objAbsPath = new File(address.getAbsPath());
         assertTrue(objAbsPath.exists());
@@ -291,7 +297,7 @@ public class FileHashStoreProtectedTest {
      * Verify that additional checksum is generated/validated
      */
     @Test
-    public void putObject_correctChecksumValue() throws Exception {
+    public void putObject_additionalAlgo_correctChecksumValue() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
         Path testDataFile = testData.getTestFile(pid);
@@ -317,7 +323,7 @@ public class FileHashStoreProtectedTest {
         String checksumIncorrect = "1c25df1c8ba1d2e57bb3fd4785878b85";
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStream, pid, "MD2", checksumIncorrect, "MD2");
+        fileHashStore.putObject(dataStream, pid, null, checksumIncorrect, "MD2");
     }
 
     /**
@@ -330,7 +336,7 @@ public class FileHashStoreProtectedTest {
         Path testDataFile = testData.getTestFile(pid);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStream, pid, "MD2", "   ", "MD2");
+        fileHashStore.putObject(dataStream, pid, null, "   ", "MD2");
     }
 
     /**
@@ -343,7 +349,7 @@ public class FileHashStoreProtectedTest {
         Path testDataFile = testData.getTestFile(pid);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStream, pid, "MD2", null, "MD2");
+        fileHashStore.putObject(dataStream, pid, null, null, "MD2");
     }
 
     /**
@@ -357,7 +363,7 @@ public class FileHashStoreProtectedTest {
         Path testDataFile = testData.getTestFile(pid);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStream, pid, "MD2", "abc", "   ");
+        fileHashStore.putObject(dataStream, pid, null, "abc", "   ");
     }
 
     /**
@@ -369,7 +375,7 @@ public class FileHashStoreProtectedTest {
         String pid = "jtao.1700.1";
         Path testDataFile = testData.getTestFile(pid);
         InputStream dataStream = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStream, pid, "MD2", "abc", null);
+        fileHashStore.putObject(dataStream, pid, null, "abc", null);
     }
 
     /**
@@ -457,10 +463,10 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Check that checksums are generated.
+     * Check that default checksums are generated
      */
     @Test
-    public void writeToTempFileAndGenerateChecksums() throws Exception {
+    public void writeToTmpFileAndGenerateChecksums() throws Exception {
         for (String pid : testData.pidList) {
             File newTmpFile = generateTemporaryFile();
             String pidFormatted = pid.replace("/", "_");
@@ -468,13 +474,9 @@ public class FileHashStoreProtectedTest {
             // Get test file
             Path testDataFile = testData.getTestFile(pidFormatted);
 
-            // Extra algo to calculate - MD2
-            String addAlgo = "MD2";
-
             InputStream dataStream = Files.newInputStream(testDataFile);
             Map<String, String> hexDigests = this.fileHashStore.writeToTmpFileAndGenerateChecksums(newTmpFile,
-                    dataStream,
-                    addAlgo);
+                    dataStream, null, null);
 
             // Validate checksum values
             String md5 = testData.pidData.get(pid).get("md5");
@@ -494,7 +496,7 @@ public class FileHashStoreProtectedTest {
      * Check that the temporary file that has been written into is not empty
      */
     @Test
-    public void writeToTempFileAndGenerateChecksums_tmpFileSize() throws Exception {
+    public void writeToTmpFileAndGenerateChecksums_tmpFileSize() throws Exception {
         for (String pid : testData.pidList) {
             File newTmpFile = generateTemporaryFile();
             String pidFormatted = pid.replace("/", "_");
@@ -506,20 +508,19 @@ public class FileHashStoreProtectedTest {
             String addAlgo = "MD2";
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            this.fileHashStore.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream, addAlgo);
+            this.fileHashStore.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream, addAlgo, null);
 
             long testDataFileSize = Files.size(testDataFile);
-            Path tmpFilePath = newTmpFile.toPath();
-            long tmpFileSize = Files.size(tmpFilePath);
+            long tmpFileSize = Files.size(newTmpFile.toPath());
             assertEquals(testDataFileSize, tmpFileSize);
         }
     }
 
     /**
-     * Check that additional algorithm is generated and correct
+     * Check that checksums are generated when additional algorithm supplied.
      */
     @Test
-    public void writeToTempFileAndGenerateChecksums_additionalAlgo() throws Exception {
+    public void writeToTmpFileAndGenerateChecksums_addAlgo() throws Exception {
         for (String pid : testData.pidList) {
             File newTmpFile = generateTemporaryFile();
             String pidFormatted = pid.replace("/", "_");
@@ -532,12 +533,65 @@ public class FileHashStoreProtectedTest {
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             Map<String, String> hexDigests = this.fileHashStore.writeToTmpFileAndGenerateChecksums(newTmpFile,
-                    dataStream,
-                    addAlgo);
+                    dataStream, addAlgo, null);
 
-            // Validate additional algorithm
+            // Validate checksum values
             String md2 = testData.pidData.get(pid).get("md2");
             assertEquals(md2, hexDigests.get("MD2"));
+        }
+    }
+
+    /**
+     * Check that checksums are generated when checksum algorithm supplied
+     */
+    @Test
+    public void writeToTmpFileAndGenerateChecksums_checksumAlgo() throws Exception {
+        for (String pid : testData.pidList) {
+            File newTmpFile = generateTemporaryFile();
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test file
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            // Extra algo to calculate - MD2
+            String checksumAlgo = "SHA-512/224";
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            Map<String, String> hexDigests = this.fileHashStore.writeToTmpFileAndGenerateChecksums(newTmpFile,
+                    dataStream, null, checksumAlgo);
+
+            // Validate checksum values
+            String sha512224 = testData.pidData.get(pid).get("sha512-224");
+            assertEquals(sha512224, hexDigests.get("SHA-512/224"));
+        }
+    }
+
+    /**
+     * Check that checksums are generated when both additional and checksum
+     * algorithm supplied
+     */
+    @Test
+    public void writeToTmpFileAndGenerateChecksums_addAlgoChecksumAlgo() throws Exception {
+        for (String pid : testData.pidList) {
+            File newTmpFile = generateTemporaryFile();
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test file
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            // Extra algo to calculate - MD2
+            String addAlgo = "MD2";
+            String checksumAlgo = "SHA-512/224";
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            Map<String, String> hexDigests = this.fileHashStore.writeToTmpFileAndGenerateChecksums(newTmpFile,
+                    dataStream, addAlgo, checksumAlgo);
+
+            // Validate checksum values
+            String md2 = testData.pidData.get(pid).get("md2");
+            String sha512224 = testData.pidData.get(pid).get("sha512-224");
+            assertEquals(md2, hexDigests.get("MD2"));
+            assertEquals(sha512224, hexDigests.get("SHA-512/224"));
         }
     }
 
@@ -545,7 +599,7 @@ public class FileHashStoreProtectedTest {
      * Check that exception is thrown when unsupported algorithm supplied
      */
     @Test(expected = NoSuchAlgorithmException.class)
-    public void writeToTempFileAndGenerateChecksums_invalidAlgo() throws Exception {
+    public void writeToTmpFileAndGenerateChecksums_invalidAlgo() throws Exception {
         for (String pid : testData.pidList) {
             File newTmpFile = generateTemporaryFile();
             String pidFormatted = pid.replace("/", "_");
@@ -557,7 +611,7 @@ public class FileHashStoreProtectedTest {
             String addAlgo = "SM2";
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            this.fileHashStore.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream, addAlgo);
+            this.fileHashStore.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream, addAlgo, null);
         }
     }
 
@@ -570,7 +624,7 @@ public class FileHashStoreProtectedTest {
         String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
         File targetFile = new File(targetString);
 
-        this.fileHashStore.move(newTmpFile, targetFile);
+        this.fileHashStore.move(newTmpFile, targetFile, "object");
         assertTrue(targetFile.exists());
     }
 
@@ -582,9 +636,259 @@ public class FileHashStoreProtectedTest {
         File newTmpFile = generateTemporaryFile();
         String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
         File targetFile = new File(targetString);
-        this.fileHashStore.move(newTmpFile, targetFile);
+        this.fileHashStore.move(newTmpFile, targetFile, "object");
 
         File newTmpFileTwo = generateTemporaryFile();
-        this.fileHashStore.move(newTmpFileTwo, targetFile);
+        this.fileHashStore.move(newTmpFileTwo, targetFile, "object");
+    }
+
+    /**
+     * Confirm that NullPointerException is thrown when entity is null
+     */
+    @Test(expected = NullPointerException.class)
+    public void testMove_entityNull() throws Exception {
+        File newTmpFile = generateTemporaryFile();
+        String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
+        File targetFile = new File(targetString);
+        this.fileHashStore.move(newTmpFile, targetFile, null);
+    }
+
+    /**
+     * Confirm that FileAlreadyExistsException is thrown entity is empty
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testMove_entityEmpty() throws Exception {
+        File newTmpFile = generateTemporaryFile();
+        String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
+        File targetFile = new File(targetString);
+        this.fileHashStore.move(newTmpFile, targetFile, "");
+    }
+
+    /**
+     * Confirm that FileAlreadyExistsException is thrown when entity is empty spaces
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testMove_entityEmptySpaces() throws Exception {
+        File newTmpFile = generateTemporaryFile();
+        String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
+        File targetFile = new File(targetString);
+        this.fileHashStore.move(newTmpFile, targetFile, "     ");
+    }
+
+    /**
+     * Test putMetadata stores metadata as expected
+     */
+    @Test
+    public void putMetadata() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            String metadataCid = this.fileHashStore.putMetadata(metadataStream, pid, null);
+
+            // Get relative path
+            String metadataCidShardString = this.fileHashStore.getHierarchicalPathString(3, 2, metadataCid);
+            // Get absolute path
+            Path storePath = (Path) this.fhsProperties.get("storePath");
+            Path metadataCidAbsPath = storePath.resolve("metadata/" + metadataCidShardString);
+
+            assertTrue(Files.exists(metadataCidAbsPath));
+        }
+    }
+
+    /**
+     * Test putMetadata throws exception when metadata is null
+     */
+    @Test(expected = NullPointerException.class)
+    public void putMetadata_metadataNull() throws Exception {
+        for (String pid : testData.pidList) {
+            this.fileHashStore.putMetadata(null, pid, null);
+        }
+    }
+
+    /**
+     * Test putMetadata throws exception when pid is null
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void putMetadata_pidNull() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+
+            this.fileHashStore.putMetadata(metadataStream, null, null);
+        }
+    }
+
+    /**
+     * Test putMetadata throws exception when pid is empty
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void putMetadata_pidEmpty() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+
+            this.fileHashStore.putMetadata(metadataStream, "", null);
+        }
+    }
+
+    /**
+     * Test putMetadata throws exception when pid is empty with spaces
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void putMetadata_pidEmptySpaces() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+
+            this.fileHashStore.putMetadata(metadataStream, "     ", null);
+        }
+    }
+
+    /**
+     * Check that tmp metadata is written with good data
+     */
+    @Test
+    public void writeToTmpMetadataFile() throws Exception {
+        for (String pid : testData.pidList) {
+            File newTmpFile = generateTemporaryFile();
+            String pidFormatted = pid.replace("/", "_");
+            String formatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            boolean metadataWritten = this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream, formatId);
+            assertTrue(metadataWritten);
+        }
+    }
+
+    /**
+     * Check that tmp metadata is actually written by verifying file size
+     * 
+     * Reminder: We cannot do a size comparison directly because the metadata file
+     * stored contains the given namespace/formatId as well
+     */
+    @Test
+    public void writeToTmpMetadataFile_tmpFileSize() throws Exception {
+        for (String pid : testData.pidList) {
+            File newTmpFile = generateTemporaryFile();
+            String pidFormatted = pid.replace("/", "_");
+            String formatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            boolean metadataWritten = this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream, formatId);
+            assertTrue(metadataWritten);
+
+            long tmpMetadataFileSize = Files.size(newTmpFile.toPath());
+            assertTrue(tmpMetadataFileSize > 0);
+        }
+    }
+
+    /**
+     * Check that tmp metadata written contains correct header
+     */
+    @Test
+    public void writeToTmpMetadataFile_header() throws Exception {
+        for (String pid : testData.pidList) {
+            File newTmpFile = generateTemporaryFile();
+            String pidFormatted = pid.replace("/", "_");
+            String formatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream, formatId);
+
+            // Read the header
+            FileInputStream metadataInputStream = new FileInputStream(newTmpFile);
+            try (Scanner scanner = new Scanner(metadataInputStream, "UTF-8").useDelimiter("\u0000")) {
+                String header = scanner.next();
+                assertEquals(header, formatId);
+
+            } catch (IllegalArgumentException iae) {
+                iae.printStackTrace();
+                throw iae;
+
+            }
+
+        }
+    }
+
+    /**
+     * Check that tmp metadata written contains correct body. This test uses two
+     * approaches when reading the metadata file to cross-verify results.
+     */
+    @Test
+    public void writeToTmpMetadataFile_body() throws Exception {
+        for (String pid : testData.pidList) {
+            File newTmpFile = generateTemporaryFile();
+            String pidFormatted = pid.replace("/", "_");
+            String formatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+            // Write it to the tmpFile
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream, formatId);
+
+            // Confirm header and body
+            try (FileInputStream metadataInputStream = new FileInputStream(newTmpFile)) {
+                // Read the metadata content manually
+                ByteArrayOutputStream headerStream = new ByteArrayOutputStream();
+                int currentByte;
+                // The null character that splits the header/body is consumed in this while loop
+                while ((currentByte = metadataInputStream.read()) != -1 && currentByte != 0) {
+                    headerStream.write(currentByte);
+                }
+                String header = headerStream.toString("UTF-8");
+                assertEquals(header, formatId);
+
+                ByteArrayOutputStream bodyStream = new ByteArrayOutputStream();
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+                while ((bytesRead = metadataInputStream.read(buffer)) != -1) {
+                    bodyStream.write(buffer, 0, bytesRead);
+                }
+                String body = bodyStream.toString("UTF-8");
+
+                // Now confirm the body matches via higher level abstraction class 'Scanner'
+                InputStream metadataStreamTwo = Files.newInputStream(testMetaDataFile);
+                try (Scanner scanner = new Scanner(metadataStreamTwo, "UTF-8").useDelimiter("\u0000")) {
+                    String metadataBody = scanner.next();
+                    assertEquals(metadataBody, body);
+
+                } catch (IllegalArgumentException iae) {
+                    iae.printStackTrace();
+                    throw iae;
+
+                }
+
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
+                throw ioe;
+
+            }
+        }
     }
 }

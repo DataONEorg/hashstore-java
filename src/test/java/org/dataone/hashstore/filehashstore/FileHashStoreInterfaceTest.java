@@ -3,7 +3,6 @@ package org.dataone.hashstore.filehashstore;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
@@ -13,6 +12,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -32,6 +32,7 @@ import org.junit.rules.TemporaryFolder;
  */
 public class FileHashStoreInterfaceTest {
     private FileHashStore fileHashStore;
+    private HashMap<String, Object> fhsProperties;
     private static final TestDataHarness testData = new TestDataHarness();
 
     /**
@@ -46,8 +47,10 @@ public class FileHashStoreInterfaceTest {
         storeProperties.put("storeDepth", 3);
         storeProperties.put("storeWidth", 2);
         storeProperties.put("storeAlgorithm", "SHA-256");
+        storeProperties.put("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
 
         try {
+            this.fhsProperties = storeProperties;
             this.fileHashStore = new FileHashStore(storeProperties);
         } catch (IOException ioe) {
             fail("IOException encountered: " + ioe.getMessage());
@@ -220,25 +223,6 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Verify that storeObject throws an exception when expected to validate object
-     * but checksum is not available/part of the hex digest map
-     */
-    @Test(expected = NoSuchAlgorithmException.class)
-    public void storeObject_missingChecksumValue() throws Exception {
-        // Get test file to "upload"
-        String pid = "jtao.1700.1";
-        Path testDataFile = testData.getTestFile(pid);
-
-        String checksumCorrect = "9c25df1c8ba1d2e57bb3fd4785878b85";
-
-        InputStream dataStream = Files.newInputStream(testDataFile);
-        HashAddress address = fileHashStore.storeObject(dataStream, pid, null, checksumCorrect, "MD2");
-
-        File objAbsPath = new File(address.getAbsPath());
-        assertTrue(objAbsPath.exists());
-    }
-
-    /**
      * Verify that storeObject generates an additional checksum
      */
     @Test
@@ -332,20 +316,24 @@ public class FileHashStoreInterfaceTest {
 
     /**
      * Tests that the `storeObject` method can store an object successfully with
-     * multiple threads (3). This test uses three futures (threads) that run
+     * multiple threads (5). This test uses five futures (threads) that run
      * concurrently, all except one of which will encounter an `ExecutionException`.
      * The thread that does not encounter an exception will store the given
      * object, and verifies that the object is stored successfully.
      * 
-     * The test expects exceptions to be encountered, which can be either a
-     * `RunTimeException` or a `FileAlreadyExistsException`. This is because the
-     * rapid execution of threads can result in bypassing the object lock and
-     * the failure to throw a RunTimeException. However, since the file should
-     * already have been written to disk, a`FileAlreadyExistsException` will be
-     * thrown, ensuring that an object is never stored twice.
+     * The threads that run into exceptions will encounter a `RunTimeException` or
+     * a `PidObjectExistsException`. If a call is made to 'storeObject' for a pid
+     * that is already in progress of being stored, a `RunTimeException` will be
+     * thrown.
+     * 
+     * If a call is made to 'storeObject' for a pid that has been stored, the thread
+     * will encounter a `PidObjectExistsException` - since `putObject` checks for
+     * the existence of a given data object before it attempts to generate a temp
+     * file (write to it, generate checksums, etc.).
+     * 
      */
     @Test
-    public void storeObject_objectLockedIds() throws Exception {
+    public void storeObject_objectLockedIds_FiveThreads() throws Exception {
         // Get single test file to "upload"
         String pid = "jtao.1700.1";
         Path testDataFile = testData.getTestFile(pid);
@@ -364,7 +352,9 @@ public class FileHashStoreInterfaceTest {
                     assertTrue(permAddress.exists());
                 }
             } catch (Exception e) {
-                assertTrue(e instanceof RuntimeException || e instanceof FileAlreadyExistsException);
+                System.out.println(e.getClass());
+                e.printStackTrace();
+                assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
             }
         });
         Future<?> future2 = executorService.submit(() -> {
@@ -377,7 +367,9 @@ public class FileHashStoreInterfaceTest {
                     assertTrue(permAddress.exists());
                 }
             } catch (Exception e) {
-                assertTrue(e instanceof RuntimeException || e instanceof FileAlreadyExistsException);
+                System.out.println(e.getClass());
+                e.printStackTrace();
+                assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
             }
         });
         Future<?> future3 = executorService.submit(() -> {
@@ -390,7 +382,246 @@ public class FileHashStoreInterfaceTest {
                     assertTrue(permAddress.exists());
                 }
             } catch (Exception e) {
-                assertTrue(e instanceof RuntimeException || e instanceof FileAlreadyExistsException);
+                System.out.println(e.getClass());
+                e.printStackTrace();
+                assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
+            }
+        });
+        Future<?> future4 = executorService.submit(() -> {
+            try {
+                InputStream dataStream = Files.newInputStream(testDataFile);
+                HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
+                if (objInfo != null) {
+                    String absPath = objInfo.getAbsPath();
+                    File permAddress = new File(absPath);
+                    assertTrue(permAddress.exists());
+                }
+            } catch (Exception e) {
+                System.out.println(e.getClass());
+                e.printStackTrace();
+                assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
+            }
+        });
+        Future<?> future5 = executorService.submit(() -> {
+            try {
+                InputStream dataStream = Files.newInputStream(testDataFile);
+                HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
+                if (objInfo != null) {
+                    String absPath = objInfo.getAbsPath();
+                    File permAddress = new File(absPath);
+                    assertTrue(permAddress.exists());
+                }
+            } catch (Exception e) {
+                System.out.println(e.getClass());
+                e.printStackTrace();
+                assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
+            }
+        });
+
+        // Wait for all tasks to complete and check results
+        // .get() on the future ensures that all tasks complete before the test ends
+        future1.get();
+        future2.get();
+        future3.get();
+        future4.get();
+        future5.get();
+        executorService.shutdown();
+        executorService.awaitTermination(1, TimeUnit.MINUTES);
+    }
+
+    /**
+     * Tests that the `storeObject` method can store an object successfully with
+     * two threads. This test uses two futures (threads) that run concurrently, one
+     * of which will encounter an `ExecutionException`. The thread that does not
+     * encounter an exception will store the given object, and verifies that the
+     * object is stored successfully.
+     */
+    @Test
+    public void storeObject_objectLockedIds_TwoThreads() throws Exception {
+        // Get single test file to "upload"
+        String pid = "jtao.1700.1";
+        Path testDataFile = testData.getTestFile(pid);
+
+        // Create a thread pool with 3 threads
+        ExecutorService executorService = Executors.newFixedThreadPool(3);
+
+        // Submit 3 threads, each calling storeObject
+        Future<?> future1 = executorService.submit(() -> {
+            try {
+                InputStream dataStream = Files.newInputStream(testDataFile);
+                HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
+                if (objInfo != null) {
+                    String absPath = objInfo.getAbsPath();
+                    File permAddress = new File(absPath);
+                    assertTrue(permAddress.exists());
+                }
+            } catch (Exception e) {
+                System.out.println(e.getClass());
+                e.printStackTrace();
+                assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
+            }
+        });
+        Future<?> future2 = executorService.submit(() -> {
+            try {
+                InputStream dataStream = Files.newInputStream(testDataFile);
+                HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
+                if (objInfo != null) {
+                    String absPath = objInfo.getAbsPath();
+                    File permAddress = new File(absPath);
+                    assertTrue(permAddress.exists());
+                }
+            } catch (Exception e) {
+                System.out.println(e.getClass());
+                e.printStackTrace();
+                assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
+            }
+        });
+
+        // Wait for all tasks to complete and check results
+        // .get() on the future ensures that all tasks complete before the test ends
+        future1.get();
+        future2.get();
+        executorService.shutdown();
+        executorService.awaitTermination(1, TimeUnit.MINUTES);
+    }
+
+    /**
+     * Test storeMetadata stores metadata as expected
+     */
+    @Test
+    public void storeMetadata() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, null);
+
+            // Get relative path
+            String metadataCidShardString = this.fileHashStore.getHierarchicalPathString(3, 2, metadataCid);
+            // Get absolute path
+            Path storePath = (Path) this.fhsProperties.get("storePath");
+            Path metadataCidAbsPath = storePath.resolve("metadata/" + metadataCidShardString);
+
+            assertTrue(Files.exists(metadataCidAbsPath));
+        }
+    }
+
+    /**
+     * Test storeMetadata throws exception when metadata is null
+     */
+    @Test(expected = NullPointerException.class)
+    public void storeMetadata_metadataNull() throws Exception {
+        for (String pid : testData.pidList) {
+            this.fileHashStore.storeMetadata(null, pid, null);
+        }
+    }
+
+    /**
+     * Test storeMetadata throws exception when pid is null
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void storeMetadata_pidNull() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+
+            this.fileHashStore.storeMetadata(metadataStream, null, null);
+        }
+    }
+
+    /**
+     * Test storeMetadata throws exception when pid is empty
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void storeMetadata_pidEmpty() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+
+            this.fileHashStore.storeMetadata(metadataStream, "", null);
+        }
+    }
+
+    /**
+     * Test storeMetadata throws exception when pid is empty with spaces
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void storeMetadata_pidEmptySpaces() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+
+            this.fileHashStore.storeMetadata(metadataStream, "     ", null);
+        }
+    }
+
+    /**
+     * Tests that the `storeMetadata()` method can store metadata successfully with
+     * multiple threads (3). This test uses three futures (threads) that run
+     * concurrently, each of which will have to wait for the given `pid` to be
+     * released from metadataLockedIds before proceeding to store the given metadata
+     * content from its `storeMetadata()` request.
+     * 
+     * All requests to store the same metadata will be executed, and the existing
+     * metadata file will be overwritten by each thread. No exceptions should be
+     * encountered during these tests.
+     */
+    @Test
+    public void storeMetadata_metadataLockedIds() throws Exception {
+        // Get single test metadata file to "upload"
+        String pid = "jtao.1700.1";
+        String pidFormatted = pid.replace("/", "_");
+        // Get test metadata file
+        Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+        String pidFormatHexDigest = "ddf07952ef28efc099d10d8b682480f7d2da60015f5d8873b6e1ea75b4baf689";
+
+        // Create a thread pool with 3 threads
+        ExecutorService executorService = Executors.newFixedThreadPool(3);
+
+        // Submit 3 threads, each calling storeMetadata
+        Future<?> future1 = executorService.submit(() -> {
+            try {
+                String formatId = "http://ns.dataone.org/service/types/v2.0";
+                InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+                String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, formatId);
+                assertEquals(metadataCid, pidFormatHexDigest);
+            } catch (IOException | NoSuchAlgorithmException | InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+        Future<?> future2 = executorService.submit(() -> {
+            try {
+                String formatId = "http://ns.dataone.org/service/types/v2.0";
+                InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+                String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, formatId);
+                assertEquals(metadataCid, pidFormatHexDigest);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+        Future<?> future3 = executorService.submit(() -> {
+            try {
+                String formatId = "http://ns.dataone.org/service/types/v2.0";
+                InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+                String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, formatId);
+                assertEquals(metadataCid, pidFormatHexDigest);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         });
 
@@ -401,5 +632,19 @@ public class FileHashStoreInterfaceTest {
         future3.get();
         executorService.shutdown();
         executorService.awaitTermination(1, TimeUnit.MINUTES);
+
+        // Confirm metadata file is written
+        Path storePath = (Path) this.fhsProperties.get("storePath");
+        String metadataCid = fileHashStore.getPidHexDigest(pid + "http://ns.dataone.org/service/types/v2.0", "SHA-256");
+        String metadataCidShardString = fileHashStore.getHierarchicalPathString(3, 2, metadataCid);
+        Path metadataCidAbsPath = storePath.resolve("metadata/" + metadataCidShardString);
+        assertTrue(Files.exists(metadataCidAbsPath));
+
+        // Confirm there are only two files in HashStore - 'hashstore.yaml' and the
+        // metadata file written
+        try (Stream<Path> walk = Files.walk(storePath)) {
+            long fileCount = walk.filter(Files::isRegularFile).count();
+            assertEquals(fileCount, 2);
+        }
     }
 }
