@@ -682,7 +682,7 @@ public class FileHashStore implements HashStore {
                             + ". Deleted tmpFile: " + tmpFile.getName());
         } else {
             File permFile = objHashAddressPath.toFile();
-            boolean hasMoved = this.move(tmpFile, permFile);
+            boolean hasMoved = this.move(tmpFile, permFile, "object");
             if (hasMoved) {
                 isDuplicate = false;
             }
@@ -995,10 +995,14 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Moves an object from one location to another if the object does not exist
+     * Moves an object from one location to another. When the "entity" given is
+     * "object", if the target already exists, it will throw an exception to prevent
+     * the target object to be overwritten. Data "object" files are stored once and
+     * only once.
      * 
-     * @param source file to move
-     * @param target where to move the file
+     * @param source File to move
+     * @param target Where to move the file
+     * @param entity Type of object to move
      * 
      * @return true if file has been moved
      * 
@@ -1009,9 +1013,9 @@ public class FileHashStore implements HashStore {
      *                                         (usually encountered when moving
      *                                         across file systems)
      */
-    protected boolean move(File source, File target)
+    protected boolean move(File source, File target, String entity)
             throws IOException, SecurityException, AtomicMoveNotSupportedException, FileAlreadyExistsException {
-        if (target.exists()) {
+        if (entity == "object" && target.exists()) {
             String errMsg = "FileHashStore.move - File already exists for target: " + target;
             logFileHashStore.debug(errMsg);
             throw new FileAlreadyExistsException(errMsg);
@@ -1105,7 +1109,7 @@ public class FileHashStore implements HashStore {
         boolean tmpMetadataWritten = this.writeToTmpMetadataFile(tmpMetadataFile, metadata, checkedFormatId);
         if (tmpMetadataWritten) {
             File permMeadataFile = metadataCidAbsPath.toFile();
-            this.move(tmpMetadataFile, permMeadataFile);
+            this.move(tmpMetadataFile, permMeadataFile, null);
         }
         logFileHashStore
                 .info("FileHashStore.putObject - Move metadata success, permanent address: " + metadataCidAbsPath);

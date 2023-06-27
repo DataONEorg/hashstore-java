@@ -624,7 +624,7 @@ public class FileHashStoreProtectedTest {
         String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
         File targetFile = new File(targetString);
 
-        this.fileHashStore.move(newTmpFile, targetFile);
+        this.fileHashStore.move(newTmpFile, targetFile, "object");
         assertTrue(targetFile.exists());
     }
 
@@ -636,10 +636,10 @@ public class FileHashStoreProtectedTest {
         File newTmpFile = generateTemporaryFile();
         String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
         File targetFile = new File(targetString);
-        this.fileHashStore.move(newTmpFile, targetFile);
+        this.fileHashStore.move(newTmpFile, targetFile, "object");
 
         File newTmpFileTwo = generateTemporaryFile();
-        this.fileHashStore.move(newTmpFileTwo, targetFile);
+        this.fileHashStore.move(newTmpFileTwo, targetFile, "object");
     }
 
     /**
