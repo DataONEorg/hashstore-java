@@ -322,12 +322,18 @@ public class FileHashStoreInterfaceTest {
      * The thread that does not encounter an exception will store the given
      * object, and verifies that the object is stored successfully.
      * 
-     * The test expects exceptions to be encountered, which can be either a
-     * `RunTimeException` or a `FileAlreadyExistsException`. This is because the
-     * rapid execution of threads can result in bypassing the object lock and
-     * the failure to throw a RunTimeException. However, since the file should
-     * already have been written to disk, a`FileAlreadyExistsException` will be
-     * thrown, ensuring that an object is never stored twice.
+     * The test expects exceptions to be encountered, will be either be a
+     * `RunTimeException` or an `pidObjectExistsException`. This is because the
+     * rapid execution of threads can result in bypassing the object lock (the
+     * object is stored and released so quickly that object synchronization is
+     * redundant).
+     * 
+     * If a call is made to 'storeObject' for a pid that is already being stored, a
+     * `RunTimeException` will be thrown. If the pid is released after the object is
+     * stored before other threads are submitted, it will run into a
+     * `pidObjectExistsException` as `putObject` will check for the existence of a
+     * given data object before it attempts to generate a temp file (write to it,
+     * generate checksums, etc.)
      */
     @Test
     public void storeObject_objectLockedIds() throws Exception {
