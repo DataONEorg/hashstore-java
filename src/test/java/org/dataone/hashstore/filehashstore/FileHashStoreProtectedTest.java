@@ -643,6 +643,39 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
+     * Confirm that NullPointerException is thrown when entity is null
+     */
+    @Test(expected = NullPointerException.class)
+    public void testMove_entityNull() throws Exception {
+        File newTmpFile = generateTemporaryFile();
+        String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
+        File targetFile = new File(targetString);
+        this.fileHashStore.move(newTmpFile, targetFile, null);
+    }
+
+    /**
+     * Confirm that FileAlreadyExistsException is thrown entity is empty
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testMove_entityEmpty() throws Exception {
+        File newTmpFile = generateTemporaryFile();
+        String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
+        File targetFile = new File(targetString);
+        this.fileHashStore.move(newTmpFile, targetFile, "");
+    }
+
+    /**
+     * Confirm that FileAlreadyExistsException is thrown when entity is empty spaces
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testMove_entityEmptySpaces() throws Exception {
+        File newTmpFile = generateTemporaryFile();
+        String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
+        File targetFile = new File(targetString);
+        this.fileHashStore.move(newTmpFile, targetFile, "     ");
+    }
+
+    /**
      * Test putMetadata stores metadata as expected
      */
     @Test

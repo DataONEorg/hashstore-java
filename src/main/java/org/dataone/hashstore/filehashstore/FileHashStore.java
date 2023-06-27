@@ -439,7 +439,8 @@ public class FileHashStore implements HashStore {
 
     @Override
     public String storeMetadata(InputStream metadata, String pid, String formatId)
-            throws IOException, IllegalArgumentException, NoSuchAlgorithmException, InterruptedException {
+            throws IOException, FileNotFoundException, IllegalArgumentException, InterruptedException,
+            NoSuchAlgorithmException {
         logFileHashStore.debug("FileHashStore.storeMetadata - Called to store metadata for pid: " + pid
                 + ", with formatId: " + formatId);
 
@@ -497,10 +498,18 @@ public class FileHashStore implements HashStore {
                             + ". Metadata Content Identifier (metadataCid): " + metadataCid);
             return metadataCid;
 
-        } catch (Exception e) {
-            String errMsg = "Placeholder";
+        } catch (IOException ioe) {
+            // Covers FileNotFoundException
+            String errMsg = "FileHashStore.storeMetadata - Unable to store metadata, IOException encountered: "
+                    + ioe.getMessage();
             logFileHashStore.error(errMsg);
-            throw e;
+            throw ioe;
+
+        } catch (NoSuchAlgorithmException nsae) {
+            String errMsg = "FileHashStore.storeMetadata - Unable to store metadata, algorithm to calculate"
+                    + " permanent address is not supported: " + nsae.getMessage();
+            logFileHashStore.error(errMsg);
+            throw nsae;
 
         } finally {
             // Release lock
@@ -1015,10 +1024,24 @@ public class FileHashStore implements HashStore {
      */
     protected boolean move(File source, File target, String entity)
             throws IOException, SecurityException, AtomicMoveNotSupportedException, FileAlreadyExistsException {
-        if (entity.equals("object") && target.exists()) {
+        logFileHashStore.debug("FileHashStore.move - called to move entity type: " + entity + ", from source: "
+                + source + ", to target: " + target);
+        // Validate input parameters
+        if (entity == null) {
+            String errMsg = "FileHashStore.move - entity cannot be null, must be 'object' for storeObject() or 'metadata' for storeMetadata()";
+            logFileHashStore.debug(errMsg);
+            throw new NullPointerException(errMsg);
+
+        } else if (entity.trim().isEmpty()) {
+            String errMsg = "FileHashStore.move - entity cannot be empty, must be 'object' for storeObject()";
+            logFileHashStore.debug(errMsg);
+            throw new IllegalArgumentException(errMsg);
+
+        } else if (entity.equals("object") && target.exists()) {
             String errMsg = "FileHashStore.move - File already exists for target: " + target;
             logFileHashStore.debug(errMsg);
             throw new FileAlreadyExistsException(errMsg);
+
         }
 
         File destinationDirectory = new File(target.getParent());
@@ -1060,7 +1083,7 @@ public class FileHashStore implements HashStore {
      * @param metadata Inputstream to metadata
      * @param pid      Authority-based identifier
      * @param formatId Metadata formatId or namespace
-     * @return
+     * @return Metadata content identifier
      * @throws NoSuchAlgorithmException When the algorithm used to calculate
      *                                  permanent address is not supported
      * @throws IOException              I/O error when writing to tmp file
@@ -1098,7 +1121,7 @@ public class FileHashStore implements HashStore {
             checkedFormatId = formatId;
         }
 
-        // Get permanent address of the given metadata document
+        // Get permanent address for the given metadata document
         String metadataCid = this.getPidHexDigest(pid + checkedFormatId, this.OBJECT_STORE_ALGORITHM);
         String metadataCidShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
                 metadataCid);
@@ -1108,8 +1131,11 @@ public class FileHashStore implements HashStore {
         File tmpMetadataFile = this.generateTmpFile("tmp", this.METADATA_TMP_FILE_DIRECTORY);
         boolean tmpMetadataWritten = this.writeToTmpMetadataFile(tmpMetadataFile, metadata, checkedFormatId);
         if (tmpMetadataWritten) {
-            File permMeadataFile = metadataCidAbsPath.toFile();
-            this.move(tmpMetadataFile, permMeadataFile, "metadata");
+            logFileHashStore.debug(
+                    "FileHashStore.putObject - tmp metadata file has been written, moving to permanent location: "
+                            + metadataCidAbsPath);
+            File permMetadataFile = metadataCidAbsPath.toFile();
+            this.move(tmpMetadataFile, permMetadataFile, "metadata");
         }
         logFileHashStore
                 .info("FileHashStore.putObject - Move metadata success, permanent address: " + metadataCidAbsPath);
@@ -1124,7 +1150,7 @@ public class FileHashStore implements HashStore {
      * @param metadataStream Stream of metadata content
      * @param formatId       Namespace/format of metadata
      * 
-     * @return
+     * @return True if file is written successfully
      * @throws IOException           When an I/O error occurs
      * @throws FileNotFoundException When given file to write into is not found
      */
@@ -1133,10 +1159,10 @@ public class FileHashStore implements HashStore {
         FileOutputStream os = new FileOutputStream(tmpFile);
 
         try {
-            // Write formatId and null character (header)
+            // Write formatId
             byte[] metadataHeaderBytes = formatId.getBytes(StandardCharsets.UTF_8);
             os.write(metadataHeaderBytes);
-            // Write null character
+            // Followed by null character
             os.write('\u0000');
 
             // Write metadata content (body)
