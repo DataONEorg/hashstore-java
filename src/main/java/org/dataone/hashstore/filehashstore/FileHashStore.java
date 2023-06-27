@@ -682,7 +682,8 @@ public class FileHashStore implements HashStore {
                             + ". Deleted tmpFile: " + tmpFile.getName());
         } else {
             File permFile = objHashAddressPath.toFile();
-            boolean hasMoved = this.move(tmpFile, permFile, "object");
+            // boolean hasMoved = this.move(tmpFile, permFile, "object");
+            boolean hasMoved = this.moveObject(tmpFile, permFile);
             if (hasMoved) {
                 isDuplicate = false;
             }
@@ -1016,6 +1017,63 @@ public class FileHashStore implements HashStore {
     protected boolean move(File source, File target, String entity)
             throws IOException, SecurityException, AtomicMoveNotSupportedException, FileAlreadyExistsException {
         if (entity.equals("object") && target.exists()) {
+            String errMsg = "FileHashStore.move - File already exists for target: " + target;
+            logFileHashStore.debug(errMsg);
+            throw new FileAlreadyExistsException(errMsg);
+        }
+
+        File destinationDirectory = new File(target.getParent());
+        // Create parent directory if it doesn't exist
+        if (!destinationDirectory.exists()) {
+            Path destinationDirectoryPath = destinationDirectory.toPath();
+            Files.createDirectories(destinationDirectoryPath);
+        }
+
+        // Move file
+        Path sourceFilePath = source.toPath();
+        Path targetFilePath = target.toPath();
+        try {
+            Files.move(sourceFilePath, targetFilePath, StandardCopyOption.ATOMIC_MOVE);
+            logFileHashStore.debug("FileHashStore.move - file moved from: " + sourceFilePath + ", to: "
+                    + targetFilePath);
+            return true;
+
+        } catch (AtomicMoveNotSupportedException amnse) {
+            logFileHashStore.error(
+                    "FileHashStore.move - StandardCopyOption.ATOMIC_MOVE failed. AtomicMove is not supported across file systems. Source: "
+                            + source + ". Target: " + target);
+            throw amnse;
+
+        } catch (IOException ioe) {
+            logFileHashStore.error("FileHashStore.move - Unable to move file. Source: " + source
+                    + ". Target: " + target);
+            throw ioe;
+
+        }
+    }
+
+    /**
+     * Moves an object from one location to another. When the "entity" given is
+     * "object", if the target already exists, it will throw an exception to prevent
+     * the target object to be overwritten. Data "object" files are stored once and
+     * only once.
+     * 
+     * @param source File to move
+     * @param target Where to move the file
+     * @param entity Type of object to move
+     * 
+     * @return true if file has been moved
+     * 
+     * @throws FileAlreadyExistsException      Target file already exists
+     * @throws IOException                     Unable to create parent directory
+     * @throws SecurityException               Insufficient permissions to move file
+     * @throws AtomicMoveNotSupportedException When ATOMIC_MOVE is not supported
+     *                                         (usually encountered when moving
+     *                                         across file systems)
+     */
+    protected boolean moveObject(File source, File target)
+            throws IOException, SecurityException, AtomicMoveNotSupportedException, FileAlreadyExistsException {
+        if (target.exists()) {
             String errMsg = "FileHashStore.move - File already exists for target: " + target;
             logFileHashStore.debug(errMsg);
             throw new FileAlreadyExistsException(errMsg);
