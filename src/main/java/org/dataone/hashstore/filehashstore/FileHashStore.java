@@ -1015,7 +1015,7 @@ public class FileHashStore implements HashStore {
      */
     protected boolean move(File source, File target, String entity)
             throws IOException, SecurityException, AtomicMoveNotSupportedException, FileAlreadyExistsException {
-        if (entity == "object" && target.exists()) {
+        if (entity.equals("object") && target.exists()) {
             String errMsg = "FileHashStore.move - File already exists for target: " + target;
             logFileHashStore.debug(errMsg);
             throw new FileAlreadyExistsException(errMsg);
@@ -1109,7 +1109,7 @@ public class FileHashStore implements HashStore {
         boolean tmpMetadataWritten = this.writeToTmpMetadataFile(tmpMetadataFile, metadata, checkedFormatId);
         if (tmpMetadataWritten) {
             File permMeadataFile = metadataCidAbsPath.toFile();
-            this.move(tmpMetadataFile, permMeadataFile, null);
+            this.move(tmpMetadataFile, permMeadataFile, "metadata");
         }
         logFileHashStore
                 .info("FileHashStore.putObject - Move metadata success, permanent address: " + metadataCidAbsPath);
@@ -1134,7 +1134,7 @@ public class FileHashStore implements HashStore {
 
         try {
             // Write formatId and null character (header)
-            byte[] metadataHeaderBytes = formatId.getBytes("UTF-8");
+            byte[] metadataHeaderBytes = formatId.getBytes(StandardCharsets.UTF_8);
             os.write(metadataHeaderBytes);
             // Write null character
             os.write('\u0000');
