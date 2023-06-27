@@ -323,13 +323,13 @@ public class FileHashStoreInterfaceTest {
      * object, and verifies that the object is stored successfully.
      * 
      * The threads that run into exceptions will encounter a `RunTimeException` or
-     * a `pidObjectExistsException`. If a call is made to 'storeObject' for a pid
+     * a `PidObjectExistsException`. If a call is made to 'storeObject' for a pid
      * that is already in progress of being stored, a `RunTimeException` will be
      * thrown.
      * 
      * If the pid is released after the object is stored before other threads are
      * submitted (`storeObject` is rapidly executed), it will run into a
-     * `pidObjectExistsException` as `putObject` checks for the existence of a given
+     * `PidObjectExistsException` as `putObject` checks for the existence of a given
      * data object before it attempts to generate a temp file (write to it, generate
      * checksums, etc.).
      */
