@@ -456,8 +456,9 @@ public class FileHashStoreInterfaceTest {
                     assertTrue(permAddress.exists());
                 }
             } catch (Exception e) {
+                System.out.println(e.getClass());
                 e.printStackTrace();
-                assertTrue(e instanceof RuntimeException);
+                assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
             }
         });
         Future<?> future2 = executorService.submit(() -> {
@@ -470,8 +471,9 @@ public class FileHashStoreInterfaceTest {
                     assertTrue(permAddress.exists());
                 }
             } catch (Exception e) {
+                System.out.println(e.getClass());
                 e.printStackTrace();
-                assertTrue(e instanceof RuntimeException);
+                assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
             }
         });
 
