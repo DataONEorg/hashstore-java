@@ -316,7 +316,7 @@ public class FileHashStoreInterfaceTest {
 
     /**
      * Tests that the `storeObject` method can store an object successfully with
-     * multiple threads (5). This test uses three futures (threads) that run
+     * multiple threads (5). This test uses five futures (threads) that run
      * concurrently, all except one of which will encounter an `ExecutionException`.
      * The thread that does not encounter an exception will store the given
      * object, and verifies that the object is stored successfully.
