@@ -1,6 +1,7 @@
 package org.dataone.hashstore;
 
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
@@ -62,15 +63,16 @@ public interface HashStore {
             throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException;
 
     /**
-     * The `storeMetadata` method is responsible for adding and/or updating metadata
-     * (ex. `sysmeta`) to disk using a given InputStream and a persistent identifier
-     * (pid). The metadata object consists of a header and body portion. The header
-     * is formed by writing the namespace/format (utf-8) of the metadata document
-     * followed by a null character `\x00` and the body follows immediately after.
+     * The `storeMetadata` method is responsible for adding/updating metadata
+     * (ex. `sysmeta`) to disk using a given InputStream, a persistent identifier
+     * (pid) and metadata format (formatId). The metadata object consists of a
+     * header and body portion. The header is formed by writing the namespace/format
+     * (utf-8) of the metadata document followed by a null character `\u0000` and
+     * the body (metadata content) follows immediately after.
      * 
-     * The header contains the metadata object's permanent address, which is
-     * determined by calculating the SHA-256 hex digest of the provided `pid` +
-     * `format_id`; and the body contains the metadata content (ex. `sysmeta`).
+     * The permanent address of the metadata document is determined by calculating
+     * the SHA-256 hex digest of the provided `pid` + `format_id`; and the body
+     * contains the metadata content (ex. `sysmeta`).
      * 
      * Upon successful storage of metadata, `store_metadata` returns a string that
      * represents the file's permanent address. Lastly, the metadata objects are
@@ -80,9 +82,18 @@ public interface HashStore {
      * @param pid      Authority-based identifier
      * @param formatId Metadata namespace/format
      * @return Metadata content identifier (string representing metadata address)
-     * @throws Exception TODO: Add specific exceptions
+     * @throws IOException              When there is an error writing the metadata
+     *                                  document
+     * @throws IllegalArgumentException Invalid values like null for metadata, or
+     *                                  empty pids and formatIds
+     * @throws FileNotFoundException    When temp metadata file is not found
+     * @throws InterruptedException     metadataLockedIds synchronization issue
+     * @throws NoSuchAlgorithmException Algorithm used to calculate permanent
+     *                                  address is not supported
      */
-    String storeMetadata(InputStream metadata, String pid, String formatId) throws Exception;
+    String storeMetadata(InputStream metadata, String pid, String formatId)
+            throws IOException, IllegalArgumentException, FileNotFoundException, InterruptedException,
+            NoSuchAlgorithmException;
 
     /**
      * The `retrieveObject` method retrieves an object from disk using a given
