@@ -352,6 +352,7 @@ public class FileHashStoreInterfaceTest {
                     assertTrue(permAddress.exists());
                 }
             } catch (Exception e) {
+                System.out.println(e.getClass());
                 e.printStackTrace();
                 assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
             }
@@ -366,6 +367,7 @@ public class FileHashStoreInterfaceTest {
                     assertTrue(permAddress.exists());
                 }
             } catch (Exception e) {
+                System.out.println(e.getClass());
                 e.printStackTrace();
                 assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
             }
@@ -380,6 +382,7 @@ public class FileHashStoreInterfaceTest {
                     assertTrue(permAddress.exists());
                 }
             } catch (Exception e) {
+                System.out.println(e.getClass());
                 e.printStackTrace();
                 assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
             }
@@ -394,6 +397,7 @@ public class FileHashStoreInterfaceTest {
                     assertTrue(permAddress.exists());
                 }
             } catch (Exception e) {
+                System.out.println(e.getClass());
                 e.printStackTrace();
                 assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
             }
@@ -408,6 +412,7 @@ public class FileHashStoreInterfaceTest {
                     assertTrue(permAddress.exists());
                 }
             } catch (Exception e) {
+                System.out.println(e.getClass());
                 e.printStackTrace();
                 assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
             }
