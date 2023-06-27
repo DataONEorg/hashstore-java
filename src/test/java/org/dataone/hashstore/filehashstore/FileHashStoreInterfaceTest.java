@@ -327,14 +327,14 @@ public class FileHashStoreInterfaceTest {
      * that is already in progress of being stored, a `RunTimeException` will be
      * thrown.
      * 
-     * If the pid is released after the object is stored before other threads are
-     * submitted (`storeObject` is rapidly executed), it will run into a
-     * `PidObjectExistsException` as `putObject` checks for the existence of a given
-     * data object before it attempts to generate a temp file (write to it, generate
-     * checksums, etc.).
+     * If a call is made to 'storeObject' for a pid that has been stored, the thread
+     * will encounter a `PidObjectExistsException` - since `putObject` checks for
+     * the existence of a given data object before it attempts to generate a temp
+     * file (write to it, generate checksums, etc.).
+     * 
      */
     @Test
-    public void storeObject_objectLockedIds() throws Exception {
+    public void storeObject_objectLockedIds_ThreeThreads() throws Exception {
         // Get single test file to "upload"
         String pid = "jtao.1700.1";
         Path testDataFile = testData.getTestFile(pid);
@@ -391,6 +391,60 @@ public class FileHashStoreInterfaceTest {
         future1.get();
         future2.get();
         future3.get();
+        executorService.shutdown();
+        executorService.awaitTermination(1, TimeUnit.MINUTES);
+    }
+
+    /**
+     * Tests that the `storeObject` method can store an object successfully with
+     * two threads. This test uses two futures (threads) that run concurrently, one
+     * of which will encounter an `ExecutionException`. The thread that does not
+     * encounter an exception will store the given object, and verifies that the
+     * object is stored successfully.
+     */
+    @Test
+    public void storeObject_objectLockedIds_TwoThreads() throws Exception {
+        // Get single test file to "upload"
+        String pid = "jtao.1700.1";
+        Path testDataFile = testData.getTestFile(pid);
+
+        // Create a thread pool with 3 threads
+        ExecutorService executorService = Executors.newFixedThreadPool(3);
+
+        // Submit 3 threads, each calling storeObject
+        Future<?> future1 = executorService.submit(() -> {
+            try {
+                InputStream dataStream = Files.newInputStream(testDataFile);
+                HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
+                if (objInfo != null) {
+                    String absPath = objInfo.getAbsPath();
+                    File permAddress = new File(absPath);
+                    assertTrue(permAddress.exists());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                assertTrue(e instanceof RuntimeException);
+            }
+        });
+        Future<?> future2 = executorService.submit(() -> {
+            try {
+                InputStream dataStream = Files.newInputStream(testDataFile);
+                HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
+                if (objInfo != null) {
+                    String absPath = objInfo.getAbsPath();
+                    File permAddress = new File(absPath);
+                    assertTrue(permAddress.exists());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                assertTrue(e instanceof RuntimeException);
+            }
+        });
+
+        // Wait for all tasks to complete and check results
+        // .get() on the future ensures that all tasks complete before the test ends
+        future1.get();
+        future2.get();
         executorService.shutdown();
         executorService.awaitTermination(1, TimeUnit.MINUTES);
     }
