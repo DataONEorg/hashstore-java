@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -469,6 +470,84 @@ public class FileHashStoreInterfaceTest {
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
 
             this.fileHashStore.storeMetadata(metadataStream, "     ", null);
+        }
+    }
+
+    /**
+     * Tests that the `storeMetadata()` method can store metadata successfully with
+     * multiple threads (3). This test uses three futures (threads) that run
+     * concurrently, each of which will have to wait for the given `pid` to be
+     * released from metadataLockedIds before proceeding to store the given metadata
+     * content from its `storeMetadata()` request.
+     * 
+     * All requests to store the same metadata will be executed, and the existing
+     * metadata file will be overwritten by each thread. No exceptions should be
+     * encountered during these tests.
+     */
+    @Test
+    public void storeMetadata_metadataLockedIds() throws Exception {
+        // Get single test metadata file to "upload"
+        String pid = "jtao.1700.1";
+        String pidFormatted = pid.replace("/", "_");
+        // Get test metadata file
+        Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+        String pidFormatHexDigest = "ddf07952ef28efc099d10d8b682480f7d2da60015f5d8873b6e1ea75b4baf689";
+
+        // Create a thread pool with 3 threads
+        ExecutorService executorService = Executors.newFixedThreadPool(3);
+
+        // Submit 3 threads, each calling storeMetadata
+        Future<?> future1 = executorService.submit(() -> {
+            try {
+                String formatId = "http://ns.dataone.org/service/types/v2.0";
+                InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+                String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, formatId);
+                assertEquals(metadataCid, pidFormatHexDigest);
+            } catch (IOException | NoSuchAlgorithmException | InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+        Future<?> future2 = executorService.submit(() -> {
+            try {
+                String formatId = "http://ns.dataone.org/service/types/v2.0";
+                InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+                String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, formatId);
+                assertEquals(metadataCid, pidFormatHexDigest);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+        Future<?> future3 = executorService.submit(() -> {
+            try {
+                String formatId = "http://ns.dataone.org/service/types/v2.0";
+                InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+                String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, formatId);
+                assertEquals(metadataCid, pidFormatHexDigest);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+
+        // Wait for all tasks to complete and check results
+        // .get() on the future ensures that all tasks complete before the test ends
+        future1.get();
+        future2.get();
+        future3.get();
+        executorService.shutdown();
+        executorService.awaitTermination(1, TimeUnit.MINUTES);
+
+        // Confirm metadata file is written
+        Path storePath = (Path) this.fhsProperties.get("storePath");
+        String metadataCid = fileHashStore.getPidHexDigest(pid + "http://ns.dataone.org/service/types/v2.0", "SHA-256");
+        String metadataCidShardString = fileHashStore.getHierarchicalPathString(3, 2, metadataCid);
+        Path metadataCidAbsPath = storePath.resolve("metadata/" + metadataCidShardString);
+        assertTrue(Files.exists(metadataCidAbsPath));
+
+        // Confirm there are only two files in HashStore - 'hashstore.yaml' and the
+        // metadata file written
+        try (Stream<Path> walk = Files.walk(storePath)) {
+            long fileCount = walk.filter(Files::isRegularFile).count();
+            assertEquals(fileCount, 2);
         }
     }
 }
