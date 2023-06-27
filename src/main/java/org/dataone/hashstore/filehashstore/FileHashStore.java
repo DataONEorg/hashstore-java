@@ -5,6 +5,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
@@ -522,9 +523,35 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public BufferedReader retrieveObject(String pid) throws Exception {
-        // TODO: Implement method
-        return null;
+    public BufferedReader retrieveObject(String pid)
+            throws IllegalArgumentException, NoSuchAlgorithmException, FileNotFoundException {
+        logFileHashStore.debug("FileHashStore.retrieveObject - Called to retrieve object for pid: " + pid);
+
+        if (pid == null || pid.trim().isEmpty()) {
+            String errMsg = "FileHashStore.retrieveObject - pid cannot be null or empty, pid: " + pid;
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
+        }
+
+        // Get permanent addresss of the pid by calculating its sha-256 hex digest
+        String objectCid = this.getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
+        String objShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
+                objectCid);
+        Path objHashAddressPath = this.OBJECT_STORE_DIRECTORY.resolve(objShardString);
+        String objHashAddressString = objHashAddressPath.toString();
+
+        // Check to see if object exists
+        if (!Files.exists(objHashAddressPath)) {
+            String errMsg = "FileHashStore.retrieveObject - File does not exist for pid: " + pid
+                    + " with object address: " + objHashAddressString;
+            logFileHashStore.warn(errMsg);
+            throw new FileNotFoundException(errMsg);
+        }
+
+        // If so, return a buffered reader
+        FileReader objectCidFileReader = new FileReader(objHashAddressPath.toFile());
+        BufferedReader objectCidBufferedReader = new BufferedReader(objectCidFileReader);
+        return objectCidBufferedReader;
     }
 
     @Override
@@ -621,9 +648,9 @@ public class FileHashStore implements HashStore {
         boolean requestValidation = this.verifyChecksumParameters(checksum, checksumAlgorithm);
 
         // Gather HashAddress elements and prepare object permanent address
-        String objAuthorityId = this.getPidHexDigest(pid, this.OBJECT_STORE_ALGORITHM);
+        String objectCid = this.getPidHexDigest(pid, this.OBJECT_STORE_ALGORITHM);
         String objShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
-                objAuthorityId);
+                objectCid);
         Path objHashAddressPath = this.OBJECT_STORE_DIRECTORY.resolve(objShardString);
         String objHashAddressString = objHashAddressPath.toString();
 
@@ -683,7 +710,7 @@ public class FileHashStore implements HashStore {
                 throw new IOException(errMsg);
             }
 
-            objAuthorityId = null;
+            objectCid = null;
             objShardString = null;
             objHashAddressString = null;
             logFileHashStore.info(
@@ -700,7 +727,7 @@ public class FileHashStore implements HashStore {
         }
 
         // Create HashAddress object to return with pertinent data
-        return new HashAddress(objAuthorityId, objShardString, objHashAddressString, isDuplicate,
+        return new HashAddress(objectCid, objShardString, objHashAddressString, isDuplicate,
                 hexDigests);
     }
 
