@@ -3,7 +3,6 @@ package org.dataone.hashstore.filehashstore;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
@@ -317,7 +316,7 @@ public class FileHashStoreInterfaceTest {
 
     /**
      * Tests that the `storeObject` method can store an object successfully with
-     * multiple threads (3). This test uses three futures (threads) that run
+     * multiple threads (5). This test uses three futures (threads) that run
      * concurrently, all except one of which will encounter an `ExecutionException`.
      * The thread that does not encounter an exception will store the given
      * object, and verifies that the object is stored successfully.
@@ -334,7 +333,7 @@ public class FileHashStoreInterfaceTest {
      * 
      */
     @Test
-    public void storeObject_objectLockedIds_ThreeThreads() throws Exception {
+    public void storeObject_objectLockedIds_FiveThreads() throws Exception {
         // Get single test file to "upload"
         String pid = "jtao.1700.1";
         Path testDataFile = testData.getTestFile(pid);
@@ -385,12 +384,42 @@ public class FileHashStoreInterfaceTest {
                 assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
             }
         });
+        Future<?> future4 = executorService.submit(() -> {
+            try {
+                InputStream dataStream = Files.newInputStream(testDataFile);
+                HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
+                if (objInfo != null) {
+                    String absPath = objInfo.getAbsPath();
+                    File permAddress = new File(absPath);
+                    assertTrue(permAddress.exists());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
+            }
+        });
+        Future<?> future5 = executorService.submit(() -> {
+            try {
+                InputStream dataStream = Files.newInputStream(testDataFile);
+                HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
+                if (objInfo != null) {
+                    String absPath = objInfo.getAbsPath();
+                    File permAddress = new File(absPath);
+                    assertTrue(permAddress.exists());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
+            }
+        });
 
         // Wait for all tasks to complete and check results
         // .get() on the future ensures that all tasks complete before the test ends
         future1.get();
         future2.get();
         future3.get();
+        future4.get();
+        future5.get();
         executorService.shutdown();
         executorService.awaitTermination(1, TimeUnit.MINUTES);
     }
