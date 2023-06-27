@@ -349,6 +349,7 @@ public class FileHashStoreInterfaceTest {
                     assertTrue(permAddress.exists());
                 }
             } catch (Exception e) {
+                e.printStackTrace();
                 assertTrue(e instanceof RuntimeException || e instanceof FileAlreadyExistsException);
             }
         });
@@ -362,6 +363,7 @@ public class FileHashStoreInterfaceTest {
                     assertTrue(permAddress.exists());
                 }
             } catch (Exception e) {
+                e.printStackTrace();
                 assertTrue(e instanceof RuntimeException || e instanceof FileAlreadyExistsException);
             }
         });
@@ -375,6 +377,7 @@ public class FileHashStoreInterfaceTest {
                     assertTrue(permAddress.exists());
                 }
             } catch (Exception e) {
+                e.printStackTrace();
                 assertTrue(e instanceof RuntimeException || e instanceof FileAlreadyExistsException);
             }
         });
