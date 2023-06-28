@@ -100,7 +100,7 @@ public interface HashStore {
          * method will open and return a buffered object stream ready to read from.
          * 
          * @param pid Authority-based identifier
-         * @return A buffered stream of the object
+         * @return Object InputStream
          * @throws IllegalArgumentException When pid is null or empty
          * @throws FileNotFoundException    When requested pid has no associated object
          * @throws IOException              I/O error when creating InputStream to
@@ -117,8 +117,14 @@ public interface HashStore {
          * 
          * @param pid      Authority-based identifier
          * @param formatId Metadata namespace/format
-         * @return InputStream of Metadata
-         * @throws Exception TODO: Add specific exceptions
+         * @return Metadata InputStream
+         * @throws IllegalArgumentException When pid/formatId is null or empty
+         * @throws FileNotFoundException    When requested pid+formatId has no
+         *                                  associated object
+         * @throws IOException              I/O error when creating InputStream to
+         *                                  metadata
+         * @throws NoSuchAlgorithmException When algorithm used to calcualte metadata
+         *                                  address is not supported
          */
         InputStream retrieveMetadata(String pid, String formatId) throws Exception;
 
