@@ -64,18 +64,17 @@ public interface HashStore {
         /**
          * The `storeMetadata` method is responsible for adding/updating metadata
          * (ex. `sysmeta`) to disk using a given InputStream, a persistent identifier
-         * (pid) and metadata format (formatId). The metadata object consists of a
-         * header and body portion. The header is formed by writing the namespace/format
-         * (utf-8) of the metadata document followed by a null character `\u0000` and
-         * the body (metadata content) follows immediately after.
+         * (pid) and metadata format (formatId). The metadata object contains solely the
+         * given metadata content.
          * 
          * The permanent address of the metadata document is determined by calculating
          * the SHA-256 hex digest of the provided `pid` + `format_id`; and the body
          * contains the metadata content (ex. `sysmeta`).
          * 
-         * Upon successful storage of metadata, `store_metadata` returns a string that
-         * represents the file's permanent address. Lastly, the metadata objects are
-         * stored in parallel to objects in the `/store_directory/metadata/` directory.
+         * Upon successful storage of metadata, `storeMetadata` returns a string that
+         * represents the path of the file's permanent address, as described above.
+         * Lastly, the metadata objects are stored in parallel to objects in the
+         * `/store_directory/metadata/` directory.
          * 
          * @param metadata Input stream to metadata document
          * @param pid      Authority-based identifier
@@ -102,9 +101,15 @@ public interface HashStore {
          * 
          * @param pid Authority-based identifier
          * @return A buffered stream of the object
-         * @throws Exception TODO: Add specific exceptions
+         * @throws IllegalArgumentException When pid is null or empty
+         * @throws FileNotFoundException    When requested pid has no associated object
+         * @throws IOException              I/O error when creating InputStream to
+         *                                  object
+         * @throws NoSuchAlgorithmException When algorithm used to calcualte object
+         *                                  address is not supported
          */
-        InputStream retrieveObject(String pid) throws Exception;
+        InputStream retrieveObject(String pid)
+                        throws IllegalArgumentException, FileNotFoundException, IOException, NoSuchAlgorithmException;
 
         /**
          * The 'retrieveMetadata' method retrieves the metadata content of a given pid

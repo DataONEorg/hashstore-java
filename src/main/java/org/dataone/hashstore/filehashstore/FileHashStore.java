@@ -547,9 +547,17 @@ public class FileHashStore implements HashStore {
         }
 
         // If so, return an input stream
-        InputStream objectCidInputStream = Files.newInputStream(objHashAddressPath);
-        logFileHashStore.info("FileHashStore.retrieveObject - Retrieved object for pid: " + pid);
-        return objectCidInputStream;
+        try {
+            InputStream objectCidInputStream = Files.newInputStream(objHashAddressPath);
+            logFileHashStore.info("FileHashStore.retrieveObject - Retrieved object for pid: " + pid);
+            return objectCidInputStream;
+        } catch (IOException ioe) {
+            String errMsg = "FileHashStore.retrieveObject - Unexpected error when creating InputStream for pid: " + pid
+                    + ", IOException: " + ioe.getMessage();
+            logFileHashStore.error(errMsg);
+            throw new IOException(errMsg);
+        }
+
     }
 
     @Override
