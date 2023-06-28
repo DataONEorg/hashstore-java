@@ -672,31 +672,55 @@ public class FileHashStoreInterfaceTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void retrieveObject_pidNull() throws Exception {
-        fileHashStore.retrieveObject(null);
+        try {
+            InputStream pidInputStream = fileHashStore.retrieveObject(null);
+            pidInputStream.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     /**
-     * Check that retrieve object returns a buffered reader
+     * Check that retrieve object throws exception when pid is empty
      */
     @Test(expected = IllegalArgumentException.class)
     public void retrieveObject_pidEmpty() throws Exception {
-        fileHashStore.retrieveObject("");
+        try {
+            InputStream pidInputStream = fileHashStore.retrieveObject("");
+            pidInputStream.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     /**
-     * Check that retrieve object returns a buffered reader
+     * Check that retrieve object throws exception when pid is empty spaces
      */
     @Test(expected = IllegalArgumentException.class)
     public void retrieveObject_pidEmptySpaces() throws Exception {
-        fileHashStore.retrieveObject("      ");
+        try {
+            InputStream pidInputStream = fileHashStore.retrieveObject("      ");
+            pidInputStream.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     /**
-     * Check that retrieve object returns a buffered reader
+     * Check that retrieve object throws exception when file is not found
      */
     @Test(expected = FileNotFoundException.class)
     public void retrieveObject_pidNotFound() throws Exception {
-        fileHashStore.retrieveObject("dou.2023.hs.1");
+        try {
+            InputStream pidInputStream = fileHashStore.retrieveObject("dou.2023.hs.1");
+            pidInputStream.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     /**
@@ -712,7 +736,13 @@ public class FileHashStoreInterfaceTest {
             fileHashStore.storeObject(dataStream, pid, null, null, null);
 
             // Retrieve object
-            InputStream objectCidInputStream = fileHashStore.retrieveObject(pid);
+            InputStream objectCidInputStream;
+            try {
+                objectCidInputStream = fileHashStore.retrieveObject(pid);
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw e;
+            }
 
             // Read content and compare it to the SHA-256 checksum from TestDataHarness
             MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
@@ -731,6 +761,9 @@ public class FileHashStoreInterfaceTest {
             String sha256Digest = DatatypeConverter.printHexBinary(sha256.digest()).toLowerCase();
             String sha256DigestFromTestData = testData.pidData.get(pid).get("sha256");
             assertEquals(sha256Digest, sha256DigestFromTestData);
+
+            // Close stream
+            objectCidInputStream.close();
         }
     }
 }

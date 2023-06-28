@@ -1,8 +1,6 @@
 package org.dataone.hashstore.filehashstore;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.FileAlreadyExistsException;
@@ -12,7 +10,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Scanner;
 
 import javax.xml.bind.DatatypeConverter;
 
@@ -771,13 +768,12 @@ public class FileHashStoreProtectedTest {
         for (String pid : testData.pidList) {
             File newTmpFile = generateTemporaryFile();
             String pidFormatted = pid.replace("/", "_");
-            String formatId = (String) this.fhsProperties.get("storeMetadataNamespace");
 
             // Get test metadata file
             Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
 
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
-            boolean metadataWritten = this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream, formatId);
+            boolean metadataWritten = this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream);
             assertTrue(metadataWritten);
         }
     }
@@ -793,13 +789,12 @@ public class FileHashStoreProtectedTest {
         for (String pid : testData.pidList) {
             File newTmpFile = generateTemporaryFile();
             String pidFormatted = pid.replace("/", "_");
-            String formatId = (String) this.fhsProperties.get("storeMetadataNamespace");
 
             // Get test metadata file
             Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
 
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
-            boolean metadataWritten = this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream, formatId);
+            boolean metadataWritten = this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream);
             assertTrue(metadataWritten);
 
             long tmpMetadataFileSize = Files.size(newTmpFile.toPath());
@@ -815,15 +810,22 @@ public class FileHashStoreProtectedTest {
         for (String pid : testData.pidList) {
             File newTmpFile = generateTemporaryFile();
             String pidFormatted = pid.replace("/", "_");
-            String formatId = (String) this.fhsProperties.get("storeMetadataNamespace");
 
             // Get test metadata file
             Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
             // Write it to the tmpFile
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
-            this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream, formatId);
+            this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream);
 
-            InputStream metadataStoredStream = Files.newInputStream(newTmpFile.toPath());
+            // Create InputStream to tmp File
+            InputStream metadataStoredStream;
+            try {
+                metadataStoredStream = Files.newInputStream(newTmpFile.toPath());
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw e;
+            }
+
             // Calculate checksum of metadata content
             MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
             try {
@@ -840,6 +842,9 @@ public class FileHashStoreProtectedTest {
             String sha256Digest = DatatypeConverter.printHexBinary(sha256.digest()).toLowerCase();
             String sha256MetadataDigestFromTestData = testData.pidData.get(pid).get("metadata_sha256");
             assertEquals(sha256Digest, sha256MetadataDigestFromTestData);
+
+            // Close stream
+            metadataStoredStream.close();
         }
     }
 }
