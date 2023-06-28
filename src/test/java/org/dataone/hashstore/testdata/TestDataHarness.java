@@ -8,6 +8,12 @@ import java.util.Map;
 
 /*
  * This class returns the test data expected hex digest values
+ * 
+ * Notes:
+ * - "object_cid" is the SHA-256 hash of the pid
+ * - algorithms without any prefixes are the algorithm hash of the pid's respective data object content
+ * - "metadata_sha256" is the hash of the pid's respective metadata object content
+ * 
  */
 public class TestDataHarness {
         public Map<String, Map<String, String>> pidData;
