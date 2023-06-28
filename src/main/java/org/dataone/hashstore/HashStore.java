@@ -117,10 +117,10 @@ public interface HashStore {
          * 
          * @param pid      Authority-based identifier
          * @param formatId Metadata namespace/format
-         * @return Sysmeta (metadata) document of given pid
+         * @return InputStream of Metadata
          * @throws Exception TODO: Add specific exceptions
          */
-        String retrieveMetadata(String pid, String formatId) throws Exception;
+        InputStream retrieveMetadata(String pid, String formatId) throws Exception;
 
         /**
          * The 'deleteObject' method deletes an object permanently from disk using a

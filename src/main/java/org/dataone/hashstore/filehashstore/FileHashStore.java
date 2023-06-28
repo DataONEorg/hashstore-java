@@ -561,7 +561,7 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public String retrieveMetadata(String pid, String formatId) throws Exception {
+    public InputStream retrieveMetadata(String pid, String formatId) throws Exception {
         // TODO: Implement method
         return null;
     }
