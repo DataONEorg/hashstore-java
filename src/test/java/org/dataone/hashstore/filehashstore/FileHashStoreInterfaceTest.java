@@ -79,7 +79,7 @@ public class FileHashStoreInterfaceTest {
             HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
 
             // Check id (sha-256 hex digest of the ab_id (pid))
-            String objectCid = testData.pidData.get(pid).get("s_cid");
+            String objectCid = testData.pidData.get(pid).get("object_cid");
             assertEquals(objectCid, objInfo.getId());
         }
     }
@@ -97,7 +97,7 @@ public class FileHashStoreInterfaceTest {
             HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
 
             // Check relative path
-            String objectCid = testData.pidData.get(pid).get("s_cid");
+            String objectCid = testData.pidData.get(pid).get("object_cid");
             String objRelPath = fileHashStore.getHierarchicalPathString(3, 2, objectCid);
             assertEquals(objRelPath, objInfo.getRelPath());
         }
@@ -731,7 +731,6 @@ public class FileHashStoreInterfaceTest {
             String sha256Digest = DatatypeConverter.printHexBinary(sha256.digest()).toLowerCase();
             String sha256DigestFromTestData = testData.pidData.get(pid).get("sha256");
             assertEquals(sha256Digest, sha256DigestFromTestData);
-
         }
     }
 }

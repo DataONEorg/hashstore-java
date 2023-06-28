@@ -548,6 +548,7 @@ public class FileHashStore implements HashStore {
 
         // If so, return an input stream
         InputStream objectCidInputStream = Files.newInputStream(objHashAddressPath);
+        logFileHashStore.info("FileHashStore.retrieveObject - Retrieved object for pid: " + pid);
         return objectCidInputStream;
     }
 
@@ -1183,13 +1184,7 @@ public class FileHashStore implements HashStore {
         FileOutputStream os = new FileOutputStream(tmpFile);
 
         try {
-            // Write formatId
-            byte[] metadataHeaderBytes = formatId.getBytes(StandardCharsets.UTF_8);
-            os.write(metadataHeaderBytes);
-            // Followed by null character
-            os.write('\u0000');
-
-            // Write metadata content (body)
+            // Write metadata content
             byte[] buffer = new byte[8192];
             int bytesRead;
             while ((bytesRead = metadataStream.read(buffer)) != -1) {
