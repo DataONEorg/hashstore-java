@@ -1,10 +1,13 @@
 package org.dataone.hashstore.filehashstore;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,10 +17,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import javax.xml.bind.DatatypeConverter;
 
 import org.dataone.hashstore.HashAddress;
 import org.dataone.hashstore.exceptions.PidObjectExistsException;
@@ -26,6 +26,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import static org.junit.Assert.*;
 
 /**
  * Test class for FileHashStore HashStoreInterface override methods
@@ -77,9 +79,9 @@ public class FileHashStoreInterfaceTest {
             InputStream dataStream = Files.newInputStream(testDataFile);
             HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
 
-            // Check id (sha-256 hex digest of the ab_id, aka s_cid)
-            String objAuthorityId = testData.pidData.get(pid).get("s_cid");
-            assertEquals(objAuthorityId, objInfo.getId());
+            // Check id (sha-256 hex digest of the ab_id (pid))
+            String objectCid = testData.pidData.get(pid).get("s_cid");
+            assertEquals(objectCid, objInfo.getId());
         }
     }
 
@@ -96,8 +98,8 @@ public class FileHashStoreInterfaceTest {
             HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
 
             // Check relative path
-            String objAuthorityId = testData.pidData.get(pid).get("s_cid");
-            String objRelPath = fileHashStore.getHierarchicalPathString(3, 2, objAuthorityId);
+            String objectCid = testData.pidData.get(pid).get("s_cid");
+            String objRelPath = fileHashStore.getHierarchicalPathString(3, 2, objectCid);
             assertEquals(objRelPath, objInfo.getRelPath());
         }
     }
@@ -645,6 +647,63 @@ public class FileHashStoreInterfaceTest {
         try (Stream<Path> walk = Files.walk(storePath)) {
             long fileCount = walk.filter(Files::isRegularFile).count();
             assertEquals(fileCount, 2);
+        }
+    }
+
+    /**
+     * Check that retrieve object returns a buffered reader
+     */
+    @Test
+    public void retrieveObject() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            fileHashStore.storeObject(dataStream, pid, null, null, null);
+
+            // Retrieve object
+            BufferedReader objectCidBufferedReader = fileHashStore.retrieveObject(pid);
+            assertNotNull(objectCidBufferedReader);
+        }
+    }
+
+    /**
+     * Check that retrieve object buffer content is accurate
+     */
+    @Test
+    public void retrieveObject_verifyContent() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            fileHashStore.storeObject(dataStream, pid, null, null, null);
+
+            // Retrieve object
+            BufferedReader objectCidBufferedReader = fileHashStore.retrieveObject(pid);
+
+            // Read content and compare it to the SHA-256 checksum from TestDataHarness
+            MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
+            try {
+                char[] buffer = new char[8192];
+                int charsRead;
+                while ((charsRead = objectCidBufferedReader.read(buffer)) != -1) {
+                    String line = new String(buffer, 0, charsRead);
+                    byte[] byteLine = line.getBytes(StandardCharsets.UTF_8);
+                    sha256.update(byteLine);
+                }
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
+                throw ioe;
+            }
+            // Get hex digest
+            String sha256Digest = DatatypeConverter.printHexBinary(sha256.digest()).toLowerCase();
+            String sha256DigestFromTestData = testData.pidData.get(pid).get("sha256");
+            assertEquals(sha256Digest, sha256DigestFromTestData);
+
+            // Close the BufferedReader when done
+            objectCidBufferedReader.close();
         }
     }
 }
