@@ -536,34 +536,75 @@ public class FileHashStore implements HashStore {
         String objShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
                 objectCid);
         Path objHashAddressPath = this.OBJECT_STORE_DIRECTORY.resolve(objShardString);
-        String objHashAddressString = objHashAddressPath.toString();
 
         // Check to see if object exists
         if (!Files.exists(objHashAddressPath)) {
             String errMsg = "FileHashStore.retrieveObject - File does not exist for pid: " + pid
-                    + " with object address: " + objHashAddressString;
+                    + " with object address: " + objHashAddressPath;
             logFileHashStore.warn(errMsg);
             throw new FileNotFoundException(errMsg);
         }
 
-        // If so, return an input stream
+        // If so, return an input stream for the object
         try {
             InputStream objectCidInputStream = Files.newInputStream(objHashAddressPath);
             logFileHashStore.info("FileHashStore.retrieveObject - Retrieved object for pid: " + pid);
             return objectCidInputStream;
+
         } catch (IOException ioe) {
             String errMsg = "FileHashStore.retrieveObject - Unexpected error when creating InputStream for pid: "
                     + pid + ", IOException: " + ioe.getMessage();
             logFileHashStore.error(errMsg);
             throw new IOException(errMsg);
+
         }
 
     }
 
     @Override
     public InputStream retrieveMetadata(String pid, String formatId) throws Exception {
-        // TODO: Implement method
-        return null;
+        logFileHashStore.debug("FileHashStore.retrieveMetadata - Called to retrieve metadata for pid: " + pid
+                + " with formatId: " + formatId);
+
+        if (pid == null || pid.trim().isEmpty()) {
+            String errMsg = "FileHashStore.retrieveMetadata - pid cannot be null or empty, pid: " + pid;
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
+        }
+        if (formatId == null || formatId.trim().isEmpty()) {
+            String errMsg = "FileHashStore.retrieveMetadata - pid cannot be null or empty, pid: " + pid;
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
+        }
+
+        // Get permanent address of the pid by calculating its sha-256 hex digest
+        String metadataCid = this.getPidHexDigest(pid + formatId, OBJECT_STORE_ALGORITHM);
+        String metadataShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
+                metadataCid);
+        Path metadataHashAddressPath = this.METADATA_STORE_DIRECTORY.resolve(metadataShardString);
+
+        // Check to see if metadata exists
+        if (!Files.exists(metadataHashAddressPath)) {
+            String errMsg = "FileHashStore.retrieveMetadata - Metadata does not exist for pid: " + pid
+                    + " with formatId: " + formatId + ". Metadata address: " + metadataHashAddressPath;
+            logFileHashStore.warn(errMsg);
+            throw new FileNotFoundException(errMsg);
+        }
+
+        // If so, return an input stream for the metadata
+        try {
+            InputStream metadataCidInputStream = Files.newInputStream(metadataHashAddressPath);
+            logFileHashStore.info("FileHashStore.retrieveMetadata - Retrieved metadata for pid: " + pid
+                    + " with formatId: " + formatId);
+            return metadataCidInputStream;
+
+        } catch (IOException ioe) {
+            String errMsg = "FileHashStore.retrieveMetadata - Unexpected error when creating InputStream for pid: "
+                    + pid + " with formatId: " + formatId + ". IOException: " + ioe.getMessage();
+            logFileHashStore.error(errMsg);
+            throw new IOException(errMsg);
+
+        }
     }
 
     @Override
