@@ -1,10 +1,9 @@
 package org.dataone.hashstore.filehashstore;
 
-import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -663,13 +662,45 @@ public class FileHashStoreInterfaceTest {
             fileHashStore.storeObject(dataStream, pid, null, null, null);
 
             // Retrieve object
-            BufferedReader objectCidBufferedReader = fileHashStore.retrieveObject(pid);
-            assertNotNull(objectCidBufferedReader);
+            InputStream objectCidInputStream = fileHashStore.retrieveObject(pid);
+            assertNotNull(objectCidInputStream);
         }
     }
 
     /**
-     * Check that retrieve object buffer content is accurate
+     * Check that retrieve object throws exception when pid is null
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void retrieveObject_pidNull() throws Exception {
+        fileHashStore.retrieveObject(null);
+    }
+
+    /**
+     * Check that retrieve object returns a buffered reader
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void retrieveObject_pidEmpty() throws Exception {
+        fileHashStore.retrieveObject("");
+    }
+
+    /**
+     * Check that retrieve object returns a buffered reader
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void retrieveObject_pidEmptySpaces() throws Exception {
+        fileHashStore.retrieveObject("      ");
+    }
+
+    /**
+     * Check that retrieve object returns a buffered reader
+     */
+    @Test(expected = FileNotFoundException.class)
+    public void retrieveObject_pidNotFound() throws Exception {
+        fileHashStore.retrieveObject("dou.2023.hs.1");
+    }
+
+    /**
+     * Check that retrieve object inputstream content is accurate
      */
     @Test
     public void retrieveObject_verifyContent() throws Exception {
@@ -681,29 +712,26 @@ public class FileHashStoreInterfaceTest {
             fileHashStore.storeObject(dataStream, pid, null, null, null);
 
             // Retrieve object
-            BufferedReader objectCidBufferedReader = fileHashStore.retrieveObject(pid);
+            InputStream objectCidInputStream = fileHashStore.retrieveObject(pid);
 
             // Read content and compare it to the SHA-256 checksum from TestDataHarness
             MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
             try {
-                char[] buffer = new char[8192];
-                int charsRead;
-                while ((charsRead = objectCidBufferedReader.read(buffer)) != -1) {
-                    String line = new String(buffer, 0, charsRead);
-                    byte[] byteLine = line.getBytes(StandardCharsets.UTF_8);
-                    sha256.update(byteLine);
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+                while ((bytesRead = objectCidInputStream.read(buffer)) != -1) {
+                    sha256.update(buffer, 0, bytesRead);
                 }
             } catch (IOException ioe) {
                 ioe.printStackTrace();
                 throw ioe;
             }
+
             // Get hex digest
             String sha256Digest = DatatypeConverter.printHexBinary(sha256.digest()).toLowerCase();
             String sha256DigestFromTestData = testData.pidData.get(pid).get("sha256");
             assertEquals(sha256Digest, sha256DigestFromTestData);
 
-            // Close the BufferedReader when done
-            objectCidBufferedReader.close();
         }
     }
 }

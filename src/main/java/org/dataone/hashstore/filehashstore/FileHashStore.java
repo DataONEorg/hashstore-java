@@ -1,11 +1,9 @@
 package org.dataone.hashstore.filehashstore;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
@@ -523,8 +521,8 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public BufferedReader retrieveObject(String pid)
-            throws IllegalArgumentException, NoSuchAlgorithmException, FileNotFoundException {
+    public InputStream retrieveObject(String pid)
+            throws IllegalArgumentException, NoSuchAlgorithmException, FileNotFoundException, IOException {
         logFileHashStore.debug("FileHashStore.retrieveObject - Called to retrieve object for pid: " + pid);
 
         if (pid == null || pid.trim().isEmpty()) {
@@ -548,10 +546,9 @@ public class FileHashStore implements HashStore {
             throw new FileNotFoundException(errMsg);
         }
 
-        // If so, return a buffered reader
-        FileReader objectCidFileReader = new FileReader(objHashAddressPath.toFile());
-        BufferedReader objectCidBufferedReader = new BufferedReader(objectCidFileReader);
-        return objectCidBufferedReader;
+        // If so, return an input stream
+        InputStream objectCidInputStream = Files.newInputStream(objHashAddressPath);
+        return objectCidInputStream;
     }
 
     @Override
