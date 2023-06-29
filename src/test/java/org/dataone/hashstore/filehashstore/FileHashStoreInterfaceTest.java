@@ -1,6 +1,5 @@
 package org.dataone.hashstore.filehashstore;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -116,8 +115,8 @@ public class FileHashStoreInterfaceTest {
             HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
 
             // Check absolute path
-            File objAbsPath = new File(objInfo.getAbsPath());
-            assertTrue(objAbsPath.exists());
+            Path objAbsPath = objInfo.getAbsPath();
+            assertTrue(Files.exists(objAbsPath));
         }
     }
 
@@ -219,8 +218,8 @@ public class FileHashStoreInterfaceTest {
         InputStream dataStream = Files.newInputStream(testDataFile);
         HashAddress address = fileHashStore.storeObject(dataStream, pid, null, checksumCorrect, "SHA-256");
 
-        File objAbsPath = new File(address.getAbsPath());
-        assertTrue(objAbsPath.exists());
+        Path objAbsPath = address.getAbsPath();
+        assertTrue(Files.exists(objAbsPath));
     }
 
     /**
@@ -348,9 +347,8 @@ public class FileHashStoreInterfaceTest {
                 InputStream dataStream = Files.newInputStream(testDataFile);
                 HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
                 if (objInfo != null) {
-                    String absPath = objInfo.getAbsPath();
-                    File permAddress = new File(absPath);
-                    assertTrue(permAddress.exists());
+                    Path absPath = objInfo.getAbsPath();
+                    assertTrue(Files.exists(absPath));
                 }
             } catch (Exception e) {
                 System.out.println(e.getClass());
@@ -363,9 +361,8 @@ public class FileHashStoreInterfaceTest {
                 InputStream dataStream = Files.newInputStream(testDataFile);
                 HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
                 if (objInfo != null) {
-                    String absPath = objInfo.getAbsPath();
-                    File permAddress = new File(absPath);
-                    assertTrue(permAddress.exists());
+                    Path absPath = objInfo.getAbsPath();
+                    assertTrue(Files.exists(absPath));
                 }
             } catch (Exception e) {
                 System.out.println(e.getClass());
@@ -378,9 +375,8 @@ public class FileHashStoreInterfaceTest {
                 InputStream dataStream = Files.newInputStream(testDataFile);
                 HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
                 if (objInfo != null) {
-                    String absPath = objInfo.getAbsPath();
-                    File permAddress = new File(absPath);
-                    assertTrue(permAddress.exists());
+                    Path absPath = objInfo.getAbsPath();
+                    assertTrue(Files.exists(absPath));
                 }
             } catch (Exception e) {
                 System.out.println(e.getClass());
@@ -393,9 +389,8 @@ public class FileHashStoreInterfaceTest {
                 InputStream dataStream = Files.newInputStream(testDataFile);
                 HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
                 if (objInfo != null) {
-                    String absPath = objInfo.getAbsPath();
-                    File permAddress = new File(absPath);
-                    assertTrue(permAddress.exists());
+                    Path absPath = objInfo.getAbsPath();
+                    assertTrue(Files.exists(absPath));
                 }
             } catch (Exception e) {
                 System.out.println(e.getClass());
@@ -408,9 +403,8 @@ public class FileHashStoreInterfaceTest {
                 InputStream dataStream = Files.newInputStream(testDataFile);
                 HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
                 if (objInfo != null) {
-                    String absPath = objInfo.getAbsPath();
-                    File permAddress = new File(absPath);
-                    assertTrue(permAddress.exists());
+                    Path absPath = objInfo.getAbsPath();
+                    assertTrue(Files.exists(absPath));
                 }
             } catch (Exception e) {
                 System.out.println(e.getClass());
@@ -452,9 +446,8 @@ public class FileHashStoreInterfaceTest {
                 InputStream dataStream = Files.newInputStream(testDataFile);
                 HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
                 if (objInfo != null) {
-                    String absPath = objInfo.getAbsPath();
-                    File permAddress = new File(absPath);
-                    assertTrue(permAddress.exists());
+                    Path absPath = objInfo.getAbsPath();
+                    assertTrue(Files.exists(absPath));
                 }
             } catch (Exception e) {
                 System.out.println(e.getClass());
@@ -467,9 +460,8 @@ public class FileHashStoreInterfaceTest {
                 InputStream dataStream = Files.newInputStream(testDataFile);
                 HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
                 if (objInfo != null) {
-                    String absPath = objInfo.getAbsPath();
-                    File permAddress = new File(absPath);
-                    assertTrue(permAddress.exists());
+                    Path absPath = objInfo.getAbsPath();
+                    assertTrue(Files.exists(absPath));
                 }
             } catch (Exception e) {
                 System.out.println(e.getClass());
@@ -672,12 +664,8 @@ public class FileHashStoreInterfaceTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void retrieveObject_pidNull() throws Exception {
-        try {
-            InputStream pidInputStream = fileHashStore.retrieveObject(null);
-            pidInputStream.close();
-        } catch (Exception e) {
-            throw e;
-        }
+        InputStream pidInputStream = fileHashStore.retrieveObject(null);
+        pidInputStream.close();
     }
 
     /**
@@ -685,12 +673,8 @@ public class FileHashStoreInterfaceTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void retrieveObject_pidEmpty() throws Exception {
-        try {
-            InputStream pidInputStream = fileHashStore.retrieveObject("");
-            pidInputStream.close();
-        } catch (Exception e) {
-            throw e;
-        }
+        InputStream pidInputStream = fileHashStore.retrieveObject("");
+        pidInputStream.close();
     }
 
     /**
@@ -698,12 +682,8 @@ public class FileHashStoreInterfaceTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void retrieveObject_pidEmptySpaces() throws Exception {
-        try {
-            InputStream pidInputStream = fileHashStore.retrieveObject("      ");
-            pidInputStream.close();
-        } catch (Exception e) {
-            throw e;
-        }
+        InputStream pidInputStream = fileHashStore.retrieveObject("      ");
+        pidInputStream.close();
     }
 
     /**
@@ -711,12 +691,8 @@ public class FileHashStoreInterfaceTest {
      */
     @Test(expected = FileNotFoundException.class)
     public void retrieveObject_pidNotFound() throws Exception {
-        try {
-            InputStream pidInputStream = fileHashStore.retrieveObject("dou.2023.hs.1");
-            pidInputStream.close();
-        } catch (Exception e) {
-            throw e;
-        }
+        InputStream pidInputStream = fileHashStore.retrieveObject("dou.2023.hs.1");
+        pidInputStream.close();
     }
 
     /**
@@ -789,14 +765,10 @@ public class FileHashStoreInterfaceTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void retrieveMetadata_pidNull() throws Exception {
-        try {
-            String storeFormatId = (String) this.fhsProperties.get("storeMetadataNamespace");
-            InputStream pidInputStream = fileHashStore.retrieveMetadata(null, storeFormatId);
-            pidInputStream.close();
+        String storeFormatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+        InputStream pidInputStream = fileHashStore.retrieveMetadata(null, storeFormatId);
+        pidInputStream.close();
 
-        } catch (Exception e) {
-            throw e;
-        }
     }
 
     /**
@@ -804,14 +776,10 @@ public class FileHashStoreInterfaceTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void retrieveMetadata_pidEmpty() throws Exception {
-        try {
-            String storeFormatId = (String) this.fhsProperties.get("storeMetadataNamespace");
-            InputStream pidInputStream = fileHashStore.retrieveMetadata("", storeFormatId);
-            pidInputStream.close();
+        String storeFormatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+        InputStream pidInputStream = fileHashStore.retrieveMetadata("", storeFormatId);
+        pidInputStream.close();
 
-        } catch (Exception e) {
-            throw e;
-        }
     }
 
     /**
@@ -819,14 +787,10 @@ public class FileHashStoreInterfaceTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void retrieveMetadata_pidEmptySpaces() throws Exception {
-        try {
-            String storeFormatId = (String) this.fhsProperties.get("storeMetadataNamespace");
-            InputStream pidInputStream = fileHashStore.retrieveMetadata("      ", storeFormatId);
-            pidInputStream.close();
+        String storeFormatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+        InputStream pidInputStream = fileHashStore.retrieveMetadata("      ", storeFormatId);
+        pidInputStream.close();
 
-        } catch (Exception e) {
-            throw e;
-        }
     }
 
     /**
@@ -834,13 +798,9 @@ public class FileHashStoreInterfaceTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void retrieveMetadata_formatNull() throws Exception {
-        try {
-            InputStream pidInputStream = fileHashStore.retrieveMetadata("dou.2023.hs.1", null);
-            pidInputStream.close();
+        InputStream pidInputStream = fileHashStore.retrieveMetadata("dou.2023.hs.1", null);
+        pidInputStream.close();
 
-        } catch (Exception e) {
-            throw e;
-        }
     }
 
     /**
@@ -848,13 +808,9 @@ public class FileHashStoreInterfaceTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void retrieveMetadata_formatEmpty() throws Exception {
-        try {
-            InputStream pidInputStream = fileHashStore.retrieveMetadata("dou.2023.hs.1", "");
-            pidInputStream.close();
+        InputStream pidInputStream = fileHashStore.retrieveMetadata("dou.2023.hs.1", "");
+        pidInputStream.close();
 
-        } catch (Exception e) {
-            throw e;
-        }
     }
 
     /**
@@ -862,13 +818,9 @@ public class FileHashStoreInterfaceTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void retrieveMetadata_formatEmptySpaces() throws Exception {
-        try {
-            InputStream pidInputStream = fileHashStore.retrieveMetadata("dou.2023.hs.1", "      ");
-            pidInputStream.close();
+        InputStream pidInputStream = fileHashStore.retrieveMetadata("dou.2023.hs.1", "      ");
+        pidInputStream.close();
 
-        } catch (Exception e) {
-            throw e;
-        }
     }
 
     /**
@@ -876,14 +828,10 @@ public class FileHashStoreInterfaceTest {
      */
     @Test(expected = FileNotFoundException.class)
     public void retrieveMetadata_pidNotFound() throws Exception {
-        try {
-            String storeFormatId = (String) this.fhsProperties.get("storeMetadataNamespace");
-            InputStream pidInputStream = fileHashStore.retrieveMetadata("dou.2023.hs.1", storeFormatId);
-            pidInputStream.close();
+        String storeFormatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+        InputStream pidInputStream = fileHashStore.retrieveMetadata("dou.2023.hs.1", storeFormatId);
+        pidInputStream.close();
 
-        } catch (Exception e) {
-            throw e;
-        }
     }
 
     /**
@@ -931,6 +879,235 @@ public class FileHashStoreInterfaceTest {
 
             // Close stream
             metadataCidInputStream.close();
+        }
+    }
+
+    /**
+     * Confirm that deleteObject deletes object and empty subdirectories
+     */
+    @Test
+    public void deleteObject() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
+
+            boolean isFileDeleted = fileHashStore.deleteObject(pid);
+            assertTrue(isFileDeleted);
+
+            // Double check that file doesn't exist
+            assertFalse(Files.exists(objInfo.getAbsPath()));
+
+            // Double check that object directory still exists
+            Path storePath = (Path) this.fhsProperties.get("storePath");
+            Path storeObjectPath = storePath.resolve("objects");
+            assertTrue(Files.exists(storeObjectPath));
+        }
+    }
+
+    /**
+     * Confirm that deleteObject throws exception when associated pid obj not found
+     */
+    @Test(expected = FileNotFoundException.class)
+    public void deleteObject_pidNotFound() throws Exception {
+        fileHashStore.deleteObject("dou.2023.hashstore.1");
+    }
+
+    /**
+     * Confirm that deleteObject throws exception when pid is null
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void deleteObject_pidNull() throws Exception {
+        fileHashStore.deleteObject(null);
+    }
+
+    /**
+     * Confirm that deleteObject throws exception when pid is empty
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void deleteObject_pidEmpty() throws Exception {
+        fileHashStore.deleteObject("");
+    }
+
+    /**
+     * Confirm that deleteObject throws exception when pid is empty spaces
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void deleteObject_pidEmptySpaces() throws Exception {
+        fileHashStore.deleteObject("      ");
+    }
+
+    /**
+     * Confirm that deleteMetadata deletes object and empty sub directories
+     */
+    @Test
+    public void deleteMetadata() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, null);
+
+            String storeFormatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+            boolean isMetadataDeleted = fileHashStore.deleteMetadata(pid, storeFormatId);
+            assertTrue(isMetadataDeleted);
+
+            // Double check that file doesn't exist
+            Path storePath = (Path) this.fhsProperties.get("storePath");
+            Path metadataStoreDirectory = storePath.resolve("metadata");
+            int storeDepth = (int) this.fhsProperties.get("storeDepth");
+            int storeWidth = (int) this.fhsProperties.get("storeWidth");
+            String metadataCidShardString = fileHashStore.getHierarchicalPathString(storeDepth, storeWidth,
+                    metadataCid);
+            Path metadataCidPath = metadataStoreDirectory.resolve(metadataCidShardString);
+            assertFalse(Files.exists(metadataCidPath));
+
+            // Double check that metadata directory still exists
+            Path storeObjectPath = storePath.resolve("metadata");
+            assertTrue(Files.exists(storeObjectPath));
+        }
+    }
+
+    /**
+     * Confirm that deleteMetadata throws exception when associated pid obj not
+     * found
+     */
+    @Test(expected = FileNotFoundException.class)
+    public void deleteMetadata_pidNotFound() throws Exception {
+        String formatId = "http://hashstore.tests/types/v1.0";
+        fileHashStore.deleteMetadata("dou.2023.hashstore.1", formatId);
+    }
+
+    /**
+     * Confirm that deleteMetadata throws exception when pid is null
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void deleteMetadata_pidNull() throws Exception {
+        String formatId = "http://hashstore.tests/types/v1.0";
+        fileHashStore.deleteMetadata(null, formatId);
+    }
+
+    /**
+     * Confirm that deleteMetadata throws exception when pid is empty
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void deleteMetadata_pidEmpty() throws Exception {
+        String formatId = "http://hashstore.tests/types/v1.0";
+        fileHashStore.deleteMetadata("", formatId);
+    }
+
+    /**
+     * Confirm that deleteMetadata throws exception when pid is empty spaces
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void deleteMetadata_pidEmptySpaces() throws Exception {
+        String formatId = "http://hashstore.tests/types/v1.0";
+        fileHashStore.deleteMetadata("      ", formatId);
+    }
+
+    /**
+     * Confirm that deleteMetadata throws exception when formatId is null
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void deleteMetadata_formatIdNull() throws Exception {
+        String pid = "dou.2023.hashstore.1";
+        fileHashStore.deleteMetadata(pid, null);
+    }
+
+    /**
+     * Confirm that deleteMetadata throws exception when formatId is empty
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void deleteMetadata_formatIdEmpty() throws Exception {
+        String pid = "dou.2023.hashstore.1";
+        fileHashStore.deleteMetadata(pid, "");
+    }
+
+    /**
+     * Confirm that deleteMetadata throws exception when formatId is empty spaces
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void deleteMetadata_formatIdEmptySpaces() throws Exception {
+        String pid = "dou.2023.hashstore.1";
+        fileHashStore.deleteMetadata(pid, "     ");
+    }
+
+    /**
+     * Confirm correct checksum/hex digest returned
+     */
+    @Test
+    public void getHexDigest() throws Exception {
+        for (String pid : testData.pidList) {
+            // Store file first
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
+
+            // Then get the checksum
+            String pidHexDigest = fileHashStore.getHexDigest(pid, "SHA-256");
+            String sha256DigestFromTestData = testData.pidData.get(pid).get("sha256");
+            String objSha256Checksum = objInfo.getHexDigests().get("SHA-256");
+            assertEquals(pidHexDigest, sha256DigestFromTestData);
+            assertEquals(pidHexDigest, objSha256Checksum);
+        }
+    }
+
+    /**
+     * Confirm getHexDigest throws exception when file is not found
+     */
+    @Test(expected = FileNotFoundException.class)
+    public void getHexDigest_pidNotFound() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            fileHashStore.getHexDigest(pidFormatted, "SHA-256");
+        }
+    }
+
+    /**
+     * Confirm getHexDigest throws exception when file is not found
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void getHexDigest_pidNull() throws Exception {
+        fileHashStore.getHexDigest(null, "SHA-256");
+    }
+
+    /**
+     * Confirm getHexDigest throws exception when file is not found
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void getHexDigest_pidEmpty() throws Exception {
+        fileHashStore.getHexDigest("", "SHA-256");
+    }
+
+    /**
+     * Confirm getHexDigest throws exception when file is not found
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void getHexDigest_pidEmptySpaces() throws Exception {
+        fileHashStore.getHexDigest("      ", "SHA-256");
+    }
+
+    /**
+     * Confirm getHexDigest throws exception when unsupported algorithm supplied
+     */
+    @Test(expected = NoSuchAlgorithmException.class)
+    public void getHexDigest_badAlgo() throws Exception {
+        for (String pid : testData.pidList) {
+            // Store object first
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            fileHashStore.storeObject(dataStream, pid, null, null, null);
+
+            fileHashStore.getHexDigest(pid, "BLAKE2S");
         }
     }
 }

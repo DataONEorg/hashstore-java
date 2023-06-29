@@ -8,7 +8,6 @@ import static org.junit.Assert.fail;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 
 import org.dataone.hashstore.exceptions.HashStoreFactoryException;
@@ -99,7 +98,7 @@ public class HashStoreTest {
             // Check id (sha-256 hex digest of the ab_id, aka object_cid)
             String objAuthorityId = testData.pidData.get(pid).get("object_cid");
             assertEquals(objAuthorityId, objInfo.getId());
-            assertTrue(Files.exists(Paths.get(objInfo.getAbsPath())));
+            assertTrue(Files.exists(objInfo.getAbsPath()));
         }
     }
 }

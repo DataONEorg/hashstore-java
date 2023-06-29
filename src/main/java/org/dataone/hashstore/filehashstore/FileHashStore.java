@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -301,7 +302,7 @@ public class FileHashStore implements HashStore {
      * @param storeWidth             Width of store
      * @param storeAlgorithm         Algorithm to use to calculate the hex digest
      *                               for the
-     *                               permanent address of a data sobject
+     *                               permanent address of a data object
      * @param storeMetadataNamespace default formatId of hashstore metadata
      * @return String that representing the contents of 'hashstore.yaml'
      */
@@ -532,7 +533,7 @@ public class FileHashStore implements HashStore {
         }
 
         // Get permanent address of the pid by calculating its sha-256 hex digest
-        String objectCid = this.getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
+        String objectCid = this.getPidHexDigest(pid, this.OBJECT_STORE_ALGORITHM);
         String objShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
                 objectCid);
         Path objHashAddressPath = this.OBJECT_STORE_DIRECTORY.resolve(objShardString);
@@ -578,7 +579,7 @@ public class FileHashStore implements HashStore {
         }
 
         // Get permanent address of the pid by calculating its sha-256 hex digest
-        String metadataCid = this.getPidHexDigest(pid + formatId, OBJECT_STORE_ALGORITHM);
+        String metadataCid = this.getPidHexDigest(pid + formatId, this.OBJECT_STORE_ALGORITHM);
         String metadataShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
                 metadataCid);
         Path metadataHashAddressPath = this.METADATA_STORE_DIRECTORY.resolve(metadataShardString);
@@ -608,21 +609,158 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public boolean deleteObject(String pid) throws Exception {
-        // TODO: Implement method
-        return false;
+    public boolean deleteObject(String pid)
+            throws IllegalArgumentException, FileNotFoundException, IOException, NoSuchAlgorithmException {
+        logFileHashStore.debug("FileHashStore.deleteObject - Called to delete object for pid: " + pid);
+
+        if (pid == null || pid.trim().isEmpty()) {
+            String errMsg = "FileHashStore.deleteObject - pid cannot be null or empty, pid: " + pid;
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
+        }
+
+        // Get permanent address of the pid by calculating its sha-256 hex digest
+        String objectCid = this.getPidHexDigest(pid, this.OBJECT_STORE_ALGORITHM);
+        String objShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
+                objectCid);
+        Path objHashAddressPath = this.OBJECT_STORE_DIRECTORY.resolve(objShardString);
+
+        // Check to see if object exists
+        if (!Files.exists(objHashAddressPath)) {
+            String errMsg = "FileHashStore.deleteObject - File does not exist for pid: " + pid
+                    + " with object address: " + objHashAddressPath;
+            logFileHashStore.warn(errMsg);
+            throw new FileNotFoundException(errMsg);
+        }
+
+        // Delete file
+        Files.delete(objHashAddressPath);
+
+        // Then delete any empty directories
+        Path parent = objHashAddressPath.getParent();
+        while (parent != null && isDirectoryEmpty(parent)) {
+            if (parent.equals(this.OBJECT_STORE_DIRECTORY)) {
+                // Do not delete the object store directory
+                break;
+
+            } else {
+                Files.delete(parent);
+                logFileHashStore.info("FileHashStore.deleteObject - Deleting parent directory for: " + pid
+                        + " with parent address: " + parent);
+                parent = parent.getParent();
+            }
+        }
+
+        logFileHashStore.info("FileHashStore.deleteObject - File deleted for: " + pid + " with object address: "
+                + objHashAddressPath);
+        return true;
     }
 
     @Override
-    public boolean deleteMetadata(String pid, String formatId) throws Exception {
-        // TODO: Implement method
-        return false;
+    public boolean deleteMetadata(String pid, String formatId)
+            throws IllegalArgumentException, FileNotFoundException, IOException, NoSuchAlgorithmException {
+        logFileHashStore.debug("FileHashStore.deleteMetadata - Called to delete metadata for pid: " + pid);
+
+        if (pid == null || pid.trim().isEmpty()) {
+            String errMsg = "FileHashStore.deleteMetadata - pid cannot be null or empty, pid: " + pid;
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
+        }
+        if (formatId == null || formatId.trim().isEmpty()) {
+            String errMsg = "FileHashStore.deleteMetadata - formatId cannot be null or empty, formatId: " + pid;
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
+        }
+
+        // Get permanent address of the pid by calculating its sha-256 hex digest
+        String metadataCid = this.getPidHexDigest(pid + formatId, this.OBJECT_STORE_ALGORITHM);
+        String metadataCidShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
+                metadataCid);
+        Path metadataCidPath = this.METADATA_STORE_DIRECTORY.resolve(metadataCidShardString);
+
+        // Check to see if object exists
+        if (!Files.exists(metadataCidPath)) {
+            String errMsg = "FileHashStore.deleteMetadata - File does not exist for pid: " + pid
+                    + " with metadata address: " + metadataCidPath;
+            logFileHashStore.warn(errMsg);
+            throw new FileNotFoundException(errMsg);
+        }
+
+        // Delete file
+        Files.delete(metadataCidPath);
+
+        // Then delete any empty directories
+        Path parent = metadataCidPath.getParent();
+        while (parent != null && isDirectoryEmpty(parent)) {
+            if (parent.equals(this.METADATA_STORE_DIRECTORY)) {
+                // Do not delete the metadata store directory
+                break;
+
+            } else {
+                Files.delete(parent);
+                logFileHashStore.info("FileHashStore.deleteMetadata - Deleting parent directory for: " + pid
+                        + " with parent address: " + parent);
+                parent = parent.getParent();
+            }
+        }
+
+        logFileHashStore.info("FileHashStore.deleteMetadata - File deleted for: " + pid + " with metadata address: "
+                + metadataCidPath);
+        return true;
     }
 
     @Override
-    public String getHexDigest(String pid, String algorithm) throws Exception {
-        // TODO: Implement method
-        return null;
+    public String getHexDigest(String pid, String algorithm)
+            throws NoSuchAlgorithmException, FileNotFoundException, IOException {
+        logFileHashStore.debug("FileHashStore.getHexDigest - Called to calculate hex digest for pid: " + pid);
+
+        if (pid == null || pid.trim().isEmpty()) {
+            String errMsg = "FileHashStore.getHexDigest - pid cannot be null or empty, pid: " + pid;
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
+        }
+        this.validateAlgorithm(algorithm);
+
+        // Get permanent address of the pid by calculating its sha-256 hex digest
+        String objectCid = this.getPidHexDigest(pid, this.OBJECT_STORE_ALGORITHM);
+        String objShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
+                objectCid);
+        Path objHashAddressPath = this.OBJECT_STORE_DIRECTORY.resolve(objShardString);
+
+        // Check to see if object exists
+        if (!Files.exists(objHashAddressPath)) {
+            String errMsg = "FileHashStore.getHexDigest - File does not exist for pid: " + pid
+                    + " with object address: " + objHashAddressPath;
+            logFileHashStore.warn(errMsg);
+            throw new FileNotFoundException(errMsg);
+        }
+
+        // If so, calculate hex digest/checksum
+        MessageDigest mdObject = MessageDigest.getInstance(algorithm);
+        try {
+            InputStream dataStream = Files.newInputStream(objHashAddressPath);
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = dataStream.read(buffer)) != -1) {
+                mdObject.update(buffer, 0, bytesRead);
+
+            }
+            // Close datastream
+            dataStream.close();
+
+        } catch (IOException ioe) {
+            String errMsg = "FileHashStore.getHexDigest - Unexpected IOException encountered: "
+                    + ioe.getMessage();
+            logFileHashStore.error(errMsg);
+            throw ioe;
+
+        }
+
+        String mdObjectHexDigest = DatatypeConverter.printHexBinary(mdObject.digest()).toLowerCase();
+        logFileHashStore
+                .info("FileHashStore.getHexDigest - Hex digest calculated for pid: " + pid + ", with hex digest value: "
+                        + mdObjectHexDigest);
+        return mdObjectHexDigest;
     }
 
     /**
@@ -699,12 +837,11 @@ public class FileHashStore implements HashStore {
         String objShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
                 objectCid);
         Path objHashAddressPath = this.OBJECT_STORE_DIRECTORY.resolve(objShardString);
-        String objHashAddressString = objHashAddressPath.toString();
 
         // If file (pid hash) exists, reject request immediately
         if (Files.exists(objHashAddressPath)) {
             String errMsg = "FileHashStore.putObject - File already exists for pid: " + pid
-                    + ". Object address: " + objHashAddressString + ". Aborting request.";
+                    + ". Object address: " + objHashAddressPath + ". Aborting request.";
             logFileHashStore.warn(errMsg);
             throw new PidObjectExistsException(errMsg);
         }
@@ -747,7 +884,7 @@ public class FileHashStore implements HashStore {
         // Move object
         boolean isDuplicate = true;
         logFileHashStore.debug("FileHashStore.putObject - Moving object: " + tmpFile.toString() + ". Destination: "
-                + objHashAddressString);
+                + objHashAddressPath);
         if (Files.exists(objHashAddressPath)) {
             boolean deleteStatus = tmpFile.delete();
             if (!deleteStatus) {
@@ -759,7 +896,7 @@ public class FileHashStore implements HashStore {
 
             objectCid = null;
             objShardString = null;
-            objHashAddressString = null;
+            objHashAddressPath = null;
             logFileHashStore.info(
                     "FileHashStore.putObject - Did not move object, duplicate file found for pid: " + pid
                             + ". Deleted tmpFile: " + tmpFile.getName());
@@ -770,11 +907,11 @@ public class FileHashStore implements HashStore {
                 isDuplicate = false;
             }
             logFileHashStore
-                    .debug("FileHashStore.putObject - Move object success, permanent address: " + objHashAddressString);
+                    .debug("FileHashStore.putObject - Move object success, permanent address: " + objHashAddressPath);
         }
 
         // Create HashAddress object to return with pertinent data
-        return new HashAddress(objectCid, objShardString, objHashAddressString, isDuplicate,
+        return new HashAddress(objectCid, objShardString, objHashAddressPath, isDuplicate,
                 hexDigests);
     }
 
@@ -1249,6 +1386,28 @@ public class FileHashStore implements HashStore {
         } finally {
             os.flush();
             os.close();
+        }
+    }
+
+    /**
+     * Checks whether a directory is empty or contains files. If a file is found, it
+     * returns true.
+     *
+     * @param directory Directory to check
+     * @return True if a file is found or the directory is empty, False otherwise
+     * @throws IOException If I/O occurs when accessing directory
+     */
+    private static boolean isDirectoryEmpty(Path directory) throws IOException {
+        try (Stream<Path> stream = Files.list(directory)) {
+            // The findFirst() method is called on the stream created from the given
+            // directory to retrieve the first element. If the stream is empty (i.e., the
+            // directory is empty), findFirst() will return an empty Optional<Path>.
+            //
+            // The isPresent() method is called on the Optional<Path> returned by
+            // findFirst(). If the Optional contains a value (i.e., an element was found),
+            // isPresent() returns true. If the Optional is empty (i.e., the stream is
+            // empty), isPresent() returns false.
+            return !stream.findFirst().isPresent();
         }
     }
 }

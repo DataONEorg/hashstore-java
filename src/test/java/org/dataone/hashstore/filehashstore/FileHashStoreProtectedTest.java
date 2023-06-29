@@ -223,8 +223,8 @@ public class FileHashStoreProtectedTest {
             HashAddress address = fileHashStore.putObject(dataStream, pid, null, null, null);
 
             // Check absolute path
-            File objAbsPath = new File(address.getAbsPath());
-            assertTrue(objAbsPath.exists());
+            Path absPath = address.getAbsPath();
+            assertTrue(Files.exists(absPath));
         }
     }
 
@@ -289,8 +289,8 @@ public class FileHashStoreProtectedTest {
         InputStream dataStream = Files.newInputStream(testDataFile);
         HashAddress address = fileHashStore.putObject(dataStream, pid, null, checksumCorrect, "MD2");
 
-        File objAbsPath = new File(address.getAbsPath());
-        assertTrue(objAbsPath.exists());
+        Path absPath = address.getAbsPath();
+        assertTrue(Files.exists(absPath));
     }
 
     /**
