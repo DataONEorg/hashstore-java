@@ -8,7 +8,6 @@ import static org.junit.Assert.fail;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 
 import org.dataone.hashstore.exceptions.HashStoreFactoryException;
