@@ -830,7 +830,7 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Check that retrieveMetadata throws exception when pid is null
+     * Check that retrieveMetadata throws exception when format is null
      */
     @Test(expected = IllegalArgumentException.class)
     public void retrieveMetadata_formatNull() throws Exception {
@@ -844,7 +844,7 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Check that retrieveMetadata throws exception when pid is empty
+     * Check that retrieveMetadata throws exception when format is empty
      */
     @Test(expected = IllegalArgumentException.class)
     public void retrieveMetadata_formatEmpty() throws Exception {
@@ -858,7 +858,7 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Check that retrieveMetadata throws exception when pid is empty spaces
+     * Check that retrieveMetadata throws exception when format is empty spaces
      */
     @Test(expected = IllegalArgumentException.class)
     public void retrieveMetadata_formatEmptySpaces() throws Exception {

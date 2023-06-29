@@ -572,7 +572,7 @@ public class FileHashStore implements HashStore {
             throw new IllegalArgumentException(errMsg);
         }
         if (formatId == null || formatId.trim().isEmpty()) {
-            String errMsg = "FileHashStore.retrieveMetadata - pid cannot be null or empty, pid: " + pid;
+            String errMsg = "FileHashStore.retrieveMetadata - formatId cannot be null or empty, formatId: " + pid;
             logFileHashStore.error(errMsg);
             throw new IllegalArgumentException(errMsg);
         }
