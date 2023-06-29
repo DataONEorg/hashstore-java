@@ -26,8 +26,8 @@ public class HashStoreFactory {
      *                        (int)
      *                        storeAlgorithm
      * 
-     * @return
-     * @throws HashStoreFactoryException When HashStore fails to initialize due to
+     * @return HashStore instance ready to store objects and metadata
+     * @throws HashStoreFactoryException When HashStore failÏs to initialize due to
      *                                   permissions or class-related issues
      * @throws IOException               When there is an issue with properties
      */

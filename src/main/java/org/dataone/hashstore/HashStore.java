@@ -105,7 +105,7 @@ public interface HashStore {
          * @throws FileNotFoundException    When requested pid has no associated object
          * @throws IOException              I/O error when creating InputStream to
          *                                  object
-         * @throws NoSuchAlgorithmException When algorithm used to calcualte object
+         * @throws NoSuchAlgorithmException When algorithm used to calculate object
          *                                  address is not supported
          */
         InputStream retrieveObject(String pid)
@@ -123,21 +123,21 @@ public interface HashStore {
          *                                  associated object
          * @throws IOException              I/O error when creating InputStream to
          *                                  metadata
-         * @throws NoSuchAlgorithmException When algorithm used to calcualte metadata
+         * @throws NoSuchAlgorithmException When algorithm used to calculate metadata
          *                                  address is not supported
          */
         InputStream retrieveMetadata(String pid, String formatId) throws Exception;
 
         /**
          * The 'deleteObject' method deletes an object permanently from disk using a
-         * given persistent identifier and any empty subdirecetories.
+         * given persistent identifier and any empty subdirectories.
          * 
          * @param pid Authority-based identifier
-         * @return
+         * @return True if successful
          * @throws IllegalArgumentException When pid is null or empty
          * @throws FileNotFoundException    When requested pid has no associated object
          * @throws IOException              I/O error when deleting empty directories
-         * @throws NoSuchAlgorithmException When algorithm used to calcualte object
+         * @throws NoSuchAlgorithmException When algorithm used to calculate object
          *                                  address is not supported
          */
         boolean deleteObject(String pid) throws Exception;
@@ -149,11 +149,11 @@ public interface HashStore {
          * 
          * @param pid      Authority-based identifier
          * @param formatId Metadata namespace/format
-         * @return
+         * @return True if successfulÏ
          * @throws IllegalArgumentException When pid or formatId is null or empty
          * @throws FileNotFoundException    When requested pid has no metadata
          * @throws IOException              I/O error when deleting empty directories
-         * @throws NoSuchAlgorithmException When algorithm used to calcualte object
+         * @throws NoSuchAlgorithmException When algorithm used to calculate object
          *                                  address is not supported
          */
         boolean deleteMetadata(String pid, String formatId) throws Exception;
@@ -164,8 +164,12 @@ public interface HashStore {
          * 
          * @param pid       Authority-based identifier
          * @param algorithm Algorithm of desired hex digest
-         * @return
-         * @throws Exception TODO: Add specific exceptions
+         * @return String hex digest of requested pid
+         * @throws IllegalArgumentException When pid or formatId is null or empty
+         * @throws FileNotFoundException    When requested pid object does not exist
+         * @throws IOException              I/O error when calculating hex digests
+         * @throws NoSuchAlgorithmException When algorithm used to calculate object
+         *                                  address is not supported
          */
         String getHexDigest(String pid, String algorithm) throws Exception;
 }

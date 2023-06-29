@@ -11,11 +11,11 @@ import java.util.Map;
  * know the underlying file system details.
  */
 public class HashAddress {
-    private String id;
-    private String relPath;
-    private Path absPath;
-    private boolean isDuplicate;
-    private Map<String, String> hexDigests;
+    private final String id;
+    private final String relPath;
+    private final Path absPath;
+    private final boolean isDuplicate;
+    private final Map<String, String> hexDigests;
 
     /**
      * Creates a new instance of HashAddress with the given properties.

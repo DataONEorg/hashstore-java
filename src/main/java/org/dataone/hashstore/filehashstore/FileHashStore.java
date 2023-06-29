@@ -302,7 +302,7 @@ public class FileHashStore implements HashStore {
      * @param storeWidth             Width of store
      * @param storeAlgorithm         Algorithm to use to calculate the hex digest
      *                               for the
-     *                               permanent address of a data sobject
+     *                               permanent address of a data object
      * @param storeMetadataNamespace default formatId of hashstore metadata
      * @return String that representing the contents of 'hashstore.yaml'
      */
@@ -533,7 +533,7 @@ public class FileHashStore implements HashStore {
         }
 
         // Get permanent address of the pid by calculating its sha-256 hex digest
-        String objectCid = this.getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
+        String objectCid = this.getPidHexDigest(pid, this.OBJECT_STORE_ALGORITHM);
         String objShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
                 objectCid);
         Path objHashAddressPath = this.OBJECT_STORE_DIRECTORY.resolve(objShardString);
@@ -579,7 +579,7 @@ public class FileHashStore implements HashStore {
         }
 
         // Get permanent address of the pid by calculating its sha-256 hex digest
-        String metadataCid = this.getPidHexDigest(pid + formatId, OBJECT_STORE_ALGORITHM);
+        String metadataCid = this.getPidHexDigest(pid + formatId, this.OBJECT_STORE_ALGORITHM);
         String metadataShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
                 metadataCid);
         Path metadataHashAddressPath = this.METADATA_STORE_DIRECTORY.resolve(metadataShardString);
@@ -620,7 +620,7 @@ public class FileHashStore implements HashStore {
         }
 
         // Get permanent address of the pid by calculating its sha-256 hex digest
-        String objectCid = this.getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
+        String objectCid = this.getPidHexDigest(pid, this.OBJECT_STORE_ALGORITHM);
         String objShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
                 objectCid);
         Path objHashAddressPath = this.OBJECT_STORE_DIRECTORY.resolve(objShardString);
@@ -673,7 +673,7 @@ public class FileHashStore implements HashStore {
         }
 
         // Get permanent address of the pid by calculating its sha-256 hex digest
-        String metadataCid = this.getPidHexDigest(pid + formatId, OBJECT_STORE_ALGORITHM);
+        String metadataCid = this.getPidHexDigest(pid + formatId, this.OBJECT_STORE_ALGORITHM);
         String metadataCidShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
                 metadataCid);
         Path metadataCidPath = this.METADATA_STORE_DIRECTORY.resolve(metadataCidShardString);
@@ -710,9 +710,57 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public String getHexDigest(String pid, String algorithm) throws Exception {
-        // TODO: Implement method
-        return null;
+    public String getHexDigest(String pid, String algorithm)
+            throws NoSuchAlgorithmException, FileNotFoundException, IOException {
+        logFileHashStore.debug("FileHashStore.getHexDigest - Called to calculate hex digest for pid: " + pid);
+
+        if (pid == null || pid.trim().isEmpty()) {
+            String errMsg = "FileHashStore.getHexDigest - pid cannot be null or empty, pid: " + pid;
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
+        }
+        this.validateAlgorithm(algorithm);
+
+        // Get permanent address of the pid by calculating its sha-256 hex digest
+        String objectCid = this.getPidHexDigest(pid, this.OBJECT_STORE_ALGORITHM);
+        String objShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
+                objectCid);
+        Path objHashAddressPath = this.OBJECT_STORE_DIRECTORY.resolve(objShardString);
+
+        // Check to see if object exists
+        if (!Files.exists(objHashAddressPath)) {
+            String errMsg = "FileHashStore.getHexDigest - File does not exist for pid: " + pid
+                    + " with object address: " + objHashAddressPath;
+            logFileHashStore.warn(errMsg);
+            throw new FileNotFoundException(errMsg);
+        }
+
+        // If so, calculate hex digest/checksum
+        MessageDigest mdObject = MessageDigest.getInstance(algorithm);
+        try {
+            InputStream dataStream = Files.newInputStream(objHashAddressPath);
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = dataStream.read(buffer)) != -1) {
+                mdObject.update(buffer, 0, bytesRead);
+
+            }
+            // Close datastream
+            dataStream.close();
+
+        } catch (IOException ioe) {
+            String errMsg = "FileHashStore.getHexDigest - Unexpected IOException encountered: "
+                    + ioe.getMessage();
+            logFileHashStore.error(errMsg);
+            throw ioe;
+
+        }
+
+        String mdObjectHexDigest = DatatypeConverter.printHexBinary(mdObject.digest()).toLowerCase();
+        logFileHashStore
+                .info("FileHashStore.getHexDigest - Hex digest calculated for pid: " + pid + ", with hex digest value: "
+                        + mdObjectHexDigest);
+        return mdObjectHexDigest;
     }
 
     /**
