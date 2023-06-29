@@ -96,8 +96,8 @@ public class HashStoreTest {
             InputStream dataStream = Files.newInputStream(testDataFile);
             HashAddress objInfo = hashStore.storeObject(dataStream, pid, null, null, null);
 
-            // Check id (sha-256 hex digest of the ab_id, aka s_cid)
-            String objAuthorityId = testData.pidData.get(pid).get("s_cid");
+            // Check id (sha-256 hex digest of the ab_id, aka object_cid)
+            String objAuthorityId = testData.pidData.get(pid).get("object_cid");
             assertEquals(objAuthorityId, objInfo.getId());
             assertTrue(Files.exists(Paths.get(objInfo.getAbsPath())));
         }

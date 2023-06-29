@@ -1,6 +1,5 @@
 package org.dataone.hashstore.filehashstore;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -124,8 +123,8 @@ public class FileHashStore implements HashStore {
         }
 
         if (storeDepth <= 0 || storeWidth <= 0) {
-            String errMsg = "FileHashStore - Depth and width must be greater than 0. Depth: " + storeDepth + ". Width: "
-                    + storeWidth;
+            String errMsg = "FileHashStore - Depth and width must be greater than 0. Depth: " + storeDepth
+                    + ". Width: " + storeWidth;
             logFileHashStore.fatal(errMsg);
             throw new IllegalArgumentException(errMsg);
         }
@@ -167,7 +166,7 @@ public class FileHashStore implements HashStore {
             if (Files.isDirectory(storePath)) {
                 File[] storePathFileList = storePath.toFile().listFiles();
                 if (storePathFileList == null || storePathFileList.length > 0) {
-                    String errMsg = "FileHashStore - Missing 'hashstore.yaml' but HashStore directories and/or objects found.";
+                    String errMsg = "FileHashStore - Missing 'hashstore.yaml' but directories and/or objects found.";
                     logFileHashStore.fatal(errMsg);
                     throw new IllegalStateException(errMsg);
                 }
@@ -257,7 +256,7 @@ public class FileHashStore implements HashStore {
      * Write a 'hashstore.yaml' file to this.STORE_ROOT
      * 
      * @param yamlString Content of the HashStore configuration
-     * @throws IOException If unable to write `hashtore.yaml`
+     * @throws IOException If unable to write `hashstore.yaml`
      */
     protected void putHashStoreYaml(String yamlString) throws IOException {
         Path hashstoreYaml = this.STORE_ROOT.resolve("hashstore.yaml");
@@ -522,15 +521,90 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public BufferedReader retrieveObject(String pid) throws Exception {
-        // TODO: Implement method
-        return null;
+    public InputStream retrieveObject(String pid)
+            throws IllegalArgumentException, NoSuchAlgorithmException, FileNotFoundException, IOException {
+        logFileHashStore.debug("FileHashStore.retrieveObject - Called to retrieve object for pid: " + pid);
+
+        if (pid == null || pid.trim().isEmpty()) {
+            String errMsg = "FileHashStore.retrieveObject - pid cannot be null or empty, pid: " + pid;
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
+        }
+
+        // Get permanent address of the pid by calculating its sha-256 hex digest
+        String objectCid = this.getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
+        String objShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
+                objectCid);
+        Path objHashAddressPath = this.OBJECT_STORE_DIRECTORY.resolve(objShardString);
+
+        // Check to see if object exists
+        if (!Files.exists(objHashAddressPath)) {
+            String errMsg = "FileHashStore.retrieveObject - File does not exist for pid: " + pid
+                    + " with object address: " + objHashAddressPath;
+            logFileHashStore.warn(errMsg);
+            throw new FileNotFoundException(errMsg);
+        }
+
+        // If so, return an input stream for the object
+        try {
+            InputStream objectCidInputStream = Files.newInputStream(objHashAddressPath);
+            logFileHashStore.info("FileHashStore.retrieveObject - Retrieved object for pid: " + pid);
+            return objectCidInputStream;
+
+        } catch (IOException ioe) {
+            String errMsg = "FileHashStore.retrieveObject - Unexpected error when creating InputStream for pid: "
+                    + pid + ", IOException: " + ioe.getMessage();
+            logFileHashStore.error(errMsg);
+            throw new IOException(errMsg);
+
+        }
+
     }
 
     @Override
-    public String retrieveMetadata(String pid, String formatId) throws Exception {
-        // TODO: Implement method
-        return null;
+    public InputStream retrieveMetadata(String pid, String formatId) throws Exception {
+        logFileHashStore.debug("FileHashStore.retrieveMetadata - Called to retrieve metadata for pid: " + pid
+                + " with formatId: " + formatId);
+
+        if (pid == null || pid.trim().isEmpty()) {
+            String errMsg = "FileHashStore.retrieveMetadata - pid cannot be null or empty, pid: " + pid;
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
+        }
+        if (formatId == null || formatId.trim().isEmpty()) {
+            String errMsg = "FileHashStore.retrieveMetadata - formatId cannot be null or empty, formatId: " + pid;
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
+        }
+
+        // Get permanent address of the pid by calculating its sha-256 hex digest
+        String metadataCid = this.getPidHexDigest(pid + formatId, OBJECT_STORE_ALGORITHM);
+        String metadataShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
+                metadataCid);
+        Path metadataHashAddressPath = this.METADATA_STORE_DIRECTORY.resolve(metadataShardString);
+
+        // Check to see if metadata exists
+        if (!Files.exists(metadataHashAddressPath)) {
+            String errMsg = "FileHashStore.retrieveMetadata - Metadata does not exist for pid: " + pid
+                    + " with formatId: " + formatId + ". Metadata address: " + metadataHashAddressPath;
+            logFileHashStore.warn(errMsg);
+            throw new FileNotFoundException(errMsg);
+        }
+
+        // If so, return an input stream for the metadata
+        try {
+            InputStream metadataCidInputStream = Files.newInputStream(metadataHashAddressPath);
+            logFileHashStore.info("FileHashStore.retrieveMetadata - Retrieved metadata for pid: " + pid
+                    + " with formatId: " + formatId);
+            return metadataCidInputStream;
+
+        } catch (IOException ioe) {
+            String errMsg = "FileHashStore.retrieveMetadata - Unexpected error when creating InputStream for pid: "
+                    + pid + " with formatId: " + formatId + ". IOException: " + ioe.getMessage();
+            logFileHashStore.error(errMsg);
+            throw new IOException(errMsg);
+
+        }
     }
 
     @Override
@@ -621,9 +695,9 @@ public class FileHashStore implements HashStore {
         boolean requestValidation = this.verifyChecksumParameters(checksum, checksumAlgorithm);
 
         // Gather HashAddress elements and prepare object permanent address
-        String objAuthorityId = this.getPidHexDigest(pid, this.OBJECT_STORE_ALGORITHM);
+        String objectCid = this.getPidHexDigest(pid, this.OBJECT_STORE_ALGORITHM);
         String objShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
-                objAuthorityId);
+                objectCid);
         Path objHashAddressPath = this.OBJECT_STORE_DIRECTORY.resolve(objShardString);
         String objHashAddressString = objHashAddressPath.toString();
 
@@ -644,11 +718,11 @@ public class FileHashStore implements HashStore {
         // Validate object if checksum and checksum algorithm is passed
         if (requestValidation) {
             logFileHashStore
-                    .info("FileHashStore.putObject - Validating object - checksum and checksumAlgorithm supplied and valid.");
+                    .info("FileHashStore.putObject - Validating object, checksum arguments supplied and valid.");
             String digestFromHexDigests = hexDigests.get(checksumAlgorithm);
             if (digestFromHexDigests == null) {
-                String errMsg = "FileHashStore.putObject - checksum not found in hex digest map when validating object. checksumAlgorithm checked: "
-                        + checksumAlgorithm;
+                String errMsg = "FileHashStore.putObject - checksum not found in hex digest map when validating object."
+                        + " checksumAlgorithm checked: " + checksumAlgorithm;
                 logFileHashStore.error(errMsg);
                 throw new NoSuchAlgorithmException(errMsg);
             }
@@ -657,12 +731,12 @@ public class FileHashStore implements HashStore {
                 // Delete tmp File
                 boolean deleteStatus = tmpFile.delete();
                 if (!deleteStatus) {
-                    String errMsg = "FileHashStore.putObject - Object cannot be validated and failed to delete tmpFile: "
+                    String errMsg = "FileHashStore.putObject - Object cannot be validated, failed to delete tmpFile: "
                             + tmpFile.getName();
                     logFileHashStore.error(errMsg);
                     throw new IOException(errMsg);
                 }
-                String errMsg = "FileHashStore.putObject - Checksum supplied does not equal to the calculated hex digest: "
+                String errMsg = "FileHashStore.putObject - Checksum given is not equal to the calculated hex digest: "
                         + digestFromHexDigests + ". Checksum provided: " + checksum + ". Deleting tmpFile: "
                         + tmpFile.getName();
                 logFileHashStore.error(errMsg);
@@ -677,13 +751,13 @@ public class FileHashStore implements HashStore {
         if (Files.exists(objHashAddressPath)) {
             boolean deleteStatus = tmpFile.delete();
             if (!deleteStatus) {
-                String errMsg = "FileHashStore.putObject - Object is found to be a duplicate after writing tmpFile. Attempted to delete tmpFile but failed: "
-                        + tmpFile.getName();
+                String errMsg = "FileHashStore.putObject - Object is found to be a duplicate after writing tmpFile."
+                        + " Attempted to delete tmpFile but failed: " + tmpFile.getName();
                 logFileHashStore.error(errMsg);
                 throw new IOException(errMsg);
             }
 
-            objAuthorityId = null;
+            objectCid = null;
             objShardString = null;
             objHashAddressString = null;
             logFileHashStore.info(
@@ -700,7 +774,7 @@ public class FileHashStore implements HashStore {
         }
 
         // Create HashAddress object to return with pertinent data
-        return new HashAddress(objAuthorityId, objShardString, objHashAddressString, isDuplicate,
+        return new HashAddress(objectCid, objShardString, objHashAddressString, isDuplicate,
                 hexDigests);
     }
 
@@ -754,13 +828,13 @@ public class FileHashStore implements HashStore {
         // If checksum is supplied, checksumAlgorithm cannot be empty
         if (checksum != null && !checksum.trim().isEmpty()) {
             if (checksumAlgorithm == null) {
-                String errMsg = "FileHashStore.verifyChecksumParameters - Validation requested but checksumAlgorithm is null.";
+                String errMsg = "FileHashStore.verifyChecksumParameters - checksumAlgorithm is null.";
                 logFileHashStore.error(errMsg);
                 throw new IllegalArgumentException(errMsg);
             }
 
             if (checksumAlgorithm.trim().isEmpty()) {
-                String errMsg = "FileHashStore.verifyChecksumParameters - Validation requested but checksumAlgorithm is empty.";
+                String errMsg = "FileHashStore.verifyChecksumParameters - checksumAlgorithm is empty.";
                 logFileHashStore.error(errMsg);
                 throw new IllegalArgumentException(errMsg);
             }
@@ -772,13 +846,13 @@ public class FileHashStore implements HashStore {
             // Ensure checksum is not null or empty if checksumAlgorithm is supplied in
             if (requestValidation) {
                 if (checksum == null) {
-                    String errMsg = "FileHashStore.verifyChecksumParameters - Validation requested but checksum is null.";
+                    String errMsg = "FileHashStore.verifyChecksumParameters - checksum is null.";
                     logFileHashStore.error(errMsg);
                     throw new NullPointerException(errMsg);
                 }
 
                 if (checksum.trim().isEmpty()) {
-                    String errMsg = "FileHashStore.verifyChecksumParameters - Validation requested but checksum is empty.";
+                    String errMsg = "FileHashStore.verifyChecksumParameters - checksum is empty.";
                     logFileHashStore.error(errMsg);
                     throw new IllegalArgumentException(errMsg);
                 }
@@ -941,14 +1015,14 @@ public class FileHashStore implements HashStore {
         MessageDigest sha512 = MessageDigest.getInstance(DefaultHashAlgorithms.SHA_512.name().replace("_", "-"));
         if (additionalAlgorithm != null) {
             logFileHashStore.debug(
-                    "FileHashStore.writeToTmpFileAndGenerateChecksums - Adding additional algorithm to hex digest map, algorithm: "
-                            + additionalAlgorithm);
+                    "FileHashStore.writeToTmpFileAndGenerateChecksums - Adding additional algorithm to hex digest map,"
+                            + " algorithm: " + additionalAlgorithm);
             additionalAlgo = MessageDigest.getInstance(additionalAlgorithm);
         }
         if (checksumAlgorithm != null && !checksumAlgorithm.equals(additionalAlgorithm)) {
             logFileHashStore.debug(
-                    "FileHashStore.writeToTmpFileAndGenerateChecksums - Adding checksum algorithm to hex digest map, algorithm: "
-                            + checksumAlgorithm);
+                    "FileHashStore.writeToTmpFileAndGenerateChecksums - Adding checksum algorithm to hex digest map,"
+                            + " algorithm: " + checksumAlgorithm);
             checksumAlgo = MessageDigest.getInstance(checksumAlgorithm);
         }
 
@@ -1028,7 +1102,8 @@ public class FileHashStore implements HashStore {
                 + source + ", to target: " + target);
         // Validate input parameters
         if (entity == null) {
-            String errMsg = "FileHashStore.move - entity cannot be null, must be 'object' for storeObject() or 'metadata' for storeMetadata()";
+            String errMsg = "FileHashStore.move - entity cannot be null, must be 'object' for storeObject() or"
+                    + " 'metadata' for storeMetadata()";
             logFileHashStore.debug(errMsg);
             throw new NullPointerException(errMsg);
 
@@ -1056,14 +1131,14 @@ public class FileHashStore implements HashStore {
         Path targetFilePath = target.toPath();
         try {
             Files.move(sourceFilePath, targetFilePath, StandardCopyOption.ATOMIC_MOVE);
-            logFileHashStore.debug("FileHashStore.move - file moved from: " + sourceFilePath + ", to: "
-                    + targetFilePath);
+            logFileHashStore
+                    .debug("FileHashStore.move - file moved from: " + sourceFilePath + ", to: " + targetFilePath);
             return true;
 
         } catch (AtomicMoveNotSupportedException amnse) {
             logFileHashStore.error(
-                    "FileHashStore.move - StandardCopyOption.ATOMIC_MOVE failed. AtomicMove is not supported across file systems. Source: "
-                            + source + ". Target: " + target);
+                    "FileHashStore.move - StandardCopyOption.ATOMIC_MOVE failed. AtomicMove is not supported across"
+                            + " file systems. Source: " + source + ". Target: " + target);
             throw amnse;
 
         } catch (IOException ioe) {
@@ -1129,7 +1204,7 @@ public class FileHashStore implements HashStore {
 
         // Store metadata to tmpMetadataFile
         File tmpMetadataFile = this.generateTmpFile("tmp", this.METADATA_TMP_FILE_DIRECTORY);
-        boolean tmpMetadataWritten = this.writeToTmpMetadataFile(tmpMetadataFile, metadata, checkedFormatId);
+        boolean tmpMetadataWritten = this.writeToTmpMetadataFile(tmpMetadataFile, metadata);
         if (tmpMetadataWritten) {
             logFileHashStore.debug(
                     "FileHashStore.putObject - tmp metadata file has been written, moving to permanent location: "
@@ -1143,29 +1218,21 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Write the given formatId, followed by a null character `\u0000`, and metadata
-     * content into a file
+     * Write the supplied metadata content into the given tmpFile
      * 
      * @param tmpFile        File to write into
      * @param metadataStream Stream of metadata content
-     * @param formatId       Namespace/format of metadata
      * 
      * @return True if file is written successfully
      * @throws IOException           When an I/O error occurs
      * @throws FileNotFoundException When given file to write into is not found
      */
-    protected boolean writeToTmpMetadataFile(File tmpFile, InputStream metadataStream, String formatId)
+    protected boolean writeToTmpMetadataFile(File tmpFile, InputStream metadataStream)
             throws IOException, FileNotFoundException {
         FileOutputStream os = new FileOutputStream(tmpFile);
 
         try {
-            // Write formatId
-            byte[] metadataHeaderBytes = formatId.getBytes(StandardCharsets.UTF_8);
-            os.write(metadataHeaderBytes);
-            // Followed by null character
-            os.write('\u0000');
-
-            // Write metadata content (body)
+            // Write metadata content
             byte[] buffer = new byte[8192];
             int bytesRead;
             while ((bytesRead = metadataStream.read(buffer)) != -1) {

@@ -1,10 +1,12 @@
 package org.dataone.hashstore.filehashstore;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,10 +16,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import javax.xml.bind.DatatypeConverter;
 
 import org.dataone.hashstore.HashAddress;
 import org.dataone.hashstore.exceptions.PidObjectExistsException;
@@ -26,6 +25,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import static org.junit.Assert.*;
 
 /**
  * Test class for FileHashStore HashStoreInterface override methods
@@ -77,9 +78,9 @@ public class FileHashStoreInterfaceTest {
             InputStream dataStream = Files.newInputStream(testDataFile);
             HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
 
-            // Check id (sha-256 hex digest of the ab_id, aka s_cid)
-            String objAuthorityId = testData.pidData.get(pid).get("s_cid");
-            assertEquals(objAuthorityId, objInfo.getId());
+            // Check id (sha-256 hex digest of the ab_id (pid))
+            String objectCid = testData.pidData.get(pid).get("object_cid");
+            assertEquals(objectCid, objInfo.getId());
         }
     }
 
@@ -96,8 +97,8 @@ public class FileHashStoreInterfaceTest {
             HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
 
             // Check relative path
-            String objAuthorityId = testData.pidData.get(pid).get("s_cid");
-            String objRelPath = fileHashStore.getHierarchicalPathString(3, 2, objAuthorityId);
+            String objectCid = testData.pidData.get(pid).get("object_cid");
+            String objRelPath = fileHashStore.getHierarchicalPathString(3, 2, objectCid);
             assertEquals(objRelPath, objInfo.getRelPath());
         }
     }
@@ -645,6 +646,291 @@ public class FileHashStoreInterfaceTest {
         try (Stream<Path> walk = Files.walk(storePath)) {
             long fileCount = walk.filter(Files::isRegularFile).count();
             assertEquals(fileCount, 2);
+        }
+    }
+
+    /**
+     * Check that retrieveObject returns an InputStream
+     */
+    @Test
+    public void retrieveObject() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            fileHashStore.storeObject(dataStream, pid, null, null, null);
+
+            // Retrieve object
+            InputStream objectCidInputStream = fileHashStore.retrieveObject(pid);
+            assertNotNull(objectCidInputStream);
+        }
+    }
+
+    /**
+     * Check that retrieveObject throws exception when pid is null
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void retrieveObject_pidNull() throws Exception {
+        try {
+            InputStream pidInputStream = fileHashStore.retrieveObject(null);
+            pidInputStream.close();
+        } catch (Exception e) {
+            throw e;
+        }
+    }
+
+    /**
+     * Check that retrieveObject throws exception when pid is empty
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void retrieveObject_pidEmpty() throws Exception {
+        try {
+            InputStream pidInputStream = fileHashStore.retrieveObject("");
+            pidInputStream.close();
+        } catch (Exception e) {
+            throw e;
+        }
+    }
+
+    /**
+     * Check that retrieveObject throws exception when pid is empty spaces
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void retrieveObject_pidEmptySpaces() throws Exception {
+        try {
+            InputStream pidInputStream = fileHashStore.retrieveObject("      ");
+            pidInputStream.close();
+        } catch (Exception e) {
+            throw e;
+        }
+    }
+
+    /**
+     * Check that retrieveObject throws exception when file is not found
+     */
+    @Test(expected = FileNotFoundException.class)
+    public void retrieveObject_pidNotFound() throws Exception {
+        try {
+            InputStream pidInputStream = fileHashStore.retrieveObject("dou.2023.hs.1");
+            pidInputStream.close();
+        } catch (Exception e) {
+            throw e;
+        }
+    }
+
+    /**
+     * Check that retrieveObject InputStream content is correct
+     */
+    @Test
+    public void retrieveObject_verifyContent() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            fileHashStore.storeObject(dataStream, pid, null, null, null);
+
+            // Retrieve object
+            InputStream objectCidInputStream;
+            try {
+                objectCidInputStream = fileHashStore.retrieveObject(pid);
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw e;
+            }
+
+            // Read content and compare it to the SHA-256 checksum from TestDataHarness
+            MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
+            try {
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+                while ((bytesRead = objectCidInputStream.read(buffer)) != -1) {
+                    sha256.update(buffer, 0, bytesRead);
+                }
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
+                throw ioe;
+            }
+
+            // Get hex digest
+            String sha256Digest = DatatypeConverter.printHexBinary(sha256.digest()).toLowerCase();
+            String sha256DigestFromTestData = testData.pidData.get(pid).get("sha256");
+            assertEquals(sha256Digest, sha256DigestFromTestData);
+
+            // Close stream
+            objectCidInputStream.close();
+        }
+    }
+
+    /**
+     * Check that retrieveMetadata returns an InputStream
+     */
+    @Test
+    public void retrieveMetadata() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            fileHashStore.storeMetadata(metadataStream, pid, null);
+
+            String storeFormatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+
+            InputStream metadataCidInputStream = fileHashStore.retrieveMetadata(pid, storeFormatId);
+            assertNotNull(metadataCidInputStream);
+        }
+    }
+
+    /**
+     * Check that retrieveMetadata throws exception when pid is null
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void retrieveMetadata_pidNull() throws Exception {
+        try {
+            String storeFormatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+            InputStream pidInputStream = fileHashStore.retrieveMetadata(null, storeFormatId);
+            pidInputStream.close();
+
+        } catch (Exception e) {
+            throw e;
+        }
+    }
+
+    /**
+     * Check that retrieveMetadata throws exception when pid is empty
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void retrieveMetadata_pidEmpty() throws Exception {
+        try {
+            String storeFormatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+            InputStream pidInputStream = fileHashStore.retrieveMetadata("", storeFormatId);
+            pidInputStream.close();
+
+        } catch (Exception e) {
+            throw e;
+        }
+    }
+
+    /**
+     * Check that retrieveMetadata throws exception when pid is empty spaces
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void retrieveMetadata_pidEmptySpaces() throws Exception {
+        try {
+            String storeFormatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+            InputStream pidInputStream = fileHashStore.retrieveMetadata("      ", storeFormatId);
+            pidInputStream.close();
+
+        } catch (Exception e) {
+            throw e;
+        }
+    }
+
+    /**
+     * Check that retrieveMetadata throws exception when format is null
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void retrieveMetadata_formatNull() throws Exception {
+        try {
+            InputStream pidInputStream = fileHashStore.retrieveMetadata("dou.2023.hs.1", null);
+            pidInputStream.close();
+
+        } catch (Exception e) {
+            throw e;
+        }
+    }
+
+    /**
+     * Check that retrieveMetadata throws exception when format is empty
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void retrieveMetadata_formatEmpty() throws Exception {
+        try {
+            InputStream pidInputStream = fileHashStore.retrieveMetadata("dou.2023.hs.1", "");
+            pidInputStream.close();
+
+        } catch (Exception e) {
+            throw e;
+        }
+    }
+
+    /**
+     * Check that retrieveMetadata throws exception when format is empty spaces
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void retrieveMetadata_formatEmptySpaces() throws Exception {
+        try {
+            InputStream pidInputStream = fileHashStore.retrieveMetadata("dou.2023.hs.1", "      ");
+            pidInputStream.close();
+
+        } catch (Exception e) {
+            throw e;
+        }
+    }
+
+    /**
+     * Check that retrieveMetadata throws exception when file is not found
+     */
+    @Test(expected = FileNotFoundException.class)
+    public void retrieveMetadata_pidNotFound() throws Exception {
+        try {
+            String storeFormatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+            InputStream pidInputStream = fileHashStore.retrieveMetadata("dou.2023.hs.1", storeFormatId);
+            pidInputStream.close();
+
+        } catch (Exception e) {
+            throw e;
+        }
+    }
+
+    /**
+     * Check that retrieveMetadata InputStream content is correct
+     */
+    @Test
+    public void retrieveMetadata_verifyContent() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            fileHashStore.storeMetadata(metadataStream, pid, null);
+
+            String storeFormatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+
+            // Retrieve object
+            InputStream metadataCidInputStream;
+            try {
+                metadataCidInputStream = fileHashStore.retrieveMetadata(pid, storeFormatId);
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw e;
+            }
+
+            // Read content and compare it to the SHA-256 checksum from TestDataHarness
+            MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
+            try {
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+                while ((bytesRead = metadataCidInputStream.read(buffer)) != -1) {
+                    sha256.update(buffer, 0, bytesRead);
+                }
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
+                throw ioe;
+            }
+
+            // Get hex digest
+            String sha256MetadataDigest = DatatypeConverter.printHexBinary(sha256.digest()).toLowerCase();
+            String sha256MetadataDigestFromTestData = testData.pidData.get(pid).get("metadata_sha256");
+            assertEquals(sha256MetadataDigest, sha256MetadataDigestFromTestData);
+
+            // Close stream
+            metadataCidInputStream.close();
         }
     }
 }

@@ -1,17 +1,17 @@
 package org.dataone.hashstore.filehashstore;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Scanner;
+
+import javax.xml.bind.DatatypeConverter;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -155,7 +155,7 @@ public class FileHashStoreProtectedTest {
     public void getPidHexDigest() throws Exception {
         for (String pid : testData.pidList) {
             String abIdDigest = this.fileHashStore.getPidHexDigest(pid, "SHA-256");
-            String abIdTestData = testData.pidData.get(pid).get("s_cid");
+            String abIdTestData = testData.pidData.get(pid).get("object_cid");
             assertEquals(abIdDigest, abIdTestData);
         }
     }
@@ -183,8 +183,8 @@ public class FileHashStoreProtectedTest {
             InputStream dataStream = Files.newInputStream(testDataFile);
             HashAddress address = fileHashStore.putObject(dataStream, pid, null, null, null);
 
-            // Check id (sha-256 hex digest of the ab_id, aka s_cid)
-            String objAuthorityId = testData.pidData.get(pid).get("s_cid");
+            // Check id (sha-256 hex digest of the ab_id, aka object_cid)
+            String objAuthorityId = testData.pidData.get(pid).get("object_cid");
             assertEquals(objAuthorityId, address.getId());
         }
     }
@@ -203,7 +203,7 @@ public class FileHashStoreProtectedTest {
             HashAddress address = fileHashStore.putObject(dataStream, pid, null, null, null);
 
             // Check relative path
-            String objAuthorityId = testData.pidData.get(pid).get("s_cid");
+            String objAuthorityId = testData.pidData.get(pid).get("object_cid");
             String objRelPath = fileHashStore.getHierarchicalPathString(3, 2, objAuthorityId);
             assertEquals(objRelPath, address.getRelPath());
         }
@@ -768,13 +768,12 @@ public class FileHashStoreProtectedTest {
         for (String pid : testData.pidList) {
             File newTmpFile = generateTemporaryFile();
             String pidFormatted = pid.replace("/", "_");
-            String formatId = (String) this.fhsProperties.get("storeMetadataNamespace");
 
             // Get test metadata file
             Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
 
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
-            boolean metadataWritten = this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream, formatId);
+            boolean metadataWritten = this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream);
             assertTrue(metadataWritten);
         }
     }
@@ -790,13 +789,12 @@ public class FileHashStoreProtectedTest {
         for (String pid : testData.pidList) {
             File newTmpFile = generateTemporaryFile();
             String pidFormatted = pid.replace("/", "_");
-            String formatId = (String) this.fhsProperties.get("storeMetadataNamespace");
 
             // Get test metadata file
             Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
 
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
-            boolean metadataWritten = this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream, formatId);
+            boolean metadataWritten = this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream);
             assertTrue(metadataWritten);
 
             long tmpMetadataFileSize = Files.size(newTmpFile.toPath());
@@ -805,90 +803,48 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Check that tmp metadata written contains correct header
+     * Check tmp metadata content
      */
     @Test
-    public void writeToTmpMetadataFile_header() throws Exception {
+    public void writeToTmpMetadataFile_metadataContent() throws Exception {
         for (String pid : testData.pidList) {
             File newTmpFile = generateTemporaryFile();
             String pidFormatted = pid.replace("/", "_");
-            String formatId = (String) this.fhsProperties.get("storeMetadataNamespace");
-
-            // Get test metadata file
-            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
-
-            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
-            this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream, formatId);
-
-            // Read the header
-            FileInputStream metadataInputStream = new FileInputStream(newTmpFile);
-            try (Scanner scanner = new Scanner(metadataInputStream, "UTF-8").useDelimiter("\u0000")) {
-                String header = scanner.next();
-                assertEquals(header, formatId);
-
-            } catch (IllegalArgumentException iae) {
-                iae.printStackTrace();
-                throw iae;
-
-            }
-
-        }
-    }
-
-    /**
-     * Check that tmp metadata written contains correct body. This test uses two
-     * approaches when reading the metadata file to cross-verify results.
-     */
-    @Test
-    public void writeToTmpMetadataFile_body() throws Exception {
-        for (String pid : testData.pidList) {
-            File newTmpFile = generateTemporaryFile();
-            String pidFormatted = pid.replace("/", "_");
-            String formatId = (String) this.fhsProperties.get("storeMetadataNamespace");
 
             // Get test metadata file
             Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
             // Write it to the tmpFile
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
-            this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream, formatId);
+            this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream);
 
-            // Confirm header and body
-            try (FileInputStream metadataInputStream = new FileInputStream(newTmpFile)) {
-                // Read the metadata content manually
-                ByteArrayOutputStream headerStream = new ByteArrayOutputStream();
-                int currentByte;
-                // The null character that splits the header/body is consumed in this while loop
-                while ((currentByte = metadataInputStream.read()) != -1 && currentByte != 0) {
-                    headerStream.write(currentByte);
-                }
-                String header = headerStream.toString("UTF-8");
-                assertEquals(header, formatId);
+            // Create InputStream to tmp File
+            InputStream metadataStoredStream;
+            try {
+                metadataStoredStream = Files.newInputStream(newTmpFile.toPath());
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw e;
+            }
 
-                ByteArrayOutputStream bodyStream = new ByteArrayOutputStream();
+            // Calculate checksum of metadata content
+            MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
+            try {
                 byte[] buffer = new byte[8192];
                 int bytesRead;
-                while ((bytesRead = metadataInputStream.read(buffer)) != -1) {
-                    bodyStream.write(buffer, 0, bytesRead);
+                while ((bytesRead = metadataStoredStream.read(buffer)) != -1) {
+                    sha256.update(buffer, 0, bytesRead);
                 }
-                String body = bodyStream.toString("UTF-8");
-
-                // Now confirm the body matches via higher level abstraction class 'Scanner'
-                InputStream metadataStreamTwo = Files.newInputStream(testMetaDataFile);
-                try (Scanner scanner = new Scanner(metadataStreamTwo, "UTF-8").useDelimiter("\u0000")) {
-                    String metadataBody = scanner.next();
-                    assertEquals(metadataBody, body);
-
-                } catch (IllegalArgumentException iae) {
-                    iae.printStackTrace();
-                    throw iae;
-
-                }
-
             } catch (IOException ioe) {
                 ioe.printStackTrace();
                 throw ioe;
-
             }
+
+            String sha256Digest = DatatypeConverter.printHexBinary(sha256.digest()).toLowerCase();
+            String sha256MetadataDigestFromTestData = testData.pidData.get(pid).get("metadata_sha256");
+            assertEquals(sha256Digest, sha256MetadataDigestFromTestData);
+
+            // Close stream
+            metadataStoredStream.close();
         }
     }
 }
