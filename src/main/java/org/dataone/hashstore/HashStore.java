@@ -150,7 +150,11 @@ public interface HashStore {
          * @param pid      Authority-based identifier
          * @param formatId Metadata namespace/format
          * @return
-         * @throws Exception TODO: Add specific exceptions
+         * @throws IllegalArgumentException When pid or formatId is null or empty
+         * @throws FileNotFoundException    When requested pid has no metadata
+         * @throws IOException              I/O error when deleting empty directories
+         * @throws NoSuchAlgorithmException When algorithm used to calcualte object
+         *                                  address is not supported
          */
         boolean deleteMetadata(String pid, String formatId) throws Exception;
 

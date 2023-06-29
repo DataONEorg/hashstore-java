@@ -944,7 +944,7 @@ public class FileHashStoreInterfaceTest {
             // Double check that file doesn't exist
             assertFalse(Files.exists(objInfo.getAbsPath()));
 
-            // Double check that store root still exists
+            // Double check that object directory still exists
             Path storePath = (Path) this.fhsProperties.get("storePath");
             Path storeObjectPath = storePath.resolve("objects");
             assertTrue(Files.exists(storeObjectPath));
@@ -952,7 +952,7 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Confirm that deleteObject deletes object and empty sub directories
+     * Confirm that deleteObject throws exception when associated pid obj not found
      */
     @Test(expected = FileNotFoundException.class)
     public void deleteObject_pidNotFound() throws Exception {
@@ -960,7 +960,7 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Confirm that deleteObject deletes object and empty sub directories
+     * Confirm that deleteObject throws exception when pid is null
      */
     @Test(expected = IllegalArgumentException.class)
     public void deleteObject_pidNull() throws Exception {
@@ -968,7 +968,7 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Confirm that deleteObject deletes object and empty sub directories
+     * Confirm that deleteObject throws exception when pid is empty
      */
     @Test(expected = IllegalArgumentException.class)
     public void deleteObject_pidEmpty() throws Exception {
@@ -976,10 +976,108 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Confirm that deleteObject deletes object and empty sub directories
+     * Confirm that deleteObject throws exception when pid is empty spaces
      */
     @Test(expected = IllegalArgumentException.class)
     public void deleteObject_pidEmptySpaces() throws Exception {
         fileHashStore.deleteObject("      ");
+    }
+
+    /**
+     * Confirm that deleteMetadata deletes object and empty sub directories
+     */
+    @Test
+    public void deleteMetadata() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, null);
+
+            String storeFormatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+            boolean isMetadataDeleted = fileHashStore.deleteMetadata(pid, storeFormatId);
+            assertTrue(isMetadataDeleted);
+
+            // Double check that file doesn't exist
+            Path storePath = (Path) this.fhsProperties.get("storePath");
+            Path metadataStoreDirectory = storePath.resolve("metadata");
+            int storeDepth = (int) this.fhsProperties.get("storeDepth");
+            int storeWidth = (int) this.fhsProperties.get("storeWidth");
+            String metadataCidShardString = fileHashStore.getHierarchicalPathString(storeDepth, storeWidth,
+                    metadataCid);
+            Path metadataCidPath = metadataStoreDirectory.resolve(metadataCidShardString);
+            assertFalse(Files.exists(metadataCidPath));
+
+            // Double check that metadata directory still exists
+            Path storeObjectPath = storePath.resolve("metadata");
+            assertTrue(Files.exists(storeObjectPath));
+        }
+    }
+
+    /**
+     * Confirm that deleteMetadata throws exception when associated pid obj not
+     * found
+     */
+    @Test(expected = FileNotFoundException.class)
+    public void deleteMetadata_pidNotFound() throws Exception {
+        String formatId = "http://hashstore.tests/types/v1.0";
+        fileHashStore.deleteMetadata("dou.2023.hashstore.1", formatId);
+    }
+
+    /**
+     * Confirm that deleteMetadata throws exception when pid is null
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void deleteMetadata_pidNull() throws Exception {
+        String formatId = "http://hashstore.tests/types/v1.0";
+        fileHashStore.deleteMetadata(null, formatId);
+    }
+
+    /**
+     * Confirm that deleteMetadata throws exception when pid is empty
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void deleteMetadata_pidEmpty() throws Exception {
+        String formatId = "http://hashstore.tests/types/v1.0";
+        fileHashStore.deleteMetadata("", formatId);
+    }
+
+    /**
+     * Confirm that deleteMetadata throws exception when pid is empty spaces
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void deleteMetadata_pidEmptySpaces() throws Exception {
+        String formatId = "http://hashstore.tests/types/v1.0";
+        fileHashStore.deleteMetadata("      ", formatId);
+    }
+
+    /**
+     * Confirm that deleteMetadata throws exception when formatId is null
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void deleteMetadata_formatIdNull() throws Exception {
+        String pid = "dou.2023.hashstore.1";
+        fileHashStore.deleteMetadata(pid, null);
+    }
+
+    /**
+     * Confirm that deleteMetadata throws exception when formatId is empty
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void deleteMetadata_formatIdEmpty() throws Exception {
+        String pid = "dou.2023.hashstore.1";
+        fileHashStore.deleteMetadata(pid, "");
+    }
+
+    /**
+     * Confirm that deleteMetadata throws exception when formatId is empty spaces
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void deleteMetadata_formatIdEmptySpaces() throws Exception {
+        String pid = "dou.2023.hashstore.1";
+        fileHashStore.deleteMetadata(pid, "     ");
     }
 }

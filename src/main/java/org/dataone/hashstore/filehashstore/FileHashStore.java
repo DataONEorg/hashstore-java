@@ -9,7 +9,6 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
-import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -657,9 +657,56 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public boolean deleteMetadata(String pid, String formatId) throws Exception {
-        // TODO: Implement method
-        return false;
+    public boolean deleteMetadata(String pid, String formatId)
+            throws IllegalArgumentException, FileNotFoundException, IOException, NoSuchAlgorithmException {
+        logFileHashStore.debug("FileHashStore.deleteMetadata - Called to delete metadata for pid: " + pid);
+
+        if (pid == null || pid.trim().isEmpty()) {
+            String errMsg = "FileHashStore.deleteMetadata - pid cannot be null or empty, pid: " + pid;
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
+        }
+        if (formatId == null || formatId.trim().isEmpty()) {
+            String errMsg = "FileHashStore.deleteMetadata - formatId cannot be null or empty, formatId: " + pid;
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
+        }
+
+        // Get permanent address of the pid by calculating its sha-256 hex digest
+        String metadataCid = this.getPidHexDigest(pid + formatId, OBJECT_STORE_ALGORITHM);
+        String metadataCidShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
+                metadataCid);
+        Path metadataCidPath = this.METADATA_STORE_DIRECTORY.resolve(metadataCidShardString);
+
+        // Check to see if object exists
+        if (!Files.exists(metadataCidPath)) {
+            String errMsg = "FileHashStore.deleteMetadata - File does not exist for pid: " + pid
+                    + " with metadata address: " + metadataCidPath;
+            logFileHashStore.warn(errMsg);
+            throw new FileNotFoundException(errMsg);
+        }
+
+        // Delete file
+        Files.delete(metadataCidPath);
+
+        // Then delete any empty directories
+        Path parent = metadataCidPath.getParent();
+        while (parent != null && isDirectoryEmpty(parent)) {
+            if (parent.equals(this.METADATA_STORE_DIRECTORY)) {
+                // Do not delete the metadata store directory
+                break;
+
+            } else {
+                Files.delete(parent);
+                logFileHashStore.info("FileHashStore.deleteMetadata - Deleting parent directory for: " + pid
+                        + " with parent address: " + parent);
+                parent = parent.getParent();
+            }
+        }
+
+        logFileHashStore.info("FileHashStore.deleteMetadata - File deleted for: " + pid + " with metadata address: "
+                + metadataCidPath);
+        return true;
     }
 
     @Override
@@ -1295,16 +1342,24 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Determines whether a given directory is empty or not
-     * 
+     * Checks whether a directory is empty or contains files. If a file is found, it
+     * returns true.
+     *
      * @param directory Directory to check
-     * @return False if not empty
-     * @throws IOException If I/O occurs when calling Files for a new directory
-     *                     stream
+     * @return True if a file is found or the directory is empty, False otherwise
+     * @throws IOException If I/O occurs when accessing directory
      */
     private static boolean isDirectoryEmpty(Path directory) throws IOException {
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(directory)) {
-            return !stream.iterator().hasNext();
+        try (Stream<Path> stream = Files.list(directory)) {
+            // The findFirst() method is called on the stream created from the given
+            // directory to retrieve the first element. If the stream is empty (i.e., the
+            // directory is empty), findFirst() will return an empty Optional<Path>.
+            //
+            // The isPresent() method is called on the Optional<Path> returned by
+            // findFirst(). If the Optional contains a value (i.e., an element was found),
+            // isPresent() returns true. If the Optional is empty (i.e., the stream is
+            // empty), isPresent() returns false.
+            return !stream.findFirst().isPresent();
         }
     }
 }
