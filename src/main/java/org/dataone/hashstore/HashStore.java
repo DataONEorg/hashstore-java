@@ -130,11 +130,15 @@ public interface HashStore {
 
         /**
          * The 'deleteObject' method deletes an object permanently from disk using a
-         * given persistent identifier.
+         * given persistent identifier and any empty subdirecetories.
          * 
          * @param pid Authority-based identifier
          * @return
-         * @throws Exception TODO: Add specific exceptions
+         * @throws IllegalArgumentException When pid is null or empty
+         * @throws FileNotFoundException    When requested pid has no associated object
+         * @throws IOException              I/O error when deleting empty directories
+         * @throws NoSuchAlgorithmException When algorithm used to calcualte object
+         *                                  address is not supported
          */
         boolean deleteObject(String pid) throws Exception;
 

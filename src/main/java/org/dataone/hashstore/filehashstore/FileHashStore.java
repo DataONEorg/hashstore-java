@@ -609,7 +609,8 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public boolean deleteObject(String pid) throws Exception {
+    public boolean deleteObject(String pid)
+            throws IllegalArgumentException, FileNotFoundException, IOException, NoSuchAlgorithmException {
         logFileHashStore.debug("FileHashStore.deleteObject - Called to delete object for pid: " + pid);
 
         if (pid == null || pid.trim().isEmpty()) {
