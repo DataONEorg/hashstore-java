@@ -1,5 +1,7 @@
 package org.dataone.hashstore;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,7 +17,7 @@ import org.junit.Test;
 public class HashAddressTest {
     private static String id = "";
     private static String relpath = "";
-    private static String abspath = "";
+    private static Path abspath;
     private static boolean isDuplicate;
     private static Map<String, String> hexDigests;
 
@@ -26,7 +28,7 @@ public class HashAddressTest {
     public static void initializeInstanceVariables() {
         id = "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
         relpath = "/rel/test/directory";
-        abspath = "/abs/test/directory";
+        abspath = Paths.get("/abs/test/directory");
         isDuplicate = true;
         hexDigests = new HashMap<>();
         hexDigests.put("md5", "f4ea2d07db950873462a064937197b0f");
@@ -73,7 +75,7 @@ public class HashAddressTest {
     @Test
     public void testHashAddressGetAbsPath() {
         HashAddress hashad = new HashAddress(id, relpath, abspath, isDuplicate, hexDigests);
-        String hashad_abspath = hashad.getAbsPath();
+        Path hashad_abspath = hashad.getAbsPath();
         assertEquals(hashad_abspath, abspath);
     }
 

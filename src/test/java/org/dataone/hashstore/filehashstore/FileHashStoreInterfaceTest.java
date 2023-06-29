@@ -116,8 +116,8 @@ public class FileHashStoreInterfaceTest {
             HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
 
             // Check absolute path
-            File objAbsPath = new File(objInfo.getAbsPath());
-            assertTrue(objAbsPath.exists());
+            Path objAbsPath = objInfo.getAbsPath();
+            assertTrue(Files.exists(objAbsPath));
         }
     }
 
@@ -219,8 +219,8 @@ public class FileHashStoreInterfaceTest {
         InputStream dataStream = Files.newInputStream(testDataFile);
         HashAddress address = fileHashStore.storeObject(dataStream, pid, null, checksumCorrect, "SHA-256");
 
-        File objAbsPath = new File(address.getAbsPath());
-        assertTrue(objAbsPath.exists());
+        Path objAbsPath = address.getAbsPath();
+        assertTrue(Files.exists(objAbsPath));
     }
 
     /**
@@ -348,9 +348,8 @@ public class FileHashStoreInterfaceTest {
                 InputStream dataStream = Files.newInputStream(testDataFile);
                 HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
                 if (objInfo != null) {
-                    String absPath = objInfo.getAbsPath();
-                    File permAddress = new File(absPath);
-                    assertTrue(permAddress.exists());
+                    Path absPath = objInfo.getAbsPath();
+                    assertTrue(Files.exists(absPath));
                 }
             } catch (Exception e) {
                 System.out.println(e.getClass());
@@ -363,9 +362,8 @@ public class FileHashStoreInterfaceTest {
                 InputStream dataStream = Files.newInputStream(testDataFile);
                 HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
                 if (objInfo != null) {
-                    String absPath = objInfo.getAbsPath();
-                    File permAddress = new File(absPath);
-                    assertTrue(permAddress.exists());
+                    Path absPath = objInfo.getAbsPath();
+                    assertTrue(Files.exists(absPath));
                 }
             } catch (Exception e) {
                 System.out.println(e.getClass());
@@ -378,9 +376,8 @@ public class FileHashStoreInterfaceTest {
                 InputStream dataStream = Files.newInputStream(testDataFile);
                 HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
                 if (objInfo != null) {
-                    String absPath = objInfo.getAbsPath();
-                    File permAddress = new File(absPath);
-                    assertTrue(permAddress.exists());
+                    Path absPath = objInfo.getAbsPath();
+                    assertTrue(Files.exists(absPath));
                 }
             } catch (Exception e) {
                 System.out.println(e.getClass());
@@ -393,9 +390,8 @@ public class FileHashStoreInterfaceTest {
                 InputStream dataStream = Files.newInputStream(testDataFile);
                 HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
                 if (objInfo != null) {
-                    String absPath = objInfo.getAbsPath();
-                    File permAddress = new File(absPath);
-                    assertTrue(permAddress.exists());
+                    Path absPath = objInfo.getAbsPath();
+                    assertTrue(Files.exists(absPath));
                 }
             } catch (Exception e) {
                 System.out.println(e.getClass());
@@ -408,9 +404,8 @@ public class FileHashStoreInterfaceTest {
                 InputStream dataStream = Files.newInputStream(testDataFile);
                 HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
                 if (objInfo != null) {
-                    String absPath = objInfo.getAbsPath();
-                    File permAddress = new File(absPath);
-                    assertTrue(permAddress.exists());
+                    Path absPath = objInfo.getAbsPath();
+                    assertTrue(Files.exists(absPath));
                 }
             } catch (Exception e) {
                 System.out.println(e.getClass());
@@ -452,9 +447,8 @@ public class FileHashStoreInterfaceTest {
                 InputStream dataStream = Files.newInputStream(testDataFile);
                 HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
                 if (objInfo != null) {
-                    String absPath = objInfo.getAbsPath();
-                    File permAddress = new File(absPath);
-                    assertTrue(permAddress.exists());
+                    Path absPath = objInfo.getAbsPath();
+                    assertTrue(Files.exists(absPath));
                 }
             } catch (Exception e) {
                 System.out.println(e.getClass());
@@ -467,9 +461,8 @@ public class FileHashStoreInterfaceTest {
                 InputStream dataStream = Files.newInputStream(testDataFile);
                 HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
                 if (objInfo != null) {
-                    String absPath = objInfo.getAbsPath();
-                    File permAddress = new File(absPath);
-                    assertTrue(permAddress.exists());
+                    Path absPath = objInfo.getAbsPath();
+                    assertTrue(Files.exists(absPath));
                 }
             } catch (Exception e) {
                 System.out.println(e.getClass());
@@ -932,5 +925,62 @@ public class FileHashStoreInterfaceTest {
             // Close stream
             metadataCidInputStream.close();
         }
+    }
+
+    /**
+     * Confirm that deleteObject deletes object and empty sub directories
+     */
+    @Test
+    public void deleteObject() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            HashAddress objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
+
+            boolean isFileDeleted = fileHashStore.deleteObject(pid);
+            assertTrue(isFileDeleted);
+
+            // Double check that file doesn't exist
+            assertFalse(Files.exists(objInfo.getAbsPath()));
+
+            // Double check that store root still exists
+            Path storePath = (Path) this.fhsProperties.get("storePath");
+            Path storeObjectPath = storePath.resolve("objects");
+            assertTrue(Files.exists(storeObjectPath));
+        }
+    }
+
+    /**
+     * Confirm that deleteObject deletes object and empty sub directories
+     */
+    @Test(expected = FileNotFoundException.class)
+    public void deleteObject_pidNotFound() throws Exception {
+        fileHashStore.deleteObject("dou.2023.hashstore.1");
+    }
+
+    /**
+     * Confirm that deleteObject deletes object and empty sub directories
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void deleteObject_pidNull() throws Exception {
+        fileHashStore.deleteObject(null);
+    }
+
+    /**
+     * Confirm that deleteObject deletes object and empty sub directories
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void deleteObject_pidEmpty() throws Exception {
+        fileHashStore.deleteObject("");
+    }
+
+    /**
+     * Confirm that deleteObject deletes object and empty sub directories
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void deleteObject_pidEmptySpaces() throws Exception {
+        fileHashStore.deleteObject("      ");
     }
 }

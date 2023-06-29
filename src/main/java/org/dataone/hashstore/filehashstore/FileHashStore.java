@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -609,8 +610,49 @@ public class FileHashStore implements HashStore {
 
     @Override
     public boolean deleteObject(String pid) throws Exception {
-        // TODO: Implement method
-        return false;
+        logFileHashStore.debug("FileHashStore.deleteObject - Called to delete object for pid: " + pid);
+
+        if (pid == null || pid.trim().isEmpty()) {
+            String errMsg = "FileHashStore.deleteObject - pid cannot be null or empty, pid: " + pid;
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
+        }
+
+        // Get permanent address of the pid by calculating its sha-256 hex digest
+        String objectCid = this.getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
+        String objShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
+                objectCid);
+        Path objHashAddressPath = this.OBJECT_STORE_DIRECTORY.resolve(objShardString);
+
+        // Check to see if object exists
+        if (!Files.exists(objHashAddressPath)) {
+            String errMsg = "FileHashStore.deleteObject - File does not exist for pid: " + pid
+                    + " with object address: " + objHashAddressPath;
+            logFileHashStore.warn(errMsg);
+            throw new FileNotFoundException(errMsg);
+        }
+
+        // Delete file
+        Files.delete(objHashAddressPath);
+
+        // Then delete any empty directories
+        Path parent = objHashAddressPath.getParent();
+        while (parent != null && isDirectoryEmpty(parent)) {
+            if (parent.equals(this.OBJECT_STORE_DIRECTORY)) {
+                // Do not delete the object store directory
+                break;
+
+            } else {
+                Files.delete(parent);
+                logFileHashStore.info("FileHashStore.deleteObject - Deleting parent directory for: " + pid
+                        + " with parent address: " + parent);
+                parent = parent.getParent();
+            }
+        }
+
+        logFileHashStore.info("FileHashStore.deleteObject - File deleted for: " + pid + " with object address: "
+                + objHashAddressPath);
+        return true;
     }
 
     @Override
@@ -699,12 +741,11 @@ public class FileHashStore implements HashStore {
         String objShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
                 objectCid);
         Path objHashAddressPath = this.OBJECT_STORE_DIRECTORY.resolve(objShardString);
-        String objHashAddressString = objHashAddressPath.toString();
 
         // If file (pid hash) exists, reject request immediately
         if (Files.exists(objHashAddressPath)) {
             String errMsg = "FileHashStore.putObject - File already exists for pid: " + pid
-                    + ". Object address: " + objHashAddressString + ". Aborting request.";
+                    + ". Object address: " + objHashAddressPath + ". Aborting request.";
             logFileHashStore.warn(errMsg);
             throw new PidObjectExistsException(errMsg);
         }
@@ -747,7 +788,7 @@ public class FileHashStore implements HashStore {
         // Move object
         boolean isDuplicate = true;
         logFileHashStore.debug("FileHashStore.putObject - Moving object: " + tmpFile.toString() + ". Destination: "
-                + objHashAddressString);
+                + objHashAddressPath);
         if (Files.exists(objHashAddressPath)) {
             boolean deleteStatus = tmpFile.delete();
             if (!deleteStatus) {
@@ -759,7 +800,7 @@ public class FileHashStore implements HashStore {
 
             objectCid = null;
             objShardString = null;
-            objHashAddressString = null;
+            objHashAddressPath = null;
             logFileHashStore.info(
                     "FileHashStore.putObject - Did not move object, duplicate file found for pid: " + pid
                             + ". Deleted tmpFile: " + tmpFile.getName());
@@ -770,11 +811,11 @@ public class FileHashStore implements HashStore {
                 isDuplicate = false;
             }
             logFileHashStore
-                    .debug("FileHashStore.putObject - Move object success, permanent address: " + objHashAddressString);
+                    .debug("FileHashStore.putObject - Move object success, permanent address: " + objHashAddressPath);
         }
 
         // Create HashAddress object to return with pertinent data
-        return new HashAddress(objectCid, objShardString, objHashAddressString, isDuplicate,
+        return new HashAddress(objectCid, objShardString, objHashAddressPath, isDuplicate,
                 hexDigests);
     }
 
@@ -1249,6 +1290,20 @@ public class FileHashStore implements HashStore {
         } finally {
             os.flush();
             os.close();
+        }
+    }
+
+    /**
+     * Determines whether a given directory is empty or not
+     * 
+     * @param directory Directory to check
+     * @return False if not empty
+     * @throws IOException If I/O occurs when calling Files for a new directory
+     *                     stream
+     */
+    private static boolean isDirectoryEmpty(Path directory) throws IOException {
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(directory)) {
+            return !stream.iterator().hasNext();
         }
     }
 }
