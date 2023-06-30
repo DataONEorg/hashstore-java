@@ -848,6 +848,7 @@ public class FileHashStoreProtectedTest {
                 while ((bytesRead = metadataStoredStream.read(buffer)) != -1) {
                     sha256.update(buffer, 0, bytesRead);
                 }
+
             } catch (IOException ioe) {
                 ioe.printStackTrace();
                 throw ioe;
