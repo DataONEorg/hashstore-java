@@ -39,9 +39,11 @@ public class HashStoreTest {
 
         try {
             hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
+
         } catch (Exception e) {
             e.printStackTrace();
             fail("HashStoreTest - Exception encountered: " + e.getMessage());
+
         }
     }
 
@@ -71,6 +73,7 @@ public class HashStoreTest {
         storeProperties.put("storeWidth", 2);
         storeProperties.put("storeAlgorithm", "SHA-256");
         storeProperties.put("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+
         hashStore = HashStoreFactory.getHashStore(null, storeProperties);
     }
 

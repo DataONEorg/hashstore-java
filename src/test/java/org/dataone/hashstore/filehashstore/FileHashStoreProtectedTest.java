@@ -51,10 +51,13 @@ public class FileHashStoreProtectedTest {
         try {
             this.fhsProperties = storeProperties;
             this.fileHashStore = new FileHashStore(storeProperties);
+
         } catch (IOException e) {
             fail("IOException encountered: " + e.getMessage());
+
         } catch (NoSuchAlgorithmException nsae) {
             fail("NoSuchAlgorithmException encountered: " + nsae.getMessage());
+
         }
     }
 
@@ -82,8 +85,10 @@ public class FileHashStoreProtectedTest {
             String md2 = "MD2";
             boolean supported = this.fileHashStore.validateAlgorithm(md2);
             assertTrue(supported);
+
         } catch (NoSuchAlgorithmException nsae) {
             fail("NoSuchAlgorithmException encountered: " + nsae.getMessage());
+
         }
     }
 
@@ -96,8 +101,10 @@ public class FileHashStoreProtectedTest {
             String sm3 = "SM3";
             boolean not_supported = this.fileHashStore.validateAlgorithm(sm3);
             assertFalse(not_supported);
+
         } catch (NoSuchAlgorithmException nsae) {
             throw new NoSuchAlgorithmException("NoSuchAlgorithmException encountered: " + nsae.getMessage());
+
         }
     }
 
@@ -111,20 +118,24 @@ public class FileHashStoreProtectedTest {
             String md2_lowercase = "md2";
             boolean lowercase_not_supported = this.fileHashStore.validateAlgorithm(md2_lowercase);
             assertFalse(lowercase_not_supported);
+
         } catch (NoSuchAlgorithmException nsae) {
             throw new NoSuchAlgorithmException("NoSuchAlgorithmException encountered: " + nsae.getMessage());
+
         }
     }
 
     /**
-     * Check algorithm support for null algorithm
+     * Check algorithm support for null algorithm value
      */
     @Test(expected = NullPointerException.class)
     public void isValidAlgorithm_algorithmNull() {
         try {
             this.fileHashStore.validateAlgorithm(null);
+
         } catch (NoSuchAlgorithmException nsae) {
             fail("NoSuchAlgorithmException encountered: " + nsae.getMessage());
+
         }
     }
 
@@ -138,7 +149,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Confirm that a digest is sharded appropriately
+     * Confirm that a given digest is sharded appropriately
      */
     @Test
     public void getHierarchicalPathString() {
@@ -149,7 +160,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Check for correct hex digest value
+     * Check getPidHexDigest calculates correct hex digest value
      */
     @Test
     public void getPidHexDigest() throws Exception {
@@ -161,7 +172,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Check for NoSuchAlgorithmException
+     * Check that getPidHexDigest throws NoSuchAlgorithmException
      */
     @Test(expected = NoSuchAlgorithmException.class)
     public void getPidHexDigest_badAlgorithm() throws Exception {
@@ -171,8 +182,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Verify that test data files are put (moved) to its permanent address and
-     * authority based id is correct
+     * Verify that putObject returns correct id
      */
     @Test
     public void putObject_testHarness_id() throws Exception {
@@ -190,8 +200,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Verify that test data files are put (moved) to its permanent address and
-     * relative path is correct
+     * Verify that putObject returns correct relative path
      */
     @Test
     public void putObject_testHarness_relPath() throws Exception {
@@ -210,8 +219,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Verify that test data files are put (moved) to its permanent address and
-     * absolute path is correct
+     * Verify that putObject returns correct absolute path
      */
     @Test
     public void putObject_testHarness_absPath() throws Exception {
@@ -224,13 +232,14 @@ public class FileHashStoreProtectedTest {
 
             // Check absolute path
             Path absPath = address.getAbsPath();
+            Path realPath = fileHashStore.getRealPath(pid, "object", null);
             assertTrue(Files.exists(absPath));
+            assertEquals(absPath, realPath);
         }
     }
 
     /**
-     * Verify that test data files are put (moved) to its permanent address and
-     * isDuplicate is false
+     * Verify that putObject returns expected isDuplicate value: false
      */
     @Test
     public void putObject_testHarness_isDuplicate() throws Exception {
@@ -247,8 +256,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Verify that test data files are put (moved) to its permanent address and
-     * hex digests are correct
+     * Verify that putObject returns correct hex digests
      */
     @Test
     public void putObject_testHarness_hexDigests() throws Exception {
@@ -294,7 +302,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Verify that additional checksum is generated/validated
+     * Verify putObject generates additional checksum
      */
     @Test
     public void putObject_additionalAlgo_correctChecksumValue() throws Exception {
@@ -312,7 +320,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Verify exception thrown when checksum provided does not match
+     * Verify putObject throws exception when checksum provided does not match
      */
     @Test(expected = IllegalArgumentException.class)
     public void putObject_incorrectChecksumValue() throws Exception {
@@ -327,7 +335,8 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Verify exception thrown when checksum is empty and algorithm supported
+     * Verify putObject throws exception when checksum is empty and algorithm
+     * supported
      */
     @Test(expected = IllegalArgumentException.class)
     public void putObject_emptyChecksumValue() throws Exception {
@@ -340,7 +349,8 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Verify exception thrown when checksum is null and algorithm supported
+     * Verify putObject throws exception when checksum is null and algorithm
+     * supported
      */
     @Test(expected = NullPointerException.class)
     public void putObject_nullChecksumValue() throws Exception {
@@ -353,8 +363,8 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Verify exception thrown when checksumAlgorithm is empty and checksum is
-     * supplied
+     * Verify putObject throws exception when checksumAlgorithm is empty and
+     * checksum is supplied
      */
     @Test(expected = IllegalArgumentException.class)
     public void putObject_emptyChecksumAlgorithmValue() throws Exception {
@@ -367,9 +377,10 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Verify exception thrown when checksumAlgorithm is null and checksum supplied
+     * Verify putObject throws exception when checksumAlgorithm is null and checksum
+     * supplied
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = NullPointerException.class)
     public void putObject_nullChecksumAlgorithmValue() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
@@ -379,7 +390,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Verify that putObject throws exception when storing a duplicate object
+     * Verify putObject throws exception when storing a duplicate object
      */
     @Test(expected = PidObjectExistsException.class)
     public void putObject_duplicateObject() throws Exception {
@@ -399,7 +410,8 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Verify exception thrown when unsupported additional algorithm provided
+     * Verify putObject throws exception when unsupported additional algorithm
+     * provided
      */
     @Test(expected = NoSuchAlgorithmException.class)
     public void putObject_invalidAlgorithm() throws Exception {
@@ -412,7 +424,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Verify exception thrown when empty algorithm is supplied
+     * Verify putObject throws exception when empty algorithm is supplied
      */
     @Test(expected = IllegalArgumentException.class)
     public void putObject_emptyAlgorithm() throws Exception {
@@ -425,7 +437,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Verify exception thrown when pid is empty
+     * Verify putObject throws exception when pid is empty
      */
     @Test(expected = IllegalArgumentException.class)
     public void putObject_emptyPid() throws Exception {
@@ -439,9 +451,9 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Verify exception thrown when pid is null
+     * Verify putObject throws exception when pid is null
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = NullPointerException.class)
     public void putObject_nullPid() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
@@ -452,7 +464,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Verify exception thrown when object is null
+     * Verify putObject throws exception object is null
      */
     @Test(expected = NullPointerException.class)
     public void putObject_nullObject() throws Exception {
@@ -463,7 +475,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Check that default checksums are generated
+     * Check default checksums are generated
      */
     @Test
     public void writeToTmpFileAndGenerateChecksums() throws Exception {
@@ -517,7 +529,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Check that checksums are generated when additional algorithm supplied.
+     * Check that additional algorithm is generated when supplied
      */
     @Test
     public void writeToTmpFileAndGenerateChecksums_addAlgo() throws Exception {
@@ -542,7 +554,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Check that checksums are generated when checksum algorithm supplied
+     * Check that checksums are generated when checksumAlgorithm is supplied
      */
     @Test
     public void writeToTmpFileAndGenerateChecksums_checksumAlgo() throws Exception {
@@ -712,7 +724,7 @@ public class FileHashStoreProtectedTest {
     /**
      * Test putMetadata throws exception when pid is null
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = NullPointerException.class)
     public void putMetadata_pidNull() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
@@ -761,7 +773,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Check that tmp metadata is written with good data
+     * Confirm tmp metadata is written
      */
     @Test
     public void writeToTmpMetadataFile() throws Exception {
@@ -781,8 +793,6 @@ public class FileHashStoreProtectedTest {
     /**
      * Check that tmp metadata is actually written by verifying file size
      * 
-     * Reminder: We cannot do a size comparison directly because the metadata file
-     * stored contains the given namespace/formatId as well
      */
     @Test
     public void writeToTmpMetadataFile_tmpFileSize() throws Exception {
@@ -798,7 +808,9 @@ public class FileHashStoreProtectedTest {
             assertTrue(metadataWritten);
 
             long tmpMetadataFileSize = Files.size(newTmpFile.toPath());
+            long testMetadataFileSize = Files.size(testMetaDataFile);
             assertTrue(tmpMetadataFileSize > 0);
+            assertEquals(tmpMetadataFileSize, testMetadataFileSize);
         }
     }
 
@@ -821,9 +833,11 @@ public class FileHashStoreProtectedTest {
             InputStream metadataStoredStream;
             try {
                 metadataStoredStream = Files.newInputStream(newTmpFile.toPath());
+
             } catch (Exception e) {
                 e.printStackTrace();
                 throw e;
+
             }
 
             // Calculate checksum of metadata content
@@ -834,9 +848,11 @@ public class FileHashStoreProtectedTest {
                 while ((bytesRead = metadataStoredStream.read(buffer)) != -1) {
                     sha256.update(buffer, 0, bytesRead);
                 }
+
             } catch (IOException ioe) {
                 ioe.printStackTrace();
                 throw ioe;
+
             }
 
             String sha256Digest = DatatypeConverter.printHexBinary(sha256.digest()).toLowerCase();

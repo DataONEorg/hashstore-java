@@ -52,10 +52,13 @@ public class FileHashStoreInterfaceTest {
         try {
             this.fhsProperties = storeProperties;
             this.fileHashStore = new FileHashStore(storeProperties);
+
         } catch (IOException ioe) {
             fail("IOException encountered: " + ioe.getMessage());
+
         } catch (NoSuchAlgorithmException nsae) {
             fail("NoSuchAlgorithmException encountered: " + nsae.getMessage());
+
         }
     }
 
@@ -117,6 +120,8 @@ public class FileHashStoreInterfaceTest {
             // Check absolute path
             Path objAbsPath = objInfo.getAbsPath();
             assertTrue(Files.exists(objAbsPath));
+            Path realPath = fileHashStore.getRealPath(pid, "object", null);
+            assertEquals(objAbsPath, realPath);
         }
     }
 
@@ -177,7 +182,7 @@ public class FileHashStoreInterfaceTest {
     /**
      * Check that store object throws exception when pid is null
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = NullPointerException.class)
     public void storeObject_nullPid() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
@@ -185,7 +190,6 @@ public class FileHashStoreInterfaceTest {
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             fileHashStore.storeObject(dataStream, null, null, null, null);
-
         }
     }
 
@@ -200,7 +204,6 @@ public class FileHashStoreInterfaceTest {
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             fileHashStore.storeObject(dataStream, "", null, null, null);
-
         }
     }
 
@@ -499,6 +502,36 @@ public class FileHashStoreInterfaceTest {
             Path metadataCidAbsPath = storePath.resolve("metadata/" + metadataCidShardString);
 
             assertTrue(Files.exists(metadataCidAbsPath));
+
+            long writtenMetadataFile = Files.size(testMetaDataFile);
+            long originalMetadataFie = Files.size(metadataCidAbsPath);
+            assertEquals(writtenMetadataFile, originalMetadataFie);
+        }
+    }
+
+    /**
+     * Test storeMetadata stores the expected amount of bytes
+     */
+    @Test
+    public void storeMetadata_fileSize() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, null);
+
+            // Get relative path
+            String metadataCidShardString = this.fileHashStore.getHierarchicalPathString(3, 2, metadataCid);
+            // Get absolute path
+            Path storePath = (Path) this.fhsProperties.get("storePath");
+            Path metadataCidAbsPath = storePath.resolve("metadata/" + metadataCidShardString);
+
+            long writtenMetadataFile = Files.size(testMetaDataFile);
+            long originalMetadataFie = Files.size(metadataCidAbsPath);
+            assertEquals(writtenMetadataFile, originalMetadataFie);
         }
     }
 
@@ -515,7 +548,7 @@ public class FileHashStoreInterfaceTest {
     /**
      * Test storeMetadata throws exception when pid is null
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = NullPointerException.class)
     public void storeMetadata_pidNull() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
@@ -628,9 +661,8 @@ public class FileHashStoreInterfaceTest {
 
         // Confirm metadata file is written
         Path storePath = (Path) this.fhsProperties.get("storePath");
-        String metadataCid = fileHashStore.getPidHexDigest(pid + "http://ns.dataone.org/service/types/v2.0", "SHA-256");
-        String metadataCidShardString = fileHashStore.getHierarchicalPathString(3, 2, metadataCid);
-        Path metadataCidAbsPath = storePath.resolve("metadata/" + metadataCidShardString);
+        String formatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+        Path metadataCidAbsPath = fileHashStore.getRealPath(pid, "metadata", formatId);
         assertTrue(Files.exists(metadataCidAbsPath));
 
         // Confirm there are only two files in HashStore - 'hashstore.yaml' and the
@@ -662,7 +694,7 @@ public class FileHashStoreInterfaceTest {
     /**
      * Check that retrieveObject throws exception when pid is null
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = NullPointerException.class)
     public void retrieveObject_pidNull() throws Exception {
         InputStream pidInputStream = fileHashStore.retrieveObject(null);
         pidInputStream.close();
@@ -711,9 +743,11 @@ public class FileHashStoreInterfaceTest {
             InputStream objectCidInputStream;
             try {
                 objectCidInputStream = fileHashStore.retrieveObject(pid);
+
             } catch (Exception e) {
                 e.printStackTrace();
                 throw e;
+
             }
 
             // Read content and compare it to the SHA-256 checksum from TestDataHarness
@@ -724,9 +758,11 @@ public class FileHashStoreInterfaceTest {
                 while ((bytesRead = objectCidInputStream.read(buffer)) != -1) {
                     sha256.update(buffer, 0, bytesRead);
                 }
+
             } catch (IOException ioe) {
                 ioe.printStackTrace();
                 throw ioe;
+
             }
 
             // Get hex digest
@@ -763,7 +799,7 @@ public class FileHashStoreInterfaceTest {
     /**
      * Check that retrieveMetadata throws exception when pid is null
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = NullPointerException.class)
     public void retrieveMetadata_pidNull() throws Exception {
         String storeFormatId = (String) this.fhsProperties.get("storeMetadataNamespace");
         InputStream pidInputStream = fileHashStore.retrieveMetadata(null, storeFormatId);
@@ -796,7 +832,7 @@ public class FileHashStoreInterfaceTest {
     /**
      * Check that retrieveMetadata throws exception when format is null
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = NullPointerException.class)
     public void retrieveMetadata_formatNull() throws Exception {
         InputStream pidInputStream = fileHashStore.retrieveMetadata("dou.2023.hs.1", null);
         pidInputStream.close();
@@ -854,9 +890,11 @@ public class FileHashStoreInterfaceTest {
             InputStream metadataCidInputStream;
             try {
                 metadataCidInputStream = fileHashStore.retrieveMetadata(pid, storeFormatId);
+
             } catch (Exception e) {
                 e.printStackTrace();
                 throw e;
+
             }
 
             // Read content and compare it to the SHA-256 checksum from TestDataHarness
@@ -867,9 +905,11 @@ public class FileHashStoreInterfaceTest {
                 while ((bytesRead = metadataCidInputStream.read(buffer)) != -1) {
                     sha256.update(buffer, 0, bytesRead);
                 }
+
             } catch (IOException ioe) {
                 ioe.printStackTrace();
                 throw ioe;
+
             }
 
             // Get hex digest
@@ -918,7 +958,7 @@ public class FileHashStoreInterfaceTest {
     /**
      * Confirm that deleteObject throws exception when pid is null
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = NullPointerException.class)
     public void deleteObject_pidNull() throws Exception {
         fileHashStore.deleteObject(null);
     }
@@ -951,23 +991,18 @@ public class FileHashStoreInterfaceTest {
             Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
 
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
-            String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, null);
+            fileHashStore.storeMetadata(metadataStream, pid, null);
 
             String storeFormatId = (String) this.fhsProperties.get("storeMetadataNamespace");
             boolean isMetadataDeleted = fileHashStore.deleteMetadata(pid, storeFormatId);
             assertTrue(isMetadataDeleted);
 
             // Double check that file doesn't exist
-            Path storePath = (Path) this.fhsProperties.get("storePath");
-            Path metadataStoreDirectory = storePath.resolve("metadata");
-            int storeDepth = (int) this.fhsProperties.get("storeDepth");
-            int storeWidth = (int) this.fhsProperties.get("storeWidth");
-            String metadataCidShardString = fileHashStore.getHierarchicalPathString(storeDepth, storeWidth,
-                    metadataCid);
-            Path metadataCidPath = metadataStoreDirectory.resolve(metadataCidShardString);
+            Path metadataCidPath = fileHashStore.getRealPath(pid, "metadata", storeFormatId);
             assertFalse(Files.exists(metadataCidPath));
 
             // Double check that metadata directory still exists
+            Path storePath = (Path) this.fhsProperties.get("storePath");
             Path storeObjectPath = storePath.resolve("metadata");
             assertTrue(Files.exists(storeObjectPath));
         }
@@ -986,7 +1021,7 @@ public class FileHashStoreInterfaceTest {
     /**
      * Confirm that deleteMetadata throws exception when pid is null
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = NullPointerException.class)
     public void deleteMetadata_pidNull() throws Exception {
         String formatId = "http://hashstore.tests/types/v1.0";
         fileHashStore.deleteMetadata(null, formatId);
@@ -1013,7 +1048,7 @@ public class FileHashStoreInterfaceTest {
     /**
      * Confirm that deleteMetadata throws exception when formatId is null
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = NullPointerException.class)
     public void deleteMetadata_formatIdNull() throws Exception {
         String pid = "dou.2023.hashstore.1";
         fileHashStore.deleteMetadata(pid, null);
@@ -1073,7 +1108,7 @@ public class FileHashStoreInterfaceTest {
     /**
      * Confirm getHexDigest throws exception when file is not found
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = NullPointerException.class)
     public void getHexDigest_pidNull() throws Exception {
         fileHashStore.getHexDigest(null, "SHA-256");
     }
