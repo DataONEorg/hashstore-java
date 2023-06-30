@@ -739,6 +739,7 @@ public class FileHashStore implements HashStore {
                     + ". Object address: " + objHashAddressPath + ". Aborting request.";
             logFileHashStore.warn(errMsg);
             throw new PidObjectExistsException(errMsg);
+
         }
 
         // Generate tmp file and write to it
@@ -757,6 +758,7 @@ public class FileHashStore implements HashStore {
                         + " checksumAlgorithm checked: " + checksumAlgorithm;
                 logFileHashStore.error(errMsg);
                 throw new NoSuchAlgorithmException(errMsg);
+
             }
 
             if (!checksum.equals(digestFromHexDigests)) {
@@ -767,12 +769,14 @@ public class FileHashStore implements HashStore {
                             + tmpFile.getName();
                     logFileHashStore.error(errMsg);
                     throw new IOException(errMsg);
+
                 }
                 String errMsg = "FileHashStore.putObject - Checksum given is not equal to the calculated hex digest: "
                         + digestFromHexDigests + ". Checksum provided: " + checksum + ". Deleting tmpFile: "
                         + tmpFile.getName();
                 logFileHashStore.error(errMsg);
                 throw new IllegalArgumentException(errMsg);
+
             }
         }
 
@@ -787,6 +791,7 @@ public class FileHashStore implements HashStore {
                         + " Attempted to delete tmpFile but failed: " + tmpFile.getName();
                 logFileHashStore.error(errMsg);
                 throw new IOException(errMsg);
+
             }
 
             objectCid = null;
@@ -831,6 +836,7 @@ public class FileHashStore implements HashStore {
                     + Arrays.toString(SUPPORTED_HASH_ALGORITHMS);
             logFileHashStore.error(errMsg);
             throw new NoSuchAlgorithmException(errMsg);
+
         }
 
         return true;
@@ -1034,11 +1040,13 @@ public class FileHashStore implements HashStore {
                     checksumAlgo.update(buffer, 0, bytesRead);
                 }
             }
+
         } catch (IOException ioe) {
             String errMsg = "FileHashStore.writeToTmpFileAndGenerateChecksums - Unexpected IOException encountered: "
                     + ioe.getMessage();
             logFileHashStore.error(errMsg);
             throw ioe;
+
         } finally {
             os.flush();
             os.close();
@@ -1318,6 +1326,7 @@ public class FileHashStore implements HashStore {
                     + " cannot be null.";
             logFileHashStore.error(errMsg);
             throw new NullPointerException(errMsg);
+
         }
         return false;
     }
@@ -1335,6 +1344,7 @@ public class FileHashStore implements HashStore {
                     + " cannot be empty.";
             logFileHashStore.error(errMsg);
             throw new IllegalArgumentException(errMsg);
+
         }
         return false;
     }
