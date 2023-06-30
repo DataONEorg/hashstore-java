@@ -51,11 +51,14 @@ public class FileHashStorePublicTest {
 
         try {
             fileHashStore = new FileHashStore(storeProperties);
+
         } catch (IOException e) {
             e.printStackTrace();
             fail("IOException encountered: " + e.getMessage());
+
         } catch (NoSuchAlgorithmException nsae) {
             fail("NoSuchAlgorithmException encountered: " + nsae.getMessage());
+
         }
     }
 
@@ -66,7 +69,7 @@ public class FileHashStorePublicTest {
     public static TemporaryFolder tempFolder = new TemporaryFolder();
 
     /**
-     * Test invalid depth value
+     * Test constructor invalid depth value
      */
     @Test(expected = NullPointerException.class)
     public void constructor_nullProperties() throws Exception {
@@ -74,7 +77,7 @@ public class FileHashStorePublicTest {
     }
 
     /**
-     * Test invalid depth value
+     * Test constructor invalid depth property value
      */
     @Test(expected = IllegalArgumentException.class)
     public void constructor_illegalDepthArg() throws Exception {
@@ -84,11 +87,12 @@ public class FileHashStorePublicTest {
         storeProperties.put("storeWidth", 2);
         storeProperties.put("storeAlgorithm", "SHA-256");
         storeProperties.put("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+
         new FileHashStore(storeProperties);
     }
 
     /**
-     * Test invalid width value
+     * Test constructor invalid width property value
      */
     @Test(expected = IllegalArgumentException.class)
     public void constructor_illegalWidthArg() throws Exception {
@@ -98,11 +102,12 @@ public class FileHashStorePublicTest {
         storeProperties.put("storeWidth", 0);
         storeProperties.put("storeAlgorithm", "SHA-256");
         storeProperties.put("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+
         new FileHashStore(storeProperties);
     }
 
     /**
-     * Test unsupported algorithm value
+     * Test constructor unsupported algorithm property value
      */
     @Test(expected = IllegalArgumentException.class)
     public void constructor_illegalAlgorithmArg() throws Exception {
@@ -112,11 +117,12 @@ public class FileHashStorePublicTest {
         storeProperties.put("storeWidth", 0);
         storeProperties.put("storeAlgorithm", "SM2");
         storeProperties.put("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+
         new FileHashStore(storeProperties);
     }
 
     /**
-     * Test empty algorithm throws exception
+     * Test constructor empty algorithm property value throws exception
      */
     @Test(expected = IllegalArgumentException.class)
     public void constructor_emptyAlgorithmArg() throws Exception {
@@ -126,11 +132,12 @@ public class FileHashStorePublicTest {
         storeProperties.put("storeWidth", 3);
         storeProperties.put("storeAlgorithm", "");
         storeProperties.put("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+
         new FileHashStore(storeProperties);
     }
 
     /**
-     * Test algorithm with empty spaces throws exception
+     * Test constructor algorithm property value with empty spaces throws exception
      */
     @Test(expected = IllegalArgumentException.class)
     public void constructor_emptySpacesAlgorithmArg() throws Exception {
@@ -140,11 +147,12 @@ public class FileHashStorePublicTest {
         storeProperties.put("storeWidth", 3);
         storeProperties.put("storeAlgorithm", "       ");
         storeProperties.put("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+
         new FileHashStore(storeProperties);
     }
 
     /**
-     * Test empty metadata formatId value
+     * Test constructor empty metadata namespace property value throws exception
      */
     @Test(expected = IllegalArgumentException.class)
     public void constructor_emptyMetadataNameSpaceArg() throws Exception {
@@ -154,11 +162,12 @@ public class FileHashStorePublicTest {
         storeProperties.put("storeWidth", 0);
         storeProperties.put("storeAlgorithm", "MD5");
         storeProperties.put("storeMetadataNamespace", "");
+
         new FileHashStore(storeProperties);
     }
 
     /**
-     * Test metadata formatId with empty spaces
+     * Test constructor metadata namespace property value with empty spaces
      */
     @Test(expected = IllegalArgumentException.class)
     public void constructor_emptySpacesMetadataNameSpaceArg() throws Exception {
@@ -168,11 +177,12 @@ public class FileHashStorePublicTest {
         storeProperties.put("storeWidth", 0);
         storeProperties.put("storeAlgorithm", "MD5");
         storeProperties.put("storeMetadataNamespace", "     ");
+
         new FileHashStore(storeProperties);
     }
 
     /**
-     * Confirm that exception is thrown when storeDirectory is null
+     * Confirm that exception is thrown when storeDirectory property value is null
      */
     @Test(expected = NullPointerException.class)
     public void initDefaultStore_directoryNull() throws Exception {
@@ -182,6 +192,7 @@ public class FileHashStorePublicTest {
         storeProperties.put("storeWidth", 2);
         storeProperties.put("storeAlgorithm", "SHA-256");
         storeProperties.put("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+
         new FileHashStore(storeProperties);
     }
 
@@ -254,6 +265,7 @@ public class FileHashStorePublicTest {
         storeProperties.put("storeWidth", 2);
         storeProperties.put("storeAlgorithm", "SHA-256");
         storeProperties.put("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+
         new FileHashStore(storeProperties);
     }
 
@@ -269,6 +281,7 @@ public class FileHashStorePublicTest {
         storeProperties.put("storeWidth", 2);
         storeProperties.put("storeAlgorithm", "MD5");
         storeProperties.put("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+
         new FileHashStore(storeProperties);
     }
 
@@ -284,6 +297,7 @@ public class FileHashStorePublicTest {
         storeProperties.put("storeWidth", 2);
         storeProperties.put("storeAlgorithm", "SHA-256");
         storeProperties.put("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+
         new FileHashStore(storeProperties);
     }
 
@@ -299,6 +313,7 @@ public class FileHashStorePublicTest {
         storeProperties.put("storeWidth", 1);
         storeProperties.put("storeAlgorithm", "SHA-256");
         storeProperties.put("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+
         new FileHashStore(storeProperties);
     }
 
@@ -314,6 +329,7 @@ public class FileHashStorePublicTest {
         storeProperties.put("storeWidth", 1);
         storeProperties.put("storeAlgorithm", "SHA-256");
         storeProperties.put("storeMetadataNamespace", "http://ns.metadata.org/types/v2.0");
+
         new FileHashStore(storeProperties);
     }
 
