@@ -8,27 +8,29 @@ import java.security.NoSuchAlgorithmException;
 import org.dataone.hashstore.exceptions.PidObjectExistsException;
 
 /**
- * HashStore is a content-addressable file management system that utilizes a
- * persistent identifier (PID) in the form of a hex digest value to address
- * files. The system stores files in a file store and provides an API for
- * interacting with the store. HashStore storage classes (like `FileHashStore`)
- * must implement the HashStore interface to ensure proper usage of the system.
+ * HashStore is a content-addressable file management system that utilizes the
+ * hash/hex digest of a given persistent identifier (PID) to address
+ * files. The system stores both objects and metadata in its respective
+ * directories and provides an API for interacting with the store. HashStore
+ * storage classes (like `FileHashStore`) must implement the HashStore interface
+ * to ensure proper usage of the system.
  */
 public interface HashStore {
         /**
          * The `storeObject` method is responsible for the atomic storage of objects to
-         * disk using a given InputStream and a persistent identifier (pid). Upon
-         * successful storage, the method returns a HashAddress object containing
-         * relevant file information, such as the file's id, relative path, absolute
-         * path, duplicate object status, and hex digest map of algorithms and
-         * checksums. `storeObject` also ensures that an object is stored only once by
-         * synchronizing multiple calls and rejecting calls to store duplicate objects.
+         * HashStore using a given InputStream and a persistent identifier (pid). Upon
+         * successful storage, the method returns a (HashAddress) object containing
+         * the object's file information, such as the id, relative path, absolute
+         * path, duplicate object status, and hex digest map of algorithms and hex
+         * digests/checksums. An object is stored once and only once - and `storeObject`
+         * also enforces this rule by synchronizing multiple calls and rejecting calls
+         * to store duplicate objects.
          * 
          * The file's id is determined by calculating the SHA-256 hex digest of the
          * provided pid, which is also used as the permanent address of the file. The
          * file's identifier is then sharded using a depth of 3 and width of 2,
-         * delimited by '/' and concatenated to produce the final permanent address
-         * and is stored in the `/[...storeDirectory]/objects/` directory.
+         * delimited by '/' and concatenated to produce the final permanent address,
+         * which is stored in the object store directory (ex. `./[storePath]/objects/`).
          * 
          * By default, the hex digest map includes the following hash algorithms: MD5,
          * SHA-1, SHA-256, SHA-384 and SHA-512, which are the most commonly used
@@ -63,18 +65,18 @@ public interface HashStore {
 
         /**
          * The `storeMetadata` method is responsible for adding/updating metadata
-         * (ex. `sysmeta`) to disk using a given InputStream, a persistent identifier
-         * (pid) and metadata format (formatId). The metadata object contains solely the
-         * given metadata content.
-         * 
-         * The permanent address of the metadata document is determined by calculating
-         * the SHA-256 hex digest of the provided `pid` + `format_id`; and the body
-         * contains the metadata content (ex. `sysmeta`).
+         * (ex. `sysmeta`) to the HashStore by using a given InputStream, a persistent
+         * identifier (`pid`) and metadata format (`formatId`). The permanent address of
+         * the stored metadata document is determined by calculating the SHA-256 hex
+         * digest of the provided `pid` + `formatId`.
          * 
          * Upon successful storage of metadata, `storeMetadata` returns a string that
          * represents the path of the file's permanent address, as described above.
          * Lastly, the metadata objects are stored in parallel to objects in the
-         * `/store_directory/metadata/` directory.
+         * `./[storePath]/metadata/` directory.
+         * 
+         * Note, multiple calls to store the same metadata content will all be accepted,
+         * but is not guaranteed to execute sequentially.
          * 
          * @param metadata Input stream to metadata document
          * @param pid      Authority-based identifier
@@ -94,10 +96,8 @@ public interface HashStore {
                         NoSuchAlgorithmException;
 
         /**
-         * The `retrieveObject` method retrieves an object from disk using a given
-         * persistent identifier (pid). If the object exists (determined by calculating
-         * the object's permanent address using the SHA-256 hash of the given pid), the
-         * method will open and return a buffered object stream ready to read from.
+         * The `retrieveObject` method retrieves an object from HashStore using a given
+         * persistent identifier (pid).
          * 
          * @param pid Authority-based identifier
          * @return Object InputStream
@@ -113,7 +113,7 @@ public interface HashStore {
 
         /**
          * The 'retrieveMetadata' method retrieves the metadata content of a given pid
-         * and metadata namespace from disk and returns it in the form of a String.
+         * and metadata namespace from HashStore.
          * 
          * @param pid      Authority-based identifier
          * @param formatId Metadata namespace/format
@@ -129,8 +129,8 @@ public interface HashStore {
         InputStream retrieveMetadata(String pid, String formatId) throws Exception;
 
         /**
-         * The 'deleteObject' method deletes an object permanently from disk using a
-         * given persistent identifier and any empty subdirectories.
+         * The 'deleteObject' method deletes an object (and its empty subdirectories)
+         * permanently from HashStore using a given persistent identifier.
          * 
          * @param pid Authority-based identifier
          * @return True if successful
@@ -144,8 +144,8 @@ public interface HashStore {
 
         /**
          * The 'deleteMetadata' method deletes a metadata document (ex. `sysmeta`)
-         * permanently from disk using a given persistent identifier and its respective
-         * metadata namespace.
+         * permanently from HashStore using a given persistent identifier and its
+         * respective metadata namespace.
          * 
          * @param pid      Authority-based identifier
          * @param formatId Metadata namespace/format
