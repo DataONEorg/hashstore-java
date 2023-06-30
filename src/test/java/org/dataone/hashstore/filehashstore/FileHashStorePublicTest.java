@@ -68,6 +68,14 @@ public class FileHashStorePublicTest {
     /**
      * Test invalid depth value
      */
+    @Test(expected = NullPointerException.class)
+    public void constructor_nullProperties() throws Exception {
+        new FileHashStore(null);
+    }
+
+    /**
+     * Test invalid depth value
+     */
     @Test(expected = IllegalArgumentException.class)
     public void constructor_illegalDepthArg() throws Exception {
         HashMap<String, Object> storeProperties = new HashMap<>();
