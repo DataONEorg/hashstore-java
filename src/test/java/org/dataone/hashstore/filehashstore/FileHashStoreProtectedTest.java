@@ -369,7 +369,7 @@ public class FileHashStoreProtectedTest {
     /**
      * Verify exception thrown when checksumAlgorithm is null and checksum supplied
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = NullPointerException.class)
     public void putObject_nullChecksumAlgorithmValue() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
@@ -441,7 +441,7 @@ public class FileHashStoreProtectedTest {
     /**
      * Verify exception thrown when pid is null
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = NullPointerException.class)
     public void putObject_nullPid() throws Exception {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
@@ -712,7 +712,7 @@ public class FileHashStoreProtectedTest {
     /**
      * Test putMetadata throws exception when pid is null
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = NullPointerException.class)
     public void putMetadata_pidNull() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");

@@ -342,7 +342,6 @@ public class FileHashStore implements HashStore {
                         "############### Hash Algorithms ###############\n" +
                         "# Hash algorithm to use when calculating object's hex digest for the permanent address\n" +
                         "store_metadata_namespace: \"%s\"\n" +
-                        "# Algorithm values supported by python hashlib 3.9.0+ for File Hash Store (FHS)\n" +
                         "# The default algorithm list includes the hash algorithms calculated when storing an\n" +
                         "# object to disk and returned to the caller after successful storage.\n" +
                         "store_default_algo_list:\n" +
@@ -669,16 +668,16 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Takes a given input stream and writes it to its permanent address on disk
+     * Takes a given InputStream and writes it to its permanent address on disk
      * based on the SHA-256 hex digest value of an authority based identifier,
-     * which is usually a persistent identifier (pid).
+     * usually provided as a persistent identifier (pid).
      * 
      * If an additional algorithm is provided and supported, its respective hex
      * digest value will be included in hexDigests map. If a checksum and
      * checksumAlgorithm is provided, FileHashStore will validate the given
      * checksum against the hex digest produced of the supplied checksumAlgorithm.
      * 
-     * @param object              Inputstream for file
+     * @param object              InputStream for file
      * @param pid                 Authority-based identifier
      * @param additionalAlgorithm Optional checksum value to generate in hex digests
      * @param checksum            Value of checksum to validate against
@@ -712,25 +711,16 @@ public class FileHashStore implements HashStore {
         logFileHashStore.debug("FileHashStore.putObject - Called to put object for pid: " + pid);
 
         // Begin input validation
-        if (object == null) {
-            String errMsg = "FileHashStore.putObject - InputStream cannot be null, pid: " + pid;
-            logFileHashStore.error(errMsg);
-            throw new NullPointerException(errMsg);
-        }
-
-        // pid cannot be empty or null
-        if (pid == null || pid.trim().isEmpty()) {
-            String errMsg = "FileHashStore.putObject - pid cannot be null or empty. pid: " + pid;
-            logFileHashStore.error(errMsg);
-            throw new IllegalArgumentException(errMsg);
-        }
-
+        this.isObjectNull(object, "object", "putObject");
+        this.isObjectNull(pid, "pid", "putObject");
+        this.isStringEmpty(pid, "pid", "putObject");
         // Validate algorithms if not null or empty, throws exception if not supported
-        if (additionalAlgorithm != null && !additionalAlgorithm.trim().isEmpty()) {
+        if (additionalAlgorithm != null) {
+            this.isStringEmpty(additionalAlgorithm, "additionalAlgorithm", "putObject");
             this.validateAlgorithm(additionalAlgorithm);
         }
-
-        if (checksumAlgorithm != null && !checksumAlgorithm.trim().isEmpty()) {
+        if (checksumAlgorithm != null) {
+            this.isStringEmpty(checksumAlgorithm, "checksumAlgorithm", "putObject");
             this.validateAlgorithm(checksumAlgorithm);
         }
 
@@ -832,17 +822,8 @@ public class FileHashStore implements HashStore {
      */
     protected boolean validateAlgorithm(String algorithm)
             throws NullPointerException, IllegalArgumentException, NoSuchAlgorithmException {
-        if (algorithm == null) {
-            String errMsg = "FileHashStore.validateAlgorithm - algorithm is null.";
-            logFileHashStore.error(errMsg);
-            throw new NullPointerException(errMsg);
-        }
-
-        if (algorithm.trim().isEmpty()) {
-            String errMsg = "FileHashStore.validateAlgorithm - algorithm is empty.";
-            logFileHashStore.error(errMsg);
-            throw new IllegalArgumentException(errMsg);
-        }
+        this.isObjectNull(algorithm, "algorithm", "validateAlgorithm");
+        this.isStringEmpty(algorithm, "algorithm", "validateAlgorithm");
 
         boolean algorithmSupported = Arrays.asList(SUPPORTED_HASH_ALGORITHMS).contains(algorithm);
         if (!algorithmSupported) {
@@ -869,17 +850,8 @@ public class FileHashStore implements HashStore {
             throws NoSuchAlgorithmException {
         // If checksum is supplied, checksumAlgorithm cannot be empty
         if (checksum != null && !checksum.trim().isEmpty()) {
-            if (checksumAlgorithm == null) {
-                String errMsg = "FileHashStore.verifyChecksumParameters - checksumAlgorithm is null.";
-                logFileHashStore.error(errMsg);
-                throw new IllegalArgumentException(errMsg);
-            }
-
-            if (checksumAlgorithm.trim().isEmpty()) {
-                String errMsg = "FileHashStore.verifyChecksumParameters - checksumAlgorithm is empty.";
-                logFileHashStore.error(errMsg);
-                throw new IllegalArgumentException(errMsg);
-            }
+            this.isObjectNull(checksumAlgorithm, "algorithm", "verifyChecksumParameters");
+            this.isStringEmpty(checksumAlgorithm, "algorithm", "verifyChecksumParameters");
         }
         // Ensure algorithm is supported, not null and not empty
         boolean requestValidation = false;
@@ -887,17 +859,9 @@ public class FileHashStore implements HashStore {
             requestValidation = this.validateAlgorithm(checksumAlgorithm);
             // Ensure checksum is not null or empty if checksumAlgorithm is supplied in
             if (requestValidation) {
-                if (checksum == null) {
-                    String errMsg = "FileHashStore.verifyChecksumParameters - checksum is null.";
-                    logFileHashStore.error(errMsg);
-                    throw new NullPointerException(errMsg);
-                }
-
-                if (checksum.trim().isEmpty()) {
-                    String errMsg = "FileHashStore.verifyChecksumParameters - checksum is empty.";
-                    logFileHashStore.error(errMsg);
-                    throw new IllegalArgumentException(errMsg);
-                }
+                this.isObjectNull(checksum, "checksum", "verifyChecksumParameters");
+                assert checksum != null;
+                this.isStringEmpty(checksum, "checksum", "verifyChecksumParameters");
             }
         }
         return requestValidation;
@@ -915,13 +879,10 @@ public class FileHashStore implements HashStore {
      */
     protected String getPidHexDigest(String pid, String algorithm)
             throws NoSuchAlgorithmException, IllegalArgumentException {
-        if (algorithm == null || algorithm.trim().isEmpty()) {
-            throw new IllegalArgumentException("Algorithm cannot be null or empty");
-        }
-
-        if (pid == null || pid.trim().isEmpty()) {
-            throw new IllegalArgumentException("String cannot be null or empty");
-        }
+        this.isObjectNull(pid, "pid", "getPidHexDigest");
+        this.isStringEmpty(pid, "pid", "getPidHexDigest");
+        this.isObjectNull(algorithm, "algorithm", "getPidHexDigest");
+        this.isStringEmpty(algorithm, "algorithm", "getPidHexDigest");
         this.validateAlgorithm(algorithm);
 
         MessageDigest stringMessageDigest = MessageDigest.getInstance(algorithm);
@@ -1024,17 +985,11 @@ public class FileHashStore implements HashStore {
             String additionalAlgorithm, String checksumAlgorithm)
             throws NoSuchAlgorithmException, IOException, FileNotFoundException, SecurityException {
         if (additionalAlgorithm != null) {
-            if (additionalAlgorithm.trim().isEmpty()) {
-                throw new IllegalArgumentException(
-                        "Additional algorithm cannot be empty");
-            }
+            this.isStringEmpty(additionalAlgorithm, "additionalAlgorithm", "writeToTmpFileAndGenerateChecksums");
             this.validateAlgorithm(additionalAlgorithm);
         }
         if (checksumAlgorithm != null) {
-            if (checksumAlgorithm.trim().isEmpty()) {
-                throw new IllegalArgumentException(
-                        "Additional algorithm cannot be empty");
-            }
+            this.isStringEmpty(checksumAlgorithm, "checksumAlgorithm", "writeToTmpFileAndGenerateChecksums");
             this.validateAlgorithm(checksumAlgorithm);
         }
 
@@ -1137,18 +1092,10 @@ public class FileHashStore implements HashStore {
         logFileHashStore.debug("FileHashStore.move - called to move entity type: " + entity + ", from source: "
                 + source + ", to target: " + target);
         // Validate input parameters
-        if (entity == null) {
-            String errMsg = "FileHashStore.move - entity cannot be null, must be 'object' for storeObject() or"
-                    + " 'metadata' for storeMetadata()";
-            logFileHashStore.debug(errMsg);
-            throw new NullPointerException(errMsg);
-
-        } else if (entity.trim().isEmpty()) {
-            String errMsg = "FileHashStore.move - entity cannot be empty, must be 'object' for storeObject()";
-            logFileHashStore.debug(errMsg);
-            throw new IllegalArgumentException(errMsg);
-
-        } else if (entity.equals("object") && target.exists()) {
+        this.isObjectNull(entity, "entity", "move");
+        this.isStringEmpty(entity, "entity", "move");
+        // Entity is only used when checking for an existence of an object
+        if (entity.equals("object") && target.exists()) {
             String errMsg = "FileHashStore.move - File already exists for target: " + target;
             logFileHashStore.debug(errMsg);
             throw new FileAlreadyExistsException(errMsg);
@@ -1191,7 +1138,7 @@ public class FileHashStore implements HashStore {
      * is supplied, it will use the default store namespace as defined by
      * `hashstore.yaml`
      * 
-     * @param metadata Inputstream to metadata
+     * @param metadata InputStream to metadata
      * @param pid      Authority-based identifier
      * @param formatId Metadata formatId or namespace
      * @return Metadata content identifier
@@ -1205,38 +1152,24 @@ public class FileHashStore implements HashStore {
                 "FileHashStore.putMetadata - Called to put metadata for pid:" + pid + " , with metadata namespace: "
                         + formatId);
 
-        // Begin input validation
-        if (metadata == null) {
-            String errMsg = "FileHashStore.putMetadata - InputStream cannot be null, request for storing pid: " + pid;
-            logFileHashStore.error(errMsg);
-            throw new NullPointerException(errMsg);
-        }
-
-        if (pid == null || pid.trim().isEmpty()) {
-            String errMsg = "FileHashStore.putMetadata - pid cannot be null or empty, pid: " + pid;
-            logFileHashStore.error(errMsg);
-            throw new IllegalArgumentException(errMsg);
-        }
+        // Validate input parameters
+        this.isObjectNull(metadata, "metadata", "putMetadata");
+        this.isObjectNull(pid, "pid", "putMetadata");
+        this.isStringEmpty(pid, "pid", "putMetadata");
 
         // Determine metadata namespace
         // If no formatId is supplied, use the default namespace to store metadata
         String checkedFormatId;
         if (formatId == null) {
             checkedFormatId = this.METADATA_NAMESPACE;
-        } else if (formatId.trim().isEmpty()) {
-            String errMsg = "FileHashStore.putMetadata - formatId (metadata namespace) cannot be empty, it must"
-                    + " be supplied, or null for the default store namespace.";
-            logFileHashStore.error(errMsg);
-            throw new IllegalArgumentException(errMsg);
         } else {
+            this.isStringEmpty(formatId, "formatId", "putMetadata");
             checkedFormatId = formatId;
         }
 
         // Get permanent address for the given metadata document
         String metadataCid = this.getPidHexDigest(pid + checkedFormatId, this.OBJECT_STORE_ALGORITHM);
-        String metadataCidShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
-                metadataCid);
-        Path metadataCidAbsPath = this.METADATA_STORE_DIRECTORY.resolve(metadataCidShardString);
+        Path metadataCidPath = this.getRealPath(pid, "metadata", checkedFormatId);
 
         // Store metadata to tmpMetadataFile
         File tmpMetadataFile = this.generateTmpFile("tmp", this.METADATA_TMP_FILE_DIRECTORY);
@@ -1244,12 +1177,12 @@ public class FileHashStore implements HashStore {
         if (tmpMetadataWritten) {
             logFileHashStore.debug(
                     "FileHashStore.putObject - tmp metadata file has been written, moving to permanent location: "
-                            + metadataCidAbsPath);
-            File permMetadataFile = metadataCidAbsPath.toFile();
+                            + metadataCidPath);
+            File permMetadataFile = metadataCidPath.toFile();
             this.move(tmpMetadataFile, permMetadataFile, "metadata");
         }
         logFileHashStore
-                .info("FileHashStore.putObject - Move metadata success, permanent address: " + metadataCidAbsPath);
+                .info("FileHashStore.putObject - Move metadata success, permanent address: " + metadataCidPath);
         return metadataCid;
     }
 
@@ -1352,7 +1285,7 @@ public class FileHashStore implements HashStore {
      */
     protected Path getRealPath(String pid, String entity, String formatId)
             throws IllegalArgumentException, NoSuchAlgorithmException {
-        Path realPath = null;
+        Path realPath;
         if (entity.equalsIgnoreCase("object")) {
             String objectCid = this.getPidHexDigest(pid, this.OBJECT_STORE_ALGORITHM);
             String objShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
@@ -1381,7 +1314,8 @@ public class FileHashStore implements HashStore {
      */
     protected boolean isObjectNull(Object object, String argument, String method) {
         if (object == null) {
-            String errMsg = "FileHashStore.isStringNullOrEmpty - " + method + ": " + argument + " cannot be null.";
+            String errMsg = "FileHashStore.isStringNullOrEmpty - Calling Method: " + method + "(): " + argument
+                    + " cannot be null.";
             logFileHashStore.error(errMsg);
             throw new NullPointerException(errMsg);
         }
@@ -1397,7 +1331,8 @@ public class FileHashStore implements HashStore {
      */
     protected boolean isStringEmpty(String string, String argument, String method) {
         if (string.trim().isEmpty()) {
-            String errMsg = "FileHashStore.isStringNullOrEmpty - " + method + ": " + argument + " cannot be empty.";
+            String errMsg = "FileHashStore.isStringNullOrEmpty - Calling Method: " + method + "(): " + argument
+                    + " cannot be empty.";
             logFileHashStore.error(errMsg);
             throw new IllegalArgumentException(errMsg);
         }
@@ -1425,7 +1360,7 @@ public class FileHashStore implements HashStore {
                 mdObject.update(buffer, 0, bytesRead);
 
             }
-            // Close datastream
+            // Close dataStream
             dataStream.close();
 
         } catch (IOException ioe) {
@@ -1435,8 +1370,8 @@ public class FileHashStore implements HashStore {
             throw ioe;
 
         }
-        String mdObjectHexDigest = DatatypeConverter.printHexBinary(mdObject.digest()).toLowerCase();
-        return mdObjectHexDigest;
+        // mdObjectHexDigest
+        return DatatypeConverter.printHexBinary(mdObject.digest()).toLowerCase();
 
     }
 
