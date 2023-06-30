@@ -120,7 +120,7 @@ public class FileHashStore implements HashStore {
         // Validate input parameters
         if (storePath == null) {
             String errMsg = "FileHashStore - storePath cannot be null.";
-            logFileHashStore.error(errMsg);
+            logFileHashStore.fatal(errMsg);
             throw new NullPointerException(errMsg);
 
         }
@@ -367,10 +367,12 @@ public class FileHashStore implements HashStore {
         this.isObjectNull(pid, "pid", "storeObject");
         this.isStringEmpty(pid, "pid", "storeObject");
         // Validate algorithms if not null or empty, throws exception if not supported
-        if (additionalAlgorithm != null && additionalAlgorithm.trim().isEmpty()) {
+        if (additionalAlgorithm != null) {
+            this.isStringEmpty(additionalAlgorithm, "additionalAlgorithm", "storeObject");
             this.validateAlgorithm(additionalAlgorithm);
         }
-        if (checksumAlgorithm != null && checksumAlgorithm.trim().isEmpty()) {
+        if (checksumAlgorithm != null) {
+            this.isStringEmpty(checksumAlgorithm, "checksumAlgorithm", "storeObject");
             this.validateAlgorithm(checksumAlgorithm);
         }
 
@@ -452,13 +454,8 @@ public class FileHashStore implements HashStore {
         String checkedFormatId;
         if (formatId == null) {
             checkedFormatId = this.METADATA_NAMESPACE;
-        } else if (formatId.trim().isEmpty()) {
-            String errMsg = "FileHashStore.storeMetadata - formatId (metadata namespace) cannot be empty, it must be"
-                    + " supplied or null for default store namespace.";
-            logFileHashStore.error(errMsg);
-            throw new IllegalArgumentException(errMsg);
-
         } else {
+            this.isStringEmpty(formatId, "formatId", "storeMetadata");
             checkedFormatId = formatId;
         }
 
@@ -607,25 +604,8 @@ public class FileHashStore implements HashStore {
 
         }
 
-        // Delete file
-        Files.delete(objHashAddressPath);
-
-        // Then delete any empty directories
-        Path parent = objHashAddressPath.getParent();
-        while (parent != null && isDirectoryEmpty(parent)) {
-            if (parent.equals(this.OBJECT_STORE_DIRECTORY)) {
-                // Do not delete the object store directory
-                break;
-
-            } else {
-                Files.delete(parent);
-                logFileHashStore.info("FileHashStore.deleteObject - Deleting parent directory for: " + pid
-                        + " with parent address: " + parent);
-                parent = parent.getParent();
-
-            }
-        }
-
+        // Proceed to delete
+        this.deleteObjectAndParentDirectories(objHashAddressPath, pid, "deleteObject");
         logFileHashStore.info("FileHashStore.deleteObject - File deleted for: " + pid + " with object address: "
                 + objHashAddressPath);
         return true;
@@ -653,25 +633,8 @@ public class FileHashStore implements HashStore {
 
         }
 
-        // Delete file
-        Files.delete(metadataCidPath);
-
-        // Then delete any empty directories
-        Path parent = metadataCidPath.getParent();
-        while (parent != null && isDirectoryEmpty(parent)) {
-            if (parent.equals(this.METADATA_STORE_DIRECTORY)) {
-                // Do not delete the metadata store directory
-                break;
-
-            } else {
-                Files.delete(parent);
-                logFileHashStore.info("FileHashStore.deleteMetadata - Deleting parent directory for: " + pid
-                        + " with parent address: " + parent);
-                parent = parent.getParent();
-
-            }
-        }
-
+        // Proceed to delete
+        this.deleteObjectAndParentDirectories(metadataCidPath, pid, "deleteMetadata");
         logFileHashStore.info("FileHashStore.deleteMetadata - File deleted for: " + pid + " with metadata address: "
                 + metadataCidPath);
         return true;
@@ -698,28 +661,7 @@ public class FileHashStore implements HashStore {
 
         }
 
-        // If so, calculate hex digest/checksum
-        MessageDigest mdObject = MessageDigest.getInstance(algorithm);
-        try {
-            InputStream dataStream = Files.newInputStream(objHashAddressPath);
-            byte[] buffer = new byte[8192];
-            int bytesRead;
-            while ((bytesRead = dataStream.read(buffer)) != -1) {
-                mdObject.update(buffer, 0, bytesRead);
-
-            }
-            // Close datastream
-            dataStream.close();
-
-        } catch (IOException ioe) {
-            String errMsg = "FileHashStore.getHexDigest - Unexpected IOException encountered: "
-                    + ioe.getMessage();
-            logFileHashStore.error(errMsg);
-            throw ioe;
-
-        }
-
-        String mdObjectHexDigest = DatatypeConverter.printHexBinary(mdObject.digest()).toLowerCase();
+        String mdObjectHexDigest = this.calculateHexDigest(objHashAddressPath, algorithm);
         logFileHashStore
                 .info("FileHashStore.getHexDigest - Hex digest calculated for pid: " + pid + ", with hex digest value: "
                         + mdObjectHexDigest);
@@ -1347,6 +1289,36 @@ public class FileHashStore implements HashStore {
     }
 
     /**
+     * Deletes a given object and its parent directories if they are empty
+     * 
+     * @param objectAbsPath Path of the object to delete
+     * @param pid           Authority-based identifier
+     * @param method        Calling method
+     * @throws IOException I/O error when deleting object or accessing directories
+     */
+    protected void deleteObjectAndParentDirectories(Path objectAbsPath, String pid, String method) throws IOException {
+        // Delete file
+        Files.delete(objectAbsPath);
+
+        // Then delete any empty directories
+        Path parent = objectAbsPath.getParent();
+        while (parent != null && isDirectoryEmpty(parent)) {
+            if (parent.equals(this.METADATA_STORE_DIRECTORY)) {
+                // Do not delete the metadata store directory
+                break;
+
+            } else {
+                Files.delete(parent);
+                logFileHashStore
+                        .debug("FileHashStore.deleteObjectAndParentDirectories - " + method
+                                + " : Deleting parent directory for: " + pid + " with parent address: " + parent);
+                parent = parent.getParent();
+
+            }
+        }
+    }
+
+    /**
      * Checks whether a directory is empty or contains files. If a file is found, it
      * returns true.
      *
@@ -1431,4 +1403,41 @@ public class FileHashStore implements HashStore {
         }
         return false;
     }
+
+    /**
+     * Calculate the hex digest of a pid's respective object with the given
+     * algorithm
+     * 
+     * @param objectPath Path to object
+     * @param algorithm  Hash algorithm to use
+     * @return Hex digest of the pid's respective object
+     * @throws IOException              Error when calculating hex digest
+     * @throws NoSuchAlgorithmException Algorithm not supported
+     */
+    protected String calculateHexDigest(Path objectPath, String algorithm)
+            throws IOException, NoSuchAlgorithmException {
+        MessageDigest mdObject = MessageDigest.getInstance(algorithm);
+        try {
+            InputStream dataStream = Files.newInputStream(objectPath);
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = dataStream.read(buffer)) != -1) {
+                mdObject.update(buffer, 0, bytesRead);
+
+            }
+            // Close datastream
+            dataStream.close();
+
+        } catch (IOException ioe) {
+            String errMsg = "FileHashStore.getHexDigest - Unexpected IOException encountered: "
+                    + ioe.getMessage();
+            logFileHashStore.error(errMsg);
+            throw ioe;
+
+        }
+        String mdObjectHexDigest = DatatypeConverter.printHexBinary(mdObject.digest()).toLowerCase();
+        return mdObjectHexDigest;
+
+    }
+
 }
