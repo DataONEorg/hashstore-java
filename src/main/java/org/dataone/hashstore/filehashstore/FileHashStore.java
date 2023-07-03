@@ -729,7 +729,7 @@ public class FileHashStore implements HashStore {
 
         // Gather HashAddress elements and prepare object permanent address
         String objectCid = this.getPidHexDigest(pid, this.OBJECT_STORE_ALGORITHM);
-        String objShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
+        String objShardString = getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
                 objectCid);
         Path objHashAddressPath = this.OBJECT_STORE_DIRECTORY.resolve(objShardString);
 
@@ -907,7 +907,7 @@ public class FileHashStore implements HashStore {
      * @param digest   value to shard
      * @return String
      */
-    protected String getHierarchicalPathString(int dirDepth, int dirWidth, String digest) {
+    protected static String getHierarchicalPathString(int dirDepth, int dirWidth, String digest) {
         List<String> tokens = new ArrayList<>();
         int digestLength = digest.length();
         for (int i = 0; i < dirDepth; i++) {
@@ -1230,6 +1230,38 @@ public class FileHashStore implements HashStore {
     }
 
     /**
+     * Get the absolute path of a HashStore object or metadata file
+     * 
+     * @param pid      Authority-based identifier
+     * @param entity   "object" or "metadata"
+     * @param formatId Metadata namespace
+     * @return Actual path to object
+     * @throws IllegalArgumentException If entity is not object or metadata
+     * @throws NoSuchAlgorithmException If store algorithm is not supported
+     */
+    protected Path getRealPath(String pid, String entity, String formatId)
+            throws IllegalArgumentException, NoSuchAlgorithmException {
+        Path realPath;
+        if (entity.equalsIgnoreCase("object")) {
+            String objectCid = this.getPidHexDigest(pid, this.OBJECT_STORE_ALGORITHM);
+            String objShardString = getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
+                    objectCid);
+            realPath = this.OBJECT_STORE_DIRECTORY.resolve(objShardString);
+
+        } else if (entity.equalsIgnoreCase("metadata")) {
+            String objectCid = this.getPidHexDigest(pid + formatId, this.OBJECT_STORE_ALGORITHM);
+            String objShardString = getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
+                    objectCid);
+            realPath = this.METADATA_STORE_DIRECTORY.resolve(objShardString);
+
+        } else {
+            throw new IllegalArgumentException("FileHashStore.getRealPath - entity must be 'object' or 'metadata'");
+
+        }
+        return realPath;
+    }
+
+    /**
      * Deletes a given object and its parent directories if they are empty
      * 
      * @param objectAbsPath Path of the object to delete
@@ -1237,7 +1269,7 @@ public class FileHashStore implements HashStore {
      * @param method        Calling method
      * @throws IOException I/O error when deleting object or accessing directories
      */
-    protected void deleteObjectAndParentDirectories(Path objectAbsPath, String pid, String method) throws IOException {
+    private void deleteObjectAndParentDirectories(Path objectAbsPath, String pid, String method) throws IOException {
         // Delete file
         Files.delete(objectAbsPath);
 
@@ -1267,7 +1299,7 @@ public class FileHashStore implements HashStore {
      * @return True if a file is found or the directory is empty, False otherwise
      * @throws IOException If I/O occurs when accessing directory
      */
-    protected boolean isDirectoryEmpty(Path directory) throws IOException {
+    private static boolean isDirectoryEmpty(Path directory) throws IOException {
         try (Stream<Path> stream = Files.list(directory)) {
             // The findFirst() method is called on the stream created from the given
             // directory to retrieve the first element. If the stream is empty (i.e., the
@@ -1282,45 +1314,13 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Get the absolute path of a HashStore object or metadata file
-     * 
-     * @param pid      Authority-based identifier
-     * @param entity   "object" or "metadata"
-     * @param formatId Metadata namespace
-     * @return Actual path to object
-     * @throws IllegalArgumentException If entity is not object or metadata
-     * @throws NoSuchAlgorithmException If store algorithm is not supported
-     */
-    protected Path getRealPath(String pid, String entity, String formatId)
-            throws IllegalArgumentException, NoSuchAlgorithmException {
-        Path realPath;
-        if (entity.equalsIgnoreCase("object")) {
-            String objectCid = this.getPidHexDigest(pid, this.OBJECT_STORE_ALGORITHM);
-            String objShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
-                    objectCid);
-            realPath = this.OBJECT_STORE_DIRECTORY.resolve(objShardString);
-
-        } else if (entity.equalsIgnoreCase("metadata")) {
-            String objectCid = this.getPidHexDigest(pid + formatId, this.OBJECT_STORE_ALGORITHM);
-            String objShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
-                    objectCid);
-            realPath = this.METADATA_STORE_DIRECTORY.resolve(objShardString);
-
-        } else {
-            throw new IllegalArgumentException("FileHashStore.getRealPath - entity must be 'object' or 'metadata'");
-
-        }
-        return realPath;
-    }
-
-    /**
      * Checks whether a given object is null and throws an exception if so
      * 
      * @param object   Object to check
      * @param argument Value that is being checked
      * @param method   Calling method
      */
-    protected boolean isObjectNull(Object object, String argument, String method) {
+    private void isObjectNull(Object object, String argument, String method) {
         if (object == null) {
             String errMsg = "FileHashStore.isStringNullOrEmpty - Calling Method: " + method + "(): " + argument
                     + " cannot be null.";
@@ -1328,7 +1328,6 @@ public class FileHashStore implements HashStore {
             throw new NullPointerException(errMsg);
 
         }
-        return false;
     }
 
     /**
@@ -1338,7 +1337,7 @@ public class FileHashStore implements HashStore {
      * @param argument Value that is being checked
      * @param method   Calling method
      */
-    protected boolean isStringEmpty(String string, String argument, String method) {
+    private void isStringEmpty(String string, String argument, String method) {
         if (string.trim().isEmpty()) {
             String errMsg = "FileHashStore.isStringNullOrEmpty - Calling Method: " + method + "(): " + argument
                     + " cannot be empty.";
@@ -1346,7 +1345,6 @@ public class FileHashStore implements HashStore {
             throw new IllegalArgumentException(errMsg);
 
         }
-        return false;
     }
 
     /**
@@ -1359,7 +1357,7 @@ public class FileHashStore implements HashStore {
      * @throws IOException              Error when calculating hex digest
      * @throws NoSuchAlgorithmException Algorithm not supported
      */
-    protected String calculateHexDigest(Path objectPath, String algorithm)
+    private String calculateHexDigest(Path objectPath, String algorithm)
             throws IOException, NoSuchAlgorithmException {
         MessageDigest mdObject = MessageDigest.getInstance(algorithm);
         try {

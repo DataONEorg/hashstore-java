@@ -153,7 +153,7 @@ public class FileHashStoreProtectedTest {
      */
     @Test
     public void getHierarchicalPathString() {
-        String shardedPath = this.fileHashStore.getHierarchicalPathString(3, 2,
+        String shardedPath = FileHashStore.getHierarchicalPathString(3, 2,
                 "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a");
         String shardedPathExpected = "94/f9/b6/c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
         assertEquals(shardedPath, shardedPathExpected);
@@ -213,7 +213,7 @@ public class FileHashStoreProtectedTest {
 
             // Check relative path
             String objAuthorityId = testData.pidData.get(pid).get("object_cid");
-            String objRelPath = fileHashStore.getHierarchicalPathString(3, 2, objAuthorityId);
+            String objRelPath = FileHashStore.getHierarchicalPathString(3, 2, objAuthorityId);
             assertEquals(objRelPath, address.getRelPath());
         }
     }
@@ -702,7 +702,7 @@ public class FileHashStoreProtectedTest {
             String metadataCid = this.fileHashStore.putMetadata(metadataStream, pid, null);
 
             // Get relative path
-            String metadataCidShardString = this.fileHashStore.getHierarchicalPathString(3, 2, metadataCid);
+            String metadataCidShardString = FileHashStore.getHierarchicalPathString(3, 2, metadataCid);
             // Get absolute path
             Path storePath = (Path) this.fhsProperties.get("storePath");
             Path metadataCidAbsPath = storePath.resolve("metadata/" + metadataCidShardString);

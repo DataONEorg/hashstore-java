@@ -100,7 +100,7 @@ public class FileHashStoreInterfaceTest {
 
             // Check relative path
             String objectCid = testData.pidData.get(pid).get("object_cid");
-            String objRelPath = fileHashStore.getHierarchicalPathString(3, 2, objectCid);
+            String objRelPath = FileHashStore.getHierarchicalPathString(3, 2, objectCid);
             assertEquals(objRelPath, objInfo.getRelPath());
         }
     }
@@ -496,7 +496,7 @@ public class FileHashStoreInterfaceTest {
             String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, null);
 
             // Get relative path
-            String metadataCidShardString = this.fileHashStore.getHierarchicalPathString(3, 2, metadataCid);
+            String metadataCidShardString = FileHashStore.getHierarchicalPathString(3, 2, metadataCid);
             // Get absolute path
             Path storePath = (Path) this.fhsProperties.get("storePath");
             Path metadataCidAbsPath = storePath.resolve("metadata/" + metadataCidShardString);
@@ -524,7 +524,7 @@ public class FileHashStoreInterfaceTest {
             String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, null);
 
             // Get relative path
-            String metadataCidShardString = this.fileHashStore.getHierarchicalPathString(3, 2, metadataCid);
+            String metadataCidShardString = FileHashStore.getHierarchicalPathString(3, 2, metadataCid);
             // Get absolute path
             Path storePath = (Path) this.fhsProperties.get("storePath");
             Path metadataCidAbsPath = storePath.resolve("metadata/" + metadataCidShardString);
