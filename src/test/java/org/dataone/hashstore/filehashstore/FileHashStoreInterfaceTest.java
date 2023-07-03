@@ -1,8 +1,11 @@
 package org.dataone.hashstore.filehashstore;
 
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -23,6 +26,7 @@ import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 
 import static org.junit.Assert.*;
@@ -100,7 +104,7 @@ public class FileHashStoreInterfaceTest {
 
             // Check relative path
             String objectCid = testData.pidData.get(pid).get("object_cid");
-            String objRelPath = fileHashStore.getHierarchicalPathString(3, 2, objectCid);
+            String objRelPath = this.fileHashStore.getHierarchicalPathString(3, 2, objectCid);
             assertEquals(objRelPath, objInfo.getRelPath());
         }
     }
@@ -315,6 +319,38 @@ public class FileHashStoreInterfaceTest {
             InputStream dataStreamDup = Files.newInputStream(testDataFile);
             fileHashStore.storeObject(dataStreamDup, pid, null, null, null);
         }
+    }
+
+    /**
+     * Test that storeObject successfully stores a 1GB file
+     * 
+     * Note, a 4GB successfully stored in approximately 1m30s
+     */
+    @Test
+    public void storeObject_largeSparseFile() throws Exception {
+        long fileSize = 1L * 1024L * 1024L * 1024L; // 1GB
+        // Get tmp directory to initially store test file
+        Path storePath = (Path) this.fhsProperties.get("storePath");
+        Path testFilePath = storePath.resolve("random_file.bin");
+
+        // Generate a random file with the specified size
+        try (FileOutputStream fileOutputStream = new FileOutputStream(testFilePath.toString())) {
+            FileChannel fileChannel = fileOutputStream.getChannel();
+            FileLock lock = fileChannel.lock();
+            fileChannel.position(fileSize - 1);
+            fileChannel.write(java.nio.ByteBuffer.wrap(new byte[] { 0 }));
+            lock.release();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+            throw ioe;
+        }
+
+        InputStream dataStream = Files.newInputStream(testFilePath);
+        String pid = "dou.sparsefile.1";
+        HashAddress sparseFileObjInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
+        Path testSparseFileAbsPath = sparseFileObjInfo.getAbsPath();
+        assertTrue(Files.exists(testSparseFileAbsPath));
+
     }
 
     /**

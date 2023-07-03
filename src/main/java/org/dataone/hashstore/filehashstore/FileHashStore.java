@@ -214,7 +214,7 @@ public class FileHashStore implements HashStore {
         // Write configuration file 'hashstore.yaml' to store HashStore properties
         Path hashstoreYaml = this.STORE_ROOT.resolve("hashstore.yaml");
         if (!Files.exists(hashstoreYaml)) {
-            String hashstoreYamlContent = FileHashStore.buildHashStoreYamlString(this.STORE_ROOT, this.DIRECTORY_DEPTH,
+            String hashstoreYamlContent = this.buildHashStoreYamlString(this.STORE_ROOT, this.DIRECTORY_DEPTH,
                     this.DIRECTORY_WIDTH, this.OBJECT_STORE_ALGORITHM, this.METADATA_NAMESPACE);
             this.putHashStoreYaml(hashstoreYamlContent);
             logFileHashStore.info("FileHashStore - 'hashstore.yaml' written to storePath: " + hashstoreYaml);
@@ -314,7 +314,7 @@ public class FileHashStore implements HashStore {
      * @param storeMetadataNamespace default formatId of hashstore metadata
      * @return String that representing the contents of 'hashstore.yaml'
      */
-    protected static String buildHashStoreYamlString(Path storePath, int storeDepth, int storeWidth,
+    protected String buildHashStoreYamlString(Path storePath, int storeDepth, int storeWidth,
             String storeAlgorithm, String storeMetadataNamespace) {
         return String.format(
                 "# Default configuration variables for HashStore\n\n" +
@@ -1230,58 +1230,6 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Deletes a given object and its parent directories if they are empty
-     * 
-     * @param objectAbsPath Path of the object to delete
-     * @param pid           Authority-based identifier
-     * @param method        Calling method
-     * @throws IOException I/O error when deleting object or accessing directories
-     */
-    protected void deleteObjectAndParentDirectories(Path objectAbsPath, String pid, String method) throws IOException {
-        // Delete file
-        Files.delete(objectAbsPath);
-
-        // Then delete any empty directories
-        Path parent = objectAbsPath.getParent();
-        while (parent != null && isDirectoryEmpty(parent)) {
-            if (parent.equals(this.METADATA_STORE_DIRECTORY)) {
-                // Do not delete the metadata store directory
-                break;
-
-            } else {
-                Files.delete(parent);
-                logFileHashStore
-                        .debug("FileHashStore.deleteObjectAndParentDirectories - " + method
-                                + " : Deleting parent directory for: " + pid + " with parent address: " + parent);
-                parent = parent.getParent();
-
-            }
-        }
-    }
-
-    /**
-     * Checks whether a directory is empty or contains files. If a file is found, it
-     * returns true.
-     *
-     * @param directory Directory to check
-     * @return True if a file is found or the directory is empty, False otherwise
-     * @throws IOException If I/O occurs when accessing directory
-     */
-    protected boolean isDirectoryEmpty(Path directory) throws IOException {
-        try (Stream<Path> stream = Files.list(directory)) {
-            // The findFirst() method is called on the stream created from the given
-            // directory to retrieve the first element. If the stream is empty (i.e., the
-            // directory is empty), findFirst() will return an empty Optional<Path>.
-            //
-            // The isPresent() method is called on the Optional<Path> returned by
-            // findFirst(). If the Optional contains a value (i.e., an element was found),
-            // isPresent() returns true. If the Optional is empty (i.e., the stream is
-            // empty), isPresent() returns false.
-            return !stream.findFirst().isPresent();
-        }
-    }
-
-    /**
      * Get the absolute path of a HashStore object or metadata file
      * 
      * @param pid      Authority-based identifier
@@ -1314,13 +1262,65 @@ public class FileHashStore implements HashStore {
     }
 
     /**
+     * Deletes a given object and its parent directories if they are empty
+     * 
+     * @param objectAbsPath Path of the object to delete
+     * @param pid           Authority-based identifier
+     * @param method        Calling method
+     * @throws IOException I/O error when deleting object or accessing directories
+     */
+    private void deleteObjectAndParentDirectories(Path objectAbsPath, String pid, String method) throws IOException {
+        // Delete file
+        Files.delete(objectAbsPath);
+
+        // Then delete any empty directories
+        Path parent = objectAbsPath.getParent();
+        while (parent != null && this.isDirectoryEmpty(parent)) {
+            if (parent.equals(this.METADATA_STORE_DIRECTORY)) {
+                // Do not delete the metadata store directory
+                break;
+
+            } else {
+                Files.delete(parent);
+                logFileHashStore
+                        .debug("FileHashStore.deleteObjectAndParentDirectories - " + method
+                                + " : Deleting parent directory for: " + pid + " with parent address: " + parent);
+                parent = parent.getParent();
+
+            }
+        }
+    }
+
+    /**
+     * Checks whether a directory is empty or contains files. If a file is found, it
+     * returns true.
+     *
+     * @param directory Directory to check
+     * @return True if a file is found or the directory is empty, False otherwise
+     * @throws IOException If I/O occurs when accessing directory
+     */
+    private boolean isDirectoryEmpty(Path directory) throws IOException {
+        try (Stream<Path> stream = Files.list(directory)) {
+            // The findFirst() method is called on the stream created from the given
+            // directory to retrieve the first element. If the stream is empty (i.e., the
+            // directory is empty), findFirst() will return an empty Optional<Path>.
+            //
+            // The isPresent() method is called on the Optional<Path> returned by
+            // findFirst(). If the Optional contains a value (i.e., an element was found),
+            // isPresent() returns true. If the Optional is empty (i.e., the stream is
+            // empty), isPresent() returns false.
+            return !stream.findFirst().isPresent();
+        }
+    }
+
+    /**
      * Checks whether a given object is null and throws an exception if so
      * 
      * @param object   Object to check
      * @param argument Value that is being checked
      * @param method   Calling method
      */
-    protected boolean isObjectNull(Object object, String argument, String method) {
+    private void isObjectNull(Object object, String argument, String method) {
         if (object == null) {
             String errMsg = "FileHashStore.isStringNullOrEmpty - Calling Method: " + method + "(): " + argument
                     + " cannot be null.";
@@ -1328,7 +1328,6 @@ public class FileHashStore implements HashStore {
             throw new NullPointerException(errMsg);
 
         }
-        return false;
     }
 
     /**
@@ -1338,7 +1337,7 @@ public class FileHashStore implements HashStore {
      * @param argument Value that is being checked
      * @param method   Calling method
      */
-    protected boolean isStringEmpty(String string, String argument, String method) {
+    private void isStringEmpty(String string, String argument, String method) {
         if (string.trim().isEmpty()) {
             String errMsg = "FileHashStore.isStringNullOrEmpty - Calling Method: " + method + "(): " + argument
                     + " cannot be empty.";
@@ -1346,7 +1345,6 @@ public class FileHashStore implements HashStore {
             throw new IllegalArgumentException(errMsg);
 
         }
-        return false;
     }
 
     /**
@@ -1359,7 +1357,7 @@ public class FileHashStore implements HashStore {
      * @throws IOException              Error when calculating hex digest
      * @throws NoSuchAlgorithmException Algorithm not supported
      */
-    protected String calculateHexDigest(Path objectPath, String algorithm)
+    private String calculateHexDigest(Path objectPath, String algorithm)
             throws IOException, NoSuchAlgorithmException {
         MessageDigest mdObject = MessageDigest.getInstance(algorithm);
         try {

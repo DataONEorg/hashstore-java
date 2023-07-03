@@ -213,7 +213,7 @@ public class FileHashStoreProtectedTest {
 
             // Check relative path
             String objAuthorityId = testData.pidData.get(pid).get("object_cid");
-            String objRelPath = fileHashStore.getHierarchicalPathString(3, 2, objAuthorityId);
+            String objRelPath = this.fileHashStore.getHierarchicalPathString(3, 2, objAuthorityId);
             assertEquals(objRelPath, address.getRelPath());
         }
     }
