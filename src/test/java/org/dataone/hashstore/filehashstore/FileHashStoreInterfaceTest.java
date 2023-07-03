@@ -1,8 +1,11 @@
 package org.dataone.hashstore.filehashstore;
 
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -315,6 +318,36 @@ public class FileHashStoreInterfaceTest {
             InputStream dataStreamDup = Files.newInputStream(testDataFile);
             fileHashStore.storeObject(dataStreamDup, pid, null, null, null);
         }
+    }
+
+    /**
+     * Test that storeObject successfully stores a 4GB file
+     */
+    @Test
+    public void storeObject_largeSparseFile() throws Exception {
+        long fileSize = 4L * 1024L * 1024L * 1024L; // 4GB
+        // Get tmp directory to initially store test file
+        Path storePath = (Path) this.fhsProperties.get("storePath");
+        Path testFilePath = storePath.resolve("random_file.bin");
+
+        // Generate a random file with the specified size
+        try (FileOutputStream fileOutputStream = new FileOutputStream(testFilePath.toString())) {
+            FileChannel fileChannel = fileOutputStream.getChannel();
+            FileLock lock = fileChannel.lock();
+            fileChannel.position(fileSize - 1);
+            fileChannel.write(java.nio.ByteBuffer.wrap(new byte[] { 0 }));
+            lock.release();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+            throw ioe;
+        }
+
+        InputStream dataStream = Files.newInputStream(testFilePath);
+        String pid = "dou.sparsefile.1";
+        HashAddress sparseFileObjInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
+        Path testSparseFileAbsPath = sparseFileObjInfo.getAbsPath();
+        assertTrue(Files.exists(testSparseFileAbsPath));
+
     }
 
     /**
