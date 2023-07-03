@@ -26,7 +26,6 @@ import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 
 import static org.junit.Assert.*;
