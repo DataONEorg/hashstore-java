@@ -214,7 +214,7 @@ public class FileHashStore implements HashStore {
         // Write configuration file 'hashstore.yaml' to store HashStore properties
         Path hashstoreYaml = this.STORE_ROOT.resolve("hashstore.yaml");
         if (!Files.exists(hashstoreYaml)) {
-            String hashstoreYamlContent = FileHashStore.buildHashStoreYamlString(this.STORE_ROOT, this.DIRECTORY_DEPTH,
+            String hashstoreYamlContent = this.buildHashStoreYamlString(this.STORE_ROOT, this.DIRECTORY_DEPTH,
                     this.DIRECTORY_WIDTH, this.OBJECT_STORE_ALGORITHM, this.METADATA_NAMESPACE);
             this.putHashStoreYaml(hashstoreYamlContent);
             logFileHashStore.info("FileHashStore - 'hashstore.yaml' written to storePath: " + hashstoreYaml);
@@ -314,7 +314,7 @@ public class FileHashStore implements HashStore {
      * @param storeMetadataNamespace default formatId of hashstore metadata
      * @return String that representing the contents of 'hashstore.yaml'
      */
-    protected static String buildHashStoreYamlString(Path storePath, int storeDepth, int storeWidth,
+    protected String buildHashStoreYamlString(Path storePath, int storeDepth, int storeWidth,
             String storeAlgorithm, String storeMetadataNamespace) {
         return String.format(
                 "# Default configuration variables for HashStore\n\n" +
@@ -729,7 +729,7 @@ public class FileHashStore implements HashStore {
 
         // Gather HashAddress elements and prepare object permanent address
         String objectCid = this.getPidHexDigest(pid, this.OBJECT_STORE_ALGORITHM);
-        String objShardString = getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
+        String objShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
                 objectCid);
         Path objHashAddressPath = this.OBJECT_STORE_DIRECTORY.resolve(objShardString);
 
@@ -907,7 +907,7 @@ public class FileHashStore implements HashStore {
      * @param digest   value to shard
      * @return String
      */
-    protected static String getHierarchicalPathString(int dirDepth, int dirWidth, String digest) {
+    protected String getHierarchicalPathString(int dirDepth, int dirWidth, String digest) {
         List<String> tokens = new ArrayList<>();
         int digestLength = digest.length();
         for (int i = 0; i < dirDepth; i++) {
@@ -1244,13 +1244,13 @@ public class FileHashStore implements HashStore {
         Path realPath;
         if (entity.equalsIgnoreCase("object")) {
             String objectCid = this.getPidHexDigest(pid, this.OBJECT_STORE_ALGORITHM);
-            String objShardString = getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
+            String objShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
                     objectCid);
             realPath = this.OBJECT_STORE_DIRECTORY.resolve(objShardString);
 
         } else if (entity.equalsIgnoreCase("metadata")) {
             String objectCid = this.getPidHexDigest(pid + formatId, this.OBJECT_STORE_ALGORITHM);
-            String objShardString = getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
+            String objShardString = this.getHierarchicalPathString(this.DIRECTORY_DEPTH, this.DIRECTORY_WIDTH,
                     objectCid);
             realPath = this.METADATA_STORE_DIRECTORY.resolve(objShardString);
 
@@ -1275,7 +1275,7 @@ public class FileHashStore implements HashStore {
 
         // Then delete any empty directories
         Path parent = objectAbsPath.getParent();
-        while (parent != null && isDirectoryEmpty(parent)) {
+        while (parent != null && this.isDirectoryEmpty(parent)) {
             if (parent.equals(this.METADATA_STORE_DIRECTORY)) {
                 // Do not delete the metadata store directory
                 break;
@@ -1299,7 +1299,7 @@ public class FileHashStore implements HashStore {
      * @return True if a file is found or the directory is empty, False otherwise
      * @throws IOException If I/O occurs when accessing directory
      */
-    private static boolean isDirectoryEmpty(Path directory) throws IOException {
+    private boolean isDirectoryEmpty(Path directory) throws IOException {
         try (Stream<Path> stream = Files.list(directory)) {
             // The findFirst() method is called on the stream created from the given
             // directory to retrieve the first element. If the stream is empty (i.e., the
