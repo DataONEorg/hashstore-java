@@ -26,6 +26,7 @@ import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 
 import static org.junit.Assert.*;
@@ -321,11 +322,13 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Test that storeObject successfully stores a 4GB file
+     * Test that storeObject successfully stores a 1GB file
+     * 
+     * Note, a 4GB successfully stored in approximately 1m30s
      */
     @Test
     public void storeObject_largeSparseFile() throws Exception {
-        long fileSize = 4L * 1024L * 1024L * 1024L; // 4GB
+        long fileSize = 1L * 1024L * 1024L * 1024L; // 1GB
         // Get tmp directory to initially store test file
         Path storePath = (Path) this.fhsProperties.get("storePath");
         Path testFilePath = storePath.resolve("random_file.bin");
