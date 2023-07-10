@@ -8,7 +8,6 @@
 - [Release process](#release-process)
 - [Testing](#testing)
 - [Code style](#code-style)
-- [Documentation](#documentation)
 - [Contributor license agreement](#contributor-license-agreement)
 
 ## Types of contributions
@@ -55,7 +54,7 @@ targeting the next release. Commits should only be pushed to this branch once th
 production immediately after being pushed. This keeps the `develop` branch in a state of readiness for the next release.
 Any unreleased code changes on the `develop` branch represent changes that have been tested and staged for the next release. 
 The tip of the `develop` branch always represents the set of features that are awaiting the next release. The develop
-branch represents the opportunity to integrate changes from multiple features for integrated etsting before release.
+branch represents the opportunity to integrate changes from multiple features for integrated testing before release.
 
 Version numbers on the `develop` branch represent either the planned next release number (e.g., `2.9.0`), or the planned next release number with a `beta` designator or release candidate `rc` designator appended as appropriate.  For example, `2.8.6-beta1` or `2.9.0-rc1`.
 
@@ -112,7 +111,7 @@ the full set of tests on a clean checkout of the `develop` branch.
 the new version number (e.g. `2.11.2`). At this point, the tip of the `main` branch will 
 reflect the new release and the `develop` branch can be fast-forwarded to sync with `main` to 
 start work on the next release.
-4. Releases can be downloaded from the [Github releases page](https://github.com/DataONEorg/hashstore-java/releases).
+3. Releases can be downloaded from the [GitHub releases page](https://github.com/DataONEorg/hashstore-java/releases).
 
 ## Testing
 
@@ -129,7 +128,7 @@ for this GitHub Actions status badge and make sure it says "Passing":
 ## Code style
 
 Code should be written to professional standards to enable clean, well-documented,
-readable, and maintainable software.  While there has been significant variablility
+readable, and maintainable software.  While there has been significant variability
 in the coding styles applied historically, new contributions should strive for
 clean code formatting.  We generally follow PEP8 guidelines for Python code formatting,
 typically enforced through the `black` code formatting package. For Java, we typically 
