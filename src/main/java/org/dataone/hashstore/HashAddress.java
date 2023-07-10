@@ -1,6 +1,5 @@
 package org.dataone.hashstore;
 
-import java.nio.file.Path;
 import java.util.Map;
 
 /**
@@ -12,8 +11,6 @@ import java.util.Map;
  */
 public class HashAddress {
     private final String id;
-    private final String relPath;
-    private final Path absPath;
     private final boolean isDuplicate;
     private final Map<String, String> hexDigests;
 
@@ -28,11 +25,9 @@ public class HashAddress {
      * @param hexDigests  A map of hash algorithm names to their hex-encoded
      *                    digest values for the file
      */
-    public HashAddress(String id, String relPath, Path absPath, boolean isDuplicate,
+    public HashAddress(String id, boolean isDuplicate,
             Map<String, String> hexDigests) {
         this.id = id;
-        this.relPath = relPath;
-        this.absPath = absPath;
         this.isDuplicate = isDuplicate;
         this.hexDigests = hexDigests;
     }
@@ -44,24 +39,6 @@ public class HashAddress {
      */
     public String getId() {
         return id;
-    }
-
-    /**
-     * Return the relative path to the file
-     * 
-     * @return relPath
-     */
-    public String getRelPath() {
-        return relPath;
-    }
-
-    /**
-     * Return the absolute path to the file
-     * 
-     * @return absPath
-     */
-    public Path getAbsPath() {
-        return absPath;
     }
 
     /**
