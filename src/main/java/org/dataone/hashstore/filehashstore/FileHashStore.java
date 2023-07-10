@@ -398,7 +398,7 @@ public class FileHashStore implements HashStore {
             HashAddress objInfo = this.putObject(object, pid, additionalAlgorithm, checksum, checksumAlgorithm);
             logFileHashStore.info(
                     "FileHashStore.storeObject - Object stored for pid: " + pid + ". Permanent address: "
-                            + objInfo.getAbsPath());
+                            + this.getRealPath(pid, "object", null));
             return objInfo;
 
         } catch (NoSuchAlgorithmException nsae) {
@@ -793,10 +793,7 @@ public class FileHashStore implements HashStore {
                 throw new IOException(errMsg);
 
             }
-
             objectCid = null;
-            objShardString = null;
-            objHashAddressPath = null;
             logFileHashStore.info(
                     "FileHashStore.putObject - Did not move object, duplicate file found for pid: " + pid
                             + ". Deleted tmpFile: " + tmpFile.getName());
@@ -811,8 +808,7 @@ public class FileHashStore implements HashStore {
         }
 
         // Create HashAddress object to return with pertinent data
-        return new HashAddress(objectCid, objShardString, objHashAddressPath, isDuplicate,
-                hexDigests);
+        return new HashAddress(objectCid, isDuplicate, hexDigests);
     }
 
     /**
@@ -1184,13 +1180,13 @@ public class FileHashStore implements HashStore {
         boolean tmpMetadataWritten = this.writeToTmpMetadataFile(tmpMetadataFile, metadata);
         if (tmpMetadataWritten) {
             logFileHashStore.debug(
-                    "FileHashStore.putObject - tmp metadata file has been written, moving to permanent location: "
+                    "FileHashStore.putMetadata - tmp metadata file has been written, moving to permanent location: "
                             + metadataCidPath);
             File permMetadataFile = metadataCidPath.toFile();
             this.move(tmpMetadataFile, permMetadataFile, "metadata");
         }
         logFileHashStore
-                .info("FileHashStore.putObject - Move metadata success, permanent address: " + metadataCidPath);
+                .debug("FileHashStore.putMetadata - Move metadata success, permanent address: " + metadataCidPath);
         return metadataCid;
     }
 
