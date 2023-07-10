@@ -10,11 +10,4 @@ public class PidObjectExistsException extends IOException {
         super(message);
     }
 
-    public PidObjectExistsException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public PidObjectExistsException(Throwable cause) {
-        super(cause);
-    }
 }

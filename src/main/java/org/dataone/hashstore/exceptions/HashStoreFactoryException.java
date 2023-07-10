@@ -11,11 +11,4 @@ public class HashStoreFactoryException extends IOException {
         super(message);
     }
 
-    public HashStoreFactoryException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public HashStoreFactoryException(Throwable cause) {
-        super(cause);
-    }
 }
