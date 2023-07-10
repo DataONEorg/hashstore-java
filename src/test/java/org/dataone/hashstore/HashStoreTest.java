@@ -101,7 +101,6 @@ public class HashStoreTest {
             // Check id (sha-256 hex digest of the ab_id, aka object_cid)
             String objAuthorityId = testData.pidData.get(pid).get("object_cid");
             assertEquals(objAuthorityId, objInfo.getId());
-            assertTrue(Files.exists(objInfo.getAbsPath()));
         }
     }
 }

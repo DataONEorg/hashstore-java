@@ -200,45 +200,6 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Verify that putObject returns correct relative path
-     */
-    @Test
-    public void putObject_testHarness_relPath() throws Exception {
-        for (String pid : testData.pidList) {
-            String pidFormatted = pid.replace("/", "_");
-            Path testDataFile = testData.getTestFile(pidFormatted);
-
-            InputStream dataStream = Files.newInputStream(testDataFile);
-            HashAddress address = fileHashStore.putObject(dataStream, pid, null, null, null);
-
-            // Check relative path
-            String objAuthorityId = testData.pidData.get(pid).get("object_cid");
-            String objRelPath = this.fileHashStore.getHierarchicalPathString(3, 2, objAuthorityId);
-            assertEquals(objRelPath, address.getRelPath());
-        }
-    }
-
-    /**
-     * Verify that putObject returns correct absolute path
-     */
-    @Test
-    public void putObject_testHarness_absPath() throws Exception {
-        for (String pid : testData.pidList) {
-            String pidFormatted = pid.replace("/", "_");
-            Path testDataFile = testData.getTestFile(pidFormatted);
-
-            InputStream dataStream = Files.newInputStream(testDataFile);
-            HashAddress address = fileHashStore.putObject(dataStream, pid, null, null, null);
-
-            // Check absolute path
-            Path absPath = address.getAbsPath();
-            Path realPath = fileHashStore.getRealPath(pid, "object", null);
-            assertTrue(Files.exists(absPath));
-            assertEquals(absPath, realPath);
-        }
-    }
-
-    /**
      * Verify that putObject returns expected isDuplicate value: false
      */
     @Test
@@ -297,8 +258,14 @@ public class FileHashStoreProtectedTest {
         InputStream dataStream = Files.newInputStream(testDataFile);
         HashAddress address = fileHashStore.putObject(dataStream, pid, null, checksumCorrect, "MD2");
 
-        Path absPath = address.getAbsPath();
-        assertTrue(Files.exists(absPath));
+        String objCid = address.getId();
+        // Get relative path
+        String objCidShardString = this.fileHashStore.getHierarchicalPathString(3, 2, objCid);
+        // Get absolute path
+        Path storePath = (Path) this.fhsProperties.get("storePath");
+        Path objCidAbsPath = storePath.resolve("objects/" + objCidShardString);
+
+        assertTrue(Files.exists(objCidAbsPath));
     }
 
     /**
