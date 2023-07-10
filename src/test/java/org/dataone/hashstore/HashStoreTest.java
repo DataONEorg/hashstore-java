@@ -66,7 +66,7 @@ public class HashStoreTest {
      * Check that getHashStore throws exception when classPackage is null
      */
     @Test(expected = HashStoreFactoryException.class)
-    public void hashStore_nullClassPackage() throws Exception {
+    public void hashStore_classPackageNull() throws Exception {
         HashMap<String, Object> storeProperties = new HashMap<>();
         storeProperties.put("storePath", "/test");
         storeProperties.put("storeDepth", 3);
@@ -78,7 +78,24 @@ public class HashStoreTest {
     }
 
     /**
-     * Check that getHashStore throws exception when classPackage is null
+     * Check that getHashStore throws exception when classPackage is not found
+     */
+    @Test(expected = HashStoreFactoryException.class)
+    public void hashStore_classPackageNotFound() throws Exception {
+        String classPackage = "org.dataone.hashstore.filehashstore.AnotherHashStore";
+
+        HashMap<String, Object> storeProperties = new HashMap<>();
+        storeProperties.put("storePath", "/test");
+        storeProperties.put("storeDepth", 3);
+        storeProperties.put("storeWidth", 2);
+        storeProperties.put("storeAlgorithm", "SHA-256");
+        storeProperties.put("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+
+        hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
+    }
+
+    /**
+     * Check that getHashStore throws exception when storeProperties is null
      */
     @Test(expected = HashStoreFactoryException.class)
     public void hashStore_nullStoreProperties() throws Exception {

@@ -21,10 +21,8 @@ public class HashStoreFactory {
      * 
      * @param classPackage    String of the package name, ex.
      *                        "org.dataone.hashstore.filehashstore.FileHashStore"
-     * @param storeProperties HashMap of the HashStore required properties:
-     *                        (Path) storePath, (int) storeDepth, (int) StoreWidth,
-     *                        (int)
-     *                        storeAlgorithm
+     * @param storeProperties HashMap of the HashStore required properties.
+     *                        For examples, see `FileHashStore`.
      * 
      * @return HashStore instance ready to store objects and metadata
      * @throws HashStoreFactoryException When HashStore failÏs to initialize due to
@@ -35,14 +33,14 @@ public class HashStoreFactory {
             throws HashStoreFactoryException, IOException {
         // Validate input parameters
         if (classPackage == null || classPackage.trim().isEmpty()) {
-            logHashStore.error("HashStoreFactory - classPackage cannot be null or empty.");
-            throw new HashStoreFactoryException("HashStoreFactory - classPackage cannot be null or empty.");
-
+            String errMsg = "HashStoreFactory - classPackage cannot be null or empty.";
+            logHashStore.error(errMsg);
+            throw new HashStoreFactoryException(errMsg);
         }
         if (storeProperties == null) {
-            logHashStore.error("HashStoreFactory - storeProperties cannot be null.");
-            throw new HashStoreFactoryException("HashStoreFactory - storeProperties cannot be null.");
-
+            String errMsg = "HashStoreFactory - storeProperties cannot be null.";
+            logHashStore.error(errMsg);
+            throw new HashStoreFactoryException(errMsg);
         }
 
         // Get HashStore
@@ -54,33 +52,34 @@ public class HashStoreFactory {
             hashstore = (HashStore) constructor.newInstance(storeProperties);
 
         } catch (ClassNotFoundException cnfe) {
-            logHashStore.error("HashStoreFactory - Unable to find 'FileHashStore' class: " + cnfe.getMessage());
-            throw new HashStoreFactoryException("Unable to find 'FileHashStore' class: " + cnfe.getMessage());
+            String errMsg = "HashStoreFactory - Unable to find 'FileHashStore' classPackage: " + classPackage + " - "
+                    + cnfe.fillInStackTrace();
+            logHashStore.error(errMsg);
+            throw new HashStoreFactoryException(errMsg);
 
         } catch (NoSuchMethodException nsme) {
-            logHashStore
-                    .error("HashStoreFactory - Constructor not found for 'FileHashStore': " + nsme.getMessage());
-            throw new HashStoreFactoryException("Constructor not found for 'FileHashStore': " + nsme.getMessage());
+            String errMsg = "HashStoreFactory - Constructor not found for 'FileHashStore': " + classPackage + " - "
+                    + nsme.fillInStackTrace();
+            logHashStore.error(errMsg);
+            throw new HashStoreFactoryException(errMsg);
 
         } catch (IllegalAccessException iae) {
-            logHashStore
-                    .error("HashStoreFactory - Illegal Access Exception encountered: " + iae.getMessage());
-            throw new HashStoreFactoryException(
-                    "HashStoreFactory - Executing method does not have access to the definition of the"
-                            + "specified class , field, method or constructor. Illegal Access Exception encountered:"
-                            + iae.getMessage());
+            String errMsg = "HashStoreFactory - Executing method does not have access to the definition of the"
+                    + "specified class , field, method or constructor. " + iae.fillInStackTrace();
+            logHashStore.error(errMsg);
+            throw new HashStoreFactoryException(errMsg);
 
         } catch (InstantiationException ie) {
-            logHashStore.error(
-                    "HashStoreFactory - Error instantiating 'FileHashStore': " + ie.getMessage());
-            throw new HashStoreFactoryException(
-                    "Error instantiating 'FileHashStore' (likely related to `.newInstance()`): " + ie.getMessage());
+            String errMsg = "HashStoreFactory - Error instantiating 'FileHashStore'"
+                    + "(likely related to `.newInstance()`): " + ie.fillInStackTrace();
+            logHashStore.error(errMsg);
+            throw new HashStoreFactoryException(errMsg);
 
         } catch (InvocationTargetException ite) {
-            logHashStore.error("HashStoreFactory - InvocationTargetException encountered: " + ite.getMessage()
-                    + ". Cause: " + ite.getCause());
-            throw new HashStoreFactoryException(
-                    "Error creating 'FileHashStore' instance: " + ite.getMessage() + ". Cause: " + ite.getCause());
+            String errMsg = "HashStoreFactory - Error creating 'FileHashStore' instance: " + ite.fillInStackTrace();
+            logHashStore.error(errMsg);
+            throw new HashStoreFactoryException(errMsg);
+
         }
         return hashstore;
     }
