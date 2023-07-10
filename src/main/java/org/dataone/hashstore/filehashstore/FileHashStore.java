@@ -146,11 +146,12 @@ public class FileHashStore implements HashStore {
             logFileHashStore.debug("FileHashStore - 'hashstore.yaml' found, verifying properties.");
 
             HashMap<String, Object> hsProperties = this.getHashStoreYaml(storePath);
-            Path existingStorePath = (Path) hsProperties.get("storePath");
-            int existingStoreDepth = (int) hsProperties.get("storeDepth");
-            int existingStoreWidth = (int) hsProperties.get("storeWidth");
-            String existingStoreAlgorithm = (String) hsProperties.get("storeAlgorithm");
-            String existingStoreMetadataNs = (String) hsProperties.get("storeMetadataNamespace");
+            Path existingStorePath = (Path) hsProperties.get(HashStoreProperties.storePath.name());
+            int existingStoreDepth = (int) hsProperties.get(HashStoreProperties.storeDepth.name());
+            int existingStoreWidth = (int) hsProperties.get(HashStoreProperties.storeWidth.name());
+            String existingStoreAlgorithm = (String) hsProperties.get(HashStoreProperties.storeAlgorithm.name());
+            String existingStoreMetadataNs = (String) hsProperties
+                    .get(HashStoreProperties.storeMetadataNamespace.name());
 
             // Verify properties when 'hashstore.yaml' found
             checkConfigurationEquality("store path", storePath, existingStorePath);
