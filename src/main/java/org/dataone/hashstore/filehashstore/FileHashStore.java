@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Random;
 import java.util.stream.Stream;
 
@@ -89,18 +90,15 @@ public class FileHashStore implements HashStore {
      * - .../[storePath]/metadata
      * - .../[storePath]/metadata/tmp
      * 
-     * @param hashstoreProperties HashMap<String, Object> of the following keys:
-     *                            storePath (Path)
-     *                            storeDepth (int)
-     *                            storeWidth (int)
-     *                            storeAlgorithm (String)
-     *                            storeMetadataNamespace (String)
+     * @param hashstoreProperties Properties object with the following keys:
+     *                            storePath, storeDepth, storeWidth, storeAlgorithm,
+     *                            storeMetadataNamespace
      * @throws IllegalArgumentException Constructor arguments cannot be null, empty
      *                                  or less than 0
      * @throws IOException              Issue with creating directories
      * @throws NoSuchAlgorithmException Unsupported store algorithm
      */
-    public FileHashStore(HashMap<String, Object> hashstoreProperties)
+    public FileHashStore(Properties hashstoreProperties)
             throws IllegalArgumentException, IOException, NoSuchAlgorithmException {
         if (hashstoreProperties == null) {
             String errMsg = "FileHashStore - Properties cannot be null.";
@@ -110,12 +108,12 @@ public class FileHashStore implements HashStore {
         }
 
         // Get properties
-        Path storePath = (Path) hashstoreProperties.get(HashStoreProperties.storePath.name());
-        int storeDepth = (int) hashstoreProperties.get(HashStoreProperties.storeDepth.name());
-        int storeWidth = (int) hashstoreProperties.get(HashStoreProperties.storeWidth.name());
-        String storeAlgorithm = (String) hashstoreProperties.get(HashStoreProperties.storeAlgorithm.name());
-        String storeMetadataNamespace = (String) hashstoreProperties
-                .get(HashStoreProperties.storeMetadataNamespace.name());
+        Path storePath = Paths.get(hashstoreProperties.getProperty(HashStoreProperties.storePath.name()));
+        int storeDepth = Integer.parseInt(hashstoreProperties.getProperty(HashStoreProperties.storeDepth.name()));
+        int storeWidth = Integer.parseInt(hashstoreProperties.getProperty(HashStoreProperties.storeWidth.name()));
+        String storeAlgorithm = hashstoreProperties.getProperty(HashStoreProperties.storeAlgorithm.name());
+        String storeMetadataNamespace = hashstoreProperties
+                .getProperty(HashStoreProperties.storeMetadataNamespace.name());
 
         // Validate input parameters
         if (storePath == null) {

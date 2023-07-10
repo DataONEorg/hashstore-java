@@ -3,7 +3,7 @@ package org.dataone.hashstore;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
+import java.util.Properties;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -21,15 +21,16 @@ public class HashStoreFactory {
      * 
      * @param classPackage    String of the package name, ex.
      *                        "org.dataone.hashstore.filehashstore.FileHashStore"
-     * @param storeProperties HashMap of the HashStore required properties.
-     *                        For examples, see `FileHashStore`.
+     * @param storeProperties Properties object with the following keys:
+     *                        storePath, storeDepth, storeWidth, storeAlgorithm,
+     *                        storeMetadataNamespace
      * 
      * @return HashStore instance ready to store objects and metadata
      * @throws HashStoreFactoryException When HashStore failÏs to initialize due to
      *                                   permissions or class-related issues
      * @throws IOException               When there is an issue with properties
      */
-    public static HashStore getHashStore(String classPackage, HashMap<String, Object> storeProperties)
+    public static HashStore getHashStore(String classPackage, Properties storeProperties)
             throws HashStoreFactoryException, IOException {
         // Validate input parameters
         if (classPackage == null || classPackage.trim().isEmpty()) {
@@ -48,7 +49,7 @@ public class HashStoreFactory {
         HashStore hashstore;
         try {
             Class<?> hashStoreClass = Class.forName(classPackage);
-            Constructor<?> constructor = hashStoreClass.getConstructor(HashMap.class);
+            Constructor<?> constructor = hashStoreClass.getConstructor(Properties.class);
             hashstore = (HashStore) constructor.newInstance(storeProperties);
 
         } catch (ClassNotFoundException cnfe) {

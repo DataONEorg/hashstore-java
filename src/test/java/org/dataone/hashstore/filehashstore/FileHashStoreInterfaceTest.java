@@ -8,10 +8,11 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -35,7 +36,7 @@ import static org.junit.Assert.*;
  */
 public class FileHashStoreInterfaceTest {
     private FileHashStore fileHashStore;
-    private HashMap<String, Object> fhsProperties;
+    private Properties fhsProperties;
     private static final TestDataHarness testData = new TestDataHarness();
 
     /**
@@ -43,18 +44,18 @@ public class FileHashStoreInterfaceTest {
      */
     @Before
     public void initializeFileHashStore() {
-        Path rootDirectory = this.tempFolder.getRoot().toPath().resolve("metacat");
+        Path rootDirectory = tempFolder.getRoot().toPath().resolve("metacat");
 
-        HashMap<String, Object> storeProperties = new HashMap<>();
-        storeProperties.put("storePath", rootDirectory);
-        storeProperties.put("storeDepth", 3);
-        storeProperties.put("storeWidth", 2);
-        storeProperties.put("storeAlgorithm", "SHA-256");
-        storeProperties.put("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+        Properties storeProperties = new Properties();
+        storeProperties.setProperty("storePath", rootDirectory.toString());
+        storeProperties.setProperty("storeDepth", "3");
+        storeProperties.setProperty("storeWidth", "2");
+        storeProperties.setProperty("storeAlgorithm", "SHA-256");
+        storeProperties.setProperty("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
 
         try {
-            this.fhsProperties = storeProperties;
-            this.fileHashStore = new FileHashStore(storeProperties);
+            fhsProperties = storeProperties;
+            fileHashStore = new FileHashStore(storeProperties);
 
         } catch (IOException ioe) {
             fail("IOException encountered: " + ioe.getMessage());
@@ -74,16 +75,15 @@ public class FileHashStoreInterfaceTest {
     /**
      * Utility method to get absolute path of a given object
      */
-    public Path getObjectAbsPath(String id) throws Exception {
-        int shardDepth = (int) fhsProperties.get("storeDepth");
-        int shardWidth = (int) fhsProperties.get("storeWidth");
+    public Path getObjectAbsPath(String id) {
+        int shardDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
+        int shardWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
         // Get relative path
-        String objCidShardString = this.fileHashStore.getHierarchicalPathString(shardDepth, shardWidth, id);
+        String objCidShardString = fileHashStore.getHierarchicalPathString(shardDepth, shardWidth, id);
         // Get absolute path
-        Path storePath = (Path) this.fhsProperties.get("storePath");
-        Path objCidAbsPath = storePath.resolve("objects/" + objCidShardString);
+        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
 
-        return objCidAbsPath;
+        return storePath.resolve("objects/" + objCidShardString);
     }
 
     /**
@@ -306,7 +306,7 @@ public class FileHashStoreInterfaceTest {
     public void storeObject_largeSparseFile() throws Exception {
         long fileSize = 1L * 1024L * 1024L * 1024L; // 1GB
         // Get tmp directory to initially store test file
-        Path storePath = (Path) this.fhsProperties.get("storePath");
+        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
         Path testFilePath = storePath.resolve("random_file.bin");
 
         // Generate a random file with the specified size
@@ -517,9 +517,9 @@ public class FileHashStoreInterfaceTest {
             String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, null);
 
             // Get relative path
-            String metadataCidShardString = this.fileHashStore.getHierarchicalPathString(3, 2, metadataCid);
+            String metadataCidShardString = fileHashStore.getHierarchicalPathString(3, 2, metadataCid);
             // Get absolute path
-            Path storePath = (Path) this.fhsProperties.get("storePath");
+            Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
             Path metadataCidAbsPath = storePath.resolve("metadata/" + metadataCidShardString);
 
             assertTrue(Files.exists(metadataCidAbsPath));
@@ -545,9 +545,9 @@ public class FileHashStoreInterfaceTest {
             String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, null);
 
             // Get relative path
-            String metadataCidShardString = this.fileHashStore.getHierarchicalPathString(3, 2, metadataCid);
+            String metadataCidShardString = fileHashStore.getHierarchicalPathString(3, 2, metadataCid);
             // Get absolute path
-            Path storePath = (Path) this.fhsProperties.get("storePath");
+            Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
             Path metadataCidAbsPath = storePath.resolve("metadata/" + metadataCidShardString);
 
             long writtenMetadataFile = Files.size(testMetaDataFile);
@@ -562,7 +562,7 @@ public class FileHashStoreInterfaceTest {
     @Test(expected = NullPointerException.class)
     public void storeMetadata_metadataNull() throws Exception {
         for (String pid : testData.pidList) {
-            this.fileHashStore.storeMetadata(null, pid, null);
+            fileHashStore.storeMetadata(null, pid, null);
         }
     }
 
@@ -579,7 +579,7 @@ public class FileHashStoreInterfaceTest {
 
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
 
-            this.fileHashStore.storeMetadata(metadataStream, null, null);
+            fileHashStore.storeMetadata(metadataStream, null, null);
         }
     }
 
@@ -596,7 +596,7 @@ public class FileHashStoreInterfaceTest {
 
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
 
-            this.fileHashStore.storeMetadata(metadataStream, "", null);
+            fileHashStore.storeMetadata(metadataStream, "", null);
         }
     }
 
@@ -613,7 +613,7 @@ public class FileHashStoreInterfaceTest {
 
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
 
-            this.fileHashStore.storeMetadata(metadataStream, "     ", null);
+            fileHashStore.storeMetadata(metadataStream, "     ", null);
         }
     }
 
@@ -681,8 +681,8 @@ public class FileHashStoreInterfaceTest {
         executorService.awaitTermination(1, TimeUnit.MINUTES);
 
         // Confirm metadata file is written
-        Path storePath = (Path) this.fhsProperties.get("storePath");
-        String formatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+        String formatId = fhsProperties.getProperty("storeMetadataNamespace");
         Path metadataCidAbsPath = fileHashStore.getRealPath(pid, "metadata", formatId);
         assertTrue(Files.exists(metadataCidAbsPath));
 
@@ -810,7 +810,7 @@ public class FileHashStoreInterfaceTest {
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
             fileHashStore.storeMetadata(metadataStream, pid, null);
 
-            String storeFormatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+            String storeFormatId = (String) fhsProperties.get("storeMetadataNamespace");
 
             InputStream metadataCidInputStream = fileHashStore.retrieveMetadata(pid, storeFormatId);
             assertNotNull(metadataCidInputStream);
@@ -822,7 +822,7 @@ public class FileHashStoreInterfaceTest {
      */
     @Test(expected = NullPointerException.class)
     public void retrieveMetadata_pidNull() throws Exception {
-        String storeFormatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+        String storeFormatId = (String) fhsProperties.get("storeMetadataNamespace");
         InputStream pidInputStream = fileHashStore.retrieveMetadata(null, storeFormatId);
         pidInputStream.close();
 
@@ -833,7 +833,7 @@ public class FileHashStoreInterfaceTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void retrieveMetadata_pidEmpty() throws Exception {
-        String storeFormatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+        String storeFormatId = (String) fhsProperties.get("storeMetadataNamespace");
         InputStream pidInputStream = fileHashStore.retrieveMetadata("", storeFormatId);
         pidInputStream.close();
 
@@ -844,7 +844,7 @@ public class FileHashStoreInterfaceTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void retrieveMetadata_pidEmptySpaces() throws Exception {
-        String storeFormatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+        String storeFormatId = (String) fhsProperties.get("storeMetadataNamespace");
         InputStream pidInputStream = fileHashStore.retrieveMetadata("      ", storeFormatId);
         pidInputStream.close();
 
@@ -885,7 +885,7 @@ public class FileHashStoreInterfaceTest {
      */
     @Test(expected = FileNotFoundException.class)
     public void retrieveMetadata_pidNotFound() throws Exception {
-        String storeFormatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+        String storeFormatId = (String) fhsProperties.get("storeMetadataNamespace");
         InputStream pidInputStream = fileHashStore.retrieveMetadata("dou.2023.hs.1", storeFormatId);
         pidInputStream.close();
 
@@ -905,7 +905,7 @@ public class FileHashStoreInterfaceTest {
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
             fileHashStore.storeMetadata(metadataStream, pid, null);
 
-            String storeFormatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+            String storeFormatId = (String) fhsProperties.get("storeMetadataNamespace");
 
             // Retrieve object
             InputStream metadataCidInputStream;
@@ -964,7 +964,7 @@ public class FileHashStoreInterfaceTest {
             assertFalse(Files.exists(objCidAbsPath));
 
             // Double check that object directory still exists
-            Path storePath = (Path) this.fhsProperties.get("storePath");
+            Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
             Path storeObjectPath = storePath.resolve("objects");
             assertTrue(Files.exists(storeObjectPath));
         }
@@ -1016,7 +1016,7 @@ public class FileHashStoreInterfaceTest {
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
             fileHashStore.storeMetadata(metadataStream, pid, null);
 
-            String storeFormatId = (String) this.fhsProperties.get("storeMetadataNamespace");
+            String storeFormatId = (String) fhsProperties.get("storeMetadataNamespace");
             boolean isMetadataDeleted = fileHashStore.deleteMetadata(pid, storeFormatId);
             assertTrue(isMetadataDeleted);
 
@@ -1025,7 +1025,7 @@ public class FileHashStoreInterfaceTest {
             assertFalse(Files.exists(metadataCidPath));
 
             // Double check that metadata directory still exists
-            Path storePath = (Path) this.fhsProperties.get("storePath");
+            Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
             Path storeObjectPath = storePath.resolve("metadata");
             assertTrue(Files.exists(storeObjectPath));
         }
