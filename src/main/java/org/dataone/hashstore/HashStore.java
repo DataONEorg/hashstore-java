@@ -20,11 +20,11 @@ public interface HashStore {
          * The `storeObject` method is responsible for the atomic storage of objects to
          * HashStore using a given InputStream and a persistent identifier (pid). Upon
          * successful storage, the method returns a (HashAddress) object containing
-         * the object's file information, such as the id, relative path, absolute
-         * path, duplicate object status, and hex digest map of algorithms and hex
-         * digests/checksums. An object is stored once and only once - and `storeObject`
-         * also enforces this rule by synchronizing multiple calls and rejecting calls
-         * to store duplicate objects.
+         * the object's file information, such as the id, relative path, duplicate
+         * object status, and hex digest map of algorithms and hex digests/checksums. An
+         * object is stored once and only once - and `storeObject` also enforces this
+         * rule by synchronizing multiple calls and rejecting calls to store duplicate
+         * objects.
          * 
          * The file's id is determined by calculating the SHA-256 hex digest of the
          * provided pid, which is also used as the permanent address of the file. The
@@ -70,10 +70,10 @@ public interface HashStore {
          * the stored metadata document is determined by calculating the SHA-256 hex
          * digest of the provided `pid` + `formatId`.
          * 
-         * Upon successful storage of metadata, `storeMetadata` returns a string that
-         * represents the path of the file's permanent address, as described above.
-         * Lastly, the metadata objects are stored in parallel to objects in the
-         * `./[storePath]/metadata/` directory.
+         * Upon successful storage of metadata, `storeMetadata` returns the id of the
+         * metadata object, which can be used to manually locate the metadata object in
+         * the metadata directory. Lastly, metadata objects are stored in parallel to
+         * objects in the `./[storePath]/metadata/` directory.
          * 
          * Note, multiple calls to store the same metadata content will all be accepted,
          * but is not guaranteed to execute sequentially.
