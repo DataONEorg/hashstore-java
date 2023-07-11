@@ -48,7 +48,8 @@ public class FileHashStorePublicTest {
         storeProperties.setProperty("storeDepth", "3");
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
-        storeProperties.setProperty("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+        storeProperties.setProperty("storeMetadataNamespace",
+                "http://ns.dataone.org/service/types/v2.0");
 
         try {
             fileHashStore = new FileHashStore(storeProperties);
@@ -87,7 +88,8 @@ public class FileHashStorePublicTest {
         storeProperties.setProperty("storeDepth", "0");
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
-        storeProperties.setProperty("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+        storeProperties.setProperty("storeMetadataNamespace",
+                "http://ns.dataone.org/service/types/v2.0");
 
         new FileHashStore(storeProperties);
     }
@@ -102,7 +104,8 @@ public class FileHashStorePublicTest {
         storeProperties.setProperty("storeDepth", "0");
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
-        storeProperties.setProperty("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+        storeProperties.setProperty("storeMetadataNamespace",
+                "http://ns.dataone.org/service/types/v2.0");
 
         new FileHashStore(storeProperties);
     }
@@ -117,7 +120,8 @@ public class FileHashStorePublicTest {
         storeProperties.setProperty("storeDepth", "3");
         storeProperties.setProperty("storeWidth", "0");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
-        storeProperties.setProperty("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+        storeProperties.setProperty("storeMetadataNamespace",
+                "http://ns.dataone.org/service/types/v2.0");
 
         new FileHashStore(storeProperties);
     }
@@ -132,7 +136,8 @@ public class FileHashStorePublicTest {
         storeProperties.setProperty("storeDepth", "3");
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "MD5");
-        storeProperties.setProperty("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+        storeProperties.setProperty("storeMetadataNamespace",
+                "http://ns.dataone.org/service/types/v2.0");
 
         new FileHashStore(storeProperties);
     }
@@ -147,7 +152,8 @@ public class FileHashStorePublicTest {
         storeProperties.setProperty("storeDepth", "3");
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "");
-        storeProperties.setProperty("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+        storeProperties.setProperty("storeMetadataNamespace",
+                "http://ns.dataone.org/service/types/v2.0");
 
         new FileHashStore(storeProperties);
     }
@@ -162,7 +168,8 @@ public class FileHashStorePublicTest {
         storeProperties.setProperty("storeDepth", "3");
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "       ");
-        storeProperties.setProperty("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+        storeProperties.setProperty("storeMetadataNamespace",
+                "http://ns.dataone.org/service/types/v2.0");
 
         new FileHashStore(storeProperties);
     }
@@ -207,7 +214,8 @@ public class FileHashStorePublicTest {
         storeProperties.setProperty("storeDepth", "3");
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
-        storeProperties.setProperty("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+        storeProperties.setProperty("storeMetadataNamespace",
+                "http://ns.dataone.org/service/types/v2.0");
 
         new FileHashStore(storeProperties);
     }
@@ -267,7 +275,8 @@ public class FileHashStorePublicTest {
         assertEquals(hsProperties.get("storeDepth"), 3);
         assertEquals(hsProperties.get("storeWidth"), 2);
         assertEquals(hsProperties.get("storeAlgorithm"), "SHA-256");
-        assertEquals(hsProperties.get("storeMetadataNamespace"), "http://ns.dataone.org/service/types/v2.0");
+        assertEquals(hsProperties.get("storeMetadataNamespace"),
+                "http://ns.dataone.org/service/types/v2.0");
     }
 
     /**
@@ -280,14 +289,15 @@ public class FileHashStorePublicTest {
         storeProperties.setProperty("storeDepth", "3");
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
-        storeProperties.setProperty("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+        storeProperties.setProperty("storeMetadataNamespace",
+                "http://ns.dataone.org/service/types/v2.0");
 
         new FileHashStore(storeProperties);
     }
 
     /**
-     * Test existing configuration file will raise exception when algorithm is
-     * different when instantiating FileHashStore
+     * Test existing configuration file will raise exception when algorithm is different when
+     * instantiating FileHashStore
      */
     @Test(expected = IllegalArgumentException.class)
     public void testExistingHashStoreConfiguration_diffAlgorithm() throws Exception {
@@ -296,14 +306,15 @@ public class FileHashStorePublicTest {
         storeProperties.setProperty("storeDepth", "3");
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "MD5");
-        storeProperties.setProperty("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+        storeProperties.setProperty("storeMetadataNamespace",
+                "http://ns.dataone.org/service/types/v2.0");
 
         new FileHashStore(storeProperties);
     }
 
     /**
-     * Test existing configuration file will raise exception when depth is
-     * different when instantiating FileHashStore
+     * Test existing configuration file will raise exception when depth is different when
+     * instantiating FileHashStore
      */
     @Test(expected = IllegalArgumentException.class)
     public void testExistingHashStoreConfiguration_diffDepth() throws Exception {
@@ -312,14 +323,15 @@ public class FileHashStorePublicTest {
         storeProperties.setProperty("storeDepth", "2");
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
-        storeProperties.setProperty("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+        storeProperties.setProperty("storeMetadataNamespace",
+                "http://ns.dataone.org/service/types/v2.0");
 
         new FileHashStore(storeProperties);
     }
 
     /**
-     * Test existing configuration file will raise exception when width is
-     * different when instantiating FileHashStore
+     * Test existing configuration file will raise exception when width is different when
+     * instantiating FileHashStore
      */
     @Test(expected = IllegalArgumentException.class)
     public void testExistingHashStoreConfiguration_diffWidth() throws Exception {
@@ -328,14 +340,15 @@ public class FileHashStorePublicTest {
         storeProperties.setProperty("storeDepth", "3");
         storeProperties.setProperty("storeWidth", "1");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
-        storeProperties.setProperty("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+        storeProperties.setProperty("storeMetadataNamespace",
+                "http://ns.dataone.org/service/types/v2.0");
 
         new FileHashStore(storeProperties);
     }
 
     /**
-     * Test existing configuration file will raise exception when metadata formatId
-     * is different when instantiating FileHashStore
+     * Test existing configuration file will raise exception when metadata formatId is different
+     * when instantiating FileHashStore
      */
     @Test(expected = IllegalArgumentException.class)
     public void testExistingHashStoreConfiguration_diffMetadataNamespace() throws Exception {
@@ -344,14 +357,15 @@ public class FileHashStorePublicTest {
         storeProperties.setProperty("storeDepth", "3");
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
-        storeProperties.setProperty("storeMetadataNamespace", "http://ns.test.org/service/types/v2.0");
+        storeProperties.setProperty("storeMetadataNamespace",
+                "http://ns.test.org/service/types/v2.0");
 
         new FileHashStore(storeProperties);
     }
 
     /**
-     * Check that exception is raised when HashStore present but missing
-     * configuration file 'hashstore.yaml'
+     * Check that exception is raised when HashStore present but missing configuration file
+     * 'hashstore.yaml'
      */
     @Test(expected = IllegalStateException.class)
     public void testExistingHashStoreConfiguration_missingYaml() throws Exception {
@@ -362,7 +376,8 @@ public class FileHashStorePublicTest {
         storeProperties.setProperty("storeDepth", "3");
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
-        storeProperties.setProperty("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+        storeProperties.setProperty("storeMetadataNamespace",
+                "http://ns.dataone.org/service/types/v2.0");
 
         FileHashStore secondHashStore = new FileHashStore(storeProperties);
 

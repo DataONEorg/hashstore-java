@@ -35,7 +35,8 @@ public class HashStoreTest {
         storeProperties.setProperty("storeDepth", "3");
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
-        storeProperties.setProperty("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+        storeProperties.setProperty("storeMetadataNamespace",
+                "http://ns.dataone.org/service/types/v2.0");
 
         try {
             hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
@@ -72,7 +73,8 @@ public class HashStoreTest {
         storeProperties.setProperty("storeDepth", "3");
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
-        storeProperties.setProperty("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+        storeProperties.setProperty("storeMetadataNamespace",
+                "http://ns.dataone.org/service/types/v2.0");
 
         hashStore = HashStoreFactory.getHashStore(null, storeProperties);
     }
@@ -89,7 +91,8 @@ public class HashStoreTest {
         storeProperties.setProperty("storeDepth", "3");
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
-        storeProperties.setProperty("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+        storeProperties.setProperty("storeMetadataNamespace",
+                "http://ns.dataone.org/service/types/v2.0");
 
         hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
     }

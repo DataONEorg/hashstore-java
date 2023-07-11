@@ -27,7 +27,8 @@ public class HashAddressTest {
         hexDigests = new HashMap<>();
         hexDigests.put("md5", "f4ea2d07db950873462a064937197b0f");
         hexDigests.put("sha1", "3d25436c4490b08a2646e283dada5c60e5c0539d");
-        hexDigests.put("sha256", "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a");
+        hexDigests.put("sha256",
+                "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a");
         hexDigests.put("sha384",
                 "a204678330fcdc04980c9327d4e5daf01ab7541e8a351d49a7e9c5005439dce749ada39c4c35f573dd7d307cca11bea8");
         hexDigests.put("sha512",

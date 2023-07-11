@@ -51,7 +51,8 @@ public class FileHashStoreInterfaceTest {
         storeProperties.setProperty("storeDepth", "3");
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
-        storeProperties.setProperty("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+        storeProperties.setProperty("storeMetadataNamespace",
+                "http://ns.dataone.org/service/types/v2.0");
 
         try {
             fhsProperties = storeProperties;
@@ -79,7 +80,8 @@ public class FileHashStoreInterfaceTest {
         int shardDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
         int shardWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
         // Get relative path
-        String objCidShardString = fileHashStore.getHierarchicalPathString(shardDepth, shardWidth, id);
+        String objCidShardString =
+                fileHashStore.getHierarchicalPathString(shardDepth, shardWidth, id);
         // Get absolute path
         Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
 
@@ -198,7 +200,8 @@ public class FileHashStoreInterfaceTest {
         String checksumCorrect = "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        HashAddress address = fileHashStore.storeObject(dataStream, pid, null, checksumCorrect, "SHA-256");
+        HashAddress address =
+                fileHashStore.storeObject(dataStream, pid, null, checksumCorrect, "SHA-256");
 
         String objCid = address.getId();
         Path objCidAbsPath = getObjectAbsPath(objCid);
@@ -232,7 +235,8 @@ public class FileHashStoreInterfaceTest {
         String pid = "jtao.1700.1";
         Path testDataFile = testData.getTestFile(pid);
 
-        String checksumIncorrect = "aaf9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
+        String checksumIncorrect =
+                "aaf9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
 
         InputStream dataStream = Files.newInputStream(testDataFile);
         fileHashStore.storeObject(dataStream, pid, null, checksumIncorrect, "SHA-256");
@@ -280,8 +284,7 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Check that store object throws FileAlreadyExists error when storing duplicate
-     * object
+     * Check that store object throws FileAlreadyExists error when storing duplicate object
      */
     @Test(expected = PidObjectExistsException.class)
     public void storeObject_duplicate() throws Exception {
@@ -314,7 +317,7 @@ public class FileHashStoreInterfaceTest {
             FileChannel fileChannel = fileOutputStream.getChannel();
             FileLock lock = fileChannel.lock();
             fileChannel.position(fileSize - 1);
-            fileChannel.write(java.nio.ByteBuffer.wrap(new byte[] { 0 }));
+            fileChannel.write(java.nio.ByteBuffer.wrap(new byte[] {0}));
             lock.release();
         } catch (IOException ioe) {
             ioe.printStackTrace();
@@ -323,7 +326,8 @@ public class FileHashStoreInterfaceTest {
 
         InputStream dataStream = Files.newInputStream(testFilePath);
         String pid = "dou.sparsefile.1";
-        HashAddress sparseFileObjInfo = fileHashStore.storeObject(dataStream, pid, null, null, null);
+        HashAddress sparseFileObjInfo =
+                fileHashStore.storeObject(dataStream, pid, null, null, null);
 
         String objCid = sparseFileObjInfo.getId();
         Path objCidAbsPath = getObjectAbsPath(objCid);
@@ -332,21 +336,18 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Tests that the `storeObject` method can store an object successfully with
-     * multiple threads (5). This test uses five futures (threads) that run
-     * concurrently, all except one of which will encounter an `ExecutionException`.
-     * The thread that does not encounter an exception will store the given
-     * object, and verifies that the object is stored successfully.
+     * Tests that the `storeObject` method can store an object successfully with multiple threads
+     * (5). This test uses five futures (threads) that run concurrently, all except one of which
+     * will encounter an `ExecutionException`. The thread that does not encounter an exception will
+     * store the given object, and verifies that the object is stored successfully.
      * 
-     * The threads that run into exceptions will encounter a `RunTimeException` or
-     * a `PidObjectExistsException`. If a call is made to 'storeObject' for a pid
-     * that is already in progress of being stored, a `RunTimeException` will be
-     * thrown.
+     * The threads that run into exceptions will encounter a `RunTimeException` or a
+     * `PidObjectExistsException`. If a call is made to 'storeObject' for a pid that is already in
+     * progress of being stored, a `RunTimeException` will be thrown.
      * 
-     * If a call is made to 'storeObject' for a pid that has been stored, the thread
-     * will encounter a `PidObjectExistsException` - since `putObject` checks for
-     * the existence of a given data object before it attempts to generate a temp
-     * file (write to it, generate checksums, etc.).
+     * If a call is made to 'storeObject' for a pid that has been stored, the thread will encounter
+     * a `PidObjectExistsException` - since `putObject` checks for the existence of a given data
+     * object before it attempts to generate a temp file (write to it, generate checksums, etc.).
      * 
      */
     @Test
@@ -447,11 +448,10 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Tests that the `storeObject` method can store an object successfully with
-     * two threads. This test uses two futures (threads) that run concurrently, one
-     * of which will encounter an `ExecutionException`. The thread that does not
-     * encounter an exception will store the given object, and verifies that the
-     * object is stored successfully.
+     * Tests that the `storeObject` method can store an object successfully with two threads. This
+     * test uses two futures (threads) that run concurrently, one of which will encounter an
+     * `ExecutionException`. The thread that does not encounter an exception will store the given
+     * object, and verifies that the object is stored successfully.
      */
     @Test
     public void storeObject_objectLockedIds_TwoThreads() throws Exception {
@@ -517,7 +517,8 @@ public class FileHashStoreInterfaceTest {
             String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, null);
 
             // Get relative path
-            String metadataCidShardString = fileHashStore.getHierarchicalPathString(3, 2, metadataCid);
+            String metadataCidShardString =
+                    fileHashStore.getHierarchicalPathString(3, 2, metadataCid);
             // Get absolute path
             Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
             Path metadataCidAbsPath = storePath.resolve("metadata/" + metadataCidShardString);
@@ -545,7 +546,8 @@ public class FileHashStoreInterfaceTest {
             String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, null);
 
             // Get relative path
-            String metadataCidShardString = fileHashStore.getHierarchicalPathString(3, 2, metadataCid);
+            String metadataCidShardString =
+                    fileHashStore.getHierarchicalPathString(3, 2, metadataCid);
             // Get absolute path
             Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
             Path metadataCidAbsPath = storePath.resolve("metadata/" + metadataCidShardString);
@@ -618,15 +620,13 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Tests that the `storeMetadata()` method can store metadata successfully with
-     * multiple threads (3). This test uses three futures (threads) that run
-     * concurrently, each of which will have to wait for the given `pid` to be
-     * released from metadataLockedIds before proceeding to store the given metadata
-     * content from its `storeMetadata()` request.
+     * Tests that the `storeMetadata()` method can store metadata successfully with multiple threads
+     * (3). This test uses three futures (threads) that run concurrently, each of which will have to
+     * wait for the given `pid` to be released from metadataLockedIds before proceeding to store the
+     * given metadata content from its `storeMetadata()` request.
      * 
-     * All requests to store the same metadata will be executed, and the existing
-     * metadata file will be overwritten by each thread. No exceptions should be
-     * encountered during these tests.
+     * All requests to store the same metadata will be executed, and the existing metadata file will
+     * be overwritten by each thread. No exceptions should be encountered during these tests.
      */
     @Test
     public void storeMetadata_metadataLockedIds() throws Exception {
@@ -635,7 +635,8 @@ public class FileHashStoreInterfaceTest {
         String pidFormatted = pid.replace("/", "_");
         // Get test metadata file
         Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
-        String pidFormatHexDigest = "ddf07952ef28efc099d10d8b682480f7d2da60015f5d8873b6e1ea75b4baf689";
+        String pidFormatHexDigest =
+                "ddf07952ef28efc099d10d8b682480f7d2da60015f5d8873b6e1ea75b4baf689";
 
         // Create a thread pool with 3 threads
         ExecutorService executorService = Executors.newFixedThreadPool(3);
@@ -934,8 +935,10 @@ public class FileHashStoreInterfaceTest {
             }
 
             // Get hex digest
-            String sha256MetadataDigest = DatatypeConverter.printHexBinary(sha256.digest()).toLowerCase();
-            String sha256MetadataDigestFromTestData = testData.pidData.get(pid).get("metadata_sha256");
+            String sha256MetadataDigest =
+                    DatatypeConverter.printHexBinary(sha256.digest()).toLowerCase();
+            String sha256MetadataDigestFromTestData =
+                    testData.pidData.get(pid).get("metadata_sha256");
             assertEquals(sha256MetadataDigest, sha256MetadataDigestFromTestData);
 
             // Close stream
@@ -1032,8 +1035,7 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Confirm that deleteMetadata throws exception when associated pid obj not
-     * found
+     * Confirm that deleteMetadata throws exception when associated pid obj not found
      */
     @Test(expected = FileNotFoundException.class)
     public void deleteMetadata_pidNotFound() throws Exception {

@@ -10,8 +10,8 @@ import org.apache.commons.logging.LogFactory;
 import org.dataone.hashstore.exceptions.HashStoreFactoryException;
 
 /**
- * HashStoreFactory is a factory class that generates HashStore, a
- * content-addressable file management system.
+ * HashStoreFactory is a factory class that generates HashStore, a content-addressable file
+ * management system.
  */
 public class HashStoreFactory {
     private static final Log logHashStore = LogFactory.getLog(HashStoreFactory.class);
@@ -19,16 +19,15 @@ public class HashStoreFactory {
     /**
      * Factory method to generate a Hashstore
      * 
-     * @param classPackage    String of the package name, ex.
-     *                        "org.dataone.hashstore.filehashstore.FileHashStore"
-     * @param storeProperties Properties object with the following keys:
-     *                        storePath, storeDepth, storeWidth, storeAlgorithm,
-     *                        storeMetadataNamespace
+     * @param classPackage String of the package name, ex.
+     *        "org.dataone.hashstore.filehashstore.FileHashStore"
+     * @param storeProperties Properties object with the following keys: storePath, storeDepth,
+     *        storeWidth, storeAlgorithm, storeMetadataNamespace
      * 
      * @return HashStore instance ready to store objects and metadata
-     * @throws HashStoreFactoryException When HashStore failÏs to initialize due to
-     *                                   permissions or class-related issues
-     * @throws IOException               When there is an issue with properties
+     * @throws HashStoreFactoryException When HashStore failÏs to initialize due to permissions or
+     *         class-related issues
+     * @throws IOException When there is an issue with properties
      */
     public static HashStore getHashStore(String classPackage, Properties storeProperties)
             throws HashStoreFactoryException, IOException {
@@ -53,20 +52,22 @@ public class HashStoreFactory {
             hashstore = (HashStore) constructor.newInstance(storeProperties);
 
         } catch (ClassNotFoundException cnfe) {
-            String errMsg = "HashStoreFactory - Unable to find 'FileHashStore' classPackage: " + classPackage + " - "
-                    + cnfe.fillInStackTrace();
+            String errMsg = "HashStoreFactory - Unable to find 'FileHashStore' classPackage: "
+                    + classPackage + " - " + cnfe.fillInStackTrace();
             logHashStore.error(errMsg);
             throw new HashStoreFactoryException(errMsg);
 
         } catch (NoSuchMethodException nsme) {
-            String errMsg = "HashStoreFactory - Constructor not found for 'FileHashStore': " + classPackage + " - "
-                    + nsme.fillInStackTrace();
+            String errMsg = "HashStoreFactory - Constructor not found for 'FileHashStore': "
+                    + classPackage + " - " + nsme.fillInStackTrace();
             logHashStore.error(errMsg);
             throw new HashStoreFactoryException(errMsg);
 
         } catch (IllegalAccessException iae) {
-            String errMsg = "HashStoreFactory - Executing method does not have access to the definition of the"
-                    + "specified class , field, method or constructor. " + iae.fillInStackTrace();
+            String errMsg =
+                    "HashStoreFactory - Executing method does not have access to the definition of"
+                            + " the specified class , field, method or constructor. "
+                            + iae.fillInStackTrace();
             logHashStore.error(errMsg);
             throw new HashStoreFactoryException(errMsg);
 
@@ -77,7 +78,8 @@ public class HashStoreFactory {
             throw new HashStoreFactoryException(errMsg);
 
         } catch (InvocationTargetException ite) {
-            String errMsg = "HashStoreFactory - Error creating 'FileHashStore' instance: " + ite.fillInStackTrace();
+            String errMsg = "HashStoreFactory - Error creating 'FileHashStore' instance: "
+                    + ite.fillInStackTrace();
             logHashStore.error(errMsg);
             throw new HashStoreFactoryException(errMsg);
 
