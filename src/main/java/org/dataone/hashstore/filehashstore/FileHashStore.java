@@ -61,7 +61,17 @@ public class FileHashStore implements HashStore {
             {"MD2", "MD5", "SHA-1", "SHA-256", "SHA-384", "SHA-512", "SHA-512/224", "SHA-512/256"};
 
     enum DefaultHashAlgorithms {
-        MD5, SHA_1, SHA_256, SHA_384, SHA_512
+        MD5("MD5"), SHA_1("SHA-1"), SHA_256("SHA-256"), SHA_384("SHA-384"), SHA_512("SHA-512");
+
+        final String algoName;
+
+        DefaultHashAlgorithms(String algo) {
+            algoName = algo;
+        }
+
+        public String getName() {
+            return algoName;
+        }
     }
 
     enum HashStoreProperties {
@@ -1012,21 +1022,14 @@ public class FileHashStore implements HashStore {
             validateAlgorithm(checksumAlgorithm);
         }
 
+        FileOutputStream os = new FileOutputStream(tmpFile);
+        MessageDigest md5 = MessageDigest.getInstance(DefaultHashAlgorithms.MD5.getName());
+        MessageDigest sha1 = MessageDigest.getInstance(DefaultHashAlgorithms.SHA_1.getName());
+        MessageDigest sha256 = MessageDigest.getInstance(DefaultHashAlgorithms.SHA_256.getName());
+        MessageDigest sha384 = MessageDigest.getInstance(DefaultHashAlgorithms.SHA_384.getName());
+        MessageDigest sha512 = MessageDigest.getInstance(DefaultHashAlgorithms.SHA_512.getName());
         MessageDigest additionalAlgo = null;
         MessageDigest checksumAlgo = null;
-        Map<String, String> hexDigests = new HashMap<>();
-
-        FileOutputStream os = new FileOutputStream(tmpFile);
-        // Replace `_` with `-` in order to get valid MessageDigest objects
-        MessageDigest md5 = MessageDigest.getInstance(DefaultHashAlgorithms.MD5.name());
-        MessageDigest sha1 =
-                MessageDigest.getInstance(DefaultHashAlgorithms.SHA_1.name().replace("_", "-"));
-        MessageDigest sha256 =
-                MessageDigest.getInstance(DefaultHashAlgorithms.SHA_256.name().replace("_", "-"));
-        MessageDigest sha384 =
-                MessageDigest.getInstance(DefaultHashAlgorithms.SHA_384.name().replace("_", "-"));
-        MessageDigest sha512 =
-                MessageDigest.getInstance(DefaultHashAlgorithms.SHA_512.name().replace("_", "-"));
         if (additionalAlgorithm != null) {
             logFileHashStore.debug(
                     "FileHashStore.writeToTmpFileAndGenerateChecksums - Adding additional algorithm"
@@ -1040,6 +1043,7 @@ public class FileHashStore implements HashStore {
             checksumAlgo = MessageDigest.getInstance(checksumAlgorithm);
         }
 
+        // Calculate hex digests
         try {
             byte[] buffer = new byte[8192];
             int bytesRead;
@@ -1070,16 +1074,18 @@ public class FileHashStore implements HashStore {
             os.close();
         }
 
+        // Create map of hash algorithms and corresponding hex digests
+        Map<String, String> hexDigests = new HashMap<>();
         String md5Digest = DatatypeConverter.printHexBinary(md5.digest()).toLowerCase();
         String sha1Digest = DatatypeConverter.printHexBinary(sha1.digest()).toLowerCase();
         String sha256Digest = DatatypeConverter.printHexBinary(sha256.digest()).toLowerCase();
         String sha384Digest = DatatypeConverter.printHexBinary(sha384.digest()).toLowerCase();
         String sha512Digest = DatatypeConverter.printHexBinary(sha512.digest()).toLowerCase();
-        hexDigests.put("MD5", md5Digest);
-        hexDigests.put("SHA-1", sha1Digest);
-        hexDigests.put("SHA-256", sha256Digest);
-        hexDigests.put("SHA-384", sha384Digest);
-        hexDigests.put("SHA-512", sha512Digest);
+        hexDigests.put(DefaultHashAlgorithms.MD5.getName(), md5Digest);
+        hexDigests.put(DefaultHashAlgorithms.SHA_1.getName(), sha1Digest);
+        hexDigests.put(DefaultHashAlgorithms.SHA_256.getName(), sha256Digest);
+        hexDigests.put(DefaultHashAlgorithms.SHA_384.getName(), sha384Digest);
+        hexDigests.put(DefaultHashAlgorithms.SHA_512.getName(), sha512Digest);
         if (additionalAlgorithm != null) {
             String extraAlgoDigest =
                     DatatypeConverter.printHexBinary(additionalAlgo.digest()).toLowerCase();
