@@ -1,13 +1,13 @@
 ## HashStore: hash-based object storage for DataONE data packages
 
-- **Author**: Matthew B. Jones, Dou Mok, Jing Tao
+- **Author**: Matthew B. Jones, Dou Mok, Jing Tao, Matthew Brooke
 - **License**: [Apache 2](http://opensource.org/licenses/Apache-2.0)
-- [Package source code on Github](https://github.com/DataONEorg/hashstore-java)
+- [Package source code on GitHub](https://github.com/DataONEorg/hashstore-java)
 - [**Submit Bugs and feature requests**](https://github.com/DataONEorg/hashstore-java/issues)
 - Contact us: support@dataone.org
 - [DataONE discussions](https://github.com/DataONEorg/dataone/discussions)
 
-HashStore is a server-side python package implementing a content-based identifier file system for storing and accessing data and metadata for DataONE services.  The package is used in DataONE system components that need direct, filesystem-based access to data objects, their system metadata, and extended metadata about the objects. This package is a core component of the [DataONE federation](https://dataone.org), and supports large-scale object storage for a variety of repositories, including the [KNB Data Repository](http://knb.ecoinformatics.org), the [NSF Arctic Data Center](https://arcticdata.io/catalog/), the [DataONE search service](https://search.dataone.org), and other repositories.
+HashStore is a server-side java library implementing a content-based identifier file system for storing and accessing data and metadata for DataONE services.  The package is used in DataONE system components that need direct, filesystem-based access to data objects, their system metadata, and extended metadata about the objects. This package is a core component of the [DataONE federation](https://dataone.org), and supports large-scale object storage for a variety of repositories, including the [KNB Data Repository](http://knb.ecoinformatics.org), the [NSF Arctic Data Center](https://arcticdata.io/catalog/), the [DataONE search service](https://search.dataone.org), and other repositories.
 
 DataONE in general, and HashStore in particular, are open source, community projects.  We [welcome contributions](https://github.com/DataONEorg/hashstore-java/blob/main/CONTRIBUTING.md) in many forms, including code, graphics, documentation, bug reports, testing, etc.  Use the [DataONE discussions](https://github.com/DataONEorg/dataone/discussions) to discuss these contributions with us.
 
