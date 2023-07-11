@@ -169,7 +169,7 @@ public class FileHashStore implements HashStore {
      * @throws NoSuchAlgorithmException If algorithm supplied is not supported
      * @throws IOException If `hashstore.yaml` config file cannot be retrieved/opened
      */
-    private void verifyHashStoreProperties(Path storePath, int storeDepth, int storeWidth,
+    protected void verifyHashStoreProperties(Path storePath, int storeDepth, int storeWidth,
             String storeAlgorithm, String storeMetadataNamespace)
             throws NoSuchAlgorithmException, IOException {
         if (storeDepth <= 0 || storeWidth <= 0) {
@@ -745,38 +745,7 @@ public class FileHashStore implements HashStore {
                 additionalAlgorithm, checksumAlgorithm);
 
         // Validate object if checksum and checksum algorithm is passed
-        if (requestValidation) {
-            logFileHashStore
-                    .info("FileHashStore.putObject - Validating object, checksum arguments supplied"
-                            + " and valid.");
-            String digestFromHexDigests = hexDigests.get(checksumAlgorithm);
-            if (digestFromHexDigests == null) {
-                String errMsg =
-                        "FileHashStore.putObject - checksum not found in hex digest map when"
-                                + " validating object." + " checksumAlgorithm checked: "
-                                + checksumAlgorithm;
-                logFileHashStore.error(errMsg);
-                throw new NoSuchAlgorithmException(errMsg);
-            }
-
-            if (!checksum.equals(digestFromHexDigests)) {
-                // Delete tmp File
-                boolean deleteStatus = tmpFile.delete();
-                if (!deleteStatus) {
-                    String errMsg =
-                            "FileHashStore.putObject - Object cannot be validated, failed to delete"
-                                    + " tmpFile: " + tmpFile.getName();
-                    logFileHashStore.error(errMsg);
-                    throw new IOException(errMsg);
-                }
-                String errMsg =
-                        "FileHashStore.putObject - Checksum given is not equal to the calculated"
-                                + " hex digest: " + digestFromHexDigests + ". Checksum provided: "
-                                + checksum + ". Deleting tmpFile: " + tmpFile.getName();
-                logFileHashStore.error(errMsg);
-                throw new IllegalArgumentException(errMsg);
-            }
-        }
+        validateTmpObject(requestValidation, checksum, checksumAlgorithm, tmpFile, hexDigests);
 
         // Move object
         boolean isDuplicate = true;
@@ -809,6 +778,57 @@ public class FileHashStore implements HashStore {
 
         // Create HashAddress object to return with pertinent data
         return new HashAddress(objectCid, isDuplicate, hexDigests);
+    }
+
+    /**
+     * If requestValidation is true, determines the integrity of an object with a given checksum &
+     * algorithm against a list of hex digests. If there is a mismatch, the tmpFile will be deleted
+     * and exceptions will be thrown.
+     * 
+     * @param requestValidation Boolean to decide whether to proceed with validation
+     * @param checksum Expected checksum value of object
+     * @param checksumAlgorithm Hash algorithm of checksum value
+     * @param tmpFile tmpFile that has been written
+     * @param hexDigests Map of the hex digests available to check with
+     * @throws NoSuchAlgorithmException When algorithm supplied is not supported
+     * @throws IOException When tmpFile fails to be deleted
+     */
+    private void validateTmpObject(boolean requestValidation, String checksum,
+            String checksumAlgorithm, File tmpFile, Map<String, String> hexDigests)
+            throws NoSuchAlgorithmException, IOException {
+        if (requestValidation) {
+            logFileHashStore
+                    .info("FileHashStore.validateTmpObject - Validating object, checksum arguments"
+                            + " supplied and valid.");
+            String digestFromHexDigests = hexDigests.get(checksumAlgorithm);
+            if (digestFromHexDigests == null) {
+                String errMsg =
+                        "FileHashStore.validateTmpObject - checksum not found in hex digest map"
+                                + " when validating object." + " checksumAlgorithm checked: "
+                                + checksumAlgorithm;
+                logFileHashStore.error(errMsg);
+                throw new NoSuchAlgorithmException(errMsg);
+            }
+
+            if (!checksum.equals(digestFromHexDigests)) {
+                // Delete tmp File
+                boolean deleteStatus = tmpFile.delete();
+                if (!deleteStatus) {
+                    String errMsg =
+                            "FileHashStore.validateTmpObject - Object cannot be validated, failed"
+                                    + " to delete tmpFile: " + tmpFile.getName();
+                    logFileHashStore.error(errMsg);
+                    throw new IOException(errMsg);
+                }
+                String errMsg =
+                        "FileHashStore.validateTmpObject - Checksum given is not equal to the"
+                                + " calculated hex digest: " + digestFromHexDigests + ". Checksum"
+                                + " provided: " + checksum + ". Deleting tmpFile: "
+                                + tmpFile.getName();
+                logFileHashStore.error(errMsg);
+                throw new IllegalArgumentException(errMsg);
+            }
+        }
     }
 
     /**
