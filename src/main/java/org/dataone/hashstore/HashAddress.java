@@ -17,8 +17,6 @@ public class HashAddress {
      * Creates a new instance of HashAddress with the given properties.
      *
      * @param id Unique identifier for the file
-     * @param relPath Relative path of the file within the hash store
-     * @param absPath Absolute path of the file on the local file system
      * @param isDuplicate Flag indicating if the file is a duplicate of an existing file
      * @param hexDigests A map of hash algorithm names to their hex-encoded digest values for the
      *        file

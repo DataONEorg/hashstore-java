@@ -99,7 +99,7 @@ public class FileHashStore implements HashStore {
         String storeMetadataNamespace =
                 hashstoreProperties.getProperty(HashStoreProperties.storeMetadataNamespace.name());
 
-        // Validate properties
+        // Check given properties and/with existing HashStore
         verifyHashStoreProperties(storePath, storeDepth, storeWidth, storeAlgorithm,
                 storeMetadataNamespace);
 
@@ -139,7 +139,7 @@ public class FileHashStore implements HashStore {
         if (!Files.exists(hashstoreYaml)) {
             String hashstoreYamlContent = buildHashStoreYamlString(STORE_ROOT, DIRECTORY_DEPTH,
                     DIRECTORY_WIDTH, OBJECT_STORE_ALGORITHM, METADATA_NAMESPACE);
-            putHashStoreYaml(hashstoreYamlContent);
+            writeHashStoreYaml(hashstoreYamlContent);
             logFileHashStore.info(
                     "FileHashStore - 'hashstore.yaml' written to storePath: " + hashstoreYaml);
         } else {
@@ -151,21 +151,21 @@ public class FileHashStore implements HashStore {
     // Configuration and Initialization Related Methods
 
     /**
-     * Determines whether FileHashStore can instantiate by validating a set of arguments. HashStore
-     * will not instantiate if an existing configuration file's properties (`hashstore.yaml`) are
-     * different than what is supplied - or if an object store exists at the given path but it is
-     * missing the `hashstore.yaml` config file.
+     * Determines whether FileHashStore can instantiate by validating a set of arguments and
+     * throwing exceptions. HashStore will not instantiate if an existing configuration file's
+     * properties (`hashstore.yaml`) are different from what is supplied - or if an object store
+     * exists at the given path, but it is missing the `hashstore.yaml` config file.
      * 
      * If `hashstore.yaml` exists, it will retrieve its properties and compare them with the given
      * values; and if there is a mismatch, an exception will be thrown. If not, it will look to see
      * if any directories/files exist in the given store path and throw an exception if any file or
      * directory is found.
      * 
-     * @param storePath
-     * @param storeDepth
-     * @param storeWidth
-     * @param storeAlgorithm
-     * @param storeMetadataNamespace
+     * @param storePath Path where HashStore will store objects
+     * @param storeDepth Depth of directories
+     * @param storeWidth Width of directories
+     * @param storeAlgorithm Algorithm to use when calculating object addresses
+     * @param storeMetadataNamespace Default metadata namespace (`formatId`)
      * @throws NoSuchAlgorithmException If algorithm supplied is not supported
      * @throws IOException If `hashstore.yaml` config file cannot be retrieved/opened
      */
@@ -191,7 +191,7 @@ public class FileHashStore implements HashStore {
         if (Files.exists(hashstoreYamlPredictedPath)) {
             logFileHashStore.debug("FileHashStore - 'hashstore.yaml' found, verifying properties.");
 
-            HashMap<String, Object> hsProperties = getHashStoreYaml(storePath);
+            HashMap<String, Object> hsProperties = loadHashStoreYaml(storePath);
             Path existingStorePath = (Path) hsProperties.get(HashStoreProperties.storePath.name());
             int existingStoreDepth = (int) hsProperties.get(HashStoreProperties.storeDepth.name());
             int existingStoreWidth = (int) hsProperties.get(HashStoreProperties.storeWidth.name());
@@ -236,7 +236,7 @@ public class FileHashStore implements HashStore {
      * @return HashMap of the properties
      * @throws IOException If `hashstore.yaml` doesn't exist
      */
-    protected HashMap<String, Object> getHashStoreYaml(Path storePath) throws IOException {
+    protected HashMap<String, Object> loadHashStoreYaml(Path storePath) throws IOException {
         Path hashstoreYaml = storePath.resolve("hashstore.yaml");
         File hashStoreYaml = hashstoreYaml.toFile();
         ObjectMapper om = new ObjectMapper(new YAMLFactory());
@@ -268,7 +268,7 @@ public class FileHashStore implements HashStore {
      * @param yamlString Content of the HashStore configuration
      * @throws IOException If unable to write `hashstore.yaml`
      */
-    protected void putHashStoreYaml(String yamlString) throws IOException {
+    protected void writeHashStoreYaml(String yamlString) throws IOException {
         Path hashstoreYaml = STORE_ROOT.resolve("hashstore.yaml");
 
         try (BufferedWriter writer =

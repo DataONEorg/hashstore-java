@@ -270,7 +270,7 @@ public class FileHashStorePublicTest {
      */
     @Test
     public void testGetHashStoreYaml() throws IOException {
-        HashMap<String, Object> hsProperties = fileHashStore.getHashStoreYaml(rootDirectory);
+        HashMap<String, Object> hsProperties = fileHashStore.loadHashStoreYaml(rootDirectory);
         assertEquals(hsProperties.get("storePath"), rootDirectory);
         assertEquals(hsProperties.get("storeDepth"), 3);
         assertEquals(hsProperties.get("storeWidth"), 2);
