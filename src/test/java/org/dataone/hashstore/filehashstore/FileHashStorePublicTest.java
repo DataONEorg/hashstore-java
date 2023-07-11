@@ -78,6 +78,21 @@ public class FileHashStorePublicTest {
     }
 
     /**
+     * Test constructor null store path
+     */
+    @Test(expected = NullPointerException.class)
+    public void constructor_nullStorePath() throws Exception {
+        Properties storeProperties = new Properties();
+        storeProperties.setProperty("storePath", null);
+        storeProperties.setProperty("storeDepth", "0");
+        storeProperties.setProperty("storeWidth", "2");
+        storeProperties.setProperty("storeAlgorithm", "SHA-256");
+        storeProperties.setProperty("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+
+        new FileHashStore(storeProperties);
+    }
+
+    /**
      * Test constructor invalid depth property value
      */
     @Test(expected = IllegalArgumentException.class)
