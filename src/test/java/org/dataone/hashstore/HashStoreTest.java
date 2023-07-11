@@ -8,7 +8,7 @@ import static org.junit.Assert.fail;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
+import java.util.Properties;
 
 import org.dataone.hashstore.exceptions.HashStoreFactoryException;
 import org.dataone.hashstore.filehashstore.FileHashStore;
@@ -28,14 +28,15 @@ public class HashStoreTest {
     @Before
     public void getHashStore() {
         String classPackage = "org.dataone.hashstore.filehashstore.FileHashStore";
-        Path rootDirectory = this.tempFolder.getRoot().toPath().resolve("metacat");
+        Path rootDirectory = tempFolder.getRoot().toPath().resolve("metacat");
 
-        HashMap<String, Object> storeProperties = new HashMap<>();
-        storeProperties.put("storePath", rootDirectory);
-        storeProperties.put("storeDepth", 3);
-        storeProperties.put("storeWidth", 2);
-        storeProperties.put("storeAlgorithm", "SHA-256");
-        storeProperties.put("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+        Properties storeProperties = new Properties();
+        storeProperties.setProperty("storePath", rootDirectory.toString());
+        storeProperties.setProperty("storeDepth", "3");
+        storeProperties.setProperty("storeWidth", "2");
+        storeProperties.setProperty("storeAlgorithm", "SHA-256");
+        storeProperties.setProperty("storeMetadataNamespace",
+                "http://ns.dataone.org/service/types/v2.0");
 
         try {
             hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
@@ -66,19 +67,38 @@ public class HashStoreTest {
      * Check that getHashStore throws exception when classPackage is null
      */
     @Test(expected = HashStoreFactoryException.class)
-    public void hashStore_nullClassPackage() throws Exception {
-        HashMap<String, Object> storeProperties = new HashMap<>();
-        storeProperties.put("storePath", "/test");
-        storeProperties.put("storeDepth", 3);
-        storeProperties.put("storeWidth", 2);
-        storeProperties.put("storeAlgorithm", "SHA-256");
-        storeProperties.put("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+    public void hashStore_classPackageNull() throws Exception {
+        Properties storeProperties = new Properties();
+        storeProperties.setProperty("storePath", "/test");
+        storeProperties.setProperty("storeDepth", "3");
+        storeProperties.setProperty("storeWidth", "2");
+        storeProperties.setProperty("storeAlgorithm", "SHA-256");
+        storeProperties.setProperty("storeMetadataNamespace",
+                "http://ns.dataone.org/service/types/v2.0");
 
         hashStore = HashStoreFactory.getHashStore(null, storeProperties);
     }
 
     /**
-     * Check that getHashStore throws exception when classPackage is null
+     * Check that getHashStore throws exception when classPackage is not found
+     */
+    @Test(expected = HashStoreFactoryException.class)
+    public void hashStore_classPackageNotFound() throws Exception {
+        String classPackage = "org.dataone.hashstore.filehashstore.AnotherHashStore";
+
+        Properties storeProperties = new Properties();
+        storeProperties.setProperty("storePath", "/test");
+        storeProperties.setProperty("storeDepth", "3");
+        storeProperties.setProperty("storeWidth", "2");
+        storeProperties.setProperty("storeAlgorithm", "SHA-256");
+        storeProperties.setProperty("storeMetadataNamespace",
+                "http://ns.dataone.org/service/types/v2.0");
+
+        hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
+    }
+
+    /**
+     * Check that getHashStore throws exception when storeProperties is null
      */
     @Test(expected = HashStoreFactoryException.class)
     public void hashStore_nullStoreProperties() throws Exception {
@@ -101,7 +121,6 @@ public class HashStoreTest {
             // Check id (sha-256 hex digest of the ab_id, aka object_cid)
             String objAuthorityId = testData.pidData.get(pid).get("object_cid");
             assertEquals(objAuthorityId, objInfo.getId());
-            assertTrue(Files.exists(objInfo.getAbsPath()));
         }
     }
 }

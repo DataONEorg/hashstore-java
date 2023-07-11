@@ -6,10 +6,11 @@ import java.io.InputStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 import javax.xml.bind.DatatypeConverter;
 
@@ -31,7 +32,7 @@ import org.junit.rules.TemporaryFolder;
  */
 public class FileHashStoreProtectedTest {
     private FileHashStore fileHashStore;
-    private HashMap<String, Object> fhsProperties;
+    private Properties fhsProperties;
     private static final TestDataHarness testData = new TestDataHarness();
 
     /**
@@ -39,18 +40,19 @@ public class FileHashStoreProtectedTest {
      */
     @Before
     public void initializeFileHashStore() {
-        Path rootDirectory = this.tempFolder.getRoot().toPath().resolve("metacat");
+        Path rootDirectory = tempFolder.getRoot().toPath().resolve("metacat");
 
-        HashMap<String, Object> storeProperties = new HashMap<>();
-        storeProperties.put("storePath", rootDirectory);
-        storeProperties.put("storeDepth", 3);
-        storeProperties.put("storeWidth", 2);
-        storeProperties.put("storeAlgorithm", "SHA-256");
-        storeProperties.put("storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0");
+        Properties storeProperties = new Properties();
+        storeProperties.setProperty("storePath", rootDirectory.toString());
+        storeProperties.setProperty("storeDepth", "3");
+        storeProperties.setProperty("storeWidth", "2");
+        storeProperties.setProperty("storeAlgorithm", "SHA-256");
+        storeProperties.setProperty("storeMetadataNamespace",
+                "http://ns.dataone.org/service/types/v2.0");
 
         try {
-            this.fhsProperties = storeProperties;
-            this.fileHashStore = new FileHashStore(storeProperties);
+            fhsProperties = storeProperties;
+            fileHashStore = new FileHashStore(storeProperties);
 
         } catch (IOException e) {
             fail("IOException encountered: " + e.getMessage());
@@ -67,7 +69,7 @@ public class FileHashStoreProtectedTest {
     public File generateTemporaryFile() throws Exception {
         Path directory = tempFolder.getRoot().toPath();
         // newFile
-        return this.fileHashStore.generateTmpFile("testfile", directory);
+        return fileHashStore.generateTmpFile("testfile", directory);
     }
 
     /**
@@ -83,7 +85,7 @@ public class FileHashStoreProtectedTest {
     public void isValidAlgorithm_supported() {
         try {
             String md2 = "MD2";
-            boolean supported = this.fileHashStore.validateAlgorithm(md2);
+            boolean supported = fileHashStore.validateAlgorithm(md2);
             assertTrue(supported);
 
         } catch (NoSuchAlgorithmException nsae) {
@@ -99,11 +101,12 @@ public class FileHashStoreProtectedTest {
     public void isValidAlgorithm_notSupported() throws NoSuchAlgorithmException {
         try {
             String sm3 = "SM3";
-            boolean not_supported = this.fileHashStore.validateAlgorithm(sm3);
+            boolean not_supported = fileHashStore.validateAlgorithm(sm3);
             assertFalse(not_supported);
 
         } catch (NoSuchAlgorithmException nsae) {
-            throw new NoSuchAlgorithmException("NoSuchAlgorithmException encountered: " + nsae.getMessage());
+            throw new NoSuchAlgorithmException(
+                    "NoSuchAlgorithmException encountered: " + nsae.getMessage());
 
         }
     }
@@ -116,11 +119,12 @@ public class FileHashStoreProtectedTest {
         try {
             // Must match string to reduce complexity, no string formatting
             String md2_lowercase = "md2";
-            boolean lowercase_not_supported = this.fileHashStore.validateAlgorithm(md2_lowercase);
+            boolean lowercase_not_supported = fileHashStore.validateAlgorithm(md2_lowercase);
             assertFalse(lowercase_not_supported);
 
         } catch (NoSuchAlgorithmException nsae) {
-            throw new NoSuchAlgorithmException("NoSuchAlgorithmException encountered: " + nsae.getMessage());
+            throw new NoSuchAlgorithmException(
+                    "NoSuchAlgorithmException encountered: " + nsae.getMessage());
 
         }
     }
@@ -131,7 +135,7 @@ public class FileHashStoreProtectedTest {
     @Test(expected = NullPointerException.class)
     public void isValidAlgorithm_algorithmNull() {
         try {
-            this.fileHashStore.validateAlgorithm(null);
+            fileHashStore.validateAlgorithm(null);
 
         } catch (NoSuchAlgorithmException nsae) {
             fail("NoSuchAlgorithmException encountered: " + nsae.getMessage());
@@ -153,9 +157,10 @@ public class FileHashStoreProtectedTest {
      */
     @Test
     public void getHierarchicalPathString() {
-        String shardedPath = this.fileHashStore.getHierarchicalPathString(3, 2,
+        String shardedPath = fileHashStore.getHierarchicalPathString(3, 2,
                 "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a");
-        String shardedPathExpected = "94/f9/b6/c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
+        String shardedPathExpected =
+                "94/f9/b6/c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
         assertEquals(shardedPath, shardedPathExpected);
     }
 
@@ -165,7 +170,7 @@ public class FileHashStoreProtectedTest {
     @Test
     public void getPidHexDigest() throws Exception {
         for (String pid : testData.pidList) {
-            String abIdDigest = this.fileHashStore.getPidHexDigest(pid, "SHA-256");
+            String abIdDigest = fileHashStore.getPidHexDigest(pid, "SHA-256");
             String abIdTestData = testData.pidData.get(pid).get("object_cid");
             assertEquals(abIdDigest, abIdTestData);
         }
@@ -177,7 +182,7 @@ public class FileHashStoreProtectedTest {
     @Test(expected = NoSuchAlgorithmException.class)
     public void getPidHexDigest_badAlgorithm() throws Exception {
         for (String pid : testData.pidList) {
-            this.fileHashStore.getPidHexDigest(pid, "SM2");
+            fileHashStore.getPidHexDigest(pid, "SM2");
         }
     }
 
@@ -196,45 +201,6 @@ public class FileHashStoreProtectedTest {
             // Check id (sha-256 hex digest of the ab_id, aka object_cid)
             String objAuthorityId = testData.pidData.get(pid).get("object_cid");
             assertEquals(objAuthorityId, address.getId());
-        }
-    }
-
-    /**
-     * Verify that putObject returns correct relative path
-     */
-    @Test
-    public void putObject_testHarness_relPath() throws Exception {
-        for (String pid : testData.pidList) {
-            String pidFormatted = pid.replace("/", "_");
-            Path testDataFile = testData.getTestFile(pidFormatted);
-
-            InputStream dataStream = Files.newInputStream(testDataFile);
-            HashAddress address = fileHashStore.putObject(dataStream, pid, null, null, null);
-
-            // Check relative path
-            String objAuthorityId = testData.pidData.get(pid).get("object_cid");
-            String objRelPath = this.fileHashStore.getHierarchicalPathString(3, 2, objAuthorityId);
-            assertEquals(objRelPath, address.getRelPath());
-        }
-    }
-
-    /**
-     * Verify that putObject returns correct absolute path
-     */
-    @Test
-    public void putObject_testHarness_absPath() throws Exception {
-        for (String pid : testData.pidList) {
-            String pidFormatted = pid.replace("/", "_");
-            Path testDataFile = testData.getTestFile(pidFormatted);
-
-            InputStream dataStream = Files.newInputStream(testDataFile);
-            HashAddress address = fileHashStore.putObject(dataStream, pid, null, null, null);
-
-            // Check absolute path
-            Path absPath = address.getAbsPath();
-            Path realPath = fileHashStore.getRealPath(pid, "object", null);
-            assertTrue(Files.exists(absPath));
-            assertEquals(absPath, realPath);
         }
     }
 
@@ -295,10 +261,17 @@ public class FileHashStoreProtectedTest {
         String checksumCorrect = "9c25df1c8ba1d2e57bb3fd4785878b85";
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        HashAddress address = fileHashStore.putObject(dataStream, pid, null, checksumCorrect, "MD2");
+        HashAddress address =
+                fileHashStore.putObject(dataStream, pid, null, checksumCorrect, "MD2");
 
-        Path absPath = address.getAbsPath();
-        assertTrue(Files.exists(absPath));
+        String objCid = address.getId();
+        // Get relative path
+        String objCidShardString = fileHashStore.getHierarchicalPathString(3, 2, objCid);
+        // Get absolute path
+        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+        Path objCidAbsPath = storePath.resolve("objects/" + objCidShardString);
+
+        assertTrue(Files.exists(objCidAbsPath));
     }
 
     /**
@@ -335,8 +308,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Verify putObject throws exception when checksum is empty and algorithm
-     * supported
+     * Verify putObject throws exception when checksum is empty and algorithm supported
      */
     @Test(expected = IllegalArgumentException.class)
     public void putObject_emptyChecksumValue() throws Exception {
@@ -349,8 +321,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Verify putObject throws exception when checksum is null and algorithm
-     * supported
+     * Verify putObject throws exception when checksum is null and algorithm supported
      */
     @Test(expected = NullPointerException.class)
     public void putObject_nullChecksumValue() throws Exception {
@@ -363,8 +334,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Verify putObject throws exception when checksumAlgorithm is empty and
-     * checksum is supplied
+     * Verify putObject throws exception when checksumAlgorithm is empty and checksum is supplied
      */
     @Test(expected = IllegalArgumentException.class)
     public void putObject_emptyChecksumAlgorithmValue() throws Exception {
@@ -377,8 +347,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Verify putObject throws exception when checksumAlgorithm is null and checksum
-     * supplied
+     * Verify putObject throws exception when checksumAlgorithm is null and checksum supplied
      */
     @Test(expected = NullPointerException.class)
     public void putObject_nullChecksumAlgorithmValue() throws Exception {
@@ -410,8 +379,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Verify putObject throws exception when unsupported additional algorithm
-     * provided
+     * Verify putObject throws exception when unsupported additional algorithm provided
      */
     @Test(expected = NoSuchAlgorithmException.class)
     public void putObject_invalidAlgorithm() throws Exception {
@@ -487,8 +455,8 @@ public class FileHashStoreProtectedTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            Map<String, String> hexDigests = this.fileHashStore.writeToTmpFileAndGenerateChecksums(newTmpFile,
-                    dataStream, null, null);
+            Map<String, String> hexDigests = fileHashStore
+                    .writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream, null, null);
 
             // Validate checksum values
             String md5 = testData.pidData.get(pid).get("md5");
@@ -520,7 +488,7 @@ public class FileHashStoreProtectedTest {
             String addAlgo = "MD2";
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            this.fileHashStore.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream, addAlgo, null);
+            fileHashStore.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream, addAlgo, null);
 
             long testDataFileSize = Files.size(testDataFile);
             long tmpFileSize = Files.size(newTmpFile.toPath());
@@ -544,8 +512,8 @@ public class FileHashStoreProtectedTest {
             String addAlgo = "MD2";
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            Map<String, String> hexDigests = this.fileHashStore.writeToTmpFileAndGenerateChecksums(newTmpFile,
-                    dataStream, addAlgo, null);
+            Map<String, String> hexDigests = fileHashStore
+                    .writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream, addAlgo, null);
 
             // Validate checksum values
             String md2 = testData.pidData.get(pid).get("md2");
@@ -569,8 +537,8 @@ public class FileHashStoreProtectedTest {
             String checksumAlgo = "SHA-512/224";
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            Map<String, String> hexDigests = this.fileHashStore.writeToTmpFileAndGenerateChecksums(newTmpFile,
-                    dataStream, null, checksumAlgo);
+            Map<String, String> hexDigests = fileHashStore
+                    .writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream, null, checksumAlgo);
 
             // Validate checksum values
             String sha512224 = testData.pidData.get(pid).get("sha512-224");
@@ -579,8 +547,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Check that checksums are generated when both additional and checksum
-     * algorithm supplied
+     * Check that checksums are generated when both additional and checksum algorithm supplied
      */
     @Test
     public void writeToTmpFileAndGenerateChecksums_addAlgoChecksumAlgo() throws Exception {
@@ -596,8 +563,8 @@ public class FileHashStoreProtectedTest {
             String checksumAlgo = "SHA-512/224";
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            Map<String, String> hexDigests = this.fileHashStore.writeToTmpFileAndGenerateChecksums(newTmpFile,
-                    dataStream, addAlgo, checksumAlgo);
+            Map<String, String> hexDigests = fileHashStore.writeToTmpFileAndGenerateChecksums(
+                    newTmpFile, dataStream, addAlgo, checksumAlgo);
 
             // Validate checksum values
             String md2 = testData.pidData.get(pid).get("md2");
@@ -623,7 +590,7 @@ public class FileHashStoreProtectedTest {
             String addAlgo = "SM2";
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            this.fileHashStore.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream, addAlgo, null);
+            fileHashStore.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream, addAlgo, null);
         }
     }
 
@@ -636,7 +603,7 @@ public class FileHashStoreProtectedTest {
         String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
         File targetFile = new File(targetString);
 
-        this.fileHashStore.move(newTmpFile, targetFile, "object");
+        fileHashStore.move(newTmpFile, targetFile, "object");
         assertTrue(targetFile.exists());
     }
 
@@ -648,10 +615,10 @@ public class FileHashStoreProtectedTest {
         File newTmpFile = generateTemporaryFile();
         String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
         File targetFile = new File(targetString);
-        this.fileHashStore.move(newTmpFile, targetFile, "object");
+        fileHashStore.move(newTmpFile, targetFile, "object");
 
         File newTmpFileTwo = generateTemporaryFile();
-        this.fileHashStore.move(newTmpFileTwo, targetFile, "object");
+        fileHashStore.move(newTmpFileTwo, targetFile, "object");
     }
 
     /**
@@ -662,7 +629,7 @@ public class FileHashStoreProtectedTest {
         File newTmpFile = generateTemporaryFile();
         String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
         File targetFile = new File(targetString);
-        this.fileHashStore.move(newTmpFile, targetFile, null);
+        fileHashStore.move(newTmpFile, targetFile, null);
     }
 
     /**
@@ -673,7 +640,7 @@ public class FileHashStoreProtectedTest {
         File newTmpFile = generateTemporaryFile();
         String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
         File targetFile = new File(targetString);
-        this.fileHashStore.move(newTmpFile, targetFile, "");
+        fileHashStore.move(newTmpFile, targetFile, "");
     }
 
     /**
@@ -684,7 +651,7 @@ public class FileHashStoreProtectedTest {
         File newTmpFile = generateTemporaryFile();
         String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
         File targetFile = new File(targetString);
-        this.fileHashStore.move(newTmpFile, targetFile, "     ");
+        fileHashStore.move(newTmpFile, targetFile, "     ");
     }
 
     /**
@@ -699,12 +666,13 @@ public class FileHashStoreProtectedTest {
             Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
 
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
-            String metadataCid = this.fileHashStore.putMetadata(metadataStream, pid, null);
+            String metadataCid = fileHashStore.putMetadata(metadataStream, pid, null);
 
             // Get relative path
-            String metadataCidShardString = this.fileHashStore.getHierarchicalPathString(3, 2, metadataCid);
+            String metadataCidShardString =
+                    fileHashStore.getHierarchicalPathString(3, 2, metadataCid);
             // Get absolute path
-            Path storePath = (Path) this.fhsProperties.get("storePath");
+            Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
             Path metadataCidAbsPath = storePath.resolve("metadata/" + metadataCidShardString);
 
             assertTrue(Files.exists(metadataCidAbsPath));
@@ -717,7 +685,7 @@ public class FileHashStoreProtectedTest {
     @Test(expected = NullPointerException.class)
     public void putMetadata_metadataNull() throws Exception {
         for (String pid : testData.pidList) {
-            this.fileHashStore.putMetadata(null, pid, null);
+            fileHashStore.putMetadata(null, pid, null);
         }
     }
 
@@ -734,7 +702,7 @@ public class FileHashStoreProtectedTest {
 
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
 
-            this.fileHashStore.putMetadata(metadataStream, null, null);
+            fileHashStore.putMetadata(metadataStream, null, null);
         }
     }
 
@@ -751,7 +719,7 @@ public class FileHashStoreProtectedTest {
 
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
 
-            this.fileHashStore.putMetadata(metadataStream, "", null);
+            fileHashStore.putMetadata(metadataStream, "", null);
         }
     }
 
@@ -768,7 +736,7 @@ public class FileHashStoreProtectedTest {
 
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
 
-            this.fileHashStore.putMetadata(metadataStream, "     ", null);
+            fileHashStore.putMetadata(metadataStream, "     ", null);
         }
     }
 
@@ -785,7 +753,8 @@ public class FileHashStoreProtectedTest {
             Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
 
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
-            boolean metadataWritten = this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream);
+            boolean metadataWritten =
+                    fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream);
             assertTrue(metadataWritten);
         }
     }
@@ -804,7 +773,8 @@ public class FileHashStoreProtectedTest {
             Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
 
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
-            boolean metadataWritten = this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream);
+            boolean metadataWritten =
+                    fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream);
             assertTrue(metadataWritten);
 
             long tmpMetadataFileSize = Files.size(newTmpFile.toPath());
@@ -827,7 +797,7 @@ public class FileHashStoreProtectedTest {
             Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
             // Write it to the tmpFile
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
-            this.fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream);
+            fileHashStore.writeToTmpMetadataFile(newTmpFile, metadataStream);
 
             // Create InputStream to tmp File
             InputStream metadataStoredStream;
@@ -856,7 +826,8 @@ public class FileHashStoreProtectedTest {
             }
 
             String sha256Digest = DatatypeConverter.printHexBinary(sha256.digest()).toLowerCase();
-            String sha256MetadataDigestFromTestData = testData.pidData.get(pid).get("metadata_sha256");
+            String sha256MetadataDigestFromTestData =
+                    testData.pidData.get(pid).get("metadata_sha256");
             assertEquals(sha256Digest, sha256MetadataDigestFromTestData);
 
             // Close stream

@@ -1,7 +1,5 @@
 package org.dataone.hashstore;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,8 +14,6 @@ import org.junit.Test;
  */
 public class HashAddressTest {
     private static String id = "";
-    private static String relpath = "";
-    private static Path abspath;
     private static boolean isDuplicate;
     private static Map<String, String> hexDigests;
 
@@ -27,13 +23,12 @@ public class HashAddressTest {
     @BeforeClass
     public static void initializeInstanceVariables() {
         id = "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
-        relpath = "/rel/test/directory";
-        abspath = Paths.get("/abs/test/directory");
         isDuplicate = true;
         hexDigests = new HashMap<>();
         hexDigests.put("md5", "f4ea2d07db950873462a064937197b0f");
         hexDigests.put("sha1", "3d25436c4490b08a2646e283dada5c60e5c0539d");
-        hexDigests.put("sha256", "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a");
+        hexDigests.put("sha256",
+                "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a");
         hexDigests.put("sha384",
                 "a204678330fcdc04980c9327d4e5daf01ab7541e8a351d49a7e9c5005439dce749ada39c4c35f573dd7d307cca11bea8");
         hexDigests.put("sha512",
@@ -45,7 +40,7 @@ public class HashAddressTest {
      */
     @Test
     public void testHashAddress() {
-        HashAddress hashad = new HashAddress(id, relpath, abspath, isDuplicate, hexDigests);
+        HashAddress hashad = new HashAddress(id, isDuplicate, hexDigests);
         assertNotNull(hashad);
     }
 
@@ -54,29 +49,9 @@ public class HashAddressTest {
      */
     @Test
     public void testHashAddressGetId() {
-        HashAddress hashad = new HashAddress(id, relpath, abspath, isDuplicate, hexDigests);
+        HashAddress hashad = new HashAddress(id, isDuplicate, hexDigests);
         String hashad_id = hashad.getId();
         assertEquals(hashad_id, id);
-    }
-
-    /**
-     * Check HashAddress get rel path
-     */
-    @Test
-    public void testHashAddressGetRelPath() {
-        HashAddress hashad = new HashAddress(id, relpath, abspath, isDuplicate, hexDigests);
-        String hashad_relpath = hashad.getRelPath();
-        assertEquals(hashad_relpath, relpath);
-    }
-
-    /**
-     * Check HashAddress get abs path
-     */
-    @Test
-    public void testHashAddressGetAbsPath() {
-        HashAddress hashad = new HashAddress(id, relpath, abspath, isDuplicate, hexDigests);
-        Path hashad_abspath = hashad.getAbsPath();
-        assertEquals(hashad_abspath, abspath);
     }
 
     /**
@@ -84,7 +59,7 @@ public class HashAddressTest {
      */
     @Test
     public void testHashAddressGetIsDuplicate() {
-        HashAddress hashad = new HashAddress(id, relpath, abspath, isDuplicate, hexDigests);
+        HashAddress hashad = new HashAddress(id, isDuplicate, hexDigests);
         boolean hashad_isDuplicate = hashad.getIsDuplicate();
         assertEquals(hashad_isDuplicate, isDuplicate);
     }
@@ -94,7 +69,7 @@ public class HashAddressTest {
      */
     @Test
     public void testHashAddressGetHexDigests() {
-        HashAddress hashad = new HashAddress(id, relpath, abspath, isDuplicate, hexDigests);
+        HashAddress hashad = new HashAddress(id, isDuplicate, hexDigests);
         Map<String, String> hashad_map = hashad.getHexDigests();
         assertEquals(hashad_map, hexDigests);
     }
