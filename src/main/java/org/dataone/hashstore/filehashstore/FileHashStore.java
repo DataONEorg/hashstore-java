@@ -225,8 +225,7 @@ public class FileHashStore implements HashStore {
                             + " objects and directories.");
 
             if (Files.isDirectory(storePath)) {
-                File[] storePathFileList = storePath.toFile().listFiles();
-                if (storePathFileList == null || storePathFileList.length > 0) {
+                if (!isDirectoryEmpty(storePath)) {
                     String errMsg = "FileHashStore - Missing 'hashstore.yaml' but directories"
                             + " and/or objects found.";
                     logFileHashStore.fatal(errMsg);
