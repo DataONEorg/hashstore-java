@@ -148,6 +148,8 @@ public class FileHashStore implements HashStore {
         }
     }
 
+    // Configuration and Initialization Related Methods
+
     /**
      * Determines whether FileHashStore can instantiate by validating a set of arguments. HashStore
      * will not instantiate if an existing configuration file's properties (`hashstore.yaml`) are
@@ -178,7 +180,7 @@ public class FileHashStore implements HashStore {
         }
         // Ensure algorithm supplied is not empty, not null and supported
         validateAlgorithm(storeAlgorithm);
-        // Review formatId
+        // Review metadata format (formatId)
         isObjectNull(storeMetadataNamespace, "storeMetadataNamespace",
                 "FileHashStore - constructor");
         isStringEmpty(storeMetadataNamespace, "storeMetadataNamespace",
@@ -226,8 +228,6 @@ public class FileHashStore implements HashStore {
                     + " not yet initialized.");
         }
     }
-
-    // Configuration and Initialization Related Methods
 
     /**
      * Get the properties of HashStore from 'hashstore.yaml'
