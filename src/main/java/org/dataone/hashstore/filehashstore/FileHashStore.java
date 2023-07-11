@@ -83,13 +83,11 @@ public class FileHashStore implements HashStore {
      */
     public FileHashStore(Properties hashstoreProperties)
             throws IllegalArgumentException, IOException, NoSuchAlgorithmException {
-        if (hashstoreProperties == null) {
-            String errMsg = "FileHashStore - Properties cannot be null.";
-            logFileHashStore.fatal(errMsg);
-            throw new NullPointerException(errMsg);
-        }
+        logFileHashStore.info("FileHashStore - Call received to instantiate FileHashStore");
+        isObjectNull(hashstoreProperties, "hashstoreProperties", "FileHashStore - constructor");
 
         // Get properties
+        // Note - Paths.get() throws NullPointerException if arg is null
         Path storePath =
                 Paths.get(hashstoreProperties.getProperty(HashStoreProperties.storePath.name()));
         int storeDepth = Integer
@@ -101,65 +99,9 @@ public class FileHashStore implements HashStore {
         String storeMetadataNamespace =
                 hashstoreProperties.getProperty(HashStoreProperties.storeMetadataNamespace.name());
 
-        // Validate input parameters
-        // RE: storePath - Paths.get() throws NullPointerException if arg is null
-        if (storeDepth <= 0 || storeWidth <= 0) {
-            String errMsg = "FileHashStore - Depth and width must be greater than 0." + " Depth: "
-                    + storeDepth + ". Width: " + storeWidth;
-            logFileHashStore.fatal(errMsg);
-            throw new IllegalArgumentException(errMsg);
-        }
-        // Ensure algorithm supplied is not empty, not null and supported
-        validateAlgorithm(storeAlgorithm);
-        // Review formatId
-        if (storeMetadataNamespace == null || storeMetadataNamespace.trim().isEmpty()) {
-            String errMsg = "FileHashStore - Store metadata namespace (formatId) cannot be"
-                    + " null or empty. Namespace: " + storeMetadataNamespace;
-            logFileHashStore.fatal(errMsg);
-            throw new IllegalArgumentException(errMsg);
-        }
-
-        // Check to see if configuration exists before initializing
-        Path hashstoreYamlPredictedPath = Paths.get(storePath + "/hashstore.yaml");
-        if (Files.exists(hashstoreYamlPredictedPath)) {
-            logFileHashStore.debug("FileHashStore - 'hashstore.yaml' found, verifying properties.");
-
-            HashMap<String, Object> hsProperties = getHashStoreYaml(storePath);
-            Path existingStorePath = (Path) hsProperties.get(HashStoreProperties.storePath.name());
-            int existingStoreDepth = (int) hsProperties.get(HashStoreProperties.storeDepth.name());
-            int existingStoreWidth = (int) hsProperties.get(HashStoreProperties.storeWidth.name());
-            String existingStoreAlgorithm =
-                    (String) hsProperties.get(HashStoreProperties.storeAlgorithm.name());
-            String existingStoreMetadataNs =
-                    (String) hsProperties.get(HashStoreProperties.storeMetadataNamespace.name());
-
-            // Verify properties when 'hashstore.yaml' found
-            checkConfigurationEquality("store path", storePath, existingStorePath);
-            checkConfigurationEquality("store depth", storeDepth, existingStoreDepth);
-            checkConfigurationEquality("store width", storeWidth, existingStoreWidth);
-            checkConfigurationEquality("store algorithm", storeAlgorithm, existingStoreAlgorithm);
-            checkConfigurationEquality("store algorithm", storeMetadataNamespace,
-                    existingStoreMetadataNs);
-
-        } else {
-            // Check if HashStore exists at the given store path (and is missing config)
-            logFileHashStore
-                    .debug("FileHashStore - 'hashstore.yaml' not found, check store path for"
-                            + " objects and directories.");
-
-            if (Files.isDirectory(storePath)) {
-                File[] storePathFileList = storePath.toFile().listFiles();
-                if (storePathFileList == null || storePathFileList.length > 0) {
-                    String errMsg = "FileHashStore - Missing 'hashstore.yaml' but directories"
-                            + " and/or objects found.";
-                    logFileHashStore.fatal(errMsg);
-                    throw new IllegalStateException(errMsg);
-
-                }
-            }
-            logFileHashStore.debug("FileHashStore - 'hashstore.yaml' not found and store path"
-                    + " not yet initialized.");
-        }
+        // Validate properties
+        verifyHashStoreProperties(storePath, storeDepth, storeWidth, storeAlgorithm,
+                storeMetadataNamespace);
 
         // HashStore configuration has been reviewed, proceed with initialization
         STORE_ROOT = storePath;
@@ -203,6 +145,85 @@ public class FileHashStore implements HashStore {
         } else {
             logFileHashStore.info("FileHashStore - 'hashstore.yaml' exists and has been verified."
                     + "Initializing FileHashStore.");
+        }
+    }
+
+    /**
+     * Determines whether FileHashStore can instantiate by validating a set of arguments. HashStore
+     * will not instantiate if an existing configuration file's properties (`hashstore.yaml`) are
+     * different than what is supplied - or if an object store exists at the given path but it is
+     * missing the `hashstore.yaml` config file.
+     * 
+     * If `hashstore.yaml` exists, it will retrieve its properties and compare them with the given
+     * values; and if there is a mismatch, an exception will be thrown. If not, it will look to see
+     * if any directories/files exist in the given store path and throw an exception if any file or
+     * directory is found.
+     * 
+     * @param storePath
+     * @param storeDepth
+     * @param storeWidth
+     * @param storeAlgorithm
+     * @param storeMetadataNamespace
+     * @throws NoSuchAlgorithmException If algorithm supplied is not supported
+     * @throws IOException If `hashstore.yaml` config file cannot be retrieved/opened
+     */
+    private void verifyHashStoreProperties(Path storePath, int storeDepth, int storeWidth,
+            String storeAlgorithm, String storeMetadataNamespace)
+            throws NoSuchAlgorithmException, IOException {
+        if (storeDepth <= 0 || storeWidth <= 0) {
+            String errMsg = "FileHashStore - Depth and width must be greater than 0." + " Depth: "
+                    + storeDepth + ". Width: " + storeWidth;
+            logFileHashStore.fatal(errMsg);
+            throw new IllegalArgumentException(errMsg);
+        }
+        // Ensure algorithm supplied is not empty, not null and supported
+        validateAlgorithm(storeAlgorithm);
+        // Review formatId
+        isObjectNull(storeMetadataNamespace, "storeMetadataNamespace",
+                "FileHashStore - constructor");
+        isStringEmpty(storeMetadataNamespace, "storeMetadataNamespace",
+                "FileHashStore - constructor");
+
+        // Check to see if configuration exists before initializing
+        Path hashstoreYamlPredictedPath = Paths.get(storePath + "/hashstore.yaml");
+        if (Files.exists(hashstoreYamlPredictedPath)) {
+            logFileHashStore.debug("FileHashStore - 'hashstore.yaml' found, verifying properties.");
+
+            HashMap<String, Object> hsProperties = getHashStoreYaml(storePath);
+            Path existingStorePath = (Path) hsProperties.get(HashStoreProperties.storePath.name());
+            int existingStoreDepth = (int) hsProperties.get(HashStoreProperties.storeDepth.name());
+            int existingStoreWidth = (int) hsProperties.get(HashStoreProperties.storeWidth.name());
+            String existingStoreAlgorithm =
+                    (String) hsProperties.get(HashStoreProperties.storeAlgorithm.name());
+            String existingStoreMetadataNs =
+                    (String) hsProperties.get(HashStoreProperties.storeMetadataNamespace.name());
+
+            // Verify properties when 'hashstore.yaml' found
+            checkConfigurationEquality("store path", storePath, existingStorePath);
+            checkConfigurationEquality("store depth", storeDepth, existingStoreDepth);
+            checkConfigurationEquality("store width", storeWidth, existingStoreWidth);
+            checkConfigurationEquality("store algorithm", storeAlgorithm, existingStoreAlgorithm);
+            checkConfigurationEquality("store algorithm", storeMetadataNamespace,
+                    existingStoreMetadataNs);
+
+        } else {
+            // Check if HashStore exists at the given store path (and is missing config)
+            logFileHashStore
+                    .debug("FileHashStore - 'hashstore.yaml' not found, check store path for"
+                            + " objects and directories.");
+
+            if (Files.isDirectory(storePath)) {
+                File[] storePathFileList = storePath.toFile().listFiles();
+                if (storePathFileList == null || storePathFileList.length > 0) {
+                    String errMsg = "FileHashStore - Missing 'hashstore.yaml' but directories"
+                            + " and/or objects found.";
+                    logFileHashStore.fatal(errMsg);
+                    throw new IllegalStateException(errMsg);
+
+                }
+            }
+            logFileHashStore.debug("FileHashStore - 'hashstore.yaml' not found and store path"
+                    + " not yet initialized.");
         }
     }
 
