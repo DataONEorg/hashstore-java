@@ -16,10 +16,10 @@ public class HashAddress {
     /**
      * Creates a new instance of HashAddress with the given properties.
      *
-     * @param id Unique identifier for the file
+     * @param id          Unique identifier for the file
      * @param isDuplicate Flag indicating if the file is a duplicate of an existing file
-     * @param hexDigests A map of hash algorithm names to their hex-encoded digest values for the
-     *        file
+     * @param hexDigests  A map of hash algorithm names to their hex-encoded digest values for the
+     *                    file
      */
     public HashAddress(String id, boolean isDuplicate, Map<String, String> hexDigests) {
         this.id = id;

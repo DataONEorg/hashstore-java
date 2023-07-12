@@ -1,4 +1,4 @@
 {
     "editor.formatOnSave": true,
-    "java.format.settings.url": ".vscode/eclipse-java-google-style.xml"
+    "java.format.settings.url": ".vscode/EclipseJava_GoogleStyle.xml"
 }

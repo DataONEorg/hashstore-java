@@ -41,21 +41,23 @@ public interface HashStore {
          * validates the object to ensure it matches what is provided before moving the file to its
          * permanent address.
          * 
-         * @param object Input stream to file
-         * @param pid Authority-based identifier
+         * @param object              Input stream to file
+         * @param pid                 Authority-based identifier
          * @param additionalAlgorithm Additional hex digest to include in hexDigests
-         * @param checksum Value of checksum to validate against
-         * @param checksumAlgorithm Algorithm of checksum submitted
+         * @param checksum            Value of checksum to validate against
+         * @param checksumAlgorithm   Algorithm of checksum submitted
          * @return HashAddress object encapsulating file information
          * @throws NoSuchAlgorithmException When additionalAlgorithm or checksumAlgorithm is invalid
-         * @throws IOException I/O Error when writing file, generating checksums and/or moving file
+         * @throws IOException              I/O Error when writing file, generating checksums and/or
+         *                                  moving file
          * @throws PidObjectExistsException When duplicate pid object is found
-         * @throws RuntimeException Thrown when there is an issue with permissions, illegal
-         *         arguments (ex. empty pid) or null pointers
+         * @throws RuntimeException         Thrown when there is an issue with permissions, illegal
+         *                                  arguments (ex. empty pid) or null pointers
          */
-        HashAddress storeObject(InputStream object, String pid, String additionalAlgorithm,
-                        String checksum, String checksumAlgorithm) throws NoSuchAlgorithmException,
-                        IOException, PidObjectExistsException, RuntimeException;
+        HashAddress storeObject(
+                InputStream object, String pid, String additionalAlgorithm, String checksum,
+                String checksumAlgorithm
+        ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException;
 
         /**
          * The `storeMetadata` method is responsible for adding/updating metadata (ex. `sysmeta`) to
@@ -67,20 +69,20 @@ public interface HashStore {
          * guaranteed to execute sequentially.
          * 
          * @param metadata Input stream to metadata document
-         * @param pid Authority-based identifier
+         * @param pid      Authority-based identifier
          * @param formatId Metadata namespace/format
          * @return Metadata content identifier (string representing metadata address)
-         * @throws IOException When there is an error writing the metadata document
+         * @throws IOException              When there is an error writing the metadata document
          * @throws IllegalArgumentException Invalid values like null for metadata, or empty pids and
-         *         formatIds
-         * @throws FileNotFoundException When temp metadata file is not found
-         * @throws InterruptedException metadataLockedIds synchronization issue
+         *                                  formatIds
+         * @throws FileNotFoundException    When temp metadata file is not found
+         * @throws InterruptedException     metadataLockedIds synchronization issue
          * @throws NoSuchAlgorithmException Algorithm used to calculate permanent address is not
-         *         supported
+         *                                  supported
          */
-        String storeMetadata(InputStream metadata, String pid, String formatId)
-                        throws IOException, IllegalArgumentException, FileNotFoundException,
-                        InterruptedException, NoSuchAlgorithmException;
+        String storeMetadata(InputStream metadata, String pid, String formatId) throws IOException,
+                IllegalArgumentException, FileNotFoundException, InterruptedException,
+                NoSuchAlgorithmException;
 
         /**
          * The `retrieveObject` method retrieves an object from HashStore using a given persistent
@@ -89,26 +91,26 @@ public interface HashStore {
          * @param pid Authority-based identifier
          * @return Object InputStream
          * @throws IllegalArgumentException When pid is null or empty
-         * @throws FileNotFoundException When requested pid has no associated object
-         * @throws IOException I/O error when creating InputStream to object
+         * @throws FileNotFoundException    When requested pid has no associated object
+         * @throws IOException              I/O error when creating InputStream to object
          * @throws NoSuchAlgorithmException When algorithm used to calculate object address is not
-         *         supported
+         *                                  supported
          */
         InputStream retrieveObject(String pid) throws IllegalArgumentException,
-                        FileNotFoundException, IOException, NoSuchAlgorithmException;
+                FileNotFoundException, IOException, NoSuchAlgorithmException;
 
         /**
          * The 'retrieveMetadata' method retrieves the metadata content of a given pid and metadata
          * namespace from HashStore.
          * 
-         * @param pid Authority-based identifier
+         * @param pid      Authority-based identifier
          * @param formatId Metadata namespace/format
          * @return Metadata InputStream
          * @throws IllegalArgumentException When pid/formatId is null or empty
-         * @throws FileNotFoundException When requested pid+formatId has no associated object
-         * @throws IOException I/O error when creating InputStream to metadata
+         * @throws FileNotFoundException    When requested pid+formatId has no associated object
+         * @throws IOException              I/O error when creating InputStream to metadata
          * @throws NoSuchAlgorithmException When algorithm used to calculate metadata address is not
-         *         supported
+         *                                  supported
          */
         InputStream retrieveMetadata(String pid, String formatId) throws Exception;
 
@@ -119,10 +121,10 @@ public interface HashStore {
          * @param pid Authority-based identifier
          * @return True if successful
          * @throws IllegalArgumentException When pid is null or empty
-         * @throws FileNotFoundException When requested pid has no associated object
-         * @throws IOException I/O error when deleting empty directories
+         * @throws FileNotFoundException    When requested pid has no associated object
+         * @throws IOException              I/O error when deleting empty directories
          * @throws NoSuchAlgorithmException When algorithm used to calculate object address is not
-         *         supported
+         *                                  supported
          */
         boolean deleteObject(String pid) throws Exception;
 
@@ -130,14 +132,14 @@ public interface HashStore {
          * The 'deleteMetadata' method deletes a metadata document (ex. `sysmeta`) permanently from
          * HashStore using a given persistent identifier and its respective metadata namespace.
          * 
-         * @param pid Authority-based identifier
+         * @param pid      Authority-based identifier
          * @param formatId Metadata namespace/format
          * @return True if successfulÏ
          * @throws IllegalArgumentException When pid or formatId is null or empty
-         * @throws FileNotFoundException When requested pid has no metadata
-         * @throws IOException I/O error when deleting empty directories
+         * @throws FileNotFoundException    When requested pid has no metadata
+         * @throws IOException              I/O error when deleting empty directories
          * @throws NoSuchAlgorithmException When algorithm used to calculate object address is not
-         *         supported
+         *                                  supported
          */
         boolean deleteMetadata(String pid, String formatId) throws Exception;
 
@@ -145,14 +147,14 @@ public interface HashStore {
          * The 'getHexDigest' method calculates the hex digest of an object that exists in HashStore
          * using a given persistent identifier and hash algorithm.
          * 
-         * @param pid Authority-based identifier
+         * @param pid       Authority-based identifier
          * @param algorithm Algorithm of desired hex digest
          * @return String hex digest of requested pid
          * @throws IllegalArgumentException When pid or formatId is null or empty
-         * @throws FileNotFoundException When requested pid object does not exist
-         * @throws IOException I/O error when calculating hex digests
+         * @throws FileNotFoundException    When requested pid object does not exist
+         * @throws IOException              I/O error when calculating hex digests
          * @throws NoSuchAlgorithmException When algorithm used to calculate object address is not
-         *         supported
+         *                                  supported
          */
         String getHexDigest(String pid, String algorithm) throws Exception;
 }

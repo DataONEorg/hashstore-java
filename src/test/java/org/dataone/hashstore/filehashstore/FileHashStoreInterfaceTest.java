@@ -51,8 +51,9 @@ public class FileHashStoreInterfaceTest {
         storeProperties.setProperty("storeDepth", "3");
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
-        storeProperties.setProperty("storeMetadataNamespace",
-                "http://ns.dataone.org/service/types/v2.0");
+        storeProperties.setProperty(
+            "storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0"
+        );
 
         try {
             fhsProperties = storeProperties;
@@ -80,8 +81,9 @@ public class FileHashStoreInterfaceTest {
         int shardDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
         int shardWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
         // Get relative path
-        String objCidShardString =
-                fileHashStore.getHierarchicalPathString(shardDepth, shardWidth, id);
+        String objCidShardString = fileHashStore.getHierarchicalPathString(
+            shardDepth, shardWidth, id
+        );
         // Get absolute path
         Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
 
@@ -200,8 +202,9 @@ public class FileHashStoreInterfaceTest {
         String checksumCorrect = "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        HashAddress address =
-                fileHashStore.storeObject(dataStream, pid, null, checksumCorrect, "SHA-256");
+        HashAddress address = fileHashStore.storeObject(
+            dataStream, pid, null, checksumCorrect, "SHA-256"
+        );
 
         String objCid = address.getId();
         Path objCidAbsPath = getObjectAbsPath(objCid);
@@ -236,7 +239,7 @@ public class FileHashStoreInterfaceTest {
         Path testDataFile = testData.getTestFile(pid);
 
         String checksumIncorrect =
-                "aaf9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
+            "aaf9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
 
         InputStream dataStream = Files.newInputStream(testDataFile);
         fileHashStore.storeObject(dataStream, pid, null, checksumIncorrect, "SHA-256");
@@ -317,7 +320,7 @@ public class FileHashStoreInterfaceTest {
             FileChannel fileChannel = fileOutputStream.getChannel();
             FileLock lock = fileChannel.lock();
             fileChannel.position(fileSize - 1);
-            fileChannel.write(java.nio.ByteBuffer.wrap(new byte[] {0}));
+            fileChannel.write(java.nio.ByteBuffer.wrap(new byte[]{0}));
             lock.release();
         } catch (IOException ioe) {
             ioe.printStackTrace();
@@ -326,8 +329,9 @@ public class FileHashStoreInterfaceTest {
 
         InputStream dataStream = Files.newInputStream(testFilePath);
         String pid = "dou.sparsefile.1";
-        HashAddress sparseFileObjInfo =
-                fileHashStore.storeObject(dataStream, pid, null, null, null);
+        HashAddress sparseFileObjInfo = fileHashStore.storeObject(
+            dataStream, pid, null, null, null
+        );
 
         String objCid = sparseFileObjInfo.getId();
         Path objCidAbsPath = getObjectAbsPath(objCid);
@@ -517,8 +521,9 @@ public class FileHashStoreInterfaceTest {
             String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, null);
 
             // Get relative path
-            String metadataCidShardString =
-                    fileHashStore.getHierarchicalPathString(3, 2, metadataCid);
+            String metadataCidShardString = fileHashStore.getHierarchicalPathString(
+                3, 2, metadataCid
+            );
             // Get absolute path
             Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
             Path metadataCidAbsPath = storePath.resolve("metadata/" + metadataCidShardString);
@@ -546,8 +551,9 @@ public class FileHashStoreInterfaceTest {
             String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, null);
 
             // Get relative path
-            String metadataCidShardString =
-                    fileHashStore.getHierarchicalPathString(3, 2, metadataCid);
+            String metadataCidShardString = fileHashStore.getHierarchicalPathString(
+                3, 2, metadataCid
+            );
             // Get absolute path
             Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
             Path metadataCidAbsPath = storePath.resolve("metadata/" + metadataCidShardString);
@@ -636,7 +642,7 @@ public class FileHashStoreInterfaceTest {
         // Get test metadata file
         Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
         String pidFormatHexDigest =
-                "ddf07952ef28efc099d10d8b682480f7d2da60015f5d8873b6e1ea75b4baf689";
+            "ddf07952ef28efc099d10d8b682480f7d2da60015f5d8873b6e1ea75b4baf689";
 
         // Create a thread pool with 3 threads
         ExecutorService executorService = Executors.newFixedThreadPool(3);
@@ -935,10 +941,11 @@ public class FileHashStoreInterfaceTest {
             }
 
             // Get hex digest
-            String sha256MetadataDigest =
-                    DatatypeConverter.printHexBinary(sha256.digest()).toLowerCase();
-            String sha256MetadataDigestFromTestData =
-                    testData.pidData.get(pid).get("metadata_sha256");
+            String sha256MetadataDigest = DatatypeConverter.printHexBinary(sha256.digest())
+                .toLowerCase();
+            String sha256MetadataDigestFromTestData = testData.pidData.get(pid).get(
+                "metadata_sha256"
+            );
             assertEquals(sha256MetadataDigest, sha256MetadataDigestFromTestData);
 
             // Close stream
