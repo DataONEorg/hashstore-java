@@ -406,7 +406,7 @@ public class FileHashStorePublicTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            secondHashStore.storeObject(dataStream, pid, null, null, null);
+            secondHashStore.storeObject(dataStream, pid, null, null, null, 0);
         }
 
         // Delete configuration

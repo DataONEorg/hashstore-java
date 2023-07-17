@@ -200,7 +200,7 @@ public class FileHashStoreProtectedTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectMetadata address = fileHashStore.putObject(dataStream, pid, null, null, null);
+            ObjectMetadata address = fileHashStore.putObject(dataStream, pid, null, null, null, 0);
 
             // Check id (sha-256 hex digest of the ab_id, aka object_cid)
             String objAuthorityId = testData.pidData.get(pid).get("object_cid");
@@ -218,7 +218,7 @@ public class FileHashStoreProtectedTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectMetadata address = fileHashStore.putObject(dataStream, pid, null, null, null);
+            ObjectMetadata address = fileHashStore.putObject(dataStream, pid, null, null, null, 0);
 
             // Check duplicate status
             assertFalse(address.getIsDuplicate());
@@ -235,7 +235,7 @@ public class FileHashStoreProtectedTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectMetadata address = fileHashStore.putObject(dataStream, pid, null, null, null);
+            ObjectMetadata address = fileHashStore.putObject(dataStream, pid, null, null, null, 0);
 
             Map<String, String> hexDigests = address.getHexDigests();
 
@@ -266,7 +266,7 @@ public class FileHashStoreProtectedTest {
 
         InputStream dataStream = Files.newInputStream(testDataFile);
         ObjectMetadata address = fileHashStore.putObject(
-            dataStream, pid, null, checksumCorrect, "MD2"
+            dataStream, pid, null, checksumCorrect, "MD2", 0
         );
 
         String objCid = address.getId();
@@ -291,7 +291,7 @@ public class FileHashStoreProtectedTest {
         String checksumCorrect = "9c25df1c8ba1d2e57bb3fd4785878b85";
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStream, pid, "MD2", null, null);
+        fileHashStore.putObject(dataStream, pid, "MD2", null, null, 0);
 
         String md2 = testData.pidData.get(pid).get("md2");
         assertEquals(checksumCorrect, md2);
@@ -309,7 +309,7 @@ public class FileHashStoreProtectedTest {
         String checksumIncorrect = "1c25df1c8ba1d2e57bb3fd4785878b85";
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStream, pid, null, checksumIncorrect, "MD2");
+        fileHashStore.putObject(dataStream, pid, null, checksumIncorrect, "MD2", 0);
     }
 
     /**
@@ -322,7 +322,7 @@ public class FileHashStoreProtectedTest {
         Path testDataFile = testData.getTestFile(pid);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStream, pid, null, "   ", "MD2");
+        fileHashStore.putObject(dataStream, pid, null, "   ", "MD2", 0);
     }
 
     /**
@@ -335,7 +335,7 @@ public class FileHashStoreProtectedTest {
         Path testDataFile = testData.getTestFile(pid);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStream, pid, null, null, "MD2");
+        fileHashStore.putObject(dataStream, pid, null, null, "MD2", 0);
     }
 
     /**
@@ -348,7 +348,7 @@ public class FileHashStoreProtectedTest {
         Path testDataFile = testData.getTestFile(pid);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStream, pid, null, "abc", "   ");
+        fileHashStore.putObject(dataStream, pid, null, "abc", "   ", 0);
     }
 
     /**
@@ -360,7 +360,7 @@ public class FileHashStoreProtectedTest {
         String pid = "jtao.1700.1";
         Path testDataFile = testData.getTestFile(pid);
         InputStream dataStream = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStream, pid, null, "abc", null);
+        fileHashStore.putObject(dataStream, pid, null, "abc", null, 0);
     }
 
     /**
@@ -373,14 +373,14 @@ public class FileHashStoreProtectedTest {
         Path testDataFile = testData.getTestFile(pid);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        ObjectMetadata address = fileHashStore.putObject(dataStream, pid, null, null, null);
+        ObjectMetadata address = fileHashStore.putObject(dataStream, pid, null, null, null, 0);
 
         // Check duplicate status
         assertFalse(address.getIsDuplicate());
 
         // Try duplicate upload
         InputStream dataStreamTwo = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStreamTwo, pid, null, null, null);
+        fileHashStore.putObject(dataStreamTwo, pid, null, null, null, 0);
     }
 
     /**
@@ -393,7 +393,7 @@ public class FileHashStoreProtectedTest {
         Path testDataFile = testData.getTestFile(pid);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStream, pid, "SM2", null, null);
+        fileHashStore.putObject(dataStream, pid, "SM2", null, null, 0);
     }
 
     /**
@@ -406,7 +406,7 @@ public class FileHashStoreProtectedTest {
         Path testDataFile = testData.getTestFile(pid);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStream, pid, "   ", null, null);
+        fileHashStore.putObject(dataStream, pid, "   ", null, null, 0);
     }
 
     /**
@@ -420,7 +420,7 @@ public class FileHashStoreProtectedTest {
         Path testDataFile = testData.getTestFile(pid);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStream, pidEmpty, null, null, null);
+        fileHashStore.putObject(dataStream, pidEmpty, null, null, null, 0);
     }
 
     /**
@@ -433,7 +433,7 @@ public class FileHashStoreProtectedTest {
         Path testDataFile = testData.getTestFile(pid);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStream, null, "MD2", null, null);
+        fileHashStore.putObject(dataStream, null, "MD2", null, null, 0);
     }
 
     /**
@@ -444,7 +444,7 @@ public class FileHashStoreProtectedTest {
         // Get test file to "upload"
         String pid = "jtao.1700.1";
 
-        fileHashStore.putObject(null, pid, "MD2", null, null);
+        fileHashStore.putObject(null, pid, "MD2", null, null, 0);
     }
 
     /**

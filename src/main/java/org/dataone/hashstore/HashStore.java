@@ -38,15 +38,16 @@ public interface HashStore {
          * with its corresponding hex digest. An algorithm is considered "supported" if it is
          * recognized as a valid hash algorithm in the `java.security.MessageDigest` class.
          * 
-         * Similarly, if a checksum and a checksumAlgorithm value are provided, `storeObject`
-         * validates the object to ensure it matches what is provided before moving the file to its
-         * permanent address.
+         * Similarly, if a checksum and a checksumAlgorithm or an object size value are provided,
+         * `storeObject` validates the object to ensure it matches what is provided before moving
+         * the file to its permanent address.
          * 
          * @param object              Input stream to file
          * @param pid                 Authority-based identifier
          * @param additionalAlgorithm Additional hex digest to include in hexDigests
          * @param checksum            Value of checksum to validate against
          * @param checksumAlgorithm   Algorithm of checksum submitted
+         * @param objSize             Expected size of object to validate after storing
          * @return ObjectMetadata object encapsulating file information
          * @throws NoSuchAlgorithmException When additionalAlgorithm or checksumAlgorithm is invalid
          * @throws IOException              I/O Error when writing file, generating checksums and/or
@@ -57,7 +58,7 @@ public interface HashStore {
          */
         ObjectMetadata storeObject(
                 InputStream object, String pid, String additionalAlgorithm, String checksum,
-                String checksumAlgorithm
+                String checksumAlgorithm, long objSize
         ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException;
 
         /**

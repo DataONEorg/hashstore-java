@@ -395,7 +395,7 @@ public class FileHashStore implements HashStore {
     @Override
     public ObjectMetadata storeObject(
         InputStream object, String pid, String additionalAlgorithm, String checksum,
-        String checksumAlgorithm
+        String checksumAlgorithm, long objSize
     ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException {
         logFileHashStore.debug(
             "FileHashStore.storeObject - Called to store object for pid: " + pid
@@ -414,6 +414,7 @@ public class FileHashStore implements HashStore {
             isStringEmpty(checksumAlgorithm, "checksumAlgorithm", "storeObject");
             validateAlgorithm(checksumAlgorithm);
         }
+        isObjectLessThanOrEqualToZero(objSize, "objSize", "storeObject");
 
         // Lock pid for thread safety, transaction control and atomic writing
         // A pid can only be stored once and only once, subsequent calls will
@@ -440,7 +441,7 @@ public class FileHashStore implements HashStore {
             );
             // Store object
             ObjectMetadata objInfo = putObject(
-                object, pid, additionalAlgorithm, checksum, checksumAlgorithm
+                object, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize
             );
             logFileHashStore.info(
                 "FileHashStore.storeObject - Object stored for pid: " + pid
@@ -758,6 +759,7 @@ public class FileHashStore implements HashStore {
      * @param additionalAlgorithm Optional checksum value to generate in hex digests
      * @param checksum            Value of checksum to validate against
      * @param checksumAlgorithm   Algorithm of checksum submitted
+     * @param objSize             Expected size of object to validate after storing
      * @return 'ObjectMetadata' object that contains the file id, relative path, absolute path,
      *         duplicate status and a checksum map based on the default algorithm list.
      * @throws IOException                     I/O Error when writing file, generating checksums,
@@ -775,7 +777,7 @@ public class FileHashStore implements HashStore {
      */
     protected ObjectMetadata putObject(
         InputStream object, String pid, String additionalAlgorithm, String checksum,
-        String checksumAlgorithm
+        String checksumAlgorithm, long objSize
     ) throws IOException, NoSuchAlgorithmException, SecurityException, FileNotFoundException,
         PidObjectExistsException, IllegalArgumentException, NullPointerException,
         AtomicMoveNotSupportedException {
@@ -794,6 +796,7 @@ public class FileHashStore implements HashStore {
             isStringEmpty(checksumAlgorithm, "checksumAlgorithm", "putObject");
             validateAlgorithm(checksumAlgorithm);
         }
+        isObjectLessThanOrEqualToZero(objSize, "objSize", "putObject");
 
         // If validation is desired, checksumAlgorithm and checksum must both be present
         boolean requestValidation = verifyChecksumParameters(checksum, checksumAlgorithm);
@@ -819,10 +822,13 @@ public class FileHashStore implements HashStore {
         Map<String, String> hexDigests = writeToTmpFileAndGenerateChecksums(
             tmpFile, object, additionalAlgorithm, checksumAlgorithm
         );
-        long tmpFileSize = 0;
+        long storedObjFileSize = Files.size(Paths.get(tmpFile.toString()));
 
         // Validate object if checksum and checksum algorithm is passed
-        validateTmpObject(requestValidation, checksum, checksumAlgorithm, tmpFile, hexDigests);
+        validateTmpObject(
+            requestValidation, checksum, checksumAlgorithm, tmpFile, hexDigests, objSize,
+            storedObjFileSize
+        );
 
         // Move object
         boolean isDuplicate = true;
@@ -856,7 +862,7 @@ public class FileHashStore implements HashStore {
         }
 
         // Create ObjectMetadata to return with pertinent data
-        return new ObjectMetadata(objectCid, tmpFileSize, isDuplicate, hexDigests);
+        return new ObjectMetadata(objectCid, storedObjFileSize, isDuplicate, hexDigests);
     }
 
     /**
@@ -874,8 +880,28 @@ public class FileHashStore implements HashStore {
      */
     private void validateTmpObject(
         boolean requestValidation, String checksum, String checksumAlgorithm, File tmpFile,
-        Map<String, String> hexDigests
+        Map<String, String> hexDigests, long objSize, long storedObjFileSize
     ) throws NoSuchAlgorithmException, IOException {
+        if (objSize > 0) {
+            if (objSize != storedObjFileSize) {
+                // Delete tmp File
+                boolean deleteStatus = tmpFile.delete();
+                if (!deleteStatus) {
+                    String errMsg =
+                        "FileHashStore.validateTmpObject - Object size stored does not match"
+                            + ". Failed" + " to delete tmpFile: " + tmpFile.getName();
+                    logFileHashStore.error(errMsg);
+                    throw new IOException(errMsg);
+                }
+                String errMsg =
+                    "FileHashStore.validateTmpObject - objSize given is not equal to the"
+                        + " stored object size. ObjSize: " + objSize + ". storedObjFileSize:"
+                        + storedObjFileSize + ". Deleting tmpFile: " + tmpFile.getName();
+                logFileHashStore.error(errMsg);
+                throw new IllegalArgumentException(errMsg);
+            }
+        }
+
         if (requestValidation) {
             logFileHashStore.info(
                 "FileHashStore.validateTmpObject - Validating object, checksum arguments"
@@ -1453,6 +1479,22 @@ public class FileHashStore implements HashStore {
         if (string.trim().isEmpty()) {
             String errMsg = "FileHashStore.isStringNullOrEmpty - Calling Method: " + method + "(): "
                 + argument + " cannot be empty.";
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
+        }
+    }
+
+    /**
+     * Checks whether a given long object is greater than 0
+     *
+     * @param object   Object to check
+     * @param argument Value that is being checked
+     * @param method   Calling method
+     */
+    private void isObjectLessThanOrEqualToZero(long object, String argument, String method) {
+        if (object < 0) {
+            String errMsg = "FileHashStore.isObjectGreaterThanZero - Calling Method: " + method
+                + "(): " + argument + " cannot be less than 0.";
             logFileHashStore.error(errMsg);
             throw new IllegalArgumentException(errMsg);
         }
