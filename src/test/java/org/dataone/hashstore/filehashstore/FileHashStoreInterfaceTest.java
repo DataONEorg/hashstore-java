@@ -111,6 +111,26 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
+     * Check that store object returns the correct ObjectMetadata size
+     */
+    @Test
+    public void storeObject_objSize() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStream, pid, null, null, null, 0
+            );
+
+            // Check id (sha-256 hex digest of the ab_id (pid))
+            long objectSize = Long.parseLong(testData.pidData.get(pid).get("size"));
+            assertEquals(objectSize, objInfo.getSize());
+        }
+    }
+
+    /**
      * Check that store object moves file successfully (isDuplicate == false)
      */
     @Test
@@ -277,6 +297,46 @@ public class FileHashStoreInterfaceTest {
 
         InputStream dataStream = Files.newInputStream(testDataFile);
         fileHashStore.storeObject(dataStream, pid, null, null, "SHA-512/224", 0);
+    }
+
+    /**
+     * Check that store object throws exception when incorrect file size provided
+     */
+    @Test
+    public void storeObject_objSizeCorrect() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+            long objectSize = Long.parseLong(testData.pidData.get(pid).get("size"));
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStream, pid, null, null, null, objectSize
+            );
+
+            // Check id (sha-256 hex digest of the ab_id (pid))
+            assertEquals(objectSize, objInfo.getSize());
+        }
+    }
+
+    /**
+     * Check that store object throws exception when incorrect file size provided
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void storeObject_objSizeIncorrect() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStream, pid, null, null, null, 1000
+            );
+
+            // Check id (sha-256 hex digest of the ab_id (pid))
+            long objectSize = Long.parseLong(testData.pidData.get(pid).get("size"));
+            assertEquals(objectSize, objInfo.getSize());
+        }
     }
 
     /**
