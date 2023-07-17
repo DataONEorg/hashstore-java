@@ -819,6 +819,7 @@ public class FileHashStore implements HashStore {
         Map<String, String> hexDigests = writeToTmpFileAndGenerateChecksums(
             tmpFile, object, additionalAlgorithm, checksumAlgorithm
         );
+        long tmpFileSize = 0;
 
         // Validate object if checksum and checksum algorithm is passed
         validateTmpObject(requestValidation, checksum, checksumAlgorithm, tmpFile, hexDigests);
@@ -855,7 +856,7 @@ public class FileHashStore implements HashStore {
         }
 
         // Create ObjectMetadata to return with pertinent data
-        return new ObjectMetadata(objectCid, isDuplicate, hexDigests);
+        return new ObjectMetadata(objectCid, tmpFileSize, isDuplicate, hexDigests);
     }
 
     /**
