@@ -10,15 +10,15 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Test class for HashAddress
+ * Test class for ObjectMetadata
  */
-public class HashAddressTest {
+public class ObjectMetadataTest {
     private static String id = "";
     private static boolean isDuplicate;
     private static Map<String, String> hexDigests;
 
     /**
-     * Initialize HashAddress variables for test efficiency purposes
+     * Initialize ObjectMetadata variables for test efficiency purposes
      */
     @BeforeClass
     public static void initializeInstanceVariables() {
@@ -41,40 +41,40 @@ public class HashAddressTest {
     }
 
     /**
-     * Check HashAddress constructor
+     * Check ObjectMetadata constructor
      */
     @Test
     public void testHashAddress() {
-        HashAddress hashad = new HashAddress(id, isDuplicate, hexDigests);
+        ObjectMetadata hashad = new ObjectMetadata(id, isDuplicate, hexDigests);
         assertNotNull(hashad);
     }
 
     /**
-     * Check HashAddress get id
+     * Check ObjectMetadata get id
      */
     @Test
     public void testHashAddressGetId() {
-        HashAddress hashad = new HashAddress(id, isDuplicate, hexDigests);
+        ObjectMetadata hashad = new ObjectMetadata(id, isDuplicate, hexDigests);
         String hashad_id = hashad.getId();
         assertEquals(hashad_id, id);
     }
 
     /**
-     * Check HashAddress get isDuplicate
+     * Check ObjectMetadata get isDuplicate
      */
     @Test
     public void testHashAddressGetIsDuplicate() {
-        HashAddress hashad = new HashAddress(id, isDuplicate, hexDigests);
+        ObjectMetadata hashad = new ObjectMetadata(id, isDuplicate, hexDigests);
         boolean hashad_isDuplicate = hashad.getIsDuplicate();
         assertEquals(hashad_isDuplicate, isDuplicate);
     }
 
     /**
-     * Check HashAddress get hexDigests
+     * Check ObjectMetadata get hexDigests
      */
     @Test
     public void testHashAddressGetHexDigests() {
-        HashAddress hashad = new HashAddress(id, isDuplicate, hexDigests);
+        ObjectMetadata hashad = new ObjectMetadata(id, isDuplicate, hexDigests);
         Map<String, String> hashad_map = hashad.getHexDigests();
         assertEquals(hashad_map, hexDigests);
     }

@@ -18,7 +18,8 @@ public interface HashStore {
         /**
          * The `storeObject` method is responsible for the atomic storage of objects to HashStore
          * using a given InputStream and a persistent identifier (pid). Upon successful storage, the
-         * method returns a (HashAddress) object containing the object's file information, such as
+         * method returns a (ObjectMetadata) object containing the object's file information, such
+         * as
          * the id, relative path, duplicate object status, and hex digest map of algorithms and hex
          * digests/checksums. An object is stored once and only once - and `storeObject` also
          * enforces this rule by synchronizing multiple calls and rejecting calls to store duplicate
@@ -46,7 +47,7 @@ public interface HashStore {
          * @param additionalAlgorithm Additional hex digest to include in hexDigests
          * @param checksum            Value of checksum to validate against
          * @param checksumAlgorithm   Algorithm of checksum submitted
-         * @return HashAddress object encapsulating file information
+         * @return ObjectMetadata object encapsulating file information
          * @throws NoSuchAlgorithmException When additionalAlgorithm or checksumAlgorithm is invalid
          * @throws IOException              I/O Error when writing file, generating checksums and/or
          *                                  moving file
@@ -54,7 +55,7 @@ public interface HashStore {
          * @throws RuntimeException         Thrown when there is an issue with permissions, illegal
          *                                  arguments (ex. empty pid) or null pointers
          */
-        HashAddress storeObject(
+        ObjectMetadata storeObject(
                 InputStream object, String pid, String additionalAlgorithm, String checksum,
                 String checksumAlgorithm
         ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException;

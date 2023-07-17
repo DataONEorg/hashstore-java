@@ -33,7 +33,7 @@ import javax.xml.bind.DatatypeConverter;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.dataone.hashstore.HashAddress;
+import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.HashStore;
 import org.dataone.hashstore.exceptions.PidObjectExistsException;
 
@@ -393,7 +393,7 @@ public class FileHashStore implements HashStore {
     // HashStore Public API Methods
 
     @Override
-    public HashAddress storeObject(
+    public ObjectMetadata storeObject(
         InputStream object, String pid, String additionalAlgorithm, String checksum,
         String checksumAlgorithm
     ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException {
@@ -439,7 +439,7 @@ public class FileHashStore implements HashStore {
                     + ". checksumAlgorithm: " + checksumAlgorithm
             );
             // Store object
-            HashAddress objInfo = putObject(
+            ObjectMetadata objInfo = putObject(
                 object, pid, additionalAlgorithm, checksum, checksumAlgorithm
             );
             logFileHashStore.info(
@@ -581,19 +581,19 @@ public class FileHashStore implements HashStore {
         isStringEmpty(pid, "pid", "retrieveObject");
 
         // Get permanent address of the pid by calculating its sha-256 hex digest
-        Path objHashAddressPath = getRealPath(pid, "object", null);
+        Path objRealPath = getRealPath(pid, "object", null);
 
         // Check to see if object exists
-        if (!Files.exists(objHashAddressPath)) {
+        if (!Files.exists(objRealPath)) {
             String errMsg = "FileHashStore.retrieveObject - File does not exist for pid: " + pid
-                + " with object address: " + objHashAddressPath;
+                + " with object address: " + objRealPath;
             logFileHashStore.warn(errMsg);
             throw new FileNotFoundException(errMsg);
         }
 
         // If so, return an input stream for the object
         try {
-            InputStream objectCidInputStream = Files.newInputStream(objHashAddressPath);
+            InputStream objectCidInputStream = Files.newInputStream(objRealPath);
             logFileHashStore.info(
                 "FileHashStore.retrieveObject - Retrieved object for pid: " + pid
             );
@@ -662,21 +662,21 @@ public class FileHashStore implements HashStore {
         isStringEmpty(pid, "pid", "deleteObject");
 
         // Get permanent address of the pid by calculating its sha-256 hex digest
-        Path objHashAddressPath = getRealPath(pid, "object", null);
+        Path objRealPath = getRealPath(pid, "object", null);
 
         // Check to see if object exists
-        if (!Files.exists(objHashAddressPath)) {
+        if (!Files.exists(objRealPath)) {
             String errMsg = "FileHashStore.deleteObject - File does not exist for pid: " + pid
-                + " with object address: " + objHashAddressPath;
+                + " with object address: " + objRealPath;
             logFileHashStore.warn(errMsg);
             throw new FileNotFoundException(errMsg);
         }
 
         // Proceed to delete
-        deleteObjectAndParentDirectories(objHashAddressPath, pid, "deleteObject");
+        deleteObjectAndParentDirectories(objRealPath, pid, "deleteObject");
         logFileHashStore.info(
             "FileHashStore.deleteObject - File deleted for: " + pid + " with object address: "
-                + objHashAddressPath
+                + objRealPath
         );
         return true;
     }
@@ -725,17 +725,17 @@ public class FileHashStore implements HashStore {
         validateAlgorithm(algorithm);
 
         // Get permanent address of the pid by calculating its sha-256 hex digest
-        Path objHashAddressPath = getRealPath(pid, "object", null);
+        Path objRealPath = getRealPath(pid, "object", null);
 
         // Check to see if object exists
-        if (!Files.exists(objHashAddressPath)) {
+        if (!Files.exists(objRealPath)) {
             String errMsg = "FileHashStore.getHexDigest - File does not exist for pid: " + pid
-                + " with object address: " + objHashAddressPath;
+                + " with object address: " + objRealPath;
             logFileHashStore.warn(errMsg);
             throw new FileNotFoundException(errMsg);
         }
 
-        String mdObjectHexDigest = calculateHexDigest(objHashAddressPath, algorithm);
+        String mdObjectHexDigest = calculateHexDigest(objRealPath, algorithm);
         logFileHashStore.info(
             "FileHashStore.getHexDigest - Hex digest calculated for pid: " + pid
                 + ", with hex digest value: " + mdObjectHexDigest
@@ -758,7 +758,7 @@ public class FileHashStore implements HashStore {
      * @param additionalAlgorithm Optional checksum value to generate in hex digests
      * @param checksum            Value of checksum to validate against
      * @param checksumAlgorithm   Algorithm of checksum submitted
-     * @return A HashAddress object that contains the file id, relative path, absolute path,
+     * @return 'ObjectMetadata' object that contains the file id, relative path, absolute path,
      *         duplicate status and a checksum map based on the default algorithm list.
      * @throws IOException                     I/O Error when writing file, generating checksums,
      *                                         moving file or deleting tmpFile upon duplicate found
@@ -773,7 +773,7 @@ public class FileHashStore implements HashStore {
      * @throws NullPointerException            Arguments are null for pid or object
      * @throws AtomicMoveNotSupportedException When attempting to move files across file systems
      */
-    protected HashAddress putObject(
+    protected ObjectMetadata putObject(
         InputStream object, String pid, String additionalAlgorithm, String checksum,
         String checksumAlgorithm
     ) throws IOException, NoSuchAlgorithmException, SecurityException, FileNotFoundException,
@@ -798,17 +798,17 @@ public class FileHashStore implements HashStore {
         // If validation is desired, checksumAlgorithm and checksum must both be present
         boolean requestValidation = verifyChecksumParameters(checksum, checksumAlgorithm);
 
-        // Gather HashAddress elements and prepare object permanent address
+        // Gather ObjectMetadata elements and prepare object permanent address
         String objectCid = getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
         String objShardString = getHierarchicalPathString(
             DIRECTORY_DEPTH, DIRECTORY_WIDTH, objectCid
         );
-        Path objHashAddressPath = OBJECT_STORE_DIRECTORY.resolve(objShardString);
+        Path objRealPath = OBJECT_STORE_DIRECTORY.resolve(objShardString);
 
         // If file (pid hash) exists, reject request immediately
-        if (Files.exists(objHashAddressPath)) {
+        if (Files.exists(objRealPath)) {
             String errMsg = "FileHashStore.putObject - File already exists for pid: " + pid
-                + ". Object address: " + objHashAddressPath + ". Aborting request.";
+                + ". Object address: " + objRealPath + ". Aborting request.";
             logFileHashStore.warn(errMsg);
             throw new PidObjectExistsException(errMsg);
         }
@@ -827,9 +827,9 @@ public class FileHashStore implements HashStore {
         boolean isDuplicate = true;
         logFileHashStore.debug(
             "FileHashStore.putObject - Moving object: " + tmpFile.toString() + ". Destination: "
-                + objHashAddressPath
+                + objRealPath
         );
-        if (Files.exists(objHashAddressPath)) {
+        if (Files.exists(objRealPath)) {
             boolean deleteStatus = tmpFile.delete();
             if (!deleteStatus) {
                 String errMsg =
@@ -844,19 +844,18 @@ public class FileHashStore implements HashStore {
                     + pid + ". Deleted tmpFile: " + tmpFile.getName()
             );
         } else {
-            File permFile = objHashAddressPath.toFile();
+            File permFile = objRealPath.toFile();
             boolean hasMoved = move(tmpFile, permFile, "object");
             if (hasMoved) {
                 isDuplicate = false;
             }
             logFileHashStore.debug(
-                "FileHashStore.putObject - Move object success, permanent address: "
-                    + objHashAddressPath
+                "FileHashStore.putObject - Move object success, permanent address: " + objRealPath
             );
         }
 
-        // Create HashAddress object to return with pertinent data
-        return new HashAddress(objectCid, isDuplicate, hexDigests);
+        // Create ObjectMetadata to return with pertinent data
+        return new ObjectMetadata(objectCid, isDuplicate, hexDigests);
     }
 
     /**
