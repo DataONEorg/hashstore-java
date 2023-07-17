@@ -414,7 +414,7 @@ public class FileHashStore implements HashStore {
             isStringEmpty(checksumAlgorithm, "checksumAlgorithm", "storeObject");
             validateAlgorithm(checksumAlgorithm);
         }
-        isObjectLessThanOrEqualToZero(objSize, "objSize", "storeObject");
+        isObjectLessThanZero(objSize, "objSize", "storeObject");
 
         // Lock pid for thread safety, transaction control and atomic writing
         // A pid can only be stored once and only once, subsequent calls will
@@ -796,7 +796,7 @@ public class FileHashStore implements HashStore {
             isStringEmpty(checksumAlgorithm, "checksumAlgorithm", "putObject");
             validateAlgorithm(checksumAlgorithm);
         }
-        isObjectLessThanOrEqualToZero(objSize, "objSize", "putObject");
+        isObjectLessThanZero(objSize, "objSize", "putObject");
 
         // If validation is desired, checksumAlgorithm and checksum must both be present
         boolean requestValidation = verifyChecksumParameters(checksum, checksumAlgorithm);
@@ -1491,7 +1491,7 @@ public class FileHashStore implements HashStore {
      * @param argument Value that is being checked
      * @param method   Calling method
      */
-    private void isObjectLessThanOrEqualToZero(long object, String argument, String method) {
+    private void isObjectLessThanZero(long object, String argument, String method) {
         if (object < 0) {
             String errMsg = "FileHashStore.isObjectGreaterThanZero - Calling Method: " + method
                 + "(): " + argument + " cannot be less than 0.";

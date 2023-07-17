@@ -38,7 +38,7 @@ public interface HashStore {
          * with its corresponding hex digest. An algorithm is considered "supported" if it is
          * recognized as a valid hash algorithm in the `java.security.MessageDigest` class.
          * 
-         * Similarly, if a checksum and a checksumAlgorithm or an object size value are provided,
+         * Similarly, if a checksum and a checksumAlgorithm or an object size value is provided,
          * `storeObject` validates the object to ensure it matches what is provided before moving
          * the file to its permanent address.
          * 
