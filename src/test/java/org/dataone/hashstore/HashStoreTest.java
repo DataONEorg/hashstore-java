@@ -119,7 +119,7 @@ public class HashStoreTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            HashAddress objInfo = hashStore.storeObject(dataStream, pid, null, null, null);
+            ObjectMetadata objInfo = hashStore.storeObject(dataStream, pid, null, null, null, 0);
 
             // Check id (sha-256 hex digest of the ab_id, aka object_cid)
             String objAuthorityId = testData.pidData.get(pid).get("object_cid");
