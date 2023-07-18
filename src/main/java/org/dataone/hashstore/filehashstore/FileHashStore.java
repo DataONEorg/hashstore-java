@@ -277,12 +277,22 @@ public class FileHashStore implements HashStore {
         try {
             HashMap<?, ?> hashStoreYamlProperties = om.readValue(hashStoreYaml, HashMap.class);
             String yamlStorePath = (String) hashStoreYamlProperties.get("store_path");
-            hsProperties.put("storePath", Paths.get(yamlStorePath));
-            hsProperties.put("storeDepth", hashStoreYamlProperties.get("store_depth"));
-            hsProperties.put("storeWidth", hashStoreYamlProperties.get("store_width"));
-            hsProperties.put("storeAlgorithm", hashStoreYamlProperties.get("store_algorithm"));
+            hsProperties.put(HashStoreProperties.storePath.name(), Paths.get(yamlStorePath));
             hsProperties.put(
-                "storeMetadataNamespace", hashStoreYamlProperties.get("store_metadata_namespace")
+                HashStoreProperties.storeDepth.name(), hashStoreYamlProperties.get("store_depth")
+            );
+            hsProperties.put(
+                HashStoreProperties.storeWidth.name(), hashStoreYamlProperties.get("store_width")
+            );
+            hsProperties.put(
+                HashStoreProperties.storeAlgorithm.name(), hashStoreYamlProperties.get(
+                    "store_algorithm"
+                )
+            );
+            hsProperties.put(
+                HashStoreProperties.storeMetadataNamespace.name(), hashStoreYamlProperties.get(
+                    "store_metadata_namespace"
+                )
             );
 
         } catch (IOException ioe) {
