@@ -992,6 +992,25 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
+     * Check that retrieveMetadata returns an InputStream with overload method
+     */
+    @Test
+    public void retrieveMetadata_overload() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            fileHashStore.storeMetadata(metadataStream, pid, null);
+
+            InputStream metadataCidInputStream = fileHashStore.retrieveMetadata(pid);
+            assertNotNull(metadataCidInputStream);
+        }
+    }
+
+    /**
      * Check that retrieveMetadata throws exception when pid is null
      */
     @Test(expected = NullPointerException.class)
@@ -1182,7 +1201,7 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Confirm that deleteMetadata deletes object and empty sub directories
+     * Confirm that deleteMetadata deletes metadata and empty sub directories
      */
     @Test
     public void deleteMetadata() throws Exception {
@@ -1200,6 +1219,35 @@ public class FileHashStoreInterfaceTest {
             assertTrue(isMetadataDeleted);
 
             // Double check that file doesn't exist
+            Path metadataCidPath = fileHashStore.getRealPath(pid, "metadata", storeFormatId);
+            assertFalse(Files.exists(metadataCidPath));
+
+            // Double check that metadata directory still exists
+            Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+            Path storeObjectPath = storePath.resolve("metadata");
+            assertTrue(Files.exists(storeObjectPath));
+        }
+    }
+
+    /**
+     * Confirm that deleteMetadata deletes object and empty subdirectories with overload method
+     */
+    @Test
+    public void deleteMetadata_overload() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            fileHashStore.storeMetadata(metadataStream, pid, null);
+
+            boolean isMetadataDeleted = fileHashStore.deleteMetadata(pid);
+            assertTrue(isMetadataDeleted);
+
+            // Double check that file doesn't exist
+            String storeFormatId = (String) fhsProperties.get("storeMetadataNamespace");
             Path metadataCidPath = fileHashStore.getRealPath(pid, "metadata", storeFormatId);
             assertFalse(Files.exists(metadataCidPath));
 

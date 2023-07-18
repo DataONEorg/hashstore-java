@@ -658,8 +658,7 @@ public class FileHashStore implements HashStore {
      * Overload method for storeMetadata with default metadata namespace
      */
     public String storeMetadata(InputStream metadata, String pid) throws IOException,
-        FileNotFoundException, IllegalArgumentException, InterruptedException,
-        NoSuchAlgorithmException {
+        IllegalArgumentException, InterruptedException, NoSuchAlgorithmException {
         logFileHashStore.debug(
             "FileHashStore.storeMetadata - Called to store metadata for pid: " + pid
                 + ", with default namespace."
@@ -669,7 +668,7 @@ public class FileHashStore implements HashStore {
         isObjectNull(pid, "pid", "storeMetadata");
         isStringEmpty(pid, "pid", "storeMetadata");
 
-        return syncPutMetadata(metadata, pid, this.METADATA_NAMESPACE);
+        return syncPutMetadata(metadata, pid, METADATA_NAMESPACE);
     }
 
     @Override
@@ -753,6 +752,49 @@ public class FileHashStore implements HashStore {
         }
     }
 
+    /**
+     * Overload method for retrieveMetadata with default metadata namespace
+     */
+    public InputStream retrieveMetadata(String pid) throws Exception {
+        logFileHashStore.debug(
+            "FileHashStore.retrieveMetadata - Called to retrieve metadata for pid: " + pid
+                + " with default metadata namespace: " + METADATA_NAMESPACE
+        );
+        // Validate input parameters
+        isObjectNull(pid, "pid", "retrieveMetadata");
+        isStringEmpty(pid, "pid", "retrieveMetadata");
+
+        // Get permanent address of the pid by calculating its sha-256 hex digest
+        Path metadataCidPath = getRealPath(pid, "metadata", METADATA_NAMESPACE);
+
+        // Check to see if metadata exists
+        if (!Files.exists(metadataCidPath)) {
+            String errMsg = "FileHashStore.retrieveMetadata - Metadata does not exist for pid: "
+                + pid + " with formatId: " + METADATA_NAMESPACE + ". Metadata address: "
+                + metadataCidPath;
+            logFileHashStore.warn(errMsg);
+            throw new FileNotFoundException(errMsg);
+        }
+
+        // If so, return an input stream for the metadata
+        try {
+            InputStream metadataCidInputStream = Files.newInputStream(metadataCidPath);
+            logFileHashStore.info(
+                "FileHashStore.retrieveMetadata - Retrieved metadata for pid: " + pid
+                    + " with formatId: " + METADATA_NAMESPACE
+            );
+            return metadataCidInputStream;
+
+        } catch (IOException ioe) {
+            String errMsg =
+                "FileHashStore.retrieveMetadata - Unexpected error when creating InputStream"
+                    + " for pid: " + pid + " with formatId: " + METADATA_NAMESPACE
+                    + ". IOException: " + ioe.getMessage();
+            logFileHashStore.error(errMsg);
+            throw new IOException(errMsg);
+        }
+    }
+
     @Override
     public boolean deleteObject(String pid) throws IllegalArgumentException, FileNotFoundException,
         IOException, NoSuchAlgorithmException {
@@ -815,6 +857,38 @@ public class FileHashStore implements HashStore {
         return true;
     }
 
+    /**
+     * Overload method for retrieveMetadata with default metadata namespace
+     */
+    public boolean deleteMetadata(String pid) throws IllegalArgumentException,
+        FileNotFoundException, IOException, NoSuchAlgorithmException {
+        logFileHashStore.debug(
+            "FileHashStore.deleteMetadata - Called to delete metadata for pid: " + pid
+        );
+        // Validate input parameters
+        isObjectNull(pid, "pid", "deleteMetadata");
+        isStringEmpty(pid, "pid", "deleteMetadata");
+
+        // Get permanent address of the pid by calculating its sha-256 hex digest
+        Path metadataCidPath = getRealPath(pid, "metadata", METADATA_NAMESPACE);
+
+        // Check to see if object exists
+        if (!Files.exists(metadataCidPath)) {
+            String errMsg = "FileHashStore.deleteMetadata - File does not exist for pid: " + pid
+                + " with metadata address: " + metadataCidPath;
+            logFileHashStore.warn(errMsg);
+            throw new FileNotFoundException(errMsg);
+        }
+
+        // Proceed to delete
+        deleteObjectAndParentDirectories(metadataCidPath, pid, "deleteMetadata");
+        logFileHashStore.info(
+            "FileHashStore.deleteMetadata - File deleted for: " + pid + " with metadata address: "
+                + metadataCidPath
+        );
+        return true;
+    }
+
     @Override
     public String getHexDigest(String pid, String algorithm) throws NoSuchAlgorithmException,
         FileNotFoundException, IOException {
@@ -844,6 +918,8 @@ public class FileHashStore implements HashStore {
         );
         return mdObjectHexDigest;
     }
+
+    // FileHashStore Core & Supporting Methods
 
     /**
      * Takes a given InputStream and writes it to its permanent address on disk based on the SHA-256
