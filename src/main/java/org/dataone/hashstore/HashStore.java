@@ -18,10 +18,9 @@ public interface HashStore {
         /**
          * The `storeObject` method is responsible for the atomic storage of objects to HashStore
          * using a given InputStream and a persistent identifier (pid). Upon successful storage, the
-         * method returns a (ObjectMetadata) object containing the object's file information, such
-         * as
-         * the id, relative path, duplicate object status, and hex digest map of algorithms and hex
-         * digests/checksums. An object is stored once and only once - and `storeObject` also
+         * method returns an 'ObjectMetadata' object containing the object's file information, such
+         * as the id, relative path, duplicate object status, and hex digest map of algorithms and
+         * hex digests/checksums. An object is stored once and only once - and `storeObject` also
          * enforces this rule by synchronizing multiple calls and rejecting calls to store duplicate
          * objects.
          * 
