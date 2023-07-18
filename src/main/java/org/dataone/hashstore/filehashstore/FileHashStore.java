@@ -414,8 +414,20 @@ public class FileHashStore implements HashStore {
             isStringEmpty(checksumAlgorithm, "checksumAlgorithm", "storeObject");
             validateAlgorithm(checksumAlgorithm);
         }
-        isObjectLessThanZero(objSize, "objSize", "storeObject");
+        isObjectLessThanZero(objSize, "storeObject");
 
+        return synchronizePutObject(
+            object, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize
+        );
+    }
+
+    /**
+     * Method to synchronize method storeing objects with FileHashStore
+     */
+    private ObjectMetadata synchronizePutObject(
+        InputStream object, String pid, String additionalAlgorithm, String checksum,
+        String checksumAlgorithm, long objSize
+    ) throws NoSuchAlgorithmException, PidObjectExistsException, IOException, RuntimeException {
         // Lock pid for thread safety, transaction control and atomic writing
         // A pid can only be stored once and only once, subsequent calls will
         // be accepted but will be rejected if pid hash object exists
@@ -485,6 +497,69 @@ public class FileHashStore implements HashStore {
                 objectLockedIds.notifyAll();
             }
         }
+    }
+
+    /**
+     * Overload method for storeObject with an additionalAlgorithm
+     */
+    public ObjectMetadata storeObject(InputStream object, String pid, String additionalAlgorithm)
+        throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException {
+        logFileHashStore.debug(
+            "FileHashStore.storeObject - Called to store object for pid: " + pid
+        );
+
+        // Begin input validation
+        isObjectNull(object, "object", "storeObject");
+        isObjectNull(pid, "pid", "storeObject");
+        isStringEmpty(pid, "pid", "storeObject");
+        // Validate algorithms if not null or empty, throws exception if not supported
+        if (additionalAlgorithm != null) {
+            isStringEmpty(additionalAlgorithm, "additionalAlgorithm", "storeObject");
+            validateAlgorithm(additionalAlgorithm);
+        }
+
+        return synchronizePutObject(object, pid, additionalAlgorithm, null, null, 0);
+    }
+
+    /**
+     * Overload method for storeObject with just a checksum and checksumAlgorithm
+     */
+    public ObjectMetadata storeObject(
+        InputStream object, String pid, String checksum, String checksumAlgorithm
+    ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException {
+        logFileHashStore.debug(
+            "FileHashStore.storeObject - Called to store object for pid: " + pid
+        );
+
+        // Begin input validation
+        isObjectNull(object, "object", "storeObject");
+        isObjectNull(pid, "pid", "storeObject");
+        isStringEmpty(pid, "pid", "storeObject");
+        // Validate algorithms if not null or empty, throws exception if not supported
+        if (checksumAlgorithm != null) {
+            isStringEmpty(checksumAlgorithm, "checksumAlgorithm", "storeObject");
+            validateAlgorithm(checksumAlgorithm);
+        }
+
+        return synchronizePutObject(object, pid, null, checksum, checksumAlgorithm, 0);
+    }
+
+    /**
+     * Overload method for storeObject with size of object to validate
+     */
+    public ObjectMetadata storeObject(InputStream object, String pid, long objSize)
+        throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException {
+        logFileHashStore.debug(
+            "FileHashStore.storeObject - Called to store object for pid: " + pid
+        );
+
+        // Begin input validation
+        isObjectNull(object, "object", "storeObject");
+        isObjectNull(pid, "pid", "storeObject");
+        isStringEmpty(pid, "pid", "storeObject");
+        isObjectLessThanZero(objSize, "storeObject");
+
+        return synchronizePutObject(object, pid, null, null, null, objSize);
     }
 
     @Override
@@ -796,7 +871,7 @@ public class FileHashStore implements HashStore {
             isStringEmpty(checksumAlgorithm, "checksumAlgorithm", "putObject");
             validateAlgorithm(checksumAlgorithm);
         }
-        isObjectLessThanZero(objSize, "objSize", "putObject");
+        isObjectLessThanZero(objSize, "putObject");
 
         // If validation is desired, checksumAlgorithm and checksum must both be present
         boolean requestValidation = verifyChecksumParameters(checksum, checksumAlgorithm);
@@ -833,8 +908,7 @@ public class FileHashStore implements HashStore {
         // Move object
         boolean isDuplicate = true;
         logFileHashStore.debug(
-            "FileHashStore.putObject - Moving object: " + tmpFile.toString() + ". Destination: "
-                + objRealPath
+            "FileHashStore.putObject - Moving object: " + tmpFile + ". Destination: " + objRealPath
         );
         if (Files.exists(objRealPath)) {
             boolean deleteStatus = tmpFile.delete();
@@ -1488,13 +1562,12 @@ public class FileHashStore implements HashStore {
      * Checks whether a given long object is greater than 0
      *
      * @param object   Object to check
-     * @param argument Value that is being checked
      * @param method   Calling method
      */
-    private void isObjectLessThanZero(long object, String argument, String method) {
+    private void isObjectLessThanZero(long object, String method) {
         if (object < 0) {
             String errMsg = "FileHashStore.isObjectGreaterThanZero - Calling Method: " + method
-                + "(): " + argument + " cannot be less than 0.";
+                + "(): objSize cannot be less than 0.";
             logFileHashStore.error(errMsg);
             throw new IllegalArgumentException(errMsg);
         }

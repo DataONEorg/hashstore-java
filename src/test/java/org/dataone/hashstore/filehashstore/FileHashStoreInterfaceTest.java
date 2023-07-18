@@ -124,7 +124,7 @@ public class FileHashStoreInterfaceTest {
                 dataStream, pid, null, null, null, 0
             );
 
-            // Check id (sha-256 hex digest of the ab_id (pid))
+            // Check the object size
             long objectSize = Long.parseLong(testData.pidData.get(pid).get("size"));
             assertEquals(objectSize, objInfo.getSize());
         }
@@ -213,6 +213,63 @@ public class FileHashStoreInterfaceTest {
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             fileHashStore.storeObject(dataStream, "", null, null, null, 0);
+        }
+    }
+
+    /**
+     * Verify that storeObject generates an additional checksum with overloaded method
+     */
+    @Test
+    public void storeObject_additionalAlgorithm_overload() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(dataStream, pid, "MD2");
+
+            Map<String, String> hexDigests = objInfo.getHexDigests();
+
+            // Validate checksum values
+            String md2 = testData.pidData.get(pid).get("md2");
+            assertEquals(md2, hexDigests.get("MD2"));
+        }
+    }
+
+    /**
+     * Verify that storeObject validates checksum with overloaded method
+     */
+    @Test
+    public void storeObject_validateChecksum_overload() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+            String md2 = testData.pidData.get(pid).get("md2");
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(dataStream, pid, md2, "MD2");
+
+            Map<String, String> hexDigests = objInfo.getHexDigests();
+
+            // Validate checksum values
+            assertEquals(md2, hexDigests.get("MD2"));
+        }
+    }
+
+    /**
+     * Check that store object returns the correct ObjectMetadata size
+     */
+    @Test
+    public void storeObject_objSize_overload() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            long objectSize = Long.parseLong(testData.pidData.get(pid).get("size"));
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(dataStream, pid, objectSize);
+
+            assertEquals(objectSize, objInfo.getSize());
         }
     }
 
@@ -343,7 +400,7 @@ public class FileHashStoreInterfaceTest {
      * Verify exception thrown when unsupported additional algorithm provided
      */
     @Test(expected = NoSuchAlgorithmException.class)
-    public void put_invalidAlgorithm() throws Exception {
+    public void storeObject_invalidAlgorithm() throws Exception {
         // Get single test file to "upload"
         String pid = "jtao.1700.1";
         Path testDataFile = testData.getTestFile(pid);
