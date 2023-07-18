@@ -19,7 +19,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import org.dataone.hashstore.ObjectMetadata;
+import org.dataone.hashstore.ObjectInfo;
 import org.dataone.hashstore.exceptions.PidObjectExistsException;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.Before;
@@ -200,7 +200,7 @@ public class FileHashStoreProtectedTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectMetadata address = fileHashStore.putObject(dataStream, pid, null, null, null, 0);
+            ObjectInfo address = fileHashStore.putObject(dataStream, pid, null, null, null, 0);
 
             // Check id (sha-256 hex digest of the ab_id, aka object_cid)
             String objAuthorityId = testData.pidData.get(pid).get("object_cid");
@@ -218,29 +218,11 @@ public class FileHashStoreProtectedTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectMetadata objInfo = fileHashStore.putObject(dataStream, pid, null, null, null, 0);
+            ObjectInfo objInfo = fileHashStore.putObject(dataStream, pid, null, null, null, 0);
 
             // Check id (sha-256 hex digest of the ab_id (pid))
             long objectSize = Long.parseLong(testData.pidData.get(pid).get("size"));
             assertEquals(objectSize, objInfo.getSize());
-        }
-    }
-
-
-    /**
-     * Verify that putObject returns expected isDuplicate value: false
-     */
-    @Test
-    public void putObject_testHarness_isDuplicate() throws Exception {
-        for (String pid : testData.pidList) {
-            String pidFormatted = pid.replace("/", "_");
-            Path testDataFile = testData.getTestFile(pidFormatted);
-
-            InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectMetadata address = fileHashStore.putObject(dataStream, pid, null, null, null, 0);
-
-            // Check duplicate status
-            assertFalse(address.getIsDuplicate());
         }
     }
 
@@ -254,7 +236,7 @@ public class FileHashStoreProtectedTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectMetadata address = fileHashStore.putObject(dataStream, pid, null, null, null, 0);
+            ObjectInfo address = fileHashStore.putObject(dataStream, pid, null, null, null, 0);
 
             Map<String, String> hexDigests = address.getHexDigests();
 
@@ -284,7 +266,7 @@ public class FileHashStoreProtectedTest {
         String checksumCorrect = "9c25df1c8ba1d2e57bb3fd4785878b85";
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        ObjectMetadata address = fileHashStore.putObject(
+        ObjectInfo address = fileHashStore.putObject(
             dataStream, pid, null, checksumCorrect, "MD2", 0
         );
 
@@ -394,7 +376,7 @@ public class FileHashStoreProtectedTest {
             long objectSize = Long.parseLong(testData.pidData.get(pid).get("size"));
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectMetadata objInfo = fileHashStore.putObject(
+            ObjectInfo objInfo = fileHashStore.putObject(
                 dataStream, pid, null, null, null, objectSize
             );
 
@@ -413,9 +395,7 @@ public class FileHashStoreProtectedTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectMetadata objInfo = fileHashStore.putObject(
-                dataStream, pid, null, null, null, 1000
-            );
+            ObjectInfo objInfo = fileHashStore.putObject(dataStream, pid, null, null, null, 1000);
 
             // Check id (sha-256 hex digest of the ab_id (pid))
             long objectSize = Long.parseLong(testData.pidData.get(pid).get("size"));
@@ -433,10 +413,7 @@ public class FileHashStoreProtectedTest {
         Path testDataFile = testData.getTestFile(pid);
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        ObjectMetadata address = fileHashStore.putObject(dataStream, pid, null, null, null, 0);
-
-        // Check duplicate status
-        assertFalse(address.getIsDuplicate());
+        fileHashStore.putObject(dataStream, pid, null, null, null, 0);
 
         // Try duplicate upload
         InputStream dataStreamTwo = Files.newInputStream(testDataFile);

@@ -33,7 +33,7 @@ import javax.xml.bind.DatatypeConverter;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.dataone.hashstore.ObjectMetadata;
+import org.dataone.hashstore.ObjectInfo;
 import org.dataone.hashstore.HashStore;
 import org.dataone.hashstore.exceptions.PidObjectExistsException;
 
@@ -403,7 +403,7 @@ public class FileHashStore implements HashStore {
     // HashStore Public API Methods
 
     @Override
-    public ObjectMetadata storeObject(
+    public ObjectInfo storeObject(
         InputStream object, String pid, String additionalAlgorithm, String checksum,
         String checksumAlgorithm, long objSize
     ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException {
@@ -434,7 +434,7 @@ public class FileHashStore implements HashStore {
     /**
      * Method to synchronize storing objects with FileHashStore
      */
-    private ObjectMetadata syncPubObject(
+    private ObjectInfo syncPubObject(
         InputStream object, String pid, String additionalAlgorithm, String checksum,
         String checksumAlgorithm, long objSize
     ) throws NoSuchAlgorithmException, PidObjectExistsException, IOException, RuntimeException {
@@ -462,7 +462,7 @@ public class FileHashStore implements HashStore {
                     + ". checksumAlgorithm: " + checksumAlgorithm
             );
             // Store object
-            ObjectMetadata objInfo = putObject(
+            ObjectInfo objInfo = putObject(
                 object, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize
             );
             logFileHashStore.info(
@@ -512,7 +512,7 @@ public class FileHashStore implements HashStore {
     /**
      * Overload method for storeObject with an additionalAlgorithm
      */
-    public ObjectMetadata storeObject(InputStream object, String pid, String additionalAlgorithm)
+    public ObjectInfo storeObject(InputStream object, String pid, String additionalAlgorithm)
         throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException {
         logFileHashStore.debug(
             "FileHashStore.storeObject - Called to store object for pid: " + pid
@@ -534,7 +534,7 @@ public class FileHashStore implements HashStore {
     /**
      * Overload method for storeObject with just a checksum and checksumAlgorithm
      */
-    public ObjectMetadata storeObject(
+    public ObjectInfo storeObject(
         InputStream object, String pid, String checksum, String checksumAlgorithm
     ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException {
         logFileHashStore.debug(
@@ -557,7 +557,7 @@ public class FileHashStore implements HashStore {
     /**
      * Overload method for storeObject with size of object to validate
      */
-    public ObjectMetadata storeObject(InputStream object, String pid, long objSize)
+    public ObjectInfo storeObject(InputStream object, String pid, long objSize)
         throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException {
         logFileHashStore.debug(
             "FileHashStore.storeObject - Called to store object for pid: " + pid
@@ -962,7 +962,7 @@ public class FileHashStore implements HashStore {
      * @throws NullPointerException            Arguments are null for pid or object
      * @throws AtomicMoveNotSupportedException When attempting to move files across file systems
      */
-    protected ObjectMetadata putObject(
+    protected ObjectInfo putObject(
         InputStream object, String pid, String additionalAlgorithm, String checksum,
         String checksumAlgorithm, long objSize
     ) throws IOException, NoSuchAlgorithmException, SecurityException, FileNotFoundException,
@@ -1018,7 +1018,6 @@ public class FileHashStore implements HashStore {
         );
 
         // Move object
-        boolean isDuplicate = true;
         logFileHashStore.debug(
             "FileHashStore.putObject - Moving object: " + tmpFile + ". Destination: " + objRealPath
         );
@@ -1038,17 +1037,14 @@ public class FileHashStore implements HashStore {
             );
         } else {
             File permFile = objRealPath.toFile();
-            boolean hasMoved = move(tmpFile, permFile, "object");
-            if (hasMoved) {
-                isDuplicate = false;
-            }
+            move(tmpFile, permFile, "object");
             logFileHashStore.debug(
                 "FileHashStore.putObject - Move object success, permanent address: " + objRealPath
             );
         }
 
         // Create ObjectMetadata to return with pertinent data
-        return new ObjectMetadata(objectCid, storedObjFileSize, isDuplicate, hexDigests);
+        return new ObjectInfo(objectCid, storedObjFileSize, hexDigests);
     }
 
     /**
@@ -1405,7 +1401,7 @@ public class FileHashStore implements HashStore {
      * @throws AtomicMoveNotSupportedException When ATOMIC_MOVE is not supported (usually
      *                                         encountered when moving across file systems)
      */
-    protected boolean move(File source, File target, String entity) throws IOException,
+    protected void move(File source, File target, String entity) throws IOException,
         SecurityException, AtomicMoveNotSupportedException, FileAlreadyExistsException {
         logFileHashStore.debug(
             "FileHashStore.move - called to move entity type: " + entity + ", from source: "
@@ -1437,7 +1433,7 @@ public class FileHashStore implements HashStore {
                 "FileHashStore.move - file moved from: " + sourceFilePath + ", to: "
                     + targetFilePath
             );
-            return true;
+            return;
 
         } catch (AtomicMoveNotSupportedException amnse) {
             logFileHashStore.error(

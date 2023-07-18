@@ -55,7 +55,7 @@ public interface HashStore {
          * @throws RuntimeException         Thrown when there is an issue with permissions, illegal
          *                                  arguments (ex. empty pid) or null pointers
          */
-        ObjectMetadata storeObject(
+        ObjectInfo storeObject(
                 InputStream object, String pid, String additionalAlgorithm, String checksum,
                 String checksumAlgorithm, long objSize
         ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException;
