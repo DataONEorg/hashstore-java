@@ -416,15 +416,15 @@ public class FileHashStore implements HashStore {
         }
         isObjectLessThanZero(objSize, "storeObject");
 
-        return synchronizePutObject(
+        return syncPubObject(
             object, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize
         );
     }
 
     /**
-     * Method to synchronize method storeing objects with FileHashStore
+     * Method to synchronize storing objects with FileHashStore
      */
-    private ObjectMetadata synchronizePutObject(
+    private ObjectMetadata syncPubObject(
         InputStream object, String pid, String additionalAlgorithm, String checksum,
         String checksumAlgorithm, long objSize
     ) throws NoSuchAlgorithmException, PidObjectExistsException, IOException, RuntimeException {
@@ -518,7 +518,7 @@ public class FileHashStore implements HashStore {
             validateAlgorithm(additionalAlgorithm);
         }
 
-        return synchronizePutObject(object, pid, additionalAlgorithm, null, null, 0);
+        return syncPubObject(object, pid, additionalAlgorithm, null, null, 0);
     }
 
     /**
@@ -541,7 +541,7 @@ public class FileHashStore implements HashStore {
             validateAlgorithm(checksumAlgorithm);
         }
 
-        return synchronizePutObject(object, pid, null, checksum, checksumAlgorithm, 0);
+        return syncPubObject(object, pid, null, checksum, checksumAlgorithm, 0);
     }
 
     /**
@@ -559,7 +559,7 @@ public class FileHashStore implements HashStore {
         isStringEmpty(pid, "pid", "storeObject");
         isObjectLessThanZero(objSize, "storeObject");
 
-        return synchronizePutObject(object, pid, null, null, null, objSize);
+        return syncPubObject(object, pid, null, null, null, objSize);
     }
 
     @Override
@@ -585,6 +585,14 @@ public class FileHashStore implements HashStore {
             checkedFormatId = formatId;
         }
 
+        return syncPutMetadata(metadata, pid, checkedFormatId);
+    }
+
+    /**
+     * Method to synchronize storing metadata with FileHashStore
+     */
+    private String syncPutMetadata(InputStream metadata, String pid, String checkedFormatId)
+        throws InterruptedException, IOException, NoSuchAlgorithmException {
         // Lock pid for thread safety, transaction control and atomic writing
         // Metadata storage requests for the same pid must be written serially
         synchronized (metadataLockedIds) {
@@ -644,6 +652,24 @@ public class FileHashStore implements HashStore {
                 metadataLockedIds.notifyAll();
             }
         }
+    }
+
+    /**
+     * Overload method for storeMetadata with default metadata namespace
+     */
+    public String storeMetadata(InputStream metadata, String pid) throws IOException,
+        FileNotFoundException, IllegalArgumentException, InterruptedException,
+        NoSuchAlgorithmException {
+        logFileHashStore.debug(
+            "FileHashStore.storeMetadata - Called to store metadata for pid: " + pid
+                + ", with default namespace."
+        );
+        // Validate input parameters
+        isObjectNull(metadata, "metadata", "storeMetadata");
+        isObjectNull(pid, "pid", "storeMetadata");
+        isStringEmpty(pid, "pid", "storeMetadata");
+
+        return syncPutMetadata(metadata, pid, this.METADATA_NAMESPACE);
     }
 
     @Override
@@ -1561,8 +1587,8 @@ public class FileHashStore implements HashStore {
     /**
      * Checks whether a given long object is greater than 0
      *
-     * @param object   Object to check
-     * @param method   Calling method
+     * @param object Object to check
+     * @param method Calling method
      */
     private void isObjectLessThanZero(long object, String method) {
         if (object < 0) {

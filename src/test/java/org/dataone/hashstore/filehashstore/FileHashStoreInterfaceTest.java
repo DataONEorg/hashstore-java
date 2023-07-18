@@ -674,6 +674,36 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
+     * Test storeMetadata with overload method (default namespace)
+     */
+    @Test
+    public void storeMetadata_defaultFormatId_overload() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            String metadataCid = fileHashStore.storeMetadata(metadataStream, pid);
+
+            // Get relative path
+            String metadataCidShardString = fileHashStore.getHierarchicalPathString(
+                3, 2, metadataCid
+            );
+            // Get absolute path
+            Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+            Path metadataCidAbsPath = storePath.resolve("metadata/" + metadataCidShardString);
+
+            assertTrue(Files.exists(metadataCidAbsPath));
+
+            long writtenMetadataFile = Files.size(testMetaDataFile);
+            long originalMetadataFie = Files.size(metadataCidAbsPath);
+            assertEquals(writtenMetadataFile, originalMetadataFie);
+        }
+    }
+
+    /**
      * Test storeMetadata stores the expected amount of bytes
      */
     @Test
