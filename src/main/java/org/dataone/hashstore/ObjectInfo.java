@@ -3,7 +3,7 @@ package org.dataone.hashstore;
 import java.util.Map;
 
 /**
- * ObjectMetadata is a class that models a unique identifier for an object in the Hashstore. It
+ * ObjectMetadata is a class that models a unique identifier for an object in the HashStore. It
  * encapsulates information about a file's id, size, and associated hash digest values. By using
  * ObjectMetadata objects, client code can easily obtain metadata of a store object in HashStore
  * without needing to know the underlying file system details.

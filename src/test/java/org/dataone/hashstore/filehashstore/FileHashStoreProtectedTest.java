@@ -209,7 +209,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Check that store object returns the correct ObjectMetadata size
+     * Check that store object returns the correct ObjectInfo size
      */
     @Test
     public void putObject_objSize() throws Exception {

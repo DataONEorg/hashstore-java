@@ -787,14 +787,13 @@ public class FileHashStore implements HashStore {
         }
 
         // If so, return an input stream for the metadata
+        InputStream metadataCidInputStream;
         try {
-            InputStream metadataCidInputStream = Files.newInputStream(metadataCidPath);
+            metadataCidInputStream = Files.newInputStream(metadataCidPath);
             logFileHashStore.info(
                 "FileHashStore.retrieveMetadata - Retrieved metadata for pid: " + pid
                     + " with formatId: " + METADATA_NAMESPACE
             );
-            return metadataCidInputStream;
-
         } catch (IOException ioe) {
             String errMsg =
                 "FileHashStore.retrieveMetadata - Unexpected error when creating InputStream"
@@ -803,10 +802,12 @@ public class FileHashStore implements HashStore {
             logFileHashStore.error(errMsg);
             throw new IOException(errMsg);
         }
+
+        return metadataCidInputStream;
     }
 
     @Override
-    public boolean deleteObject(String pid) throws IllegalArgumentException, FileNotFoundException,
+    public void deleteObject(String pid) throws IllegalArgumentException, FileNotFoundException,
         IOException, NoSuchAlgorithmException {
         logFileHashStore.debug(
             "FileHashStore.deleteObject - Called to delete object for pid: " + pid
@@ -832,11 +833,10 @@ public class FileHashStore implements HashStore {
             "FileHashStore.deleteObject - File deleted for: " + pid + " with object address: "
                 + objRealPath
         );
-        return true;
     }
 
     @Override
-    public boolean deleteMetadata(String pid, String formatId) throws IllegalArgumentException,
+    public void deleteMetadata(String pid, String formatId) throws IllegalArgumentException,
         FileNotFoundException, IOException, NoSuchAlgorithmException {
         logFileHashStore.debug(
             "FileHashStore.deleteMetadata - Called to delete metadata for pid: " + pid
@@ -864,14 +864,13 @@ public class FileHashStore implements HashStore {
             "FileHashStore.deleteMetadata - File deleted for: " + pid + " with metadata address: "
                 + metadataCidPath
         );
-        return true;
     }
 
     /**
-     * Overload method for retrieveMetadata with default metadata namespace
+     * Overload method for deleteMetadata with default metadata namespace
      */
-    public boolean deleteMetadata(String pid) throws IllegalArgumentException,
-        FileNotFoundException, IOException, NoSuchAlgorithmException {
+    public void deleteMetadata(String pid) throws IllegalArgumentException, FileNotFoundException,
+        IOException, NoSuchAlgorithmException {
         logFileHashStore.debug(
             "FileHashStore.deleteMetadata - Called to delete metadata for pid: " + pid
         );
@@ -896,7 +895,6 @@ public class FileHashStore implements HashStore {
             "FileHashStore.deleteMetadata - File deleted for: " + pid + " with metadata address: "
                 + metadataCidPath
         );
-        return true;
     }
 
     @Override
@@ -947,8 +945,8 @@ public class FileHashStore implements HashStore {
      * @param checksum            Value of checksum to validate against
      * @param checksumAlgorithm   Algorithm of checksum submitted
      * @param objSize             Expected size of object to validate after storing
-     * @return 'ObjectMetadata' object that contains the file id, relative path, absolute path,
-     *         duplicate status and a checksum map based on the default algorithm list.
+     * @return 'ObjectInfo' object that contains the file id, size, and a checksum map based on
+     *         the default algorithm list.
      * @throws IOException                     I/O Error when writing file, generating checksums,
      *                                         moving file or deleting tmpFile upon duplicate found
      * @throws NoSuchAlgorithmException        When additionalAlgorithm or checksumAlgorithm is
@@ -988,7 +986,7 @@ public class FileHashStore implements HashStore {
         // If validation is desired, checksumAlgorithm and checksum must both be present
         boolean requestValidation = verifyChecksumParameters(checksum, checksumAlgorithm);
 
-        // Gather ObjectMetadata elements and prepare object permanent address
+        // Gather ObjectInfo elements and prepare object permanent address
         String objectCid = getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
         String objShardString = getHierarchicalPathString(
             DIRECTORY_DEPTH, DIRECTORY_WIDTH, objectCid
@@ -1043,7 +1041,7 @@ public class FileHashStore implements HashStore {
             );
         }
 
-        // Create ObjectMetadata to return with pertinent data
+        // Create ObjectInfo to return with pertinent data
         return new ObjectInfo(objectCid, storedObjFileSize, hexDigests);
     }
 
@@ -1394,7 +1392,6 @@ public class FileHashStore implements HashStore {
      * @param source File to move
      * @param target Where to move the file
      * @param entity Type of object to move
-     * @return true if file has been moved
      * @throws FileAlreadyExistsException      Target file already exists
      * @throws IOException                     Unable to create parent directory
      * @throws SecurityException               Insufficient permissions to move file
@@ -1433,7 +1430,6 @@ public class FileHashStore implements HashStore {
                 "FileHashStore.move - file moved from: " + sourceFilePath + ", to: "
                     + targetFilePath
             );
-            return;
 
         } catch (AtomicMoveNotSupportedException amnse) {
             logFileHashStore.error(

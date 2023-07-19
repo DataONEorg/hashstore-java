@@ -265,7 +265,7 @@ public class FileHashStorePublicTest {
     }
 
     /**
-     * Check that a hashstore configuration file is written and exists
+     * Check that a HashStore configuration file is written and exists
      */
     @Test
     public void testPutHashStoreYaml() {

@@ -17,7 +17,7 @@ public class HashStoreFactory {
     private static final Log logHashStore = LogFactory.getLog(HashStoreFactory.class);
 
     /**
-     * Factory method to generate a Hashstore
+     * Factory method to generate a HashStore
      * 
      * @param classPackage    String of the package name, ex.
      *                        "org.dataone.hashstore.filehashstore.FileHashStore"

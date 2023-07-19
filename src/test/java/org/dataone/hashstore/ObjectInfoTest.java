@@ -10,15 +10,15 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Test class for ObjectMetadata
+ * Test class for ObjectInfo
  */
-public class ObjectMetadataTest {
+public class ObjectInfoTest {
     private static String id = "";
     private static long size;
     private static Map<String, String> hexDigests;
 
     /**
-     * Initialize ObjectMetadata variables for test efficiency purposes
+     * Initialize ObjectInfo variables for test efficiency purposes
      */
     @BeforeClass
     public static void initializeInstanceVariables() {
@@ -41,41 +41,41 @@ public class ObjectMetadataTest {
     }
 
     /**
-     * Check ObjectMetadata constructor
+     * Check ObjectInfo constructor
      */
     @Test
-    public void testHashAddress() {
-        ObjectInfo hashad = new ObjectInfo(id, size, hexDigests);
-        assertNotNull(hashad);
+    public void testObjectInfo() {
+        ObjectInfo objInfo = new ObjectInfo(id, size, hexDigests);
+        assertNotNull(objInfo);
     }
 
     /**
-     * Check ObjectMetadata get id
+     * Check ObjectInfo get id
      */
     @Test
-    public void testHashAddressGetId() {
-        ObjectInfo hashad = new ObjectInfo(id, size, hexDigests);
-        String hashad_id = hashad.getId();
-        assertEquals(hashad_id, id);
+    public void testObjectInfoGetId() {
+        ObjectInfo objInfo = new ObjectInfo(id, size, hexDigests);
+        String objId = objInfo.getId();
+        assertEquals(objId, id);
     }
 
     /**
-     * Check ObjectMetadata get size
+     * Check ObjectInfo get size
      */
     @Test
     public void testHashAddressGetSize() {
-        ObjectInfo hashad = new ObjectInfo(id, size, hexDigests);
-        long hashad_size = hashad.getSize();
-        assertEquals(hashad_size, size);
+        ObjectInfo objInfo = new ObjectInfo(id, size, hexDigests);
+        long objSize = objInfo.getSize();
+        assertEquals(objSize, size);
     }
 
     /**
-     * Check ObjectMetadata get hexDigests
+     * Check ObjectInfo get hexDigests
      */
     @Test
-    public void testHashAddressGetHexDigests() {
-        ObjectInfo hashad = new ObjectInfo(id, size, hexDigests);
-        Map<String, String> hashad_map = hashad.getHexDigests();
-        assertEquals(hashad_map, hexDigests);
+    public void testObjectInfoGetHexDigests() {
+        ObjectInfo objInfo = new ObjectInfo(id, size, hexDigests);
+        Map<String, String> objInfoMap = objInfo.getHexDigests();
+        assertEquals(objInfoMap, hexDigests);
     }
 }

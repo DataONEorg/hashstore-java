@@ -91,7 +91,7 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Check that store object returns the correct ObjectMetadata id
+     * Check that store object returns the correct ObjectInfo id
      */
     @Test
     public void storeObject() throws Exception {
@@ -109,7 +109,7 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Check that store object returns the correct ObjectMetadata size
+     * Check that store object returns the correct ObjectInfo size
      */
     @Test
     public void storeObject_objSize() throws Exception {
@@ -127,7 +127,7 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Check that store object returns the correct ObjectMetadata hex digests
+     * Check that store object returns the correct ObjectInfo hex digests
      */
     @Test
     public void storeObject_hexDigests() throws Exception {
@@ -232,7 +232,7 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Check that store object returns the correct ObjectMetadata size
+     * Check that store object returns the correct ObjectInfo size
      */
     @Test
     public void storeObject_objSize_overload() throws Exception {
@@ -1124,10 +1124,9 @@ public class FileHashStoreInterfaceTest {
             InputStream dataStream = Files.newInputStream(testDataFile);
             ObjectInfo objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null, 0);
 
-            boolean isFileDeleted = fileHashStore.deleteObject(pid);
-            assertTrue(isFileDeleted);
+            fileHashStore.deleteObject(pid);
 
-            // Double check that file doesn't exist
+            // Double Check that file doesn't exist
             String objId = objInfo.getId();
             Path objCidAbsPath = getObjectAbsPath(objId);
             assertFalse(Files.exists(objCidAbsPath));
@@ -1186,10 +1185,9 @@ public class FileHashStoreInterfaceTest {
             fileHashStore.storeMetadata(metadataStream, pid, null);
 
             String storeFormatId = (String) fhsProperties.get("storeMetadataNamespace");
-            boolean isMetadataDeleted = fileHashStore.deleteMetadata(pid, storeFormatId);
-            assertTrue(isMetadataDeleted);
+            fileHashStore.deleteMetadata(pid, storeFormatId);
 
-            // Double check that file doesn't exist
+            // Check that file doesn't exist
             Path metadataCidPath = fileHashStore.getRealPath(pid, "metadata", storeFormatId);
             assertFalse(Files.exists(metadataCidPath));
 
@@ -1214,10 +1212,9 @@ public class FileHashStoreInterfaceTest {
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
             fileHashStore.storeMetadata(metadataStream, pid, null);
 
-            boolean isMetadataDeleted = fileHashStore.deleteMetadata(pid);
-            assertTrue(isMetadataDeleted);
+            fileHashStore.deleteMetadata(pid);
 
-            // Double check that file doesn't exist
+            // Check that file doesn't exist
             String storeFormatId = (String) fhsProperties.get("storeMetadataNamespace");
             Path metadataCidPath = fileHashStore.getRealPath(pid, "metadata", storeFormatId);
             assertFalse(Files.exists(metadataCidPath));

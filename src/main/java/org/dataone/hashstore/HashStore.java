@@ -18,11 +18,10 @@ public interface HashStore {
         /**
          * The `storeObject` method is responsible for the atomic storage of objects to HashStore
          * using a given InputStream and a persistent identifier (pid). Upon successful storage, the
-         * method returns an 'ObjectMetadata' object containing the object's file information, such
-         * as the id, relative path, duplicate object status, and hex digest map of algorithms and
-         * hex digests/checksums. An object is stored once and only once - and `storeObject` also
-         * enforces this rule by synchronizing multiple calls and rejecting calls to store duplicate
-         * objects.
+         * method returns an 'ObjectInfo' object containing the object's file information, such
+         * as the id, file size, and hex digest map of algorithms and hex digests/checksums. An
+         * object is stored once and only once - and `storeObject` also enforces this rule by
+         * synchronizing multiple calls and rejecting calls to store duplicate objects.
          * 
          * The file's id is determined by calculating the SHA-256 hex digest of the provided pid,
          * which is also used as the permanent address of the file. The file's identifier is then
@@ -47,7 +46,7 @@ public interface HashStore {
          * @param checksum            Value of checksum to validate against
          * @param checksumAlgorithm   Algorithm of checksum submitted
          * @param objSize             Expected size of object to validate after storing
-         * @return ObjectMetadata object encapsulating file information
+         * @return ObjectInfo object encapsulating file information
          * @throws NoSuchAlgorithmException When additionalAlgorithm or checksumAlgorithm is invalid
          * @throws IOException              I/O Error when writing file, generating checksums and/or
          *                                  moving file
@@ -127,7 +126,7 @@ public interface HashStore {
          * @throws NoSuchAlgorithmException When algorithm used to calculate object address is not
          *                                  supported
          */
-        boolean deleteObject(String pid) throws Exception;
+        void deleteObject(String pid) throws Exception;
 
         /**
          * The 'deleteMetadata' method deletes a metadata document (ex. `sysmeta`) permanently from
@@ -142,7 +141,7 @@ public interface HashStore {
          * @throws NoSuchAlgorithmException When algorithm used to calculate object address is not
          *                                  supported
          */
-        boolean deleteMetadata(String pid, String formatId) throws Exception;
+        void deleteMetadata(String pid, String formatId) throws Exception;
 
         /**
          * The 'getHexDigest' method calculates the hex digest of an object that exists in HashStore
