@@ -34,7 +34,8 @@ public class Client {
         }
     }
 
-    public static void main() throws Exception {
+    public static void main(String[] args) throws Exception {
+
         try {
             Path storePath = Paths.get("/home/mok/testing/test_all");
 
@@ -99,7 +100,6 @@ public class Client {
         } catch (Exception e) {
             e.fillInStackTrace();
         }
-
 
     }
 
