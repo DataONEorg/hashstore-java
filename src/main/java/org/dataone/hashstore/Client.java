@@ -1,7 +1,6 @@
 package org.dataone.hashstore;
 
 import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
@@ -11,8 +10,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
 
 import javax.xml.bind.DatatypeConverter;
@@ -37,7 +34,7 @@ public class Client {
     public static void main(String[] args) throws Exception {
 
         try {
-            Path storePath = Paths.get("/home/mok/testing/test_all");
+            Path storePath = Paths.get("/home/mok/testing/knbvm_hashstore");
 
             // Initialize HashStore
             String classPackage = "org.dataone.hashstore.filehashstore.FileHashStore";
@@ -47,53 +44,49 @@ public class Client {
             storeProperties.setProperty("storeDepth", "3");
             storeProperties.setProperty("storeWidth", "2");
             storeProperties.setProperty("storeAlgorithm", "SHA-256");
-            storeProperties.setProperty("storeMetadataNamespace", "http://www.ns.test/v1");
-
+            storeProperties.setProperty(
+                "storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0"
+            );
 
             // Get HashStore
             hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
 
-            // Get file names from `var/metacat/data`
-            // String originalObjDirectory = "/var/metacata/data";
-            // Path originalObjDirectoryPath = Paths.get(originalObjDirectory);
-            // File[] storePathFileList = storePath.toFile().listFiles();
+            // Get guid, checksum and algorithm from metacat db into an array
+            // TODO: Loop over array with the following pattern
 
-            Files.createDirectories(Paths.get("/home/mok/testing/test_all/douyamlcheck"));
+            String pid = "test";
+            // TODO: Ensure algorithm is formatted properly
+            String algorithm = "SHA-256";
+            String checksum = "abcdef12456789";
 
-            // for (int i = 0; i < storePathFileList.length - 1; i++) {
-            for (int i = 0; i < 100; i++) {
-                String pid = "dou.test." + i;
+            // Retrieve object 
+            InputStream pidObjStream = hashStore.retrieveObject(pid);
 
-                try {
-                    InputStream pidObjStream = hashStore.retrieveObject(pid);
-                    Map<String, String> hexDigests = generateChecksums(pidObjStream);
-                    String yamlObjectString = getHexDigestsYamlString(
-                        hexDigests.get("MD5"), hexDigests.get("SHA-1"), hexDigests.get("SHA-256"),
-                        hexDigests.get("SHA-384"), hexDigests.get("SHA-512")
-                    );
+            // Get hex digest
+            String streamDigest = calculateHexDigest(pidObjStream, algorithm);
 
-                    Path pidObjectYaml = Paths.get("/home/mok/testing/test_all/douyamlcheck")
-                        .resolve(pid + ".yaml");
+            // If checksums don't match, write a .txt file
+            if (!streamDigest.equals(checksum)) {
+                // Create directory to store the error files
+                Path errorDirectory = Paths.get(
+                    "/home/mok/testing/knbvm_hashstore/java/obj/errors"
+                );
+                Files.createDirectories(errorDirectory);
+                Path objectErrorTxtFile = errorDirectory.resolve("/" + pid + ".txt");
 
-                    try (BufferedWriter writer = new BufferedWriter(
-                        new OutputStreamWriter(
-                            Files.newOutputStream(pidObjectYaml), StandardCharsets.UTF_8
-                        )
-                    )) {
-                        writer.write(yamlObjectString);
+                String errMsg = "Obj retrieved (pid/guid): " + pid
+                    + ". Checksums do not match, checksum from db: " + checksum
+                    + ". Calculated digest: " + streamDigest + ". Algorithm: " + algorithm;
 
-                    } catch (Exception e) {
-                        e.fillInStackTrace();
-                    }
+                try (BufferedWriter writer = new BufferedWriter(
+                    new OutputStreamWriter(
+                        Files.newOutputStream(objectErrorTxtFile), StandardCharsets.UTF_8
+                    )
+                )) {
+                    writer.write(errMsg);
 
-                } catch (FileNotFoundException fnfe) {
-                    fnfe.fillInStackTrace();
-                } catch (IOException ioe) {
-                    ioe.fillInStackTrace();
-                } catch (IllegalArgumentException iae) {
-                    iae.fillInStackTrace();
-                } catch (NoSuchAlgorithmException nsae) {
-                    nsae.fillInStackTrace();
+                } catch (Exception e) {
+                    e.fillInStackTrace();
                 }
             }
 
@@ -103,52 +96,34 @@ public class Client {
 
     }
 
-    private static String getHexDigestsYamlString(
-        String md5digest, String sha1digest, String sha256digest, String sha384digest,
-        String sha512digest
-    ) {
-        return String.format(
-            "md5digest:\n" + "- %s\n\n" + "sha1digest:\n" + "- %s\n\n" + "sha256digest:\n"
-                + "- %s\n\n" + "sha384digest:\n" + "- %s\n\n" + "sha512digest:\n" + "- %s\n\n",
-            md5digest, sha1digest, sha256digest, sha384digest, sha512digest
-        );
-    }
-
-    private static Map<String, String> generateChecksums(InputStream pidObjStream)
-        throws NoSuchAlgorithmException {
-        MessageDigest md5 = MessageDigest.getInstance(DefaultHashAlgorithms.MD5.getName());
-        MessageDigest sha1 = MessageDigest.getInstance(DefaultHashAlgorithms.SHA_1.getName());
-        MessageDigest sha256 = MessageDigest.getInstance(DefaultHashAlgorithms.SHA_256.getName());
-        MessageDigest sha384 = MessageDigest.getInstance(DefaultHashAlgorithms.SHA_384.getName());
-        MessageDigest sha512 = MessageDigest.getInstance(DefaultHashAlgorithms.SHA_512.getName());
-
+    /**
+     * Calculate the hex digest of a pid's respective object with the given algorithm
+     *
+     * @param inputstream Path to object
+     * @param algorithm   Hash algorithm to use
+     * @return Hex digest of the pid's respective object
+     * @throws IOException              Error when calculating hex digest
+     * @throws NoSuchAlgorithmException Algorithm not supported
+     */
+    private static String calculateHexDigest(InputStream stream, String algorithm)
+        throws IOException, NoSuchAlgorithmException {
+        MessageDigest mdObject = MessageDigest.getInstance(algorithm);
         try {
             byte[] buffer = new byte[8192];
             int bytesRead;
-            while ((bytesRead = pidObjStream.read(buffer)) != -1) {
-                md5.update(buffer, 0, bytesRead);
-                sha1.update(buffer, 0, bytesRead);
-                sha256.update(buffer, 0, bytesRead);
-                sha384.update(buffer, 0, bytesRead);
-                sha512.update(buffer, 0, bytesRead);
+            while ((bytesRead = stream.read(buffer)) != -1) {
+                mdObject.update(buffer, 0, bytesRead);
+
             }
+            // Close stream
+            stream.close();
 
-        } catch (Exception e) {
-            e.fillInStackTrace();
+        } catch (IOException ioe) {
+            ioe.fillInStackTrace();
+
         }
+        // mdObjectHexDigest
+        return DatatypeConverter.printHexBinary(mdObject.digest()).toLowerCase();
 
-        Map<String, String> hexDigests = new HashMap<>();
-        String md5Digest = DatatypeConverter.printHexBinary(md5.digest()).toLowerCase();
-        String sha1Digest = DatatypeConverter.printHexBinary(sha1.digest()).toLowerCase();
-        String sha256Digest = DatatypeConverter.printHexBinary(sha256.digest()).toLowerCase();
-        String sha384Digest = DatatypeConverter.printHexBinary(sha384.digest()).toLowerCase();
-        String sha512Digest = DatatypeConverter.printHexBinary(sha512.digest()).toLowerCase();
-        hexDigests.put(DefaultHashAlgorithms.MD5.getName(), md5Digest);
-        hexDigests.put(DefaultHashAlgorithms.SHA_1.getName(), sha1Digest);
-        hexDigests.put(DefaultHashAlgorithms.SHA_256.getName(), sha256Digest);
-        hexDigests.put(DefaultHashAlgorithms.SHA_384.getName(), sha384Digest);
-        hexDigests.put(DefaultHashAlgorithms.SHA_512.getName(), sha512Digest);
-
-        return hexDigests;
     }
 }
