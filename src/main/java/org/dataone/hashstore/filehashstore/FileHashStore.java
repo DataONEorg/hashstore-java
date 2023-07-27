@@ -269,13 +269,13 @@ public class FileHashStore implements HashStore {
      * @throws IOException If `hashstore.yaml` doesn't exist
      */
     protected HashMap<String, Object> loadHashStoreYaml(Path storePath) throws IOException {
-        Path hashstoreYaml = storePath.resolve("hashstore.yaml");
-        File hashStoreYaml = hashstoreYaml.toFile();
+        Path hashStoreYamlPath = storePath.resolve("hashstore.yaml");
+        File hashStoreYamlFile = hashStoreYamlPath.toFile();
         ObjectMapper om = new ObjectMapper(new YAMLFactory());
         HashMap<String, Object> hsProperties = new HashMap<>();
 
         try {
-            HashMap<?, ?> hashStoreYamlProperties = om.readValue(hashStoreYaml, HashMap.class);
+            HashMap<?, ?> hashStoreYamlProperties = om.readValue(hashStoreYamlFile, HashMap.class);
             String yamlStorePath = (String) hashStoreYamlProperties.get("store_path");
             hsProperties.put(HashStoreProperties.storePath.name(), Paths.get(yamlStorePath));
             hsProperties.put(
