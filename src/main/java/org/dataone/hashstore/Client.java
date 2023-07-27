@@ -1,6 +1,7 @@
 package org.dataone.hashstore;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
@@ -10,9 +11,20 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
 import java.util.Properties;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
+
 import javax.xml.bind.DatatypeConverter;
+
+import org.dataone.hashstore.exceptions.HashStoreFactoryException;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 public class Client {
     private static HashStore hashStore;
@@ -32,28 +44,49 @@ public class Client {
     }
 
     public static void main(String[] args) throws Exception {
+        // Get a HashStore
+        Path storePath = Paths.get("/home/mok/testing/knbvm_hashstore");
+        initializeHashStore(storePath);
+
+        // Load metacat db yaml
+        Path pgdbYaml = storePath.resolve("pgdb.yaml");
+        File pgdbYamlFile = pgdbYaml.toFile();
+        ObjectMapper om = new ObjectMapper(new YAMLFactory());
+        HashMap<?, ?> pgdbYamlProperties = om.readValue(pgdbYamlFile, HashMap.class);
+        // Get db values
+        String url = (String) pgdbYamlProperties.get("db_uri");
+        String user = (String) pgdbYamlProperties.get("db_user");
+        String password = (String) pgdbYamlProperties.get("db_password");
 
         try {
-            Path storePath = Paths.get("/home/mok/testing/knbvm_hashstore");
+            // Setup metacat db access
+            Connection connection = DriverManager.getConnection(url, user, password);
+            Statement statement = connection.createStatement();
+            String sqlQuery = "SELECT identifier.guid, identifier.docid, identifier.rev,"
+                + " systemmetadata.object_format, systemmetadata.checksum,"
+                + " systemmetadata.checksum_algorithm FROM identifier INNER JOIN systemmetadata"
+                + " ON identifier.guid = systemmetadata.guid LIMIT 1000";
+            ResultSet resultSet = statement.executeQuery(sqlQuery);
 
-            // Initialize HashStore
-            String classPackage = "org.dataone.hashstore.filehashstore.FileHashStore";
+            // For each row, get guid, docid, rev, checksum and checksum_algorithm
+            while (resultSet.next()) {
+                String guid = resultSet.getString("guid");
+                String docid = resultSet.getString("docid");
+                int rev = resultSet.getInt("rev");
+                String name = resultSet.getString("name");
 
-            Properties storeProperties = new Properties();
-            storeProperties.setProperty("storePath", storePath.toString());
-            storeProperties.setProperty("storeDepth", "3");
-            storeProperties.setProperty("storeWidth", "2");
-            storeProperties.setProperty("storeAlgorithm", "SHA-256");
-            storeProperties.setProperty(
-                "storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0"
-            );
+                Path objfilePath = Paths.get("/var/metacat/data").resolve(docid + "." + rev);
+                if (Files.exists(objfilePath)) {
+                    // TODO: ...
+                }
+            }
 
-            // Get HashStore
-            hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
+            // Close resources
+            resultSet.close();
+            statement.close();
+            connection.close();
 
-            // Get guid, checksum and algorithm from metacat db into an array
-            // TODO: Loop over array with the following pattern
-
+            // TODO: Loop over final array generated with the pattern below
             String pid = "test";
             // TODO: Ensure algorithm is formatted properly
             String algorithm = "SHA-256";
@@ -72,7 +105,7 @@ public class Client {
                     "/home/mok/testing/knbvm_hashstore/java/obj/errors"
                 );
                 Files.createDirectories(errorDirectory);
-                Path objectErrorTxtFile = errorDirectory.resolve("/" + pid + ".txt");
+                Path objectErrorTxtFile = errorDirectory.resolve(pid + ".txt");
 
                 String errMsg = "Obj retrieved (pid/guid): " + pid
                     + ". Checksums do not match, checksum from db: " + checksum
@@ -94,6 +127,24 @@ public class Client {
             e.fillInStackTrace();
         }
 
+    }
+
+    private static void initializeHashStore(Path storePath) throws HashStoreFactoryException,
+        IOException {
+        // Initialize HashStore
+        String classPackage = "org.dataone.hashstore.filehashstore.FileHashStore";
+
+        Properties storeProperties = new Properties();
+        storeProperties.setProperty("storePath", storePath.toString());
+        storeProperties.setProperty("storeDepth", "3");
+        storeProperties.setProperty("storeWidth", "2");
+        storeProperties.setProperty("storeAlgorithm", "SHA-256");
+        storeProperties.setProperty(
+            "storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0"
+        );
+
+        // Get HashStore
+        hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
     }
 
     /**
