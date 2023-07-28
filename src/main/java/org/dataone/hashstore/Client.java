@@ -66,7 +66,7 @@ public class Client {
                 String checksumAlgorithm = resultSet.getString("checksum_algorithm");
                 String formattedAlgo = formatAlgo(checksumAlgorithm);
 
-                Path setItemFilePath = Paths.get("/var/metacata/data/" + docid + "." + rev);
+                Path setItemFilePath = Paths.get("/var/metacat/data/" + docid + "." + rev);
                 System.out.println(setItemFilePath);
                 if (Files.exists(setItemFilePath)) {
                     System.out.println("File exists!");
