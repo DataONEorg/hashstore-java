@@ -67,8 +67,9 @@ public class Client {
                 String formattedAlgo = formatAlgo(checksumAlgorithm);
 
                 Path setItemFilePath = Paths.get("/var/metacata/data/" + docid + "." + rev);
+                System.out.println(setItemFilePath);
                 if (Files.exists(setItemFilePath)) {
-                    System.out.println("File exists at: " + setItemFilePath);
+                    System.out.println("File exists!");
 
                     // Retrieve object
                     System.out.println("Retrieving object for guid: " + guid);
