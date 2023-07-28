@@ -48,6 +48,7 @@ public class Client {
         initializeHashStore(storePath);
 
         // Load metacat db yaml
+        System.out.println("Loading metacat db yaml.");
         Path pgdbYaml = storePath.resolve("pgdb.yaml");
         File pgdbYamlFile = pgdbYaml.toFile();
         ObjectMapper om = new ObjectMapper(new YAMLFactory());
@@ -58,6 +59,7 @@ public class Client {
         String password = (String) pgdbYamlProperties.get("db_password");
 
         try {
+            System.out.println("Connecting to metacat db.");
             // Setup metacat db access
             Connection connection = DriverManager.getConnection(url, user, password);
             Statement statement = connection.createStatement();
