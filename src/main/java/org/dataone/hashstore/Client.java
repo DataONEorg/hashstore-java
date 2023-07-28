@@ -74,46 +74,51 @@ public class Client {
             while (resultSet.next()) {
                 System.out.println("Calling resultSet.next()");
                 String guid = resultSet.getString("guid");
-                // String docid = resultSet.getString("docid");
-                // int rev = resultSet.getInt("rev");
-                // String name = resultSet.getString("name");
+                String docid = resultSet.getString("docid");
+                int rev = resultSet.getInt("rev");
                 String checksum = resultSet.getString("checksum");
                 String checksumAlgorithm = resultSet.getString("checksum_algorithm");
                 String formattedAlgo = formatAlgo(checksumAlgorithm);
 
-                // Retrieve object
-                System.out.println("Retrieving object for guid: " + guid);
-                InputStream objstream = hashStore.retrieveObject(guid);
+                Path setItemFilePath = Paths.get("/var/metacata/data/" + docid + "." + rev);
+                if (Files.exists(setItemFilePath)) {
+                    System.out.println("File exists at: " + setItemFilePath);
 
-                // Get hex digest
-                System.out.println("Calculating hex digest with algorithm: " + formattedAlgo);
-                String streamDigest = calculateHexDigest(objstream, formattedAlgo);
+                    // Retrieve object
+                    System.out.println("Retrieving object for guid: " + guid);
+                    InputStream objstream = hashStore.retrieveObject(guid);
 
-                // If checksums don't match, write a .txt file
-                if (!streamDigest.equals(checksum)) {
-                    // Create directory to store the error files
-                    Path errorDirectory = Paths.get(
-                        "/home/mok/testing/knbvm_hashstore/java/obj/errors"
-                    );
-                    Files.createDirectories(errorDirectory);
-                    Path objectErrorTxtFile = errorDirectory.resolve(guid + ".txt");
+                    // Get hex digest
+                    System.out.println("Calculating hex digest with algorithm: " + formattedAlgo);
+                    String streamDigest = calculateHexDigest(objstream, formattedAlgo);
 
-                    String errMsg = "Obj retrieved (pid/guid): " + guid
-                        + ". Checksums do not match, checksum from db: " + checksum
-                        + ". Calculated digest: " + streamDigest + ". Algorithm: " + formattedAlgo;
+                    // If checksums don't match, write a .txt file
+                    if (!streamDigest.equals(checksum)) {
+                        // Create directory to store the error files
+                        Path errorDirectory = Paths.get(
+                            "/home/mok/testing/knbvm_hashstore/java/obj/errors"
+                        );
+                        Files.createDirectories(errorDirectory);
+                        Path objectErrorTxtFile = errorDirectory.resolve(guid + ".txt");
 
-                    try (BufferedWriter writer = new BufferedWriter(
-                        new OutputStreamWriter(
-                            Files.newOutputStream(objectErrorTxtFile), StandardCharsets.UTF_8
-                        )
-                    )) {
-                        writer.write(errMsg);
+                        String errMsg = "Obj retrieved (pid/guid): " + guid
+                            + ". Checksums do not match, checksum from db: " + checksum
+                            + ". Calculated digest: " + streamDigest + ". Algorithm: "
+                            + formattedAlgo;
 
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                        try (BufferedWriter writer = new BufferedWriter(
+                            new OutputStreamWriter(
+                                Files.newOutputStream(objectErrorTxtFile), StandardCharsets.UTF_8
+                            )
+                        )) {
+                            writer.write(errMsg);
+
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    } else {
+                        System.out.println("Checksums match!");
                     }
-                } else {
-                    System.out.println("Checksums match!");
                 }
             }
 
