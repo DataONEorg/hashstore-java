@@ -165,6 +165,7 @@ public class Client {
 
         // Get HashStore
         hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
+        return;
     }
 
     /**

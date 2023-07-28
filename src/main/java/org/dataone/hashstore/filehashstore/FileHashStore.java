@@ -167,7 +167,7 @@ public class FileHashStore implements HashStore {
         } else {
             logFileHashStore.info(
                 "FileHashStore - 'hashstore.yaml' exists and has been verified."
-                    + "Initializing FileHashStore."
+                    + " Initializing FileHashStore."
             );
         }
     }
