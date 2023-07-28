@@ -71,6 +71,7 @@ public class Client {
 
             // For each row, get guid, docid, rev, checksum and checksum_algorithm
             while (resultSet.next()) {
+                System.out.println("Calling resultSet.next()");
                 String guid = resultSet.getString("guid");
                 // String docid = resultSet.getString("docid");
                 // int rev = resultSet.getInt("rev");
@@ -107,7 +108,7 @@ public class Client {
                         writer.write(errMsg);
 
                     } catch (Exception e) {
-                        e.fillInStackTrace();
+                        e.printStackTrace();
                     }
                 } else {
                     System.out.println("Checksums match!");
@@ -120,7 +121,7 @@ public class Client {
             connection.close();
 
         } catch (Exception e) {
-            e.fillInStackTrace();
+            e.printStackTrace();
         }
 
     }
@@ -193,7 +194,7 @@ public class Client {
             stream.close();
 
         } catch (IOException ioe) {
-            ioe.fillInStackTrace();
+            ioe.printStackTrace();
 
         }
         // mdObjectHexDigest
