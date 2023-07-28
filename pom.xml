@@ -61,6 +61,29 @@
         <!-- default lifecycle, jar packaging: see
         https://maven.apache.org/ref/current/maven-core/default-bindings.html#Plugin_bindings_for_jar_packaging -->
         <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>3.2.1</version>
+          <executions>
+            <execution>
+              <phase>package</phase>
+              <goals>
+                <goal>shade</goal>
+              </goals>
+              <configuration>
+                <transformers>
+                    <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                        <manifestEntries>
+                          <Main-Class>org.dataone.hashstore.Client</Main-Class>
+                          <Build-Number>${project.version}</Build-Number>
+                        </manifestEntries>
+                    </transformer>
+                </transformers>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
           <artifactId>maven-resources-plugin</artifactId>
           <version>3.3.0</version>
         </plugin>
