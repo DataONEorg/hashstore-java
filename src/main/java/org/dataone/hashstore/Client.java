@@ -13,7 +13,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Properties;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -65,19 +64,48 @@ public class Client {
             String sqlQuery = "SELECT identifier.guid, identifier.docid, identifier.rev,"
                 + " systemmetadata.object_format, systemmetadata.checksum,"
                 + " systemmetadata.checksum_algorithm FROM identifier INNER JOIN systemmetadata"
-                + " ON identifier.guid = systemmetadata.guid LIMIT 1000";
+                + " ON identifier.guid = systemmetadata.guid LIMIT 10000";
             ResultSet resultSet = statement.executeQuery(sqlQuery);
 
             // For each row, get guid, docid, rev, checksum and checksum_algorithm
             while (resultSet.next()) {
                 String guid = resultSet.getString("guid");
-                String docid = resultSet.getString("docid");
-                int rev = resultSet.getInt("rev");
-                String name = resultSet.getString("name");
+                // String docid = resultSet.getString("docid");
+                // int rev = resultSet.getInt("rev");
+                // String name = resultSet.getString("name");
+                String checksum = resultSet.getString("checksum");
+                String checksumAlgorithm = resultSet.getString("checksum_algorithm");
+                String formattedAlgo = formatAlgo(checksumAlgorithm);
 
-                Path objfilePath = Paths.get("/var/metacat/data").resolve(docid + "." + rev);
-                if (Files.exists(objfilePath)) {
-                    // TODO: ...
+                // Retrieve object
+                InputStream objstream = hashStore.retrieveObject(guid);
+
+                // Get hex digest
+                String streamDigest = calculateHexDigest(objstream, formattedAlgo);
+
+                // If checksums don't match, write a .txt file
+                if (!streamDigest.equals(checksum)) {
+                    // Create directory to store the error files
+                    Path errorDirectory = Paths.get(
+                        "/home/mok/testing/knbvm_hashstore/java/obj/errors"
+                    );
+                    Files.createDirectories(errorDirectory);
+                    Path objectErrorTxtFile = errorDirectory.resolve(guid + ".txt");
+
+                    String errMsg = "Obj retrieved (pid/guid): " + guid
+                        + ". Checksums do not match, checksum from db: " + checksum
+                        + ". Calculated digest: " + streamDigest + ". Algorithm: " + formattedAlgo;
+
+                    try (BufferedWriter writer = new BufferedWriter(
+                        new OutputStreamWriter(
+                            Files.newOutputStream(objectErrorTxtFile), StandardCharsets.UTF_8
+                        )
+                    )) {
+                        writer.write(errMsg);
+
+                    } catch (Exception e) {
+                        e.fillInStackTrace();
+                    }
                 }
             }
 
@@ -86,47 +114,36 @@ public class Client {
             statement.close();
             connection.close();
 
-            // TODO: Loop over final array generated with the pattern below
-            String pid = "test";
-            // TODO: Ensure algorithm is formatted properly
-            String algorithm = "SHA-256";
-            String checksum = "abcdef12456789";
-
-            // Retrieve object 
-            InputStream pidObjStream = hashStore.retrieveObject(pid);
-
-            // Get hex digest
-            String streamDigest = calculateHexDigest(pidObjStream, algorithm);
-
-            // If checksums don't match, write a .txt file
-            if (!streamDigest.equals(checksum)) {
-                // Create directory to store the error files
-                Path errorDirectory = Paths.get(
-                    "/home/mok/testing/knbvm_hashstore/java/obj/errors"
-                );
-                Files.createDirectories(errorDirectory);
-                Path objectErrorTxtFile = errorDirectory.resolve(pid + ".txt");
-
-                String errMsg = "Obj retrieved (pid/guid): " + pid
-                    + ". Checksums do not match, checksum from db: " + checksum
-                    + ". Calculated digest: " + streamDigest + ". Algorithm: " + algorithm;
-
-                try (BufferedWriter writer = new BufferedWriter(
-                    new OutputStreamWriter(
-                        Files.newOutputStream(objectErrorTxtFile), StandardCharsets.UTF_8
-                    )
-                )) {
-                    writer.write(errMsg);
-
-                } catch (Exception e) {
-                    e.fillInStackTrace();
-                }
-            }
-
         } catch (Exception e) {
             e.fillInStackTrace();
         }
 
+    }
+
+    /**
+     * Format an algorithm string value to be compatible with MessageDigest class
+     * 
+     * @param value
+     * @return Formatted algorithm value
+     */
+    private static String formatAlgo(String value) {
+        String checkedAlgorithm = "";
+        String[] SUPPORTED_HASH_ALGORITHMS = {"SHA-1", "SHA-256", "SHA-384", "SHA-512",
+            "SHA-512/224", "SHA-512/256"};
+
+        String upperValue = value.toUpperCase();
+        if (upperValue.equals("MD2") || upperValue.equals("MD5")) {
+            checkedAlgorithm = upperValue;
+        }
+
+        String[] parts = upperValue.split("(?<=\\D)(?=\\d)");
+        String formattedAlgorithm = parts[0] + "-" + parts[1];
+        for (String element : SUPPORTED_HASH_ALGORITHMS) {
+            if (element.equals(formattedAlgorithm)) {
+                checkedAlgorithm = formattedAlgorithm;
+            }
+        }
+        return checkedAlgorithm;
     }
 
     private static void initializeHashStore(Path storePath) throws HashStoreFactoryException,
@@ -150,8 +167,8 @@ public class Client {
     /**
      * Calculate the hex digest of a pid's respective object with the given algorithm
      *
-     * @param inputstream Path to object
-     * @param algorithm   Hash algorithm to use
+     * @param stream    Path to object
+     * @param algorithm Hash algorithm to use
      * @return Hex digest of the pid's respective object
      * @throws IOException              Error when calculating hex digest
      * @throws NoSuchAlgorithmException Algorithm not supported
