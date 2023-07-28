@@ -78,6 +78,7 @@ public class Client {
                 String formattedAlgo = formatAlgo(checksumAlgorithm);
 
                 // Retrieve object
+                System.out.println("Retrieving object for guid: " + guid);
                 InputStream objstream = hashStore.retrieveObject(guid);
 
                 // Get hex digest
@@ -106,6 +107,8 @@ public class Client {
                     } catch (Exception e) {
                         e.fillInStackTrace();
                     }
+                } else {
+                    System.out.println("Checksums match!");
                 }
             }
 
