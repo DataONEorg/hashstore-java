@@ -86,6 +86,7 @@ public class Client {
                 InputStream objstream = hashStore.retrieveObject(guid);
 
                 // Get hex digest
+                System.out.println("Calculating hex digest with algorithm: " + formattedAlgo);
                 String streamDigest = calculateHexDigest(objstream, formattedAlgo);
 
                 // If checksums don't match, write a .txt file
