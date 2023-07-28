@@ -28,20 +28,6 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 public class Client {
     private static HashStore hashStore;
 
-    enum DefaultHashAlgorithms {
-        MD5("MD5"), SHA_1("SHA-1"), SHA_256("SHA-256"), SHA_384("SHA-384"), SHA_512("SHA-512");
-
-        final String algoName;
-
-        DefaultHashAlgorithms(String algo) {
-            algoName = algo;
-        }
-
-        public String getName() {
-            return algoName;
-        }
-    }
-
     public static void main(String[] args) throws Exception {
         // Get a HashStore
         Path storePath = Paths.get("/home/mok/testing/knbvm_hashstore");
@@ -136,7 +122,7 @@ public class Client {
     /**
      * Format an algorithm string value to be compatible with MessageDigest class
      * 
-     * @param value
+     * @param value Algorithm value to format
      * @return Formatted algorithm value
      */
     private static String formatAlgo(String value) {
@@ -154,6 +140,7 @@ public class Client {
         for (String element : SUPPORTED_HASH_ALGORITHMS) {
             if (element.equals(formattedAlgorithm)) {
                 checkedAlgorithm = formattedAlgorithm;
+                break;
             }
         }
         return checkedAlgorithm;
@@ -175,7 +162,6 @@ public class Client {
 
         // Get HashStore
         hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
-        return;
     }
 
     /**
