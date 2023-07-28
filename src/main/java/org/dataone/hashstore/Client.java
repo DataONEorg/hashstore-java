@@ -61,6 +61,7 @@ public class Client {
         try {
             System.out.println("Connecting to metacat db.");
             // Setup metacat db access
+            Class.forName("org.postgresql.Driver"); // Force driver to register itself
             Connection connection = DriverManager.getConnection(url, user, password);
             Statement statement = connection.createStatement();
             String sqlQuery = "SELECT identifier.guid, identifier.docid, identifier.rev,"
