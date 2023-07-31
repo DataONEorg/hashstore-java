@@ -2,6 +2,7 @@ package org.dataone.hashstore;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
@@ -84,20 +85,20 @@ public class Client {
 
                         // If checksums don't match, write a .txt file
                         if (!streamDigest.equals(checksum)) {
-
-
                             String errMsg = "Obj retrieved (pid/guid): " + guid
                                 + ". Checksums do not match, checksum from db: " + checksum
                                 + ". Calculated digest: " + streamDigest + ". Algorithm: "
                                 + formattedAlgo;
-
-                            logExceptionToFile(guid, errMsg);
+                            logExceptionToFile(guid, errMsg, "checksum_mismatch");
                         } else {
                             System.out.println("Checksums match!");
                         }
+                    } catch (FileNotFoundException fnfe) {
+                        String errMsg = "File not found: " + fnfe.fillInStackTrace();
+                        logExceptionToFile(guid, errMsg, "filenotfound");
                     } catch (Exception e) {
                         String errMsg = "Unexpected Error: " + e.fillInStackTrace();
-                        logExceptionToFile(guid, errMsg);
+                        logExceptionToFile(guid, errMsg, "general");
                     }
                 }
             }
@@ -113,9 +114,12 @@ public class Client {
 
     }
 
-    private static void logExceptionToFile(String guid, String errMsg) throws Exception {
+    private static void logExceptionToFile(String guid, String errMsg, String directory)
+        throws Exception {
         // Create directory to store the error files
-        Path errorDirectory = Paths.get("/home/mok/testing/knbvm_hashstore/java/obj/errors");
+        Path errorDirectory = Paths.get(
+            "/home/mok/testing/knbvm_hashstore/java/obj/errors/" + directory
+        );
         Files.createDirectories(errorDirectory);
         Path objectErrorTxtFile = errorDirectory.resolve(guid + ".txt");
 
