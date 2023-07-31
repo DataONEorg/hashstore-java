@@ -57,7 +57,7 @@ public class Client {
             String sqlQuery = "SELECT identifier.guid, identifier.docid, identifier.rev,"
                 + " systemmetadata.object_format, systemmetadata.checksum,"
                 + " systemmetadata.checksum_algorithm FROM identifier INNER JOIN systemmetadata"
-                + " ON identifier.guid = systemmetadata.guid LIMIT 10000;";
+                + " ON identifier.guid = systemmetadata.guid;";
             ResultSet resultSet = statement.executeQuery(sqlQuery);
 
             // For each row, get guid, docid, rev, checksum and checksum_algorithm
