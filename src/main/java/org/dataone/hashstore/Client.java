@@ -71,40 +71,33 @@ public class Client {
                 if (Files.exists(setItemFilePath)) {
                     System.out.println("File exists!");
 
-                    // Retrieve object
-                    System.out.println("Retrieving object for guid: " + guid);
-                    InputStream objstream = hashStore.retrieveObject(guid);
+                    try {
+                        // Retrieve object
+                        System.out.println("Retrieving object for guid: " + guid);
+                        InputStream objstream = hashStore.retrieveObject(guid);
 
-                    // Get hex digest
-                    System.out.println("Calculating hex digest with algorithm: " + formattedAlgo);
-                    String streamDigest = calculateHexDigest(objstream, formattedAlgo);
-
-                    // If checksums don't match, write a .txt file
-                    if (!streamDigest.equals(checksum)) {
-                        // Create directory to store the error files
-                        Path errorDirectory = Paths.get(
-                            "/home/mok/testing/knbvm_hashstore/java/obj/errors"
+                        // Get hex digest
+                        System.out.println(
+                            "Calculating hex digest with algorithm: " + formattedAlgo
                         );
-                        Files.createDirectories(errorDirectory);
-                        Path objectErrorTxtFile = errorDirectory.resolve(guid + ".txt");
+                        String streamDigest = calculateHexDigest(objstream, formattedAlgo);
 
-                        String errMsg = "Obj retrieved (pid/guid): " + guid
-                            + ". Checksums do not match, checksum from db: " + checksum
-                            + ". Calculated digest: " + streamDigest + ". Algorithm: "
-                            + formattedAlgo;
+                        // If checksums don't match, write a .txt file
+                        if (!streamDigest.equals(checksum)) {
 
-                        try (BufferedWriter writer = new BufferedWriter(
-                            new OutputStreamWriter(
-                                Files.newOutputStream(objectErrorTxtFile), StandardCharsets.UTF_8
-                            )
-                        )) {
-                            writer.write(errMsg);
 
-                        } catch (Exception e) {
-                            e.printStackTrace();
+                            String errMsg = "Obj retrieved (pid/guid): " + guid
+                                + ". Checksums do not match, checksum from db: " + checksum
+                                + ". Calculated digest: " + streamDigest + ". Algorithm: "
+                                + formattedAlgo;
+
+                            logExceptionToFile(guid, errMsg);
+                        } else {
+                            System.out.println("Checksums match!");
                         }
-                    } else {
-                        System.out.println("Checksums match!");
+                    } catch (Exception e) {
+                        String errMsg = "Unexpected Error: " + e.fillInStackTrace();
+                        logExceptionToFile(guid, errMsg);
                     }
                 }
             }
@@ -118,6 +111,25 @@ public class Client {
             e.printStackTrace();
         }
 
+    }
+
+    private static void logExceptionToFile(String guid, String errMsg) throws Exception {
+        // Create directory to store the error files
+        Path errorDirectory = Paths.get("/home/mok/testing/knbvm_hashstore/java/obj/errors");
+        Files.createDirectories(errorDirectory);
+        Path objectErrorTxtFile = errorDirectory.resolve(guid + ".txt");
+
+        try (BufferedWriter writer = new BufferedWriter(
+            new OutputStreamWriter(
+                Files.newOutputStream(objectErrorTxtFile), StandardCharsets.UTF_8
+            )
+        )) {
+            writer.write(errMsg);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+
+        }
     }
 
     /**
