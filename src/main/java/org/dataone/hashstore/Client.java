@@ -127,22 +127,16 @@ public class Client {
      * @return Formatted algorithm value
      */
     private static String formatAlgo(String value) {
-        String checkedAlgorithm = "";
-        String[] SUPPORTED_HASH_ALGORITHMS = {"SHA-1", "SHA-256", "SHA-384", "SHA-512",
-            "SHA-512/224", "SHA-512/256"};
-
+        // Temporary solution to format algorithm values
+        // Query: SELECT DISTINCT checksum_algorithm FROM systemmetadata;
+        // Output: MD5, SHA-256, SHA256, SHA-1, SHA1
         String upperValue = value.toUpperCase();
-        if (upperValue.equals("MD2") || upperValue.equals("MD5")) {
-            checkedAlgorithm = upperValue;
+        String checkedAlgorithm = upperValue;
+        if (upperValue.equals("SHA1")) {
+            checkedAlgorithm = "SHA-1";
         }
-
-        String[] parts = upperValue.split("(?<=\\D)(?=\\d)");
-        String formattedAlgorithm = parts[0] + "-" + parts[1];
-        for (String element : SUPPORTED_HASH_ALGORITHMS) {
-            if (element.equals(formattedAlgorithm)) {
-                checkedAlgorithm = formattedAlgorithm;
-                break;
-            }
+        if (upperValue.equals("SHA256")) {
+            checkedAlgorithm = "SHA-256";
         }
         return checkedAlgorithm;
     }
