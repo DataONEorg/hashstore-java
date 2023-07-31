@@ -84,49 +84,7 @@ public class Client {
                 }
             }
 
-            // Loop over List
-            resultObjList.parallelStream().forEach(item -> {
-                String guid = null;
-                try {
-                    guid = item.get("pid");
-                    String algorithm = item.get("algorithm");
-                    String checksum = item.get("checksum");
-                    // Retrieve object
-                    System.out.println("Retrieving object for guid: " + guid);
-                    InputStream objstream = hashStore.retrieveObject(guid);
-
-                    // Get hex digest
-                    System.out.println("Calculating hex digest with algorithm: " + algorithm);
-                    String streamDigest = calculateHexDigest(objstream, algorithm);
-
-                    // If checksums don't match, write a .txt file
-                    if (!streamDigest.equals(checksum)) {
-                        String errMsg = "Obj retrieved (pid/guid): " + guid
-                            + ". Checksums do not match, checksum from db: " + checksum
-                            + ". Calculated digest: " + streamDigest + ". Algorithm: " + algorithm;
-                        logExceptionToFile(guid, errMsg, "checksum_mismatch");
-                    } else {
-                        System.out.println("Checksums match!");
-                    }
-
-                } catch (FileNotFoundException fnfe) {
-                    String errMsg = "File not found: " + fnfe.fillInStackTrace();
-                    try {
-                        logExceptionToFile(guid, errMsg, "filenotfound");
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-
-                } catch (Exception e) {
-                    String errMsg = "Unexpected Error: " + e.fillInStackTrace();
-                    try {
-                        logExceptionToFile(guid, errMsg, "general");
-                    } catch (Exception e1) {
-                        e1.printStackTrace();
-                    }
-
-                }
-            });
+            retrieveAndValidateObjs(resultObjList);
 
             // Close resources
             resultSet.close();
@@ -139,12 +97,55 @@ public class Client {
 
     }
 
+    private static void retrieveAndValidateObjs(List<Map<String, String>> resultObjList) {
+        resultObjList.parallelStream().forEach(item -> {
+            String guid = null;
+            try {
+                guid = item.get("pid");
+                String algorithm = item.get("algorithm");
+                String checksum = item.get("checksum");
+                // Retrieve object
+                System.out.println("Retrieving object for guid: " + guid);
+                InputStream objstream = hashStore.retrieveObject(guid);
+
+                // Get hex digest
+                System.out.println("Calculating hex digest with algorithm: " + algorithm);
+                String streamDigest = calculateHexDigest(objstream, algorithm);
+
+                // If checksums don't match, write a .txt file
+                if (!streamDigest.equals(checksum)) {
+                    String errMsg = "Obj retrieved (pid/guid): " + guid
+                        + ". Checksums do not match, checksum from db: " + checksum
+                        + ". Calculated digest: " + streamDigest + ". Algorithm: " + algorithm;
+                    logExceptionToFile(guid, errMsg, "obj/errors/checksum_mismatch");
+                } else {
+                    System.out.println("Checksums match!");
+                }
+
+            } catch (FileNotFoundException fnfe) {
+                String errMsg = "File not found: " + fnfe.fillInStackTrace();
+                try {
+                    logExceptionToFile(guid, errMsg, "obj/errors/filenotfound");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            } catch (Exception e) {
+                String errMsg = "Unexpected Error: " + e.fillInStackTrace();
+                try {
+                    logExceptionToFile(guid, errMsg, "obj/errors/general");
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                }
+
+            }
+        });
+    }
+
     private static void logExceptionToFile(String guid, String errMsg, String directory)
         throws Exception {
         // Create directory to store the error files
-        Path errorDirectory = Paths.get(
-            "/home/mok/testing/knbvm_hashstore/java/obj/errors/" + directory
-        );
+        Path errorDirectory = Paths.get("/home/mok/testing/knbvm_hashstore/java/" + directory);
         Files.createDirectories(errorDirectory);
         Path objectErrorTxtFile = errorDirectory.resolve(guid + ".txt");
 
