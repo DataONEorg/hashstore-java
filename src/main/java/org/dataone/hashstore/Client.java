@@ -12,7 +12,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -58,6 +61,8 @@ public class Client {
             ResultSet resultSet = statement.executeQuery(sqlQuery);
 
             // For each row, get guid, docid, rev, checksum and checksum_algorithm
+            // and create a List to loop over
+            List<Map<String, String>> resultObjList = new ArrayList<>();
             while (resultSet.next()) {
                 System.out.println("Calling resultSet.next()");
                 String guid = resultSet.getString("guid");
@@ -68,40 +73,60 @@ public class Client {
                 String formattedAlgo = formatAlgo(checksumAlgorithm);
 
                 Path setItemFilePath = Paths.get("/var/metacat/data/" + docid + "." + rev);
-                System.out.println(setItemFilePath);
                 if (Files.exists(setItemFilePath)) {
-                    System.out.println("File exists!");
+                    System.out.println("File exists: " + setItemFilePath);
+                    Map<String, String> resultObj = new HashMap<>();
+                    resultObj.put("pid", guid);
+                    resultObj.put("algorithm", formattedAlgo);
+                    resultObj.put("checksum", checksum);
 
-                    try {
-                        // Retrieve object
-                        System.out.println("Retrieving object for guid: " + guid);
-                        InputStream objstream = hashStore.retrieveObject(guid);
-
-                        // Get hex digest
-                        System.out.println(
-                            "Calculating hex digest with algorithm: " + formattedAlgo
-                        );
-                        String streamDigest = calculateHexDigest(objstream, formattedAlgo);
-
-                        // If checksums don't match, write a .txt file
-                        if (!streamDigest.equals(checksum)) {
-                            String errMsg = "Obj retrieved (pid/guid): " + guid
-                                + ". Checksums do not match, checksum from db: " + checksum
-                                + ". Calculated digest: " + streamDigest + ". Algorithm: "
-                                + formattedAlgo;
-                            logExceptionToFile(guid, errMsg, "checksum_mismatch");
-                        } else {
-                            System.out.println("Checksums match!");
-                        }
-                    } catch (FileNotFoundException fnfe) {
-                        String errMsg = "File not found: " + fnfe.fillInStackTrace();
-                        logExceptionToFile(guid, errMsg, "filenotfound");
-                    } catch (Exception e) {
-                        String errMsg = "Unexpected Error: " + e.fillInStackTrace();
-                        logExceptionToFile(guid, errMsg, "general");
-                    }
+                    resultObjList.add(resultObj);
                 }
             }
+
+            // Loop over List
+            resultObjList.parallelStream().forEach(item -> {
+                String guid = null;
+                try {
+                    guid = item.get("pid");
+                    String algorithm = item.get("algorithm");
+                    String checksum = item.get("checksum");
+                    // Retrieve object
+                    System.out.println("Retrieving object for guid: " + guid);
+                    InputStream objstream = hashStore.retrieveObject(guid);
+
+                    // Get hex digest
+                    System.out.println("Calculating hex digest with algorithm: " + algorithm);
+                    String streamDigest = calculateHexDigest(objstream, algorithm);
+
+                    // If checksums don't match, write a .txt file
+                    if (!streamDigest.equals(checksum)) {
+                        String errMsg = "Obj retrieved (pid/guid): " + guid
+                            + ". Checksums do not match, checksum from db: " + checksum
+                            + ". Calculated digest: " + streamDigest + ". Algorithm: " + algorithm;
+                        logExceptionToFile(guid, errMsg, "checksum_mismatch");
+                    } else {
+                        System.out.println("Checksums match!");
+                    }
+
+                } catch (FileNotFoundException fnfe) {
+                    String errMsg = "File not found: " + fnfe.fillInStackTrace();
+                    try {
+                        logExceptionToFile(guid, errMsg, "filenotfound");
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                } catch (Exception e) {
+                    String errMsg = "Unexpected Error: " + e.fillInStackTrace();
+                    try {
+                        logExceptionToFile(guid, errMsg, "general");
+                    } catch (Exception e1) {
+                        e1.printStackTrace();
+                    }
+
+                }
+            });
 
             // Close resources
             resultSet.close();
