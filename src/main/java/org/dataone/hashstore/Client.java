@@ -112,6 +112,14 @@ public class Client {
                 System.out.println("Storing object for guid: " + guid);
                 hashStore.storeObject(objStream, guid, checksum, algorithm);
 
+            } catch (IllegalArgumentException iae) {
+                String errMsg = "Unexpected Error: " + iae.fillInStackTrace();
+                try {
+                    logExceptionToFile(guid, errMsg, "obj/store_errors/illegalargument");
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                }
+
             } catch (IOException ioe) {
                 String errMsg = "Unexpected Error: " + ioe.fillInStackTrace();
                 try {
