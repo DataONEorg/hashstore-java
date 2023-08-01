@@ -31,10 +31,10 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 public class Client {
     private static HashStore hashStore;
+    private static Path storePath = Paths.get("/home/mok/testing/knbvm_testlog");
 
     public static void main(String[] args) throws Exception {
         // Get a HashStore
-        Path storePath = Paths.get("/home/mok/testing/knbvm_testlog");
         initializeHashStore(storePath);
 
         // Load metacat db yaml
@@ -161,7 +161,7 @@ public class Client {
                     String errMsg = "Obj retrieved (pid/guid): " + guid
                         + ". Checksums do not match, checksum from db: " + checksum
                         + ". Calculated digest: " + streamDigest + ". Algorithm: " + algorithm;
-                    logExceptionToFile(guid, errMsg, "obj/errors/checksum_mismatch");
+                    logExceptionToFile(guid, errMsg, "obj/retrieve_errors/checksum_mismatch");
                 } else {
                     System.out.println("Checksums match!");
                 }
@@ -169,7 +169,7 @@ public class Client {
             } catch (FileNotFoundException fnfe) {
                 String errMsg = "File not found: " + fnfe.fillInStackTrace();
                 try {
-                    logExceptionToFile(guid, errMsg, "obj/errors/filenotfound");
+                    logExceptionToFile(guid, errMsg, "obj/retrieve_errors/filenotfound");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -177,7 +177,7 @@ public class Client {
             } catch (Exception e) {
                 String errMsg = "Unexpected Error: " + e.fillInStackTrace();
                 try {
-                    logExceptionToFile(guid, errMsg, "obj/errors/general");
+                    logExceptionToFile(guid, errMsg, "obj/retrieve_errors/general");
                 } catch (Exception e1) {
                     e1.printStackTrace();
                 }
@@ -189,7 +189,7 @@ public class Client {
     private static void logExceptionToFile(String guid, String errMsg, String directory)
         throws Exception {
         // Create directory to store the error files
-        Path errorDirectory = Paths.get("/home/mok/testing/knbvm_hashstore/java/" + directory);
+        Path errorDirectory = storePath.resolve(directory);
         Files.createDirectories(errorDirectory);
         Path objectErrorTxtFile = errorDirectory.resolve(guid + ".txt");
 
