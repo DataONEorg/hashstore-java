@@ -34,7 +34,7 @@ public class Client {
 
     public static void main(String[] args) throws Exception {
         // Get a HashStore
-        Path storePath = Paths.get("/home/mok/testing/knbvm_hashstore");
+        Path storePath = Paths.get("/home/mok/testing/knbvm_testlog");
         initializeHashStore(storePath);
 
         // Load metacat db yaml
@@ -57,7 +57,7 @@ public class Client {
             String sqlQuery = "SELECT identifier.guid, identifier.docid, identifier.rev,"
                 + " systemmetadata.object_format, systemmetadata.checksum,"
                 + " systemmetadata.checksum_algorithm FROM identifier INNER JOIN systemmetadata"
-                + " ON identifier.guid = systemmetadata.guid";
+                + " ON identifier.guid = systemmetadata.guid LIMIT 100000;";
             ResultSet resultSet = statement.executeQuery(sqlQuery);
 
             // For each row, get guid, docid, rev, checksum and checksum_algorithm
