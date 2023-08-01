@@ -34,7 +34,7 @@ public class Client {
 
     public static void main(String[] args) throws Exception {
         // Get a HashStore
-        Path storePath = Paths.get("/home/mok/testing/knbvm_hashstore");
+        Path storePath = Paths.get("/home/mok/testing/knbvm_testlog");
         initializeHashStore(storePath);
 
         // Load metacat db yaml
