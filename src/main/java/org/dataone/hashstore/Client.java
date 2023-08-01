@@ -115,7 +115,7 @@ public class Client {
             } catch (IllegalArgumentException iae) {
                 String errMsg = "Unexpected Error: " + iae.fillInStackTrace();
                 try {
-                    logExceptionToFile(guid, errMsg, "obj/store_errors/illegalargument");
+                    logExceptionToFile(guid, errMsg, "java/store_errors/illegalargument");
                 } catch (Exception e1) {
                     e1.printStackTrace();
                 }
@@ -123,7 +123,7 @@ public class Client {
             } catch (IOException ioe) {
                 String errMsg = "Unexpected Error: " + ioe.fillInStackTrace();
                 try {
-                    logExceptionToFile(guid, errMsg, "obj/store_errors/io");
+                    logExceptionToFile(guid, errMsg, "java/store_errors/io");
                 } catch (Exception e1) {
                     e1.printStackTrace();
                 }
@@ -131,7 +131,7 @@ public class Client {
             } catch (Exception e) {
                 String errMsg = "Unexpected Error: " + e.fillInStackTrace();
                 try {
-                    logExceptionToFile(guid, errMsg, "obj/store_errors/general");
+                    logExceptionToFile(guid, errMsg, "java/store_errors/general");
                 } catch (Exception e1) {
                     e1.printStackTrace();
                 }
@@ -161,7 +161,7 @@ public class Client {
                     String errMsg = "Obj retrieved (pid/guid): " + guid
                         + ". Checksums do not match, checksum from db: " + checksum
                         + ". Calculated digest: " + streamDigest + ". Algorithm: " + algorithm;
-                    logExceptionToFile(guid, errMsg, "obj/retrieve_errors/checksum_mismatch");
+                    logExceptionToFile(guid, errMsg, "java/retrieve_errors/checksum_mismatch");
                 } else {
                     System.out.println("Checksums match!");
                 }
@@ -169,7 +169,7 @@ public class Client {
             } catch (FileNotFoundException fnfe) {
                 String errMsg = "File not found: " + fnfe.fillInStackTrace();
                 try {
-                    logExceptionToFile(guid, errMsg, "obj/retrieve_errors/filenotfound");
+                    logExceptionToFile(guid, errMsg, "java/retrieve_errors/filenotfound");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -177,7 +177,7 @@ public class Client {
             } catch (Exception e) {
                 String errMsg = "Unexpected Error: " + e.fillInStackTrace();
                 try {
-                    logExceptionToFile(guid, errMsg, "obj/retrieve_errors/general");
+                    logExceptionToFile(guid, errMsg, "java/retrieve_errors/general");
                 } catch (Exception e1) {
                     e1.printStackTrace();
                 }
