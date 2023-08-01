@@ -512,6 +512,7 @@ public class FileHashStore implements HashStore {
     /**
      * Overload method for storeObject with an additionalAlgorithm
      */
+    @Override
     public ObjectInfo storeObject(InputStream object, String pid, String additionalAlgorithm)
         throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException {
         logFileHashStore.debug(
@@ -534,6 +535,7 @@ public class FileHashStore implements HashStore {
     /**
      * Overload method for storeObject with just a checksum and checksumAlgorithm
      */
+    @Override
     public ObjectInfo storeObject(
         InputStream object, String pid, String checksum, String checksumAlgorithm
     ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException {
@@ -557,6 +559,7 @@ public class FileHashStore implements HashStore {
     /**
      * Overload method for storeObject with size of object to validate
      */
+    @Override
     public ObjectInfo storeObject(InputStream object, String pid, long objSize)
         throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException {
         logFileHashStore.debug(

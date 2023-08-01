@@ -59,6 +59,18 @@ public interface HashStore {
                 String checksumAlgorithm, long objSize
         ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException;
 
+        ObjectInfo storeObject(
+                InputStream object, String pid, String checksum, String checksumAlgorithm
+        ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException;
+
+        ObjectInfo storeObject(InputStream object, String pid, String additionalAlgorithm)
+                throws NoSuchAlgorithmException, IOException, PidObjectExistsException,
+                RuntimeException;
+
+        ObjectInfo storeObject(InputStream object, String pid, long objSize)
+                throws NoSuchAlgorithmException, IOException, PidObjectExistsException,
+                RuntimeException;
+
         /**
          * The `storeMetadata` method is responsible for adding/updating metadata (ex. `sysmeta`) to
          * the HashStore by using a given InputStream, a persistent identifier (`pid`) and metadata
