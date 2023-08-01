@@ -57,7 +57,7 @@ public class Client {
             String sqlQuery = "SELECT identifier.guid, identifier.docid, identifier.rev,"
                 + " systemmetadata.object_format, systemmetadata.checksum,"
                 + " systemmetadata.checksum_algorithm FROM identifier INNER JOIN systemmetadata"
-                + " ON identifier.guid = systemmetadata.guid;";
+                + " ON identifier.guid = systemmetadata.guid LIMIT 10000;";
             ResultSet resultSet = statement.executeQuery(sqlQuery);
 
             // For each row, get guid, docid, rev, checksum and checksum_algorithm
@@ -79,12 +79,14 @@ public class Client {
                     resultObj.put("pid", guid);
                     resultObj.put("algorithm", formattedAlgo);
                     resultObj.put("checksum", checksum);
+                    resultObj.put("path", setItemFilePath.toString());
 
                     resultObjList.add(resultObj);
                 }
             }
 
-            retrieveAndValidateObjs(resultObjList);
+            // retrieveAndValidateObjs(resultObjList);
+            storeObjectsWithChecksum(resultObjList);
 
             // Close resources
             resultSet.close();
@@ -97,6 +99,39 @@ public class Client {
 
     }
 
+    private static void storeObjectsWithChecksum(List<Map<String, String>> resultObjList) {
+        resultObjList.parallelStream().forEach(item -> {
+            String guid = null;
+            try {
+                guid = item.get("pid");
+                InputStream objStream = Files.newInputStream(Paths.get(item.get("path")));
+                String algorithm = item.get("algorithm");
+                String checksum = item.get("checksum");
+
+                // Store object
+                System.out.println("Storing object for guid: " + guid);
+                hashStore.storeObject(objStream, guid, checksum, algorithm);
+
+            } catch (IOException ioe) {
+                String errMsg = "Unexpected Error: " + ioe.fillInStackTrace();
+                try {
+                    logExceptionToFile(guid, errMsg, "obj/store_errors/io");
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                }
+
+            } catch (Exception e) {
+                String errMsg = "Unexpected Error: " + e.fillInStackTrace();
+                try {
+                    logExceptionToFile(guid, errMsg, "obj/store_errors/general");
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                }
+
+            }
+        });
+    }
+
     private static void retrieveAndValidateObjs(List<Map<String, String>> resultObjList) {
         resultObjList.parallelStream().forEach(item -> {
             String guid = null;
@@ -104,6 +139,7 @@ public class Client {
                 guid = item.get("pid");
                 String algorithm = item.get("algorithm");
                 String checksum = item.get("checksum");
+
                 // Retrieve object
                 System.out.println("Retrieving object for guid: " + guid);
                 InputStream objstream = hashStore.retrieveObject(guid);
