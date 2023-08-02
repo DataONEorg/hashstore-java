@@ -31,7 +31,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 public class Client {
     private static HashStore hashStore;
-    private static Path storePath = Paths.get("/home/mok/testing/knbvm_testlog");
+    private static Path storePath = Paths.get("/home/mok/testing/knbvm_hashstore");
 
     public static void main(String[] args) throws Exception {
         // Get a HashStore
@@ -57,7 +57,7 @@ public class Client {
             String sqlQuery = "SELECT identifier.guid, identifier.docid, identifier.rev,"
                 + " systemmetadata.object_format, systemmetadata.checksum,"
                 + " systemmetadata.checksum_algorithm FROM identifier INNER JOIN systemmetadata"
-                + " ON identifier.guid = systemmetadata.guid LIMIT 100000;";
+                + " ON identifier.guid = systemmetadata.guid;";
             ResultSet resultSet = statement.executeQuery(sqlQuery);
 
             // For each row, get guid, docid, rev, checksum and checksum_algorithm
