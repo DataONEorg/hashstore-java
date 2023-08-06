@@ -114,12 +114,13 @@ public class Client {
                 hashStore.storeObject(objStream, guid, checksum, algorithm);
 
             } catch (PidObjectExistsException poee) {
-                String errMsg = "Unexpected Error: " + poee.fillInStackTrace();
-                try {
-                    logExceptionToFile(guid, errMsg, "java/store_errors/illegalargument");
-                } catch (Exception e1) {
-                    e1.printStackTrace();
-                }
+                poee.printStackTrace();
+                // String errMsg = "Unexpected Error: " + poee.fillInStackTrace();
+                // try {
+                //     logExceptionToFile(guid, errMsg, "java/store_errors/pidobjectexists");
+                // } catch (Exception e1) {
+                //     e1.printStackTrace();
+                // }
 
             } catch (IllegalArgumentException iae) {
                 String errMsg = "Unexpected Error: " + iae.fillInStackTrace();
