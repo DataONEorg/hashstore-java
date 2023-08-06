@@ -114,7 +114,7 @@ public class Client {
                 hashStore.storeObject(objStream, guid, checksum, algorithm);
 
             } catch (PidObjectExistsException poee) {
-                poee.printStackTrace();
+                System.out.println("Object already exists for pid: " + guid);
                 // String errMsg = "Unexpected Error: " + poee.fillInStackTrace();
                 // try {
                 //     logExceptionToFile(guid, errMsg, "java/store_errors/pidobjectexists");
