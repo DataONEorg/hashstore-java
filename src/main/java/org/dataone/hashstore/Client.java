@@ -25,6 +25,7 @@ import java.sql.Statement;
 import javax.xml.bind.DatatypeConverter;
 
 import org.dataone.hashstore.exceptions.HashStoreFactoryException;
+import org.dataone.hashstore.exceptions.PidObjectExistsException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -111,6 +112,14 @@ public class Client {
                 // Store object
                 System.out.println("Storing object for guid: " + guid);
                 hashStore.storeObject(objStream, guid, checksum, algorithm);
+
+            } catch (PidObjectExistsException poee) {
+                String errMsg = "Unexpected Error: " + poee.fillInStackTrace();
+                try {
+                    logExceptionToFile(guid, errMsg, "java/store_errors/illegalargument");
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                }
 
             } catch (IllegalArgumentException iae) {
                 String errMsg = "Unexpected Error: " + iae.fillInStackTrace();
