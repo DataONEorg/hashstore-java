@@ -72,22 +72,34 @@ public class Client {
                 String checksum = resultSet.getString("checksum");
                 String checksumAlgorithm = resultSet.getString("checksum_algorithm");
                 String formattedAlgo = formatAlgo(checksumAlgorithm);
+                String formatId = resultSet.getString("object_format");
 
-                Path setItemFilePath = Paths.get("/var/metacat/data/" + docid + "." + rev);
+                // Path setItemFilePath = Paths.get("/var/metacat/data/" + docid + "." + rev);
+                // if (Files.exists(setItemFilePath)) {
+                //     System.out.println("File exists: " + setItemFilePath);
+                //     Map<String, String> resultObj = new HashMap<>();
+                //     resultObj.put("pid", guid);
+                //     resultObj.put("algorithm", formattedAlgo);
+                //     resultObj.put("checksum", checksum);
+                //     resultObj.put("path", setItemFilePath.toString());
+
+                //     resultObjList.add(resultObj);
+                // }
+                Path setItemFilePath = Paths.get("/var/metacat/documents/" + docid + "." + rev);
                 if (Files.exists(setItemFilePath)) {
                     System.out.println("File exists: " + setItemFilePath);
                     Map<String, String> resultObj = new HashMap<>();
                     resultObj.put("pid", guid);
-                    resultObj.put("algorithm", formattedAlgo);
-                    resultObj.put("checksum", checksum);
                     resultObj.put("path", setItemFilePath.toString());
+                    resultObj.put("namespace", formatId);
 
                     resultObjList.add(resultObj);
                 }
             }
 
             // retrieveAndValidateObjs(resultObjList);
-            storeObjectsWithChecksum(resultObjList);
+            // storeObjectsWithChecksum(resultObjList);
+            storeMetadataFromDb(resultObjList);
 
             // Close resources
             resultSet.close();
@@ -188,6 +200,38 @@ public class Client {
                 String errMsg = "Unexpected Error: " + e.fillInStackTrace();
                 try {
                     logExceptionToFile(guid, errMsg, "java/retrieve_errors/general");
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                }
+
+            }
+        });
+    }
+
+    private static void storeMetadataFromDb(List<Map<String, String>> resultObjList) {
+        resultObjList.parallelStream().forEach(item -> {
+            String guid = null;
+            try {
+                guid = item.get("pid");
+                InputStream objStream = Files.newInputStream(Paths.get(item.get("path")));
+                String formatId = item.get("namespace");
+
+                // Store object
+                System.out.println("Storing metadata for guid: " + guid);
+                hashStore.storeMetadata(objStream, guid, formatId);
+
+            } catch (IOException ioe) {
+                String errMsg = "Unexpected Error: " + ioe.fillInStackTrace();
+                try {
+                    logExceptionToFile(guid, errMsg, "java/store_metadata_errors/io");
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                }
+
+            } catch (Exception e) {
+                String errMsg = "Unexpected Error: " + e.fillInStackTrace();
+                try {
+                    logExceptionToFile(guid, errMsg, "java/store_metadata_errors/general");
                 } catch (Exception e1) {
                     e1.printStackTrace();
                 }
