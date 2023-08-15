@@ -58,12 +58,13 @@ public class Client {
             String sqlQuery = "SELECT identifier.guid, identifier.docid, identifier.rev,"
                 + " systemmetadata.object_format, systemmetadata.checksum,"
                 + " systemmetadata.checksum_algorithm FROM identifier INNER JOIN systemmetadata"
-                + " ON identifier.guid = systemmetadata.guid;";
+                + " ON identifier.guid = systemmetadata.guid ORDER BY identifier.guid;";
             ResultSet resultSet = statement.executeQuery(sqlQuery);
 
             // For each row, get guid, docid, rev, checksum and checksum_algorithm
             // and create a List to loop over
             List<Map<String, String>> resultObjList = new ArrayList<>();
+
             while (resultSet.next()) {
                 System.out.println("Calling resultSet.next()");
                 String guid = resultSet.getString("guid");
@@ -74,32 +75,33 @@ public class Client {
                 String formattedAlgo = formatAlgo(checksumAlgorithm);
                 String formatId = resultSet.getString("object_format");
 
-                // Path setItemFilePath = Paths.get("/var/metacat/data/" + docid + "." + rev);
-                // if (Files.exists(setItemFilePath)) {
-                //     System.out.println("File exists: " + setItemFilePath);
-                //     Map<String, String> resultObj = new HashMap<>();
-                //     resultObj.put("pid", guid);
-                //     resultObj.put("algorithm", formattedAlgo);
-                //     resultObj.put("checksum", checksum);
-                //     resultObj.put("path", setItemFilePath.toString());
-
-                //     resultObjList.add(resultObj);
-                // }
-                Path setItemFilePath = Paths.get("/var/metacat/documents/" + docid + "." + rev);
+                Path setItemFilePath = Paths.get("/var/metacat/data/" + docid + "." + rev);
                 if (Files.exists(setItemFilePath)) {
                     System.out.println("File exists: " + setItemFilePath);
                     Map<String, String> resultObj = new HashMap<>();
                     resultObj.put("pid", guid);
+                    resultObj.put("algorithm", formattedAlgo);
+                    resultObj.put("checksum", checksum);
                     resultObj.put("path", setItemFilePath.toString());
-                    resultObj.put("namespace", formatId);
 
                     resultObjList.add(resultObj);
                 }
+                // Path setItemFilePath = Paths.get("/var/metacat/documents/" + docid + "." + rev);
+                // if (Files.exists(setItemFilePath)) {
+                //     System.out.println("File exists: " + setItemFilePath);
+                //     Map<String, String> resultObj = new HashMap<>();
+                //     resultObj.put("pid", guid);
+                //     resultObj.put("path", setItemFilePath.toString());
+                //     resultObj.put("namespace", formatId);
+
+                //     resultObjList.add(resultObj);
+                // }
             }
 
             // retrieveAndValidateObjs(resultObjList);
             // storeObjectsWithChecksum(resultObjList);
-            storeMetadataFromDb(resultObjList);
+            deleteObjectsFromStore(resultObjList);
+            // storeMetadataFromDb(resultObjList);
 
             // Close resources
             resultSet.close();
@@ -200,6 +202,44 @@ public class Client {
                 String errMsg = "Unexpected Error: " + e.fillInStackTrace();
                 try {
                     logExceptionToFile(guid, errMsg, "java/retrieve_errors/general");
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                }
+
+            }
+        });
+    }
+
+    private static void deleteObjectsFromStore(List<Map<String, String>> resultObjList) {
+        resultObjList.parallelStream().forEach(item -> {
+            String guid = null;
+            try {
+                guid = item.get("pid");
+
+                // Delete object
+                System.out.println("Deleting object for guid: " + guid);
+                hashStore.deleteObject(guid);
+
+            } catch (FileNotFoundException fnfe) {
+                String errMsg = "Unexpected Error: " + fnfe.fillInStackTrace();
+                try {
+                    logExceptionToFile(guid, errMsg, "java/delete_errors/filenotfound");
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                }
+
+            } catch (IOException ioe) {
+                String errMsg = "Unexpected Error: " + ioe.fillInStackTrace();
+                try {
+                    logExceptionToFile(guid, errMsg, "java/delete_errors/io");
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                }
+
+            } catch (Exception e) {
+                String errMsg = "Unexpected Error: " + e.fillInStackTrace();
+                try {
+                    logExceptionToFile(guid, errMsg, "java/delete_errors/general");
                 } catch (Exception e1) {
                     e1.printStackTrace();
                 }
