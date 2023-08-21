@@ -40,7 +40,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 public class Client {
     private static HashStore hashStore;
-    private static Path storePath = Paths.get("/home/mok/testing/knbvm_hashstore");
+    private static Path storePath;
 
     public static void main(String[] args) throws Exception {
         if (args.length == 0) {
@@ -65,7 +65,7 @@ public class Client {
                         "HashStore store path must be supplied, use '-store=[path/to/store]'";
                     throw new IllegalArgumentException(errMsg);
                 }
-                Path storePath = Paths.get(cmd.getOptionValue("store"));
+                storePath = Paths.get(cmd.getOptionValue("store"));
                 // Confirm HashStore
                 initializeHashStoreForKnb(storePath);
 
@@ -86,13 +86,77 @@ public class Client {
                     }
                     String objType = cmd.getOptionValue("stype");
                     testWithKnbvm(action, objType);
+
+                } else if (cmd.hasOption("getchecksum")) {
+                    String pid = cmd.getOptionValue("pid");
+                    String algo = cmd.getOptionValue("algo");
+                    ensureNotNull(pid, "-pid");
+                    ensureNotNull(algo, "-algo");
+                    String hexDigest = hashStore.getHexDigest(pid, algo);
+                    System.out.println("Hex Digest (pid: " + pid + ", algorithm: " + algo + "):");
+                    System.out.println(hexDigest);
+
+                } else if (cmd.hasOption("storeobject")) {
+                    String pid = cmd.getOptionValue("pid");
+                    Path path = Paths.get(cmd.getOptionValue("path"));
+                    String additional_algo = cmd.getOptionValue("algo");
+                    String checksum = cmd.getOptionValue("checksum");
+                    String checksum_algo = cmd.getOptionValue("checksum_algo");
+                    long size = Long.parseLong(cmd.getOptionValue("size"));
+                    ensureNotNull(pid, "-pid");
+                    ensureNotNull(path, "-path");
+
+                    InputStream pidObjStream = Files.newInputStream(path);
+                    ObjectInfo objInfo = hashStore.storeObject(
+                        pidObjStream, pid, additional_algo, checksum, checksum_algo, size
+                    );
+                    System.out.println("Object Info for pid (" + pid + "):");
+                    System.out.println(objInfo);
+
+                } else if (cmd.hasOption("storemetadata")) {
+                    String pid = cmd.getOptionValue("pid");
+                    Path path = Paths.get(cmd.getOptionValue("path"));
+                    String formatId = cmd.getOptionValue("format_id");
+                    ensureNotNull(pid, "-pid");
+                    ensureNotNull(path, "-path");
+                    ensureNotNull(formatId, "-format_id");
+
+                    InputStream pidObjStream = Files.newInputStream(path);
+                    String metadataCid = hashStore.storeMetadata(pidObjStream, pid, formatId);
+                    System.out.println("Metadata Content Identifier:");
+                    System.out.println(metadataCid);
+
+                } else if (cmd.hasOption("retrieveobject")) {
+                    // TODO
+                } else if (cmd.hasOption("retrievemetadata")) {
+                    // TODO
+                } else if (cmd.hasOption("deleteobject")) {
+                    // TODO
+                } else if (cmd.hasOption("deletemetadata")) {
+                    // TODO
                 }
+
             }
         } catch (ParseException e) {
             System.err.println("Error parsing cli arguments: " + e.getMessage());
             formatter.printHelp("CommandLineApp", options);
         }
     }
+
+    /**
+     * Checks whether a given object is null and throws an exception if so
+     *
+     * @param object   Object to check
+     * @param argument Value that is being checked
+     * @param method   Calling method
+     */
+    private static void ensureNotNull(Object object, String argument) {
+        if (object == null) {
+            String errMsg = "HashStoreClient - " + argument + " cannot be null.";
+            throw new NullPointerException(errMsg);
+        }
+    }
+
 
     /**
      * Entry point for working with test data found in knbvm (test.arcticdata.io)
