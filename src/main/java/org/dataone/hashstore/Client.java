@@ -33,6 +33,8 @@ import org.apache.commons.cli.ParseException;
 import org.dataone.hashstore.exceptions.HashStoreFactoryException;
 import org.dataone.hashstore.exceptions.PidObjectExistsException;
 
+import com.fasterxml.jackson.core.exc.StreamReadException;
+import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
@@ -56,99 +58,111 @@ public class Client {
 
             if (cmd.hasOption("h")) {
                 formatter.printHelp("CommandLineApp", options);
-
             } else {
+                // Get store path and get HashStore
+                if (!cmd.hasOption("store")) {
+                    String err_msg =
+                        "HashStore store path must be supplied, use '-store=[path/to/store]'";
+                    throw new IllegalArgumentException(err_msg);
+                }
+                Path storePath = Paths.get(cmd.getOptionValue("store"));
+                // Confirm HashStore
+                initializeHashStore(storePath);
+
+                // Parse options
                 if (cmd.hasOption("knbvm")) {
                     System.out.println(
                         "Testing with KNBVM values. Please ensure all config files present."
                     );
+                    // TODO: Pass to method based on getOptions
+                    String action = "sts";
+                    String objType = "data"; // Or "documents"
+                    testWithKnbvm(action, objType);
                 }
             }
         } catch (ParseException e) {
             System.err.println("Error parsing cli arguments: " + e.getMessage());
             formatter.printHelp("CommandLineApp", options);
         }
+    }
 
-        boolean knbvmTest = false;
-        if (knbvmTest) {
-            // Get a HashStore
-            initializeHashStore(storePath);
+    private static void testWithKnbvm(String actionFlag, String objType) throws IOException,
+        StreamReadException, DatabindException {
+        // Load metacat db yaml
+        System.out.println("Loading metacat db yaml.");
+        Path pgdbYaml = storePath.resolve("pgdb.yaml");
+        File pgdbYamlFile = pgdbYaml.toFile();
+        ObjectMapper om = new ObjectMapper(new YAMLFactory());
+        HashMap<?, ?> pgdbYamlProperties = om.readValue(pgdbYamlFile, HashMap.class);
+        // Get db values
+        String url = (String) pgdbYamlProperties.get("db_uri");
+        String user = (String) pgdbYamlProperties.get("db_user");
+        String password = (String) pgdbYamlProperties.get("db_password");
 
-            // Load metacat db yaml
-            System.out.println("Loading metacat db yaml.");
-            Path pgdbYaml = storePath.resolve("pgdb.yaml");
-            File pgdbYamlFile = pgdbYaml.toFile();
-            ObjectMapper om = new ObjectMapper(new YAMLFactory());
-            HashMap<?, ?> pgdbYamlProperties = om.readValue(pgdbYamlFile, HashMap.class);
-            // Get db values
-            String url = (String) pgdbYamlProperties.get("db_uri");
-            String user = (String) pgdbYamlProperties.get("db_user");
-            String password = (String) pgdbYamlProperties.get("db_password");
+        try {
+            System.out.println("Connecting to metacat db.");
+            // Setup metacat db access
+            Class.forName("org.postgresql.Driver"); // Force driver to register itself
+            Connection connection = DriverManager.getConnection(url, user, password);
+            Statement statement = connection.createStatement();
+            String sqlQuery = "SELECT identifier.guid, identifier.docid, identifier.rev,"
+                + " systemmetadata.object_format, systemmetadata.checksum,"
+                + " systemmetadata.checksum_algorithm FROM identifier INNER JOIN systemmetadata"
+                + " ON identifier.guid = systemmetadata.guid ORDER BY identifier.guid;";
+            ResultSet resultSet = statement.executeQuery(sqlQuery);
 
-            try {
-                System.out.println("Connecting to metacat db.");
-                // Setup metacat db access
-                Class.forName("org.postgresql.Driver"); // Force driver to register itself
-                Connection connection = DriverManager.getConnection(url, user, password);
-                Statement statement = connection.createStatement();
-                String sqlQuery = "SELECT identifier.guid, identifier.docid, identifier.rev,"
-                    + " systemmetadata.object_format, systemmetadata.checksum,"
-                    + " systemmetadata.checksum_algorithm FROM identifier INNER JOIN systemmetadata"
-                    + " ON identifier.guid = systemmetadata.guid ORDER BY identifier.guid;";
-                ResultSet resultSet = statement.executeQuery(sqlQuery);
+            // For each row, get guid, docid, rev, checksum and checksum_algorithm
+            // and create a List to loop over
+            List<Map<String, String>> resultObjList = new ArrayList<>();
+            while (resultSet.next()) {
+                System.out.println("Calling resultSet.next()");
+                String guid = resultSet.getString("guid");
+                String docid = resultSet.getString("docid");
+                int rev = resultSet.getInt("rev");
+                String checksum = resultSet.getString("checksum");
+                String checksumAlgorithm = resultSet.getString("checksum_algorithm");
+                String formattedChecksumAlgo = formatAlgo(checksumAlgorithm);
+                String formatId = resultSet.getString("object_format");
 
-                // For each row, get guid, docid, rev, checksum and checksum_algorithm
-                // and create a List to loop over
-                List<Map<String, String>> resultObjList = new ArrayList<>();
+                Path setItemFilePath = Paths.get(
+                    "/var/metacat/" + objType + "/" + docid + "." + rev
+                );
 
-                while (resultSet.next()) {
-                    System.out.println("Calling resultSet.next()");
-                    String guid = resultSet.getString("guid");
-                    String docid = resultSet.getString("docid");
-                    int rev = resultSet.getInt("rev");
-                    String checksum = resultSet.getString("checksum");
-                    String checksumAlgorithm = resultSet.getString("checksum_algorithm");
-                    String formattedAlgo = formatAlgo(checksumAlgorithm);
-                    String formatId = resultSet.getString("object_format");
-
-                    Path setItemFilePath = Paths.get("/var/metacat/data/" + docid + "." + rev);
-                    if (Files.exists(setItemFilePath)) {
-                        System.out.println("File exists: " + setItemFilePath);
-                        Map<String, String> resultObj = new HashMap<>();
+                if (Files.exists(setItemFilePath)) {
+                    Map<String, String> resultObj = new HashMap<>();
+                    if (objType == "data") {
                         resultObj.put("pid", guid);
-                        resultObj.put("algorithm", formattedAlgo);
+                        resultObj.put("algorithm", formattedChecksumAlgo);
                         resultObj.put("checksum", checksum);
                         resultObj.put("path", setItemFilePath.toString());
-
-                        resultObjList.add(resultObj);
                     }
-                    // Path setItemFilePath = Paths.get("/var/metacat/documents/" + docid + "." + rev);
-                    // if (Files.exists(setItemFilePath)) {
-                    //     System.out.println("File exists: " + setItemFilePath);
-                    //     Map<String, String> resultObj = new HashMap<>();
-                    //     resultObj.put("pid", guid);
-                    //     resultObj.put("path", setItemFilePath.toString());
-                    //     resultObj.put("namespace", formatId);
-
-                    //     resultObjList.add(resultObj);
-                    // }
+                    if (objType == "documents") {
+                        resultObj.put("pid", guid);
+                        resultObj.put("path", setItemFilePath.toString());
+                        resultObj.put("namespace", formatId);
+                    }
+                    resultObjList.add(resultObj);
                 }
+            }
 
+            // Check option
+            if (actionFlag == "sts") {
+                // TODO: Refactor/update methods to be object/metadata specific
                 // retrieveAndValidateObjs(resultObjList);
                 // storeObjectsWithChecksum(resultObjList);
                 // deleteObjectsFromStore(resultObjList);
                 // storeMetadataFromDb(resultObjList);
-
-                // Close resources
-                resultSet.close();
-                statement.close();
-                connection.close();
-
-            } catch (Exception e) {
-                e.printStackTrace();
+                System.out.println("Placeholder");
             }
-        }
 
+            // Close resources
+            resultSet.close();
+            statement.close();
+            connection.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -162,10 +176,10 @@ public class Client {
         options.addOption("store", "storepath", true, "Path to HashStore.");
         // HashStore creation options
         options.addOption("chs", "createhashstore", false, "Create a HashStore.");
-        options.addOption("dp", "createhashstore", true, "Depth of HashStore.");
-        options.addOption("wp", "createhashstore", true, "Width of HashStore.");
-        options.addOption("ap", "createhashstore", true, "Algorithm of HashStore.");
-        options.addOption("nsp", "createhashstore", true, "Default metadata namespace");
+        options.addOption("dp", "storedepth", true, "Depth of HashStore.");
+        options.addOption("wp", "storewidth", true, "Width of HashStore.");
+        options.addOption("ap", "storealgo", true, "Algorithm of HashStore.");
+        options.addOption("nsp", "storenamespace", true, "Default metadata namespace");
         // Public API options
         options.addOption(
             "getchecksum", "client_getchecksum", false,
