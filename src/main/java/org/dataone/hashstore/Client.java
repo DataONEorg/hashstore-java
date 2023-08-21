@@ -74,9 +74,17 @@ public class Client {
                     System.out.println(
                         "Testing with KNBVM values. Please ensure all config files present."
                     );
-                    // TODO: Pass to method based on getOptions
-                    String action = "sts";
-                    String objType = "data"; // Or "documents"
+                    String action = null;
+                    if (cmd.hasOption("sts")) {
+                        action = "sts";
+                    }
+                    if (cmd.hasOption("rav")) {
+                        action = "rav";
+                    }
+                    if (cmd.hasOption("dfs")) {
+                        action = "dfs";
+                    }
+                    String objType = cmd.getOptionValue("stype");
                     testWithKnbvm(action, objType);
                 }
             }
@@ -133,9 +141,11 @@ public class Client {
                 String formattedChecksumAlgo = formatAlgo(checksumAlgorithm);
                 String formatId = resultSet.getString("object_format");
 
-                if (objType != "data" || objType != "documents") {
-                    String errMsg = "HashStoreClient - objType must be 'data' or 'documents'";
-                    throw new IllegalArgumentException(errMsg);
+                if (!objType.equals("data")) {
+                    if (!objType.equals("documents")) {
+                        String errMsg = "HashStoreClient - objType must be 'data' or 'documents'";
+                        throw new IllegalArgumentException(errMsg);
+                    }
                 }
                 Path setItemFilePath = Paths.get(
                     "/var/metacat/" + objType + "/" + docid + "." + rev
@@ -153,22 +163,22 @@ public class Client {
             }
 
             // Check options
-            if (actionFlag == "sts" && objType == "data") {
+            if (actionFlag.equals("sts") && objType.equals("data")) {
                 storeObjsWithChecksumFromDb(resultObjList);
             }
-            if (actionFlag == "sts" && objType == "documents") {
+            if (actionFlag.equals("sts") && objType.equals("documents")) {
                 storeMetadataFromDb(resultObjList);
             }
-            if (actionFlag == "rav" && objType == "data") {
+            if (actionFlag.equals("rav") && objType.equals("data")) {
                 retrieveAndValidateObjs(resultObjList);
             }
-            if (actionFlag == "rav" && objType == "documents") {
+            if (actionFlag.equals("rav") && objType.equals("documents")) {
                 retrieveAndValidateMetadata(resultObjList);
             }
-            if (actionFlag == "dfs" && objType == "data") {
+            if (actionFlag.equals("dfs") && objType.equals("data")) {
                 deleteObjectsFromStore(resultObjList);
             }
-            if (actionFlag == "dfs" && objType == "documents") {
+            if (actionFlag.equals("dfs") && objType.equals("documents")) {
                 deleteMetadataFromStore(resultObjList);
             }
 
