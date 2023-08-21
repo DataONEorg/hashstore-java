@@ -44,20 +44,19 @@ public class Client {
         if (args.length == 0) {
             System.out.println("No arguments provided. Use flag '-h' for help.");
         }
-        Options options = new Options();
-        options.addOption("h", "help", false, "Show help options.");
-        options.addOption("knbvm", "knbvmtestadc", false, "Specify testing with knbvm");
+        // Add HashStore client options
+        Options options = addHashStoreOptions();
 
+        // Begin parsing options
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd;
-        boolean knbvmTest = false;
-
         try {
             cmd = parser.parse(options, args);
 
             if (cmd.hasOption("h")) {
                 formatter.printHelp("CommandLineApp", options);
+
             } else {
                 if (cmd.hasOption("knbvm")) {
                     System.out.println(
@@ -70,6 +69,7 @@ public class Client {
             formatter.printHelp("CommandLineApp", options);
         }
 
+        boolean knbvmTest = false;
         if (knbvmTest) {
             // Get a HashStore
             initializeHashStore(storePath);
@@ -149,6 +149,68 @@ public class Client {
             }
         }
 
+    }
+
+    /**
+     * Create an options object to use with Apache Commons CLI library to manage command line
+     * options.
+     */
+    private static Options addHashStoreOptions() {
+        Options options = new Options();
+        options.addOption("h", "help", false, "Show help options.");
+        // Mandatory option
+        options.addOption("store", "storepath", true, "Path to HashStore.");
+        // HashStore creation options
+        options.addOption("chs", "createhashstore", false, "Create a HashStore.");
+        options.addOption("dp", "createhashstore", true, "Depth of HashStore.");
+        options.addOption("wp", "createhashstore", true, "Width of HashStore.");
+        options.addOption("ap", "createhashstore", true, "Algorithm of HashStore.");
+        options.addOption("nsp", "createhashstore", true, "Default metadata namespace");
+        // Public API options
+        options.addOption(
+            "getchecksum", "client_getchecksum", false,
+            "Get the hex digest of a data object in a HashStore"
+        );
+        options.addOption(
+            "storeobject", "client_storeobject", false, "Store object to a HashStore."
+        );
+        options.addOption(
+            "storemetadata", "client_storemetadata", false, "Store metadata to a HashStore"
+        );
+        options.addOption(
+            "retrieveobject", "client_retrieveobject", false, "Retrieve an object from a HashStore."
+        );
+        options.addOption(
+            "retrievemetadata", "client_retrievemetadata", false,
+            "Retrieve a metadata obj from a HashStore."
+        );
+        options.addOption(
+            "deleteobject", "client_deleteobject", false, "Delete an object from a HashStore."
+        );
+        options.addOption(
+            "deletemetadata", "client_deletemetadata", false,
+            "Delete a metadata obj from a HashStore."
+        );
+        options.addOption("pid", "pidguid", true, "PID or GUID of object.");
+        options.addOption("path", "filepath", true, "Path to object.");
+        options.addOption("algo", "objectalgo", true, "Algorithm to use in calculations.");
+        options.addOption("checksum", "obj_checksum", true, "Checksum of object.");
+        options.addOption(
+            "checksum_algo", "obj_checksum_algo", true, "Algorithm of checksum supplied."
+        );
+        options.addOption("size", "obj_size", true, "Size of object");
+        options.addOption("format_id", "metadata_format", true, "Metadata format_id/namespace");
+        // knbvm (test.arcticdata.io) options
+        options.addOption("knbvm", "knbvmtestadc", false, "Specify testing with knbvm.");
+        options.addOption("nobj", "numberofobj", false, "Number of objects to work with.");
+        options.addOption("sdir", "storedirectory", true, "Location of objects to convert.");
+        options.addOption("stype", "storetype", true, "Type of store 'objects' or 'metadata'");
+        options.addOption("sts", "storetohs", false, "Flag to store objs to a HashStore");
+        options.addOption(
+            "rav", "retandval", false, "Retrieve and validate objs from a HashStore."
+        );
+        options.addOption("dfs", "delfromhs", false, "Delete objs from a HashStore.");
+        return options;
     }
 
     private static void storeObjectsWithChecksum(List<Map<String, String>> resultObjList) {
