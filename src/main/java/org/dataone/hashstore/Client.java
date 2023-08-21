@@ -24,6 +24,12 @@ import java.sql.Statement;
 
 import javax.xml.bind.DatatypeConverter;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.dataone.hashstore.exceptions.HashStoreFactoryException;
 import org.dataone.hashstore.exceptions.PidObjectExistsException;
 
@@ -35,81 +41,112 @@ public class Client {
     private static Path storePath = Paths.get("/home/mok/testing/knbvm_hashstore");
 
     public static void main(String[] args) throws Exception {
-        // Get a HashStore
-        initializeHashStore(storePath);
+        if (args.length == 0) {
+            System.out.println("No arguments provided. Use flag '-h' for help.");
+        }
+        Options options = new Options();
+        options.addOption("h", "help", false, "Show help options.");
+        options.addOption("knbvm", "knbvmtestadc", false, "Specify testing with knbvm");
 
-        // Load metacat db yaml
-        System.out.println("Loading metacat db yaml.");
-        Path pgdbYaml = storePath.resolve("pgdb.yaml");
-        File pgdbYamlFile = pgdbYaml.toFile();
-        ObjectMapper om = new ObjectMapper(new YAMLFactory());
-        HashMap<?, ?> pgdbYamlProperties = om.readValue(pgdbYamlFile, HashMap.class);
-        // Get db values
-        String url = (String) pgdbYamlProperties.get("db_uri");
-        String user = (String) pgdbYamlProperties.get("db_user");
-        String password = (String) pgdbYamlProperties.get("db_password");
+        CommandLineParser parser = new DefaultParser();
+        HelpFormatter formatter = new HelpFormatter();
+        CommandLine cmd;
+        boolean knbvmTest = false;
 
         try {
-            System.out.println("Connecting to metacat db.");
-            // Setup metacat db access
-            Class.forName("org.postgresql.Driver"); // Force driver to register itself
-            Connection connection = DriverManager.getConnection(url, user, password);
-            Statement statement = connection.createStatement();
-            String sqlQuery = "SELECT identifier.guid, identifier.docid, identifier.rev,"
-                + " systemmetadata.object_format, systemmetadata.checksum,"
-                + " systemmetadata.checksum_algorithm FROM identifier INNER JOIN systemmetadata"
-                + " ON identifier.guid = systemmetadata.guid ORDER BY identifier.guid;";
-            ResultSet resultSet = statement.executeQuery(sqlQuery);
+            cmd = parser.parse(options, args);
 
-            // For each row, get guid, docid, rev, checksum and checksum_algorithm
-            // and create a List to loop over
-            List<Map<String, String>> resultObjList = new ArrayList<>();
-
-            while (resultSet.next()) {
-                System.out.println("Calling resultSet.next()");
-                String guid = resultSet.getString("guid");
-                String docid = resultSet.getString("docid");
-                int rev = resultSet.getInt("rev");
-                String checksum = resultSet.getString("checksum");
-                String checksumAlgorithm = resultSet.getString("checksum_algorithm");
-                String formattedAlgo = formatAlgo(checksumAlgorithm);
-                String formatId = resultSet.getString("object_format");
-
-                Path setItemFilePath = Paths.get("/var/metacat/data/" + docid + "." + rev);
-                if (Files.exists(setItemFilePath)) {
-                    System.out.println("File exists: " + setItemFilePath);
-                    Map<String, String> resultObj = new HashMap<>();
-                    resultObj.put("pid", guid);
-                    resultObj.put("algorithm", formattedAlgo);
-                    resultObj.put("checksum", checksum);
-                    resultObj.put("path", setItemFilePath.toString());
-
-                    resultObjList.add(resultObj);
+            if (cmd.hasOption("h")) {
+                formatter.printHelp("CommandLineApp", options);
+            } else {
+                if (cmd.hasOption("knbvm")) {
+                    System.out.println(
+                        "Testing with KNBVM values. Please ensure all config files present."
+                    );
                 }
-                // Path setItemFilePath = Paths.get("/var/metacat/documents/" + docid + "." + rev);
-                // if (Files.exists(setItemFilePath)) {
-                //     System.out.println("File exists: " + setItemFilePath);
-                //     Map<String, String> resultObj = new HashMap<>();
-                //     resultObj.put("pid", guid);
-                //     resultObj.put("path", setItemFilePath.toString());
-                //     resultObj.put("namespace", formatId);
-
-                //     resultObjList.add(resultObj);
-                // }
             }
+        } catch (ParseException e) {
+            System.err.println("Error parsing cli arguments: " + e.getMessage());
+            formatter.printHelp("CommandLineApp", options);
+        }
 
-            // retrieveAndValidateObjs(resultObjList);
-            // storeObjectsWithChecksum(resultObjList);
-            deleteObjectsFromStore(resultObjList);
-            // storeMetadataFromDb(resultObjList);
+        if (knbvmTest) {
+            // Get a HashStore
+            initializeHashStore(storePath);
 
-            // Close resources
-            resultSet.close();
-            statement.close();
-            connection.close();
+            // Load metacat db yaml
+            System.out.println("Loading metacat db yaml.");
+            Path pgdbYaml = storePath.resolve("pgdb.yaml");
+            File pgdbYamlFile = pgdbYaml.toFile();
+            ObjectMapper om = new ObjectMapper(new YAMLFactory());
+            HashMap<?, ?> pgdbYamlProperties = om.readValue(pgdbYamlFile, HashMap.class);
+            // Get db values
+            String url = (String) pgdbYamlProperties.get("db_uri");
+            String user = (String) pgdbYamlProperties.get("db_user");
+            String password = (String) pgdbYamlProperties.get("db_password");
 
-        } catch (Exception e) {
-            e.printStackTrace();
+            try {
+                System.out.println("Connecting to metacat db.");
+                // Setup metacat db access
+                Class.forName("org.postgresql.Driver"); // Force driver to register itself
+                Connection connection = DriverManager.getConnection(url, user, password);
+                Statement statement = connection.createStatement();
+                String sqlQuery = "SELECT identifier.guid, identifier.docid, identifier.rev,"
+                    + " systemmetadata.object_format, systemmetadata.checksum,"
+                    + " systemmetadata.checksum_algorithm FROM identifier INNER JOIN systemmetadata"
+                    + " ON identifier.guid = systemmetadata.guid ORDER BY identifier.guid;";
+                ResultSet resultSet = statement.executeQuery(sqlQuery);
+
+                // For each row, get guid, docid, rev, checksum and checksum_algorithm
+                // and create a List to loop over
+                List<Map<String, String>> resultObjList = new ArrayList<>();
+
+                while (resultSet.next()) {
+                    System.out.println("Calling resultSet.next()");
+                    String guid = resultSet.getString("guid");
+                    String docid = resultSet.getString("docid");
+                    int rev = resultSet.getInt("rev");
+                    String checksum = resultSet.getString("checksum");
+                    String checksumAlgorithm = resultSet.getString("checksum_algorithm");
+                    String formattedAlgo = formatAlgo(checksumAlgorithm);
+                    String formatId = resultSet.getString("object_format");
+
+                    Path setItemFilePath = Paths.get("/var/metacat/data/" + docid + "." + rev);
+                    if (Files.exists(setItemFilePath)) {
+                        System.out.println("File exists: " + setItemFilePath);
+                        Map<String, String> resultObj = new HashMap<>();
+                        resultObj.put("pid", guid);
+                        resultObj.put("algorithm", formattedAlgo);
+                        resultObj.put("checksum", checksum);
+                        resultObj.put("path", setItemFilePath.toString());
+
+                        resultObjList.add(resultObj);
+                    }
+                    // Path setItemFilePath = Paths.get("/var/metacat/documents/" + docid + "." + rev);
+                    // if (Files.exists(setItemFilePath)) {
+                    //     System.out.println("File exists: " + setItemFilePath);
+                    //     Map<String, String> resultObj = new HashMap<>();
+                    //     resultObj.put("pid", guid);
+                    //     resultObj.put("path", setItemFilePath.toString());
+                    //     resultObj.put("namespace", formatId);
+
+                    //     resultObjList.add(resultObj);
+                    // }
+                }
+
+                // retrieveAndValidateObjs(resultObjList);
+                // storeObjectsWithChecksum(resultObjList);
+                // deleteObjectsFromStore(resultObjList);
+                // storeMetadataFromDb(resultObjList);
+
+                // Close resources
+                resultSet.close();
+                statement.close();
+                connection.close();
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
     }
