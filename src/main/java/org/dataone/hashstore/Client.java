@@ -61,13 +61,13 @@ public class Client {
             } else {
                 // Get store path and get HashStore
                 if (!cmd.hasOption("store")) {
-                    String err_msg =
+                    String errMsg =
                         "HashStore store path must be supplied, use '-store=[path/to/store]'";
-                    throw new IllegalArgumentException(err_msg);
+                    throw new IllegalArgumentException(errMsg);
                 }
                 Path storePath = Paths.get(cmd.getOptionValue("store"));
                 // Confirm HashStore
-                initializeHashStore(storePath);
+                initializeHashStoreForKnb(storePath);
 
                 // Parse options
                 if (cmd.hasOption("knbvm")) {
@@ -86,6 +86,15 @@ public class Client {
         }
     }
 
+    /**
+     * Entry point for working with test data found in knbvm (test.arcticdata.io)
+     * 
+     * @param actionFlag String representing a knbvm test-related method to call.
+     * @param objType    "data" (objects) or "documents" (metadata).
+     * @throws IOException
+     * @throws StreamReadException
+     * @throws DatabindException
+     */
     private static void testWithKnbvm(String actionFlag, String objType) throws IOException,
         StreamReadException, DatabindException {
         // Load metacat db yaml
@@ -124,35 +133,43 @@ public class Client {
                 String formattedChecksumAlgo = formatAlgo(checksumAlgorithm);
                 String formatId = resultSet.getString("object_format");
 
+                if (objType != "data" || objType != "documents") {
+                    String errMsg = "HashStoreClient - objType must be 'data' or 'documents'";
+                    throw new IllegalArgumentException(errMsg);
+                }
                 Path setItemFilePath = Paths.get(
                     "/var/metacat/" + objType + "/" + docid + "." + rev
                 );
 
                 if (Files.exists(setItemFilePath)) {
                     Map<String, String> resultObj = new HashMap<>();
-                    if (objType == "data") {
-                        resultObj.put("pid", guid);
-                        resultObj.put("algorithm", formattedChecksumAlgo);
-                        resultObj.put("checksum", checksum);
-                        resultObj.put("path", setItemFilePath.toString());
-                    }
-                    if (objType == "documents") {
-                        resultObj.put("pid", guid);
-                        resultObj.put("path", setItemFilePath.toString());
-                        resultObj.put("namespace", formatId);
-                    }
+                    resultObj.put("pid", guid);
+                    resultObj.put("algorithm", formattedChecksumAlgo);
+                    resultObj.put("checksum", checksum);
+                    resultObj.put("path", setItemFilePath.toString());
+                    resultObj.put("namespace", formatId);
                     resultObjList.add(resultObj);
                 }
             }
 
-            // Check option
-            if (actionFlag == "sts") {
-                // TODO: Refactor/update methods to be object/metadata specific
-                // retrieveAndValidateObjs(resultObjList);
-                // storeObjectsWithChecksum(resultObjList);
-                // deleteObjectsFromStore(resultObjList);
-                // storeMetadataFromDb(resultObjList);
-                System.out.println("Placeholder");
+            // Check options
+            if (actionFlag == "sts" && objType == "data") {
+                storeObjsWithChecksumFromDb(resultObjList);
+            }
+            if (actionFlag == "sts" && objType == "documents") {
+                storeMetadataFromDb(resultObjList);
+            }
+            if (actionFlag == "rav" && objType == "data") {
+                retrieveAndValidateObjs(resultObjList);
+            }
+            if (actionFlag == "rav" && objType == "documents") {
+                retrieveAndValidateMetadata(resultObjList);
+            }
+            if (actionFlag == "dfs" && objType == "data") {
+                deleteObjectsFromStore(resultObjList);
+            }
+            if (actionFlag == "dfs" && objType == "documents") {
+                deleteMetadataFromStore(resultObjList);
             }
 
             // Close resources
@@ -166,8 +183,8 @@ public class Client {
     }
 
     /**
-     * Create an options object to use with Apache Commons CLI library to manage command line
-     * options.
+     * Returns an options object to use with Apache Commons CLI library to manage command line
+     * options for HashStore client.
      */
     private static Options addHashStoreOptions() {
         Options options = new Options();
@@ -227,7 +244,13 @@ public class Client {
         return options;
     }
 
-    private static void storeObjectsWithChecksum(List<Map<String, String>> resultObjList) {
+    /**
+     * Store objects to a HashStore with a checksum and checksum algorithm
+     * 
+     * @param resultObjList List containing items with the following properties: 'pid', 'path',
+     *                      'algorithm', 'checksum'
+     */
+    private static void storeObjsWithChecksumFromDb(List<Map<String, String>> resultObjList) {
         resultObjList.parallelStream().forEach(item -> {
             String guid = null;
             try {
@@ -241,42 +264,47 @@ public class Client {
                 hashStore.storeObject(objStream, guid, checksum, algorithm);
 
             } catch (PidObjectExistsException poee) {
-                System.out.println("Object already exists for pid: " + guid);
-                // String errMsg = "Unexpected Error: " + poee.fillInStackTrace();
-                // try {
-                //     logExceptionToFile(guid, errMsg, "java/store_errors/pidobjectexists");
-                // } catch (Exception e1) {
-                //     e1.printStackTrace();
-                // }
+                String errMsg = "Unexpected Error: " + poee.fillInStackTrace();
+                try {
+                    logExceptionToFile(guid, errMsg, "java/store_obj_errors/pidobjectexists");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
 
             } catch (IllegalArgumentException iae) {
                 String errMsg = "Unexpected Error: " + iae.fillInStackTrace();
                 try {
-                    logExceptionToFile(guid, errMsg, "java/store_errors/illegalargument");
-                } catch (Exception e1) {
-                    e1.printStackTrace();
+                    logExceptionToFile(guid, errMsg, "java/store_obj_errors/illegalargument");
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
 
             } catch (IOException ioe) {
                 String errMsg = "Unexpected Error: " + ioe.fillInStackTrace();
                 try {
-                    logExceptionToFile(guid, errMsg, "java/store_errors/io");
-                } catch (Exception e1) {
-                    e1.printStackTrace();
+                    logExceptionToFile(guid, errMsg, "java/store_obj_errors/io");
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
 
-            } catch (Exception e) {
-                String errMsg = "Unexpected Error: " + e.fillInStackTrace();
+            } catch (Exception ge) {
+                String errMsg = "Unexpected Error: " + ge.fillInStackTrace();
                 try {
-                    logExceptionToFile(guid, errMsg, "java/store_errors/general");
-                } catch (Exception e1) {
-                    e1.printStackTrace();
+                    logExceptionToFile(guid, errMsg, "java/store_obj_errors/general");
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
 
             }
         });
     }
 
+    /**
+     * Retrieve objects from a HashStore and validate its contents by comparing checksums.
+     * 
+     * @param resultObjList List containing items with the following properties: 'pid', 'algorithm',
+     *                      'checksum'
+     */
     private static void retrieveAndValidateObjs(List<Map<String, String>> resultObjList) {
         resultObjList.parallelStream().forEach(item -> {
             String guid = null;
@@ -287,18 +315,19 @@ public class Client {
 
                 // Retrieve object
                 System.out.println("Retrieving object for guid: " + guid);
-                InputStream objstream = hashStore.retrieveObject(guid);
+                InputStream objStream = hashStore.retrieveObject(guid);
 
                 // Get hex digest
                 System.out.println("Calculating hex digest with algorithm: " + algorithm);
-                String streamDigest = calculateHexDigest(objstream, algorithm);
+                String streamDigest = calculateHexDigest(objStream, algorithm);
+                objStream.close();
 
                 // If checksums don't match, write a .txt file
                 if (!streamDigest.equals(checksum)) {
                     String errMsg = "Obj retrieved (pid/guid): " + guid
                         + ". Checksums do not match, checksum from db: " + checksum
                         + ". Calculated digest: " + streamDigest + ". Algorithm: " + algorithm;
-                    logExceptionToFile(guid, errMsg, "java/retrieve_errors/checksum_mismatch");
+                    logExceptionToFile(guid, errMsg, "java/retrieve_obj_errors/checksum_mismatch");
                 } else {
                     System.out.println("Checksums match!");
                 }
@@ -306,23 +335,36 @@ public class Client {
             } catch (FileNotFoundException fnfe) {
                 String errMsg = "File not found: " + fnfe.fillInStackTrace();
                 try {
-                    logExceptionToFile(guid, errMsg, "java/retrieve_errors/filenotfound");
+                    logExceptionToFile(guid, errMsg, "java/retrieve_obj_errors/filenotfound");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
 
-            } catch (Exception e) {
-                String errMsg = "Unexpected Error: " + e.fillInStackTrace();
+            } catch (IOException ioe) {
+                String errMsg = "Unexpected Error: " + ioe.fillInStackTrace();
                 try {
-                    logExceptionToFile(guid, errMsg, "java/retrieve_errors/general");
-                } catch (Exception e1) {
-                    e1.printStackTrace();
+                    logExceptionToFile(guid, errMsg, "java/retrieve_obj_errors/io");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            } catch (Exception ge) {
+                String errMsg = "Unexpected Error: " + ge.fillInStackTrace();
+                try {
+                    logExceptionToFile(guid, errMsg, "java/retrieve_obj_errors/general");
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
 
             }
         });
     }
 
+    /**
+     * Deletes a list of objects from a HashStore
+     * 
+     * @param resultObjList List containing items with the following property: 'pid'
+     */
     private static void deleteObjectsFromStore(List<Map<String, String>> resultObjList) {
         resultObjList.parallelStream().forEach(item -> {
             String guid = null;
@@ -336,31 +378,37 @@ public class Client {
             } catch (FileNotFoundException fnfe) {
                 String errMsg = "Unexpected Error: " + fnfe.fillInStackTrace();
                 try {
-                    logExceptionToFile(guid, errMsg, "java/delete_errors/filenotfound");
-                } catch (Exception e1) {
-                    e1.printStackTrace();
+                    logExceptionToFile(guid, errMsg, "java/delete_obj_errors/filenotfound");
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
 
             } catch (IOException ioe) {
                 String errMsg = "Unexpected Error: " + ioe.fillInStackTrace();
                 try {
-                    logExceptionToFile(guid, errMsg, "java/delete_errors/io");
-                } catch (Exception e1) {
-                    e1.printStackTrace();
+                    logExceptionToFile(guid, errMsg, "java/delete_obj_errors/io");
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
 
-            } catch (Exception e) {
-                String errMsg = "Unexpected Error: " + e.fillInStackTrace();
+            } catch (Exception ge) {
+                String errMsg = "Unexpected Error: " + ge.fillInStackTrace();
                 try {
-                    logExceptionToFile(guid, errMsg, "java/delete_errors/general");
-                } catch (Exception e1) {
-                    e1.printStackTrace();
+                    logExceptionToFile(guid, errMsg, "java/delete_obj_errors/general");
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
 
             }
         });
     }
 
+    /**
+     * Store a list containing info about metadata to a HashStore
+     * 
+     * @param resultObjList List containing items that have the following properties: 'pid', 'path'
+     *                      and 'namespace'
+     */
     private static void storeMetadataFromDb(List<Map<String, String>> resultObjList) {
         resultObjList.parallelStream().forEach(item -> {
             String guid = null;
@@ -373,26 +421,154 @@ public class Client {
                 System.out.println("Storing metadata for guid: " + guid);
                 hashStore.storeMetadata(objStream, guid, formatId);
 
+            } catch (IllegalArgumentException iae) {
+                String errMsg = "Unexpected Error: " + iae.fillInStackTrace();
+                try {
+                    logExceptionToFile(guid, errMsg, "java/store_metadata_errors/illegalargument");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
             } catch (IOException ioe) {
                 String errMsg = "Unexpected Error: " + ioe.fillInStackTrace();
                 try {
                     logExceptionToFile(guid, errMsg, "java/store_metadata_errors/io");
-                } catch (Exception e1) {
-                    e1.printStackTrace();
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
 
-            } catch (Exception e) {
-                String errMsg = "Unexpected Error: " + e.fillInStackTrace();
+            } catch (Exception ge) {
+                String errMsg = "Unexpected Error: " + ge.fillInStackTrace();
                 try {
                     logExceptionToFile(guid, errMsg, "java/store_metadata_errors/general");
-                } catch (Exception e1) {
-                    e1.printStackTrace();
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
 
             }
         });
     }
 
+
+    /**
+     * Retrieve metadata from a HashStore and validate its contents by comparing checksums.
+     * 
+     * @param resultObjList List containing items with the following properties: 'pid', 'namespace',
+     *                      'algorithm', 'checksum'
+     */
+    private static void retrieveAndValidateMetadata(List<Map<String, String>> resultObjList) {
+        resultObjList.parallelStream().forEach(item -> {
+            String guid = null;
+            try {
+                guid = item.get("pid");
+                String algorithm = item.get("algorithm");
+                String checksum = item.get("checksum");
+                String formatId = item.get("namespace");
+
+                // Retrieve object
+                System.out.println("Retrieving metadata for guid: " + guid);
+                InputStream metadataStream = hashStore.retrieveMetadata(guid, formatId);
+
+                // Get hex digest
+                System.out.println("Calculating hex digest with algorithm: " + algorithm);
+                String streamDigest = calculateHexDigest(metadataStream, algorithm);
+                metadataStream.close();
+
+                // If checksums don't match, write a .txt file
+                if (!streamDigest.equals(checksum)) {
+                    String errMsg = "Metadata retrieved (pid/guid): " + guid
+                        + ". Checksums do not match, checksum from db: " + checksum
+                        + ". Calculated digest: " + streamDigest + ". Algorithm: " + algorithm;
+                    logExceptionToFile(
+                        guid, errMsg, "java/retrieve_metadata_errors/checksum_mismatch"
+                    );
+                } else {
+                    System.out.println("Checksums match!");
+                }
+
+            } catch (FileNotFoundException fnfe) {
+                String errMsg = "File not found: " + fnfe.fillInStackTrace();
+                try {
+                    logExceptionToFile(guid, errMsg, "java/retrieve_metadata_errors/filenotfound");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            } catch (IOException ioe) {
+                String errMsg = "Unexpected Error: " + ioe.fillInStackTrace();
+                try {
+                    logExceptionToFile(guid, errMsg, "java/retrieve_metadata_errors/io");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            } catch (Exception ge) {
+                String errMsg = "Unexpected Error: " + ge.fillInStackTrace();
+                try {
+                    logExceptionToFile(guid, errMsg, "java/retrieve_metadata_errors/general");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            }
+        });
+    }
+
+
+    /**
+     * Deletes a list of metadata from a HashStore
+     * 
+     * @param resultObjList List containing items with the following property: 'pid'
+     */
+    private static void deleteMetadataFromStore(List<Map<String, String>> resultObjList) {
+        resultObjList.parallelStream().forEach(item -> {
+            String guid = null;
+            try {
+                guid = item.get("pid");
+                String formatId = item.get("namespace");
+
+                // Delete object
+                System.out.println("Deleting metadata for guid: " + guid);
+                hashStore.deleteMetadata(guid, formatId);
+
+            } catch (FileNotFoundException fnfe) {
+                String errMsg = "Unexpected Error: " + fnfe.fillInStackTrace();
+                try {
+                    logExceptionToFile(guid, errMsg, "java/delete_metadata_errors/filenotfound");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            } catch (IOException ioe) {
+                String errMsg = "Unexpected Error: " + ioe.fillInStackTrace();
+                try {
+                    logExceptionToFile(guid, errMsg, "java/delete_metadata_errors/io");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            } catch (Exception ge) {
+                String errMsg = "Unexpected Error: " + ge.fillInStackTrace();
+                try {
+                    logExceptionToFile(guid, errMsg, "java/delete_metadata_errors/general");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            }
+        });
+    }
+
+    // Utility methods for testing in Knbvm (test.arcticdata.io)
+
+    /**
+     * Log a plain text file with the guid/pid as the file name with a message.
+     * 
+     * @param guid      Pid/guid for which an exception was encountered.
+     * @param errMsg    Message to write into text file.
+     * @param directory Directory within HashStore to log error (txt) files.
+     * @throws Exception
+     */
     private static void logExceptionToFile(String guid, String errMsg, String directory)
         throws Exception {
         // Create directory to store the error files
@@ -434,7 +610,14 @@ public class Client {
         return checkedAlgorithm;
     }
 
-    private static void initializeHashStore(Path storePath) throws HashStoreFactoryException,
+    /**
+     * Initialize HashStore for testing in knbvm with default values.
+     * 
+     * @param storePath Path to store.
+     * @throws HashStoreFactoryException
+     * @throws IOException
+     */
+    private static void initializeHashStoreForKnb(Path storePath) throws HashStoreFactoryException,
         IOException {
         // Initialize HashStore
         String classPackage = "org.dataone.hashstore.filehashstore.FileHashStore";
