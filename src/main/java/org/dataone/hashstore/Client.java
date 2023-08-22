@@ -48,10 +48,11 @@ public class Client {
         Options options = addHashStoreClientOptions();
 
         // Begin parsing arguments
-        CommandLineParser parser = new DefaultParser();
+        CommandLineParser parser = new DefaultParser(false);
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd;
         try {
+            System.out.println("Parsing options");
             cmd = parser.parse(options, args);
 
             // First check if user is looking for help
@@ -63,20 +64,19 @@ public class Client {
             // Then get store path and initialize HashStore
             if (!cmd.hasOption("store")) {
                 String errMsg =
-                    "HashStoreClient - store path must be supplied, use '-store=[path/to/store]'";
+                    "HashStoreClient - store path must be supplied, use 'store=[path/to/store]'";
                 throw new IllegalArgumentException(errMsg);
             }
             // Create or initialize HashStore
-            if (!cmd.hasOption("chs")) {
+            if (cmd.hasOption("chs")) {
                 String storePath = cmd.getOptionValue("store");
                 String storeDepth = cmd.getOptionValue("dp");
                 String storeWidth = cmd.getOptionValue("wp");
-                String storeAlgorithm = cmd.getOptionValue("storealgo");
-                String storeNameSpace = cmd.getOptionValue("storenamespace");
+                String storeAlgorithm = cmd.getOptionValue("ap");
+                String storeNameSpace = cmd.getOptionValue("nsp");
                 createNewHashStore(
                     storePath, storeDepth, storeWidth, storeAlgorithm, storeNameSpace
                 );
-                return;
             } else {
                 storePath = Paths.get(cmd.getOptionValue("store"));
                 Path hashstoreYaml = storePath.resolve("hashstore.yaml");
@@ -87,116 +87,133 @@ public class Client {
                     throw new FileNotFoundException(errMsg);
                 }
                 initializeHashStore(storePath);
-            }
 
-            // Parse remaining options
-            if (cmd.hasOption("knbvm")) {
-                System.out.println(
-                    "HashStoreClient - Testing with KNBVM, checking pgdb.yaml & hashstore.yaml."
-                );
+                // Parse remaining options
+                if (cmd.hasOption("knbvm")) {
+                    System.out.println(
+                        "HashStoreClient - Testing with KNBVM, checking pgdb.yaml & hashstore.yaml."
+                    );
 
-                String action = null;
-                if (cmd.hasOption("sts")) {
-                    action = "sts";
+                    String action = null;
+                    if (cmd.hasOption("sts")) {
+                        action = "sts";
+                    }
+                    if (cmd.hasOption("rav")) {
+                        action = "rav";
+                    }
+                    if (cmd.hasOption("dfs")) {
+                        action = "dfs";
+                    }
+                    String numObjects = cmd.getOptionValue("nobj");
+                    String objType = cmd.getOptionValue("stype");
+                    testWithKnbvm(action, objType, numObjects);
+
+                } else if (cmd.hasOption("getchecksum")) {
+                    String pid = cmd.getOptionValue("pid");
+                    String algo = cmd.getOptionValue("algo");
+                    ensureNotNull(pid, "-pid");
+                    ensureNotNull(algo, "-algo");
+                    String hexDigest = hashStore.getHexDigest(pid, algo);
+                    System.out.println("Hex Digest (pid: " + pid + ", algorithm: " + algo + "):");
+                    System.out.println(hexDigest);
+
+                } else if (cmd.hasOption("storeobject")) {
+                    System.out.println("Storing object");
+                    String pid = cmd.getOptionValue("pid");
+                    Path path = Paths.get(cmd.getOptionValue("path"));
+                    ensureNotNull(pid, "-pid");
+                    ensureNotNull(path, "-path");
+                    String additional_algo = null;
+                    if (cmd.hasOption("algo")) {
+                        additional_algo = cmd.getOptionValue("algo");
+                    }
+                    String checksum = null;
+                    if (cmd.hasOption("checksum")) {
+                        checksum = cmd.getOptionValue("checksum");
+                    }
+                    String checksum_algo = null;
+                    if (cmd.hasOption("checksum_algo")) {
+                        checksum_algo = cmd.getOptionValue("checksum_algo");
+                    }
+                    long size = 0;
+                    if (cmd.hasOption("size")) {
+                        size = Long.parseLong(cmd.getOptionValue("size"));
+                    }
+
+                    InputStream pidObjStream = Files.newInputStream(path);
+                    ObjectInfo objInfo = hashStore.storeObject(
+                        pidObjStream, pid, additional_algo, checksum, checksum_algo, size
+                    );
+                    pidObjStream.close();
+                    System.out.println("Object Info for pid (" + pid + "):");
+                    System.out.println(objInfo);
+
+                } else if (cmd.hasOption("storemetadata")) {
+                    String pid = cmd.getOptionValue("pid");
+                    Path path = Paths.get(cmd.getOptionValue("path"));
+                    String formatId = cmd.getOptionValue("format_id");
+                    ensureNotNull(pid, "-pid");
+                    ensureNotNull(path, "-path");
+                    ensureNotNull(formatId, "-format_id");
+
+                    InputStream pidObjStream = Files.newInputStream(path);
+                    String metadataCid = hashStore.storeMetadata(pidObjStream, pid, formatId);
+                    pidObjStream.close();
+                    System.out.println("Metadata Content Identifier:");
+                    System.out.println(metadataCid);
+
+                } else if (cmd.hasOption("retrieveobject")) {
+                    String pid = cmd.getOptionValue("pid");
+                    ensureNotNull(pid, "-pid");
+
+                    InputStream objStream = hashStore.retrieveObject(pid);
+                    byte[] buffer = new byte[1000];
+                    int bytesRead = objStream.read(buffer, 0, buffer.length);
+                    String objPreview = new String(buffer, 0, bytesRead, StandardCharsets.UTF_8);
+                    objStream.close();
+                    System.out.println(objPreview);
+
+                } else if (cmd.hasOption("retrievemetadata")) {
+                    String pid = cmd.getOptionValue("pid");
+                    String formatId = cmd.getOptionValue("format_id");
+                    ensureNotNull(pid, "-pid");
+                    ensureNotNull(formatId, "-format_id");
+
+                    InputStream metadataStream = hashStore.retrieveMetadata(pid, formatId);
+                    byte[] buffer = new byte[1000];
+                    int bytesRead = metadataStream.read(buffer, 0, buffer.length);
+                    String metadataPreview = new String(
+                        buffer, 0, bytesRead, StandardCharsets.UTF_8
+                    );
+                    metadataStream.close();
+                    System.out.println(metadataPreview);
+
+                } else if (cmd.hasOption("deleteobject")) {
+                    String pid = cmd.getOptionValue("pid");
+                    ensureNotNull(pid, "-pid");
+
+                    hashStore.deleteObject(pid);
+                    System.out.println("Object for pid (" + pid + ") has been deleted.");
+
+                } else if (cmd.hasOption("deletemetadata")) {
+                    String pid = cmd.getOptionValue("pid");
+                    String formatId = cmd.getOptionValue("format_id");
+                    ensureNotNull(pid, "-pid");
+                    ensureNotNull(formatId, "-format_id");
+
+                    hashStore.deleteMetadata(pid, formatId);
+                    System.out.println(
+                        "Metadata for pid (" + pid + ") and namespace (" + formatId
+                            + ") has been deleted."
+                    );
+                } else {
+                    System.out.println("HashStoreClient - No options found, use -h for help.");
                 }
-                if (cmd.hasOption("rav")) {
-                    action = "rav";
-                }
-                if (cmd.hasOption("dfs")) {
-                    action = "dfs";
-                }
-                String numObjects = cmd.getOptionValue("nobj");
-                String objType = cmd.getOptionValue("stype");
-                testWithKnbvm(action, objType, numObjects);
-
-            } else if (cmd.hasOption("getchecksum")) {
-                String pid = cmd.getOptionValue("pid");
-                String algo = cmd.getOptionValue("algo");
-                ensureNotNull(pid, "-pid");
-                ensureNotNull(algo, "-algo");
-                String hexDigest = hashStore.getHexDigest(pid, algo);
-                System.out.println("Hex Digest (pid: " + pid + ", algorithm: " + algo + "):");
-                System.out.println(hexDigest);
-
-            } else if (cmd.hasOption("storeobject")) {
-                String pid = cmd.getOptionValue("pid");
-                Path path = Paths.get(cmd.getOptionValue("path"));
-                String additional_algo = cmd.getOptionValue("algo");
-                String checksum = cmd.getOptionValue("checksum");
-                String checksum_algo = cmd.getOptionValue("checksum_algo");
-                long size = Long.parseLong(cmd.getOptionValue("size"));
-                ensureNotNull(pid, "-pid");
-                ensureNotNull(path, "-path");
-
-                InputStream pidObjStream = Files.newInputStream(path);
-                ObjectInfo objInfo = hashStore.storeObject(
-                    pidObjStream, pid, additional_algo, checksum, checksum_algo, size
-                );
-                pidObjStream.close();
-                System.out.println("Object Info for pid (" + pid + "):");
-                System.out.println(objInfo);
-
-            } else if (cmd.hasOption("storemetadata")) {
-                String pid = cmd.getOptionValue("pid");
-                Path path = Paths.get(cmd.getOptionValue("path"));
-                String formatId = cmd.getOptionValue("format_id");
-                ensureNotNull(pid, "-pid");
-                ensureNotNull(path, "-path");
-                ensureNotNull(formatId, "-format_id");
-
-                InputStream pidObjStream = Files.newInputStream(path);
-                String metadataCid = hashStore.storeMetadata(pidObjStream, pid, formatId);
-                pidObjStream.close();
-                System.out.println("Metadata Content Identifier:");
-                System.out.println(metadataCid);
-
-            } else if (cmd.hasOption("retrieveobject")) {
-                String pid = cmd.getOptionValue("pid");
-                ensureNotNull(pid, "-pid");
-
-                InputStream objStream = hashStore.retrieveObject(pid);
-                byte[] buffer = new byte[1000];
-                int bytesRead = objStream.read(buffer, 0, buffer.length);
-                String objPreview = new String(buffer, 0, bytesRead, StandardCharsets.UTF_8);
-                objStream.close();
-                System.out.println(objPreview);
-
-            } else if (cmd.hasOption("retrievemetadata")) {
-                String pid = cmd.getOptionValue("pid");
-                String formatId = cmd.getOptionValue("format_id");
-                ensureNotNull(pid, "-pid");
-                ensureNotNull(formatId, "-format_id");
-
-                InputStream metadataStream = hashStore.retrieveMetadata(pid, formatId);
-                byte[] buffer = new byte[1000];
-                int bytesRead = metadataStream.read(buffer, 0, buffer.length);
-                String metadataPreview = new String(buffer, 0, bytesRead, StandardCharsets.UTF_8);
-                metadataStream.close();
-                System.out.println(metadataPreview);
-
-            } else if (cmd.hasOption("deleteobject")) {
-                String pid = cmd.getOptionValue("pid");
-                ensureNotNull(pid, "-pid");
-
-                hashStore.deleteObject(pid);
-                System.out.println("Object for pid (" + pid + ") has been deleted.");
-
-            } else if (cmd.hasOption("deletemetadata")) {
-                String pid = cmd.getOptionValue("pid");
-                String formatId = cmd.getOptionValue("format_id");
-                ensureNotNull(pid, "-pid");
-                ensureNotNull(formatId, "-format_id");
-
-                hashStore.deleteMetadata(pid, formatId);
-                System.out.println(
-                    "Metadata for pid (" + pid + ") and namespace (" + formatId
-                        + ") has been deleted."
-                );
             }
 
         } catch (ParseException e) {
             System.err.println("Error parsing cli arguments: " + e.getMessage());
-            formatter.printHelp("CommandLineApp", options);
+            formatter.printHelp("HashStore Client Options", options);
         }
     }
 
@@ -335,12 +352,14 @@ public class Client {
         // Load properties and get HashStore
         HashMap<String, Object> hsProperties = loadHashStoreYaml(storePath);
         Properties storeProperties = new Properties();
-        storeProperties.setProperty("storePath", (String) hsProperties.get("storePath"));
-        storeProperties.setProperty("storeDepth", (String) hsProperties.get("storeDepth"));
-        storeProperties.setProperty("storeWidth", (String) hsProperties.get("storeWidth"));
-        storeProperties.setProperty("storeAlgorithm", (String) hsProperties.get("storeAlgorithm"));
+        storeProperties.setProperty("storePath", hsProperties.get("storePath").toString());
+        storeProperties.setProperty("storeDepth", hsProperties.get("storeDepth").toString());
+        storeProperties.setProperty("storeWidth", hsProperties.get("storeWidth").toString());
         storeProperties.setProperty(
-            "storeMetadataNamespace", (String) hsProperties.get("storeMetadataNamespace")
+            "storeAlgorithm", hsProperties.get("storeAlgorithm").toString()
+        );
+        storeProperties.setProperty(
+            "storeMetadataNamespace", hsProperties.get("storeMetadataNamespace").toString()
         );
 
         // Get HashStore
