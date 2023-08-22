@@ -429,9 +429,9 @@ public class Client {
                 String formattedChecksumAlgo = formatAlgo(checksumAlgorithm);
                 String formatId = resultSet.getString("object_format");
 
-                if (!objType.equals("data")) {
-                    if (!objType.equals("documents")) {
-                        String errMsg = "HashStoreClient - objType must be 'data' or 'documents'";
+                if (!objType.equals("object")) {
+                    if (!objType.equals("metadata")) {
+                        String errMsg = "HashStoreClient - objType must be 'object' or 'metadata'";
                         throw new IllegalArgumentException(errMsg);
                     }
                 }
@@ -452,22 +452,22 @@ public class Client {
             }
 
             // Check options
-            if (actionFlag.equals("sts") && objType.equals("data")) {
+            if (actionFlag.equals("sts") && objType.equals("object")) {
                 storeObjsWithChecksumFromDb(resultObjList);
             }
-            if (actionFlag.equals("sts") && objType.equals("documents")) {
+            if (actionFlag.equals("sts") && objType.equals("metadata")) {
                 storeMetadataFromDb(resultObjList);
             }
-            if (actionFlag.equals("rav") && objType.equals("data")) {
+            if (actionFlag.equals("rav") && objType.equals("object")) {
                 retrieveAndValidateObjs(resultObjList);
             }
-            if (actionFlag.equals("rav") && objType.equals("documents")) {
+            if (actionFlag.equals("rav") && objType.equals("metadata")) {
                 retrieveAndValidateMetadata(resultObjList);
             }
-            if (actionFlag.equals("dfs") && objType.equals("data")) {
+            if (actionFlag.equals("dfs") && objType.equals("object")) {
                 deleteObjectsFromStore(resultObjList);
             }
-            if (actionFlag.equals("dfs") && objType.equals("documents")) {
+            if (actionFlag.equals("dfs") && objType.equals("metadata")) {
                 deleteMetadataFromStore(resultObjList);
             }
 
