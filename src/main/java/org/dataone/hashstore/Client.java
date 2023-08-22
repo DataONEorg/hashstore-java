@@ -44,119 +44,281 @@ public class Client {
 
     public static void main(String[] args) throws Exception {
         if (args.length == 0) {
-            System.out.println("No arguments provided. Use flag '-h' for help.");
+            System.out.println("HashStoreClient - No arguments provided. Use flag '-h' for help.");
         }
         // Add HashStore client options
-        Options options = addHashStoreOptions();
+        Options options = addHashStoreClientOptions();
 
-        // Begin parsing options
+        // Begin parsing arguments
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd;
         try {
             cmd = parser.parse(options, args);
 
+            // First check if user is looking for help
             if (cmd.hasOption("h")) {
                 formatter.printHelp("CommandLineApp", options);
-            } else {
-                // Get store path and get HashStore
-                if (!cmd.hasOption("store")) {
-                    String errMsg =
-                        "HashStore store path must be supplied, use '-store=[path/to/store]'";
-                    throw new IllegalArgumentException(errMsg);
-                }
-                storePath = Paths.get(cmd.getOptionValue("store"));
-                // Confirm HashStore
-                initializeHashStoreForKnb(storePath);
-
-                // Parse options
-                if (cmd.hasOption("knbvm")) {
-                    System.out.println(
-                        "Testing with KNBVM values. Please ensure all config files present."
-                    );
-                    String action = null;
-                    if (cmd.hasOption("sts")) {
-                        action = "sts";
-                    }
-                    if (cmd.hasOption("rav")) {
-                        action = "rav";
-                    }
-                    if (cmd.hasOption("dfs")) {
-                        action = "dfs";
-                    }
-                    String objType = cmd.getOptionValue("stype");
-                    testWithKnbvm(action, objType);
-
-                } else if (cmd.hasOption("getchecksum")) {
-                    String pid = cmd.getOptionValue("pid");
-                    String algo = cmd.getOptionValue("algo");
-                    ensureNotNull(pid, "-pid");
-                    ensureNotNull(algo, "-algo");
-                    String hexDigest = hashStore.getHexDigest(pid, algo);
-                    System.out.println("Hex Digest (pid: " + pid + ", algorithm: " + algo + "):");
-                    System.out.println(hexDigest);
-
-                } else if (cmd.hasOption("storeobject")) {
-                    String pid = cmd.getOptionValue("pid");
-                    Path path = Paths.get(cmd.getOptionValue("path"));
-                    String additional_algo = cmd.getOptionValue("algo");
-                    String checksum = cmd.getOptionValue("checksum");
-                    String checksum_algo = cmd.getOptionValue("checksum_algo");
-                    long size = Long.parseLong(cmd.getOptionValue("size"));
-                    ensureNotNull(pid, "-pid");
-                    ensureNotNull(path, "-path");
-
-                    InputStream pidObjStream = Files.newInputStream(path);
-                    ObjectInfo objInfo = hashStore.storeObject(
-                        pidObjStream, pid, additional_algo, checksum, checksum_algo, size
-                    );
-                    System.out.println("Object Info for pid (" + pid + "):");
-                    System.out.println(objInfo);
-
-                } else if (cmd.hasOption("storemetadata")) {
-                    String pid = cmd.getOptionValue("pid");
-                    Path path = Paths.get(cmd.getOptionValue("path"));
-                    String formatId = cmd.getOptionValue("format_id");
-                    ensureNotNull(pid, "-pid");
-                    ensureNotNull(path, "-path");
-                    ensureNotNull(formatId, "-format_id");
-
-                    InputStream pidObjStream = Files.newInputStream(path);
-                    String metadataCid = hashStore.storeMetadata(pidObjStream, pid, formatId);
-                    System.out.println("Metadata Content Identifier:");
-                    System.out.println(metadataCid);
-
-                } else if (cmd.hasOption("retrieveobject")) {
-                    // TODO
-                } else if (cmd.hasOption("retrievemetadata")) {
-                    // TODO
-                } else if (cmd.hasOption("deleteobject")) {
-                    // TODO
-                } else if (cmd.hasOption("deletemetadata")) {
-                    // TODO
-                }
-
+                return;
             }
+
+            // Then get store path and initialize HashStore
+            if (!cmd.hasOption("store")) {
+                String errMsg =
+                    "HashStoreClient - store path must be supplied, use '-store=[path/to/store]'";
+                throw new IllegalArgumentException(errMsg);
+            }
+            // Create or initialize HashStore
+            if (!cmd.hasOption("chs")) {
+                String storePath = cmd.getOptionValue("store");
+                String storeDepth = cmd.getOptionValue("dp");
+                String storeWidth = cmd.getOptionValue("wp");
+                String storeAlgorithm = cmd.getOptionValue("storealgo");
+                String storeNameSpace = cmd.getOptionValue("storenamespace");
+                createNewHashStore(
+                    storePath, storeDepth, storeWidth, storeAlgorithm, storeNameSpace
+                );
+                return;
+            } else {
+                storePath = Paths.get(cmd.getOptionValue("store"));
+                Path hashstoreYaml = storePath.resolve("hashstore.yaml");
+                if (!Files.exists(hashstoreYaml)) {
+                    String errMsg = "HashStoreClient - Missing hashstore.yaml at storePath ("
+                        + storePath
+                        + "), please create a store with '-chs'. Use '-h' to see options.";
+                    throw new FileNotFoundException(errMsg);
+                }
+                initializeHashStore(storePath);
+            }
+
+            // Parse remaining options
+            if (cmd.hasOption("knbvm")) {
+                System.out.println(
+                    "HashStoreClient - Testing with KNBVM, checking pgdb.yaml & hashstore.yaml."
+                );
+
+                String action = null;
+                if (cmd.hasOption("sts")) {
+                    action = "sts";
+                }
+                if (cmd.hasOption("rav")) {
+                    action = "rav";
+                }
+                if (cmd.hasOption("dfs")) {
+                    action = "dfs";
+                }
+                String objType = cmd.getOptionValue("stype");
+                testWithKnbvm(action, objType);
+                return;
+
+            } else if (cmd.hasOption("getchecksum")) {
+                String pid = cmd.getOptionValue("pid");
+                String algo = cmd.getOptionValue("algo");
+                ensureNotNull(pid, "-pid");
+                ensureNotNull(algo, "-algo");
+                String hexDigest = hashStore.getHexDigest(pid, algo);
+                System.out.println("Hex Digest (pid: " + pid + ", algorithm: " + algo + "):");
+                System.out.println(hexDigest);
+
+            } else if (cmd.hasOption("storeobject")) {
+                String pid = cmd.getOptionValue("pid");
+                Path path = Paths.get(cmd.getOptionValue("path"));
+                String additional_algo = cmd.getOptionValue("algo");
+                String checksum = cmd.getOptionValue("checksum");
+                String checksum_algo = cmd.getOptionValue("checksum_algo");
+                long size = Long.parseLong(cmd.getOptionValue("size"));
+                ensureNotNull(pid, "-pid");
+                ensureNotNull(path, "-path");
+
+                InputStream pidObjStream = Files.newInputStream(path);
+                ObjectInfo objInfo = hashStore.storeObject(
+                    pidObjStream, pid, additional_algo, checksum, checksum_algo, size
+                );
+                pidObjStream.close();
+                System.out.println("Object Info for pid (" + pid + "):");
+                System.out.println(objInfo);
+
+            } else if (cmd.hasOption("storemetadata")) {
+                String pid = cmd.getOptionValue("pid");
+                Path path = Paths.get(cmd.getOptionValue("path"));
+                String formatId = cmd.getOptionValue("format_id");
+                ensureNotNull(pid, "-pid");
+                ensureNotNull(path, "-path");
+                ensureNotNull(formatId, "-format_id");
+
+                InputStream pidObjStream = Files.newInputStream(path);
+                String metadataCid = hashStore.storeMetadata(pidObjStream, pid, formatId);
+                pidObjStream.close();
+                System.out.println("Metadata Content Identifier:");
+                System.out.println(metadataCid);
+
+            } else if (cmd.hasOption("retrieveobject")) {
+                // TODO
+            } else if (cmd.hasOption("retrievemetadata")) {
+                // TODO
+            } else if (cmd.hasOption("deleteobject")) {
+                // TODO
+            } else if (cmd.hasOption("deletemetadata")) {
+                // TODO
+            }
+            return;
+
         } catch (ParseException e) {
             System.err.println("Error parsing cli arguments: " + e.getMessage());
             formatter.printHelp("CommandLineApp", options);
         }
     }
 
+
+    // Configuration methods to initialize HashStore client
+
     /**
-     * Checks whether a given object is null and throws an exception if so
-     *
-     * @param object   Object to check
-     * @param argument Value that is being checked
-     * @param method   Calling method
+     * Returns an options object to use with Apache Commons CLI library to manage command line
+     * options for HashStore client.
      */
-    private static void ensureNotNull(Object object, String argument) {
-        if (object == null) {
-            String errMsg = "HashStoreClient - " + argument + " cannot be null.";
-            throw new NullPointerException(errMsg);
-        }
+    private static Options addHashStoreClientOptions() {
+        Options options = new Options();
+        options.addOption("h", "help", false, "Show help options.");
+        // Mandatory option
+        options.addOption("store", "storepath", true, "Path to HashStore.");
+        // HashStore creation options
+        options.addOption("chs", "createhashstore", false, "Create a HashStore.");
+        options.addOption("dp", "storedepth", true, "Depth of HashStore.");
+        options.addOption("wp", "storewidth", true, "Width of HashStore.");
+        options.addOption("ap", "storealgo", true, "Algorithm of HashStore.");
+        options.addOption("nsp", "storenamespace", true, "Default metadata namespace");
+        // Public API options
+        options.addOption(
+            "getchecksum", "client_getchecksum", false,
+            "Get the hex digest of a data object in a HashStore"
+        );
+        options.addOption(
+            "storeobject", "client_storeobject", false, "Store object to a HashStore."
+        );
+        options.addOption(
+            "storemetadata", "client_storemetadata", false, "Store metadata to a HashStore"
+        );
+        options.addOption(
+            "retrieveobject", "client_retrieveobject", false, "Retrieve an object from a HashStore."
+        );
+        options.addOption(
+            "retrievemetadata", "client_retrievemetadata", false,
+            "Retrieve a metadata obj from a HashStore."
+        );
+        options.addOption(
+            "deleteobject", "client_deleteobject", false, "Delete an object from a HashStore."
+        );
+        options.addOption(
+            "deletemetadata", "client_deletemetadata", false,
+            "Delete a metadata obj from a HashStore."
+        );
+        options.addOption("pid", "pidguid", true, "PID or GUID of object.");
+        options.addOption("path", "filepath", true, "Path to object.");
+        options.addOption("algo", "objectalgo", true, "Algorithm to use in calculations.");
+        options.addOption("checksum", "obj_checksum", true, "Checksum of object.");
+        options.addOption(
+            "checksum_algo", "obj_checksum_algo", true, "Algorithm of checksum supplied."
+        );
+        options.addOption("size", "obj_size", true, "Size of object");
+        options.addOption("format_id", "metadata_format", true, "Metadata format_id/namespace");
+        // knbvm (test.arcticdata.io) options
+        options.addOption("knbvm", "knbvmtestadc", false, "Specify testing with knbvm.");
+        options.addOption("nobj", "numberofobj", false, "Number of objects to work with.");
+        options.addOption("sdir", "storedirectory", true, "Location of objects to convert.");
+        options.addOption("stype", "storetype", true, "Type of store 'objects' or 'metadata'");
+        options.addOption("sts", "storetohs", false, "Flag to store objs to a HashStore");
+        options.addOption(
+            "rav", "retandval", false, "Retrieve and validate objs from a HashStore."
+        );
+        options.addOption("dfs", "delfromhs", false, "Delete objs from a HashStore.");
+        return options;
     }
 
+    /**
+     * Create a new HashStore with the given properties.
+     * 
+     * @param storePath      Path to HashStore.
+     * @param storeDepth     Depth of store.
+     * @param storeWidth     Width of store.
+     * @param storeAlgorithm Algorithm to use.
+     * @param storeNameSpace Default metadata namespace.
+     * @throws HashStoreFactoryException When unable to get HashStore from factory.
+     */
+    private static void createNewHashStore(
+        String storePath, String storeDepth, String storeWidth, String storeAlgorithm,
+        String storeNameSpace
+    ) throws HashStoreFactoryException, IOException {
+        Properties storeProperties = new Properties();
+        storeProperties.setProperty("storePath", storePath);
+        storeProperties.setProperty("storeDepth", storeDepth);
+        storeProperties.setProperty("storeWidth", storeWidth);
+        storeProperties.setProperty("storeAlgorithm", storeAlgorithm);
+        storeProperties.setProperty("storeMetadataNamespace", storeNameSpace);
+
+        // Get HashStore
+        String classPackage = "org.dataone.hashstore.filehashstore.FileHashStore";
+        hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
+    }
+
+    /**
+     * Get the properties of HashStore from 'hashstore.yaml'
+     *
+     * @param storePath Path to root of store
+     * @return HashMap of the properties
+     */
+    private static HashMap<String, Object> loadHashStoreYaml(Path storePath) {
+        Path hashStoreYamlPath = storePath.resolve("hashstore.yaml");
+        File hashStoreYamlFile = hashStoreYamlPath.toFile();
+        ObjectMapper om = new ObjectMapper(new YAMLFactory());
+        HashMap<String, Object> hsProperties = new HashMap<>();
+
+        try {
+            HashMap<?, ?> hashStoreYamlProperties = om.readValue(hashStoreYamlFile, HashMap.class);
+            String yamlStorePath = (String) hashStoreYamlProperties.get("store_path");
+            hsProperties.put("storePath", Paths.get(yamlStorePath));
+            hsProperties.put("storeDepth", hashStoreYamlProperties.get("store_depth"));
+            hsProperties.put("storeWidth", hashStoreYamlProperties.get("store_width"));
+            hsProperties.put("storeAlgorithm", hashStoreYamlProperties.get("store_algorithm"));
+            hsProperties.put(
+                "storeMetadataNamespace", hashStoreYamlProperties.get("store_metadata_namespace")
+            );
+
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        }
+
+        return hsProperties;
+    }
+
+    /**
+     * Initialize HashStore to use in client app. HashStore must already exist or an exception will
+     * be thrown.
+     * 
+     * @param storePath Path to store.
+     * @throws HashStoreFactoryException If unable to initialize HashStore.
+     * @throws IOException               If 'hashstore.yaml' cannot be loaded.
+     * @throws FileNotFoundException     When 'hashstore.yaml' is missing.
+     */
+    private static void initializeHashStore(Path storePath) throws HashStoreFactoryException,
+        IOException, FileNotFoundException {
+        // Load properties and get HashStore
+        HashMap<String, Object> hsProperties = loadHashStoreYaml(storePath);
+        Properties storeProperties = new Properties();
+        storeProperties.setProperty("storePath", (String) hsProperties.get("storePath"));
+        storeProperties.setProperty("storeDepth", (String) hsProperties.get("storeDepth"));
+        storeProperties.setProperty("storeWidth", (String) hsProperties.get("storeWidth"));
+        storeProperties.setProperty("storeAlgorithm", (String) hsProperties.get("storeAlgorithm"));
+        storeProperties.setProperty(
+            "storeMetadataNamespace", (String) hsProperties.get("storeMetadataNamespace")
+        );
+
+        // Get HashStore
+        String classPackage = "org.dataone.hashstore.filehashstore.FileHashStore";
+        hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
+    }
+
+
+    // Core methods for testing in Knbvm (test.arcticdata.io)
 
     /**
      * Entry point for working with test data found in knbvm (test.arcticdata.io)
@@ -257,68 +419,6 @@ public class Client {
     }
 
     /**
-     * Returns an options object to use with Apache Commons CLI library to manage command line
-     * options for HashStore client.
-     */
-    private static Options addHashStoreOptions() {
-        Options options = new Options();
-        options.addOption("h", "help", false, "Show help options.");
-        // Mandatory option
-        options.addOption("store", "storepath", true, "Path to HashStore.");
-        // HashStore creation options
-        options.addOption("chs", "createhashstore", false, "Create a HashStore.");
-        options.addOption("dp", "storedepth", true, "Depth of HashStore.");
-        options.addOption("wp", "storewidth", true, "Width of HashStore.");
-        options.addOption("ap", "storealgo", true, "Algorithm of HashStore.");
-        options.addOption("nsp", "storenamespace", true, "Default metadata namespace");
-        // Public API options
-        options.addOption(
-            "getchecksum", "client_getchecksum", false,
-            "Get the hex digest of a data object in a HashStore"
-        );
-        options.addOption(
-            "storeobject", "client_storeobject", false, "Store object to a HashStore."
-        );
-        options.addOption(
-            "storemetadata", "client_storemetadata", false, "Store metadata to a HashStore"
-        );
-        options.addOption(
-            "retrieveobject", "client_retrieveobject", false, "Retrieve an object from a HashStore."
-        );
-        options.addOption(
-            "retrievemetadata", "client_retrievemetadata", false,
-            "Retrieve a metadata obj from a HashStore."
-        );
-        options.addOption(
-            "deleteobject", "client_deleteobject", false, "Delete an object from a HashStore."
-        );
-        options.addOption(
-            "deletemetadata", "client_deletemetadata", false,
-            "Delete a metadata obj from a HashStore."
-        );
-        options.addOption("pid", "pidguid", true, "PID or GUID of object.");
-        options.addOption("path", "filepath", true, "Path to object.");
-        options.addOption("algo", "objectalgo", true, "Algorithm to use in calculations.");
-        options.addOption("checksum", "obj_checksum", true, "Checksum of object.");
-        options.addOption(
-            "checksum_algo", "obj_checksum_algo", true, "Algorithm of checksum supplied."
-        );
-        options.addOption("size", "obj_size", true, "Size of object");
-        options.addOption("format_id", "metadata_format", true, "Metadata format_id/namespace");
-        // knbvm (test.arcticdata.io) options
-        options.addOption("knbvm", "knbvmtestadc", false, "Specify testing with knbvm.");
-        options.addOption("nobj", "numberofobj", false, "Number of objects to work with.");
-        options.addOption("sdir", "storedirectory", true, "Location of objects to convert.");
-        options.addOption("stype", "storetype", true, "Type of store 'objects' or 'metadata'");
-        options.addOption("sts", "storetohs", false, "Flag to store objs to a HashStore");
-        options.addOption(
-            "rav", "retandval", false, "Retrieve and validate objs from a HashStore."
-        );
-        options.addOption("dfs", "delfromhs", false, "Delete objs from a HashStore.");
-        return options;
-    }
-
-    /**
      * Store objects to a HashStore with a checksum and checksum algorithm
      * 
      * @param resultObjList List containing items with the following properties: 'pid', 'path',
@@ -398,7 +498,7 @@ public class Client {
 
                 // If checksums don't match, write a .txt file
                 if (!streamDigest.equals(checksum)) {
-                    String errMsg = "Obj retrieved (pid/guid): " + guid
+                    String errMsg = "Object retrieved (pid/guid): " + guid
                         + ". Checksums do not match, checksum from db: " + checksum
                         + ". Calculated digest: " + streamDigest + ". Algorithm: " + algorithm;
                     logExceptionToFile(guid, errMsg, "java/retrieve_obj_errors/checksum_mismatch");
@@ -523,7 +623,6 @@ public class Client {
         });
     }
 
-
     /**
      * Retrieve metadata from a HashStore and validate its contents by comparing checksums.
      * 
@@ -588,7 +687,6 @@ public class Client {
         });
     }
 
-
     /**
      * Deletes a list of metadata from a HashStore
      * 
@@ -633,80 +731,20 @@ public class Client {
         });
     }
 
-    // Utility methods for testing in Knbvm (test.arcticdata.io)
+
+    // Utility methods
 
     /**
-     * Log a plain text file with the guid/pid as the file name with a message.
-     * 
-     * @param guid      Pid/guid for which an exception was encountered.
-     * @param errMsg    Message to write into text file.
-     * @param directory Directory within HashStore to log error (txt) files.
-     * @throws Exception
+     * Checks whether a given object is null and throws an exception if so
+     *
+     * @param object   Object to check
+     * @param argument Value that is being checked
      */
-    private static void logExceptionToFile(String guid, String errMsg, String directory)
-        throws Exception {
-        // Create directory to store the error files
-        Path errorDirectory = storePath.resolve(directory);
-        Files.createDirectories(errorDirectory);
-        Path objectErrorTxtFile = errorDirectory.resolve(guid + ".txt");
-
-        try (BufferedWriter writer = new BufferedWriter(
-            new OutputStreamWriter(
-                Files.newOutputStream(objectErrorTxtFile), StandardCharsets.UTF_8
-            )
-        )) {
-            writer.write(errMsg);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-
+    private static void ensureNotNull(Object object, String argument) {
+        if (object == null) {
+            String errMsg = "HashStoreClient - " + argument + " cannot be null.";
+            throw new NullPointerException(errMsg);
         }
-    }
-
-    /**
-     * Format an algorithm string value to be compatible with MessageDigest class
-     * 
-     * @param value Algorithm value to format
-     * @return Formatted algorithm value
-     */
-    private static String formatAlgo(String value) {
-        // Temporary solution to format algorithm values
-        // Query: SELECT DISTINCT checksum_algorithm FROM systemmetadata;
-        // Output: MD5, SHA-256, SHA256, SHA-1, SHA1
-        String upperValue = value.toUpperCase();
-        String checkedAlgorithm = upperValue;
-        if (upperValue.equals("SHA1")) {
-            checkedAlgorithm = "SHA-1";
-        }
-        if (upperValue.equals("SHA256")) {
-            checkedAlgorithm = "SHA-256";
-        }
-        return checkedAlgorithm;
-    }
-
-    /**
-     * Initialize HashStore for testing in knbvm with default values.
-     * 
-     * @param storePath Path to store.
-     * @throws HashStoreFactoryException
-     * @throws IOException
-     */
-    private static void initializeHashStoreForKnb(Path storePath) throws HashStoreFactoryException,
-        IOException {
-        // Initialize HashStore
-        String classPackage = "org.dataone.hashstore.filehashstore.FileHashStore";
-
-        Properties storeProperties = new Properties();
-        storeProperties.setProperty("storePath", storePath.toString());
-        storeProperties.setProperty("storeDepth", "3");
-        storeProperties.setProperty("storeWidth", "2");
-        storeProperties.setProperty("storeAlgorithm", "SHA-256");
-        storeProperties.setProperty(
-            "storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0"
-        );
-
-        // Get HashStore
-        hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
     }
 
     /**
@@ -737,6 +775,54 @@ public class Client {
         }
         // mdObjectHexDigest
         return DatatypeConverter.printHexBinary(mdObject.digest()).toLowerCase();
+    }
 
+    /**
+     * Format an algorithm string value to be compatible with MessageDigest class
+     * 
+     * @param value Algorithm value to format
+     * @return Formatted algorithm value
+     */
+    private static String formatAlgo(String value) {
+        // Temporary solution to format algorithm values
+        // Query: SELECT DISTINCT checksum_algorithm FROM systemmetadata;
+        // Output: MD5, SHA-256, SHA256, SHA-1, SHA1
+        String upperValue = value.toUpperCase();
+        String checkedAlgorithm = upperValue;
+        if (upperValue.equals("SHA1")) {
+            checkedAlgorithm = "SHA-1";
+        }
+        if (upperValue.equals("SHA256")) {
+            checkedAlgorithm = "SHA-256";
+        }
+        return checkedAlgorithm;
+    }
+
+    /**
+     * Log a plain text file with the guid/pid as the file name with a message.
+     * 
+     * @param guid      Pid/guid for which an exception was encountered.
+     * @param errMsg    Message to write into text file.
+     * @param directory Directory within HashStore to log error (txt) files.
+     * @throws Exception
+     */
+    private static void logExceptionToFile(String guid, String errMsg, String directory)
+        throws Exception {
+        // Create directory to store the error files
+        Path errorDirectory = storePath.resolve(directory);
+        Files.createDirectories(errorDirectory);
+        Path objectErrorTxtFile = errorDirectory.resolve(guid + ".txt");
+
+        try (BufferedWriter writer = new BufferedWriter(
+            new OutputStreamWriter(
+                Files.newOutputStream(objectErrorTxtFile), StandardCharsets.UTF_8
+            )
+        )) {
+            writer.write(errMsg);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+
+        }
     }
 }
