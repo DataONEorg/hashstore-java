@@ -104,9 +104,14 @@ public class Client {
                     if (cmd.hasOption("dfs")) {
                         action = "dfs";
                     }
-                    String numObjects = cmd.getOptionValue("nobj");
+
                     String objType = cmd.getOptionValue("stype");
-                    testWithKnbvm(action, objType, numObjects);
+                    String originDirectory = cmd.getOptionValue("sdir");
+                    String numObjects = cmd.getOptionValue("nobj");
+                    ensureNotNull(objType, "-stype");
+                    ensureNotNull(originDirectory, "-sdir");
+                    ensureNotNull(action, "-sts, -rav, -dfs");
+                    testWithKnbvm(action, objType, originDirectory, numObjects);
 
                 } else if (cmd.hasOption("getchecksum")) {
                     String pid = cmd.getOptionValue("pid");
@@ -379,8 +384,9 @@ public class Client {
      *                   if null, will retrieve all rows.
      * @throws IOException Related to accessing config files or objects
      */
-    private static void testWithKnbvm(String actionFlag, String objType, String numObjects)
-        throws IOException {
+    private static void testWithKnbvm(
+        String actionFlag, String objType, String originDir, String numObjects
+    ) throws IOException {
         // Load metacat db yaml
         System.out.println("Loading metacat db yaml.");
         Path pgdbYaml = storePath.resolve("pgdb.yaml");
@@ -429,11 +435,12 @@ public class Client {
                         throw new IllegalArgumentException(errMsg);
                     }
                 }
-                Path setItemFilePath = Paths.get(
-                    "/var/metacat/" + objType + "/" + docid + "." + rev
-                );
+                Path setItemFilePath = Paths.get(originDir + "/" + docid + "." + rev);
 
                 if (Files.exists(setItemFilePath)) {
+                    System.out.println(
+                        "File exists (" + setItemFilePath + ")! Adding to resultObjList."
+                    );
                     Map<String, String> resultObj = new HashMap<>();
                     resultObj.put("pid", guid);
                     resultObj.put("algorithm", formattedChecksumAlgo);
