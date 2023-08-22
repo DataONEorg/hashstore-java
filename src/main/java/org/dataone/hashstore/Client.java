@@ -33,7 +33,6 @@ import org.apache.commons.cli.ParseException;
 import org.dataone.hashstore.exceptions.HashStoreFactoryException;
 import org.dataone.hashstore.exceptions.PidObjectExistsException;
 
-import com.fasterxml.jackson.core.exc.StreamReadException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
@@ -152,13 +151,47 @@ public class Client {
                 System.out.println(metadataCid);
 
             } else if (cmd.hasOption("retrieveobject")) {
-                // TODO
+                String pid = cmd.getOptionValue("pid");
+                ensureNotNull(pid, "-pid");
+
+                InputStream objStream = hashStore.retrieveObject(pid);
+                byte[] buffer = new byte[1000];
+                int bytesRead = objStream.read(buffer, 0, buffer.length);
+                String objPreview = new String(buffer, 0, bytesRead, StandardCharsets.UTF_8);
+                objStream.close();
+                System.out.println(objPreview);
+
             } else if (cmd.hasOption("retrievemetadata")) {
-                // TODO
+                String pid = cmd.getOptionValue("pid");
+                String formatId = cmd.getOptionValue("format_id");
+                ensureNotNull(pid, "-pid");
+                ensureNotNull(formatId, "-format_id");
+
+                InputStream metadataStream = hashStore.retrieveMetadata(pid, formatId);
+                byte[] buffer = new byte[1000];
+                int bytesRead = metadataStream.read(buffer, 0, buffer.length);
+                String metadataPreview = new String(buffer, 0, bytesRead, StandardCharsets.UTF_8);
+                metadataStream.close();
+                System.out.println(metadataPreview);
+
             } else if (cmd.hasOption("deleteobject")) {
-                // TODO
+                String pid = cmd.getOptionValue("pid");
+                ensureNotNull(pid, "-pid");
+
+                hashStore.deleteObject(pid);
+                System.out.println("Object for pid (" + pid + ") has been deleted.");
+
             } else if (cmd.hasOption("deletemetadata")) {
-                // TODO
+                String pid = cmd.getOptionValue("pid");
+                String formatId = cmd.getOptionValue("format_id");
+                ensureNotNull(pid, "-pid");
+                ensureNotNull(formatId, "-format_id");
+
+                hashStore.deleteMetadata(pid, formatId);
+                System.out.println(
+                    "Metadata for pid (" + pid + ") and namespace (" + formatId
+                        + ") has been deleted."
+                );
             }
 
         } catch (ParseException e) {
@@ -325,11 +358,10 @@ public class Client {
      * @param objType    "data" (objects) or "documents" (metadata).
      * @param numObjects Number of rows to retrieve from metacat db,
      *                   if null, will retrieve all rows.
-     * @throws IOException
-     * @throws StreamReadException
+     * @throws IOException Related to accessing config files or objects
      */
     private static void testWithKnbvm(String actionFlag, String objType, String numObjects)
-        throws IOException, StreamReadException {
+        throws IOException {
         // Load metacat db yaml
         System.out.println("Loading metacat db yaml.");
         Path pgdbYaml = storePath.resolve("pgdb.yaml");
@@ -809,7 +841,7 @@ public class Client {
      * @param guid      Pid/guid for which an exception was encountered.
      * @param errMsg    Message to write into text file.
      * @param directory Directory within HashStore to log error (txt) files.
-     * @throws Exception
+     * @throws Exception Catch all for unexpected exceptions
      */
     private static void logExceptionToFile(String guid, String errMsg, String directory)
         throws Exception {
@@ -827,7 +859,6 @@ public class Client {
 
         } catch (Exception e) {
             e.printStackTrace();
-
         }
     }
 }
