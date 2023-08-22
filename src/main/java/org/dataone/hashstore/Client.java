@@ -34,7 +34,6 @@ import org.dataone.hashstore.exceptions.HashStoreFactoryException;
 import org.dataone.hashstore.exceptions.PidObjectExistsException;
 
 import com.fasterxml.jackson.core.exc.StreamReadException;
-import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
@@ -107,9 +106,9 @@ public class Client {
                 if (cmd.hasOption("dfs")) {
                     action = "dfs";
                 }
+                String numObjects = cmd.getOptionValue("nobj");
                 String objType = cmd.getOptionValue("stype");
-                testWithKnbvm(action, objType);
-                return;
+                testWithKnbvm(action, objType, numObjects);
 
             } else if (cmd.hasOption("getchecksum")) {
                 String pid = cmd.getOptionValue("pid");
@@ -161,7 +160,6 @@ public class Client {
             } else if (cmd.hasOption("deletemetadata")) {
                 // TODO
             }
-            return;
 
         } catch (ParseException e) {
             System.err.println("Error parsing cli arguments: " + e.getMessage());
@@ -300,7 +298,7 @@ public class Client {
      * @throws FileNotFoundException     When 'hashstore.yaml' is missing.
      */
     private static void initializeHashStore(Path storePath) throws HashStoreFactoryException,
-        IOException, FileNotFoundException {
+        IOException {
         // Load properties and get HashStore
         HashMap<String, Object> hsProperties = loadHashStoreYaml(storePath);
         Properties storeProperties = new Properties();
@@ -325,12 +323,13 @@ public class Client {
      * 
      * @param actionFlag String representing a knbvm test-related method to call.
      * @param objType    "data" (objects) or "documents" (metadata).
+     * @param numObjects Number of rows to retrieve from metacat db,
+     *                   if null, will retrieve all rows.
      * @throws IOException
      * @throws StreamReadException
-     * @throws DatabindException
      */
-    private static void testWithKnbvm(String actionFlag, String objType) throws IOException,
-        StreamReadException, DatabindException {
+    private static void testWithKnbvm(String actionFlag, String objType, String numObjects)
+        throws IOException, StreamReadException {
         // Load metacat db yaml
         System.out.println("Loading metacat db yaml.");
         Path pgdbYaml = storePath.resolve("pgdb.yaml");
@@ -342,6 +341,11 @@ public class Client {
         String user = (String) pgdbYamlProperties.get("db_user");
         String password = (String) pgdbYamlProperties.get("db_password");
 
+        String sqlLimitQuery = "";
+        if (numObjects != null) {
+            sqlLimitQuery = " LIMIT " + numObjects;
+        }
+
         try {
             System.out.println("Connecting to metacat db.");
             // Setup metacat db access
@@ -351,7 +355,8 @@ public class Client {
             String sqlQuery = "SELECT identifier.guid, identifier.docid, identifier.rev,"
                 + " systemmetadata.object_format, systemmetadata.checksum,"
                 + " systemmetadata.checksum_algorithm FROM identifier INNER JOIN systemmetadata"
-                + " ON identifier.guid = systemmetadata.guid ORDER BY identifier.guid;";
+                + " ON identifier.guid = systemmetadata.guid ORDER BY identifier.guid"
+                + sqlLimitQuery + ";";
             ResultSet resultSet = statement.executeQuery(sqlQuery);
 
             // For each row, get guid, docid, rev, checksum and checksum_algorithm
