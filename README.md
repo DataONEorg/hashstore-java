@@ -24,6 +24,41 @@ and then install or build the package with `mvn install` or `mvn package`, respe
 
 We also maintain a parallel [Python-based version of HashStore](https://github.com/DataONEorg/hashstore).
 
+## Usage Example
+
+How to use HashStore Java client (command line app)
+```
+# Step 1: Get HashStore Client Jar file
+> mvn clean package -Dmaven.test.skip=true
+
+# Step 2:
+## Create a HashStore (long option)
+> java -cp /path/to/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.Client --createhashstore --storepath=/path/to/store --storedepth=3 --storewidth=2 --storealgo=SHA-256 --storenamespace=http://ns.dataone.org/service/types/v2.0
+## Create a HashStore (short option)
+> java -cp /path/to/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.Client -chs -store /path/to/store -dp 3 -wp 2 -ap SHA-256 -nsp http://ns.dataone.org/service/types/v2
+
+# Get the checksum of a data object
+> java -cp /path/to/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.Client -store /path/to/store -getchecksum -pid testpid1 -algo SHA-256
+
+# Store a data object
+> java -cp /path/to/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.Client -store /path/to/store -storeobject -path /path/to/data.ext -pid testpid1
+
+# Store a metadata object
+> java -cp /path/to/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.Client -store /path/to/store -storemetadata -path /path/to/metadata.ext -pid testpid1 -format_id http://ns.dataone.org/service/types/v2
+
+# Retrieve a data object
+> java -cp /path/to/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.Client -store /path/to/store -retrieveobject -pid testpid1
+
+# Retrieve a metadata object
+> java -cp /path/to/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.Client -store /path/to/store -retrievemetadata -pid testpid1 -format_id http://ns.dataone.org/service/types/v2
+
+# Delete a data object
+> java -cp /path/to/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.Client -store /path/to/store -deleteobject -pid testpid1
+
+# Delete a metadata file
+> java -cp /path/to/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.Client -store /path/to/store -deletemetadata -pid testpid1 -format_id http://ns.dataone.org/service/types/v2
+```
+
 ## License
 
 ```txt
