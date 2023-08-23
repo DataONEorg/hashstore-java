@@ -93,6 +93,13 @@ public class Client {
                     System.out.println(
                         "HashStoreClient - Testing with KNBVM, checking pgdb.yaml & hashstore.yaml."
                     );
+                    Path pgdbYaml = storePath.resolve("pgdb.yaml");
+                    if (!Files.exists(pgdbYaml)) {
+                        String errMsg = "HashStoreClient - Missing pgdb.yaml at storePath ("
+                            + storePath + "), please manually create it with the following keys: "
+                            + "db_user, db_password, db_host, db_port, db_name";
+                        throw new FileNotFoundException(errMsg);
+                    }
 
                     String action = null;
                     if (cmd.hasOption("sts")) {
@@ -420,7 +427,6 @@ public class Client {
             // and create a List to loop over
             List<Map<String, String>> resultObjList = new ArrayList<>();
             while (resultSet.next()) {
-                System.out.println("Calling resultSet.next()");
                 String guid = resultSet.getString("guid");
                 String docid = resultSet.getString("docid");
                 int rev = resultSet.getInt("rev");
