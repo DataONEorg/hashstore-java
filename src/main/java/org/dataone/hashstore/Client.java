@@ -158,7 +158,7 @@ public class Client {
                     );
                     pidObjStream.close();
                     System.out.println("Object Info for pid (" + pid + "):");
-                    System.out.println(objInfo);
+                    System.out.println(objInfo.getHexDigests());
 
                 } else if (cmd.hasOption("storemetadata")) {
                     String pid = cmd.getOptionValue("pid");

@@ -96,6 +96,10 @@ public interface HashStore {
                 IllegalArgumentException, FileNotFoundException, InterruptedException,
                 NoSuchAlgorithmException;
 
+        String storeMetadata(InputStream metadata, String pid) throws IOException,
+                IllegalArgumentException, FileNotFoundException, InterruptedException,
+                NoSuchAlgorithmException;
+
         /**
          * The `retrieveObject` method retrieves an object from HashStore using a given persistent
          * identifier (pid).

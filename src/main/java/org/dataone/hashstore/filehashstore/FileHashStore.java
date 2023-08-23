@@ -670,6 +670,7 @@ public class FileHashStore implements HashStore {
     /**
      * Overload method for storeMetadata with default metadata namespace
      */
+    @Override
     public String storeMetadata(InputStream metadata, String pid) throws IOException,
         IllegalArgumentException, InterruptedException, NoSuchAlgorithmException {
         logFileHashStore.debug(
