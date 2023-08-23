@@ -52,7 +52,6 @@ public class Client {
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd;
         try {
-            System.out.println("Parsing options");
             cmd = parser.parse(options, args);
 
             // First check if user is looking for help
@@ -126,7 +125,6 @@ public class Client {
                     ensureNotNull(pid, "-pid");
                     ensureNotNull(algo, "-algo");
                     String hexDigest = hashStore.getHexDigest(pid, algo);
-                    System.out.println("Hex Digest (pid: " + pid + ", algorithm: " + algo + "):");
                     System.out.println(hexDigest);
 
                 } else if (cmd.hasOption("storeobject")) {
