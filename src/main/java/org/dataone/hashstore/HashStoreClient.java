@@ -236,6 +236,105 @@ public class HashStoreClient {
                         "Metadata for pid (" + pid + ") and namespace (" + formatId
                             + ") has been deleted."
                     );
+                } else if (cmd.hasOption("sdo")) {
+                    List<Map<String, String>> resultObjList = new ArrayList<>();
+                    for (int i = 1; i <= 10; ++i) {
+                        Map<String, String> resultObj = new HashMap<>();
+                        resultObj.put("pid", "douemptyfile0.5");
+                        resultObj.put("path", "/Users/doumok/Code/hashstore/douhsRF_0.5_GB.bin");
+                        resultObj.put(
+                            "checksum",
+                            "de1faf7112541ca8cfaf95833fd0097909cc70e4d9eb9c8c961c77a9a7656c3a"
+                        );
+                        resultObj.put("checksum_algorithm", "SHA-256");
+                        resultObjList.add(resultObj);
+                        Map<String, String> resultObjTwo = new HashMap<>();
+                        resultObjTwo.put("pid", "douemptyfile1.5");
+                        resultObjTwo.put("path", "/Users/doumok/Code/hashstore/douhsRF_1.5_GB.bin");
+                        resultObjTwo.put(
+                            "checksum",
+                            "ea4c223f4a2ff6ed3d94a291ad372e2d9851253d5f0e491ffaa18675e434e52a"
+                        );
+                        resultObjTwo.put("checksum_algorithm", "SHA-256");
+                        resultObjList.add(resultObjTwo);
+                        if (i == 1) {
+                            Map<String, String> robj = new HashMap<>();
+                            robj.put("pid", "douemptyfile2");
+                            robj.put("path", "/Users/doumok/Code/hashstore/douhsRF_2_GB.bin");
+                            robj.put(
+                                "checksum",
+                                "2b902b985371a266b59642b7adea0fd7817fd92cf32dd30848b3964c0af61469"
+                            );
+                            robj.put("checksum_algorithm", "SHA-256");
+                            resultObjList.add(robj);
+                            Map<String, String> robjtwo = new HashMap<>();
+                            robjtwo.put("pid", "douemptyfile2.5");
+                            robjtwo.put("path", "/Users/doumok/Code/hashstore/douhsRF_2.5_GB.bin");
+                            robjtwo.put(
+                                "checksum",
+                                "437e8160bb7f81ae5a1a38445df619bb4f39da9ab08b94a2b4e6c00446af9fbc"
+                            );
+                            robjtwo.put("checksum_algorithm", "SHA-256");
+                            resultObjList.add(robjtwo);
+                        }
+                    }
+
+                    resultObjList.parallelStream().forEach(item -> {
+                        String guid = null;
+                        try {
+                            guid = item.get("pid");
+                            InputStream objStream = Files.newInputStream(
+                                Paths.get(item.get("path"))
+                            );
+                            String checksum = item.get("checksum");
+                            String checksumAlgo = item.get("checksum_algorithm");
+
+                            // Store object
+                            // System.out.println("Storing object for guid: " + guid);
+                            // hashStore.storeObject(objStream, guid, checksum, checksumAlgo);
+
+                            // Delete object
+                            System.out.println("Deleting object for guid: " + guid);
+                            hashStore.deleteObject(guid);
+
+                        } catch (PidObjectExistsException poee) {
+                            String errMsg = "Unexpected Error: " + poee.fillInStackTrace();
+                            try {
+                                logExceptionToFile(
+                                    guid, errMsg, "java/store_obj_errors/pidobjectexists"
+                                );
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+
+                        } catch (IllegalArgumentException iae) {
+                            String errMsg = "Unexpected Error: " + iae.fillInStackTrace();
+                            try {
+                                logExceptionToFile(
+                                    guid, errMsg, "java/store_obj_errors/illegalargument"
+                                );
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+
+                        } catch (IOException ioe) {
+                            String errMsg = "Unexpected Error: " + ioe.fillInStackTrace();
+                            try {
+                                logExceptionToFile(guid, errMsg, "java/store_obj_errors/io");
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+
+                        } catch (Exception ge) {
+                            String errMsg = "Unexpected Error: " + ge.fillInStackTrace();
+                            try {
+                                logExceptionToFile(guid, errMsg, "java/store_obj_errors/general");
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+
+                        }
+                    });
                 } else {
                     System.out.println("HashStoreClient - No options found, use -h for help.");
                 }
@@ -336,6 +435,7 @@ public class HashStoreClient {
         options.addOption(
             "dfs", "delfromhs", false, "(knbvm) Test flag to delete objs from a HashStore"
         );
+        options.addOption("sdo", "storedupobj", false, "Test store duplicate object");
         return options;
     }
 
