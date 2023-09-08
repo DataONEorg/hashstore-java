@@ -193,9 +193,10 @@ public class FileHashStore implements HashStore {
      * @throws NoSuchAlgorithmException If algorithm supplied is not supported
      * @throws IOException              If `hashstore.yaml` config file cannot be retrieved/opened
      */
-    protected void verifyHashStoreProperties(Path storePath, int storeDepth, int storeWidth,
-        String storeAlgorithm, String storeMetadataNamespace) throws NoSuchAlgorithmException,
-        IOException {
+    protected void verifyHashStoreProperties(
+        Path storePath, int storeDepth, int storeWidth, String storeAlgorithm,
+        String storeMetadataNamespace
+    ) throws NoSuchAlgorithmException, IOException {
         if (storeDepth <= 0 || storeWidth <= 0) {
             String errMsg = "FileHashStore - Depth and width must be greater than 0." + " Depth: "
                 + storeDepth + ". Width: " + storeWidth;
@@ -337,8 +338,9 @@ public class FileHashStore implements HashStore {
      * @param existingValue The existing value of the config property
      * @throws IllegalArgumentException If the supplied value is not equal to the existing value
      */
-    protected void checkConfigurationEquality(String propertyName, Object suppliedValue,
-        Object existingValue) {
+    protected void checkConfigurationEquality(
+        String propertyName, Object suppliedValue, Object existingValue
+    ) {
         if (!Objects.equals(suppliedValue, existingValue)) {
             String errMsg = "FileHashStore.checkConfigurationEquality() - Supplied " + propertyName
                 + ": " + suppliedValue + " does not match the existing configuration value: "
@@ -359,8 +361,10 @@ public class FileHashStore implements HashStore {
      * @param storeMetadataNamespace default formatId of hashstore metadata
      * @return String that representing the contents of 'hashstore.yaml'
      */
-    protected String buildHashStoreYamlString(Path storePath, int storeDepth, int storeWidth,
-        String storeAlgorithm, String storeMetadataNamespace) {
+    protected String buildHashStoreYamlString(
+        Path storePath, int storeDepth, int storeWidth, String storeAlgorithm,
+        String storeMetadataNamespace
+    ) {
 
         return String.format(
             "# Default configuration variables for HashStore\n\n"
@@ -399,9 +403,10 @@ public class FileHashStore implements HashStore {
     // HashStore Public API Methods
 
     @Override
-    public ObjectInfo storeObject(InputStream object, String pid, String additionalAlgorithm,
-        String checksum, String checksumAlgorithm, long objSize) throws NoSuchAlgorithmException,
-        IOException, PidObjectExistsException, RuntimeException {
+    public ObjectInfo storeObject(
+        InputStream object, String pid, String additionalAlgorithm, String checksum,
+        String checksumAlgorithm, long objSize
+    ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException {
         logFileHashStore.debug(
             "FileHashStore.storeObject - Called to store object for pid: " + pid
         );
@@ -429,9 +434,10 @@ public class FileHashStore implements HashStore {
     /**
      * Method to synchronize storing objects with FileHashStore
      */
-    private ObjectInfo syncPubObject(InputStream object, String pid, String additionalAlgorithm,
-        String checksum, String checksumAlgorithm, long objSize) throws NoSuchAlgorithmException,
-        PidObjectExistsException, IOException, RuntimeException {
+    private ObjectInfo syncPubObject(
+        InputStream object, String pid, String additionalAlgorithm, String checksum,
+        String checksumAlgorithm, long objSize
+    ) throws NoSuchAlgorithmException, PidObjectExistsException, IOException, RuntimeException {
         // Lock pid for thread safety, transaction control and atomic writing
         // A pid can only be stored once and only once, subsequent calls will
         // be accepted but will be rejected if pid hash object exists
@@ -530,9 +536,9 @@ public class FileHashStore implements HashStore {
      * Overload method for storeObject with just a checksum and checksumAlgorithm
      */
     @Override
-    public ObjectInfo storeObject(InputStream object, String pid, String checksum,
-        String checksumAlgorithm) throws NoSuchAlgorithmException, IOException,
-        PidObjectExistsException, RuntimeException {
+    public ObjectInfo storeObject(
+        InputStream object, String pid, String checksum, String checksumAlgorithm
+    ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException {
         logFileHashStore.debug(
             "FileHashStore.storeObject - Called to store object for pid: " + pid
         );
@@ -958,9 +964,10 @@ public class FileHashStore implements HashStore {
      * @throws NullPointerException            Arguments are null for pid or object
      * @throws AtomicMoveNotSupportedException When attempting to move files across file systems
      */
-    protected ObjectInfo putObject(InputStream object, String pid, String additionalAlgorithm,
-        String checksum, String checksumAlgorithm, long objSize) throws IOException,
-        NoSuchAlgorithmException, SecurityException, FileNotFoundException,
+    protected ObjectInfo putObject(
+        InputStream object, String pid, String additionalAlgorithm, String checksum,
+        String checksumAlgorithm, long objSize
+    ) throws IOException, NoSuchAlgorithmException, SecurityException, FileNotFoundException,
         PidObjectExistsException, IllegalArgumentException, NullPointerException,
         AtomicMoveNotSupportedException {
         logFileHashStore.debug("FileHashStore.putObject - Called to put object for pid: " + pid);
@@ -1055,9 +1062,10 @@ public class FileHashStore implements HashStore {
      * @throws NoSuchAlgorithmException When algorithm supplied is not supported
      * @throws IOException              When tmpFile fails to be deleted
      */
-    private void validateTmpObject(boolean requestValidation, String checksum,
-        String checksumAlgorithm, File tmpFile, Map<String, String> hexDigests, long objSize,
-        long storedObjFileSize) throws NoSuchAlgorithmException, IOException {
+    private void validateTmpObject(
+        boolean requestValidation, String checksum, String checksumAlgorithm, File tmpFile,
+        Map<String, String> hexDigests, long objSize, long storedObjFileSize
+    ) throws NoSuchAlgorithmException, IOException {
         if (objSize > 0) {
             if (objSize != storedObjFileSize) {
                 // Delete tmp File
@@ -1280,9 +1288,9 @@ public class FileHashStore implements HashStore {
      * @throws SecurityException        Unable to write to tmpFile
      * @throws FileNotFoundException    tmnpFile cannot be found
      */
-    protected Map<String, String> writeToTmpFileAndGenerateChecksums(File tmpFile,
-        InputStream dataStream, String additionalAlgorithm, String checksumAlgorithm)
-        throws NoSuchAlgorithmException, IOException, FileNotFoundException, SecurityException {
+    protected Map<String, String> writeToTmpFileAndGenerateChecksums(
+        File tmpFile, InputStream dataStream, String additionalAlgorithm, String checksumAlgorithm
+    ) throws NoSuchAlgorithmException, IOException, FileNotFoundException, SecurityException {
         if (additionalAlgorithm != null) {
             checkForEmptyString(
                 additionalAlgorithm, "additionalAlgorithm", "writeToTmpFileAndGenerateChecksums"
