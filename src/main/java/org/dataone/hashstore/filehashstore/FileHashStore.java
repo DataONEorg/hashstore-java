@@ -1189,7 +1189,6 @@ public class FileHashStore implements HashStore {
                 FileHashStoreUtility.ensureNotNull(
                     checksum, "checksum", "verifyChecksumParameters"
                 );
-                assert checksum != null;
                 FileHashStoreUtility.checkForEmptyString(
                     checksum, "checksum", "verifyChecksumParameters"
                 );
