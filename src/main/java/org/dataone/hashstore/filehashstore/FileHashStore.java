@@ -928,7 +928,8 @@ public class FileHashStore implements HashStore {
             throw new FileNotFoundException(errMsg);
         }
 
-        String mdObjectHexDigest = calculateHexDigest(objRealPath, algorithm);
+        InputStream dataStream = Files.newInputStream(objRealPath);
+        String mdObjectHexDigest = FileHashStoreUtility.calculateHexDigest(dataStream, algorithm);
         logFileHashStore.info(
             "FileHashStore.getHexDigest - Hex digest calculated for pid: " + pid
                 + ", with hex digest value: " + mdObjectHexDigest
@@ -1673,41 +1674,6 @@ public class FileHashStore implements HashStore {
             logFileHashStore.error(errMsg);
             throw new IllegalArgumentException(errMsg);
         }
-    }
-
-    /**
-     * Calculate the hex digest of a pid's respective object with the given algorithm
-     *
-     * @param objectPath Path to object
-     * @param algorithm  Hash algorithm to use
-     * @return Hex digest of the pid's respective object
-     * @throws IOException              Error when calculating hex digest
-     * @throws NoSuchAlgorithmException Algorithm not supported
-     */
-    private String calculateHexDigest(Path objectPath, String algorithm) throws IOException,
-        NoSuchAlgorithmException {
-        MessageDigest mdObject = MessageDigest.getInstance(algorithm);
-        try {
-            InputStream dataStream = Files.newInputStream(objectPath);
-            byte[] buffer = new byte[8192];
-            int bytesRead;
-            while ((bytesRead = dataStream.read(buffer)) != -1) {
-                mdObject.update(buffer, 0, bytesRead);
-
-            }
-            // Close dataStream
-            dataStream.close();
-
-        } catch (IOException ioe) {
-            String errMsg = "FileHashStore.getHexDigest - Unexpected IOException encountered: "
-                + ioe.getMessage();
-            logFileHashStore.error(errMsg);
-            throw ioe;
-
-        }
-        // mdObjectHexDigest
-        return DatatypeConverter.printHexBinary(mdObject.digest()).toLowerCase();
-
     }
 
 }

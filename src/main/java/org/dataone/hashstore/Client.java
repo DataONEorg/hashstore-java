@@ -10,8 +10,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -21,8 +19,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
-
-import javax.xml.bind.DatatypeConverter;
 
 import org.dataone.hashstore.filehashstore.FileHashStoreUtility;
 
@@ -573,7 +569,7 @@ public class Client {
 
                 // Get hex digest
                 System.out.println("Calculating hex digest with algorithm: " + algorithm);
-                String streamDigest = calculateHexDigest(objStream, algorithm);
+                String streamDigest = FileHashStoreUtility.calculateHexDigest(objStream, algorithm);
                 objStream.close();
 
                 // If checksums don't match, write a .txt file
@@ -724,7 +720,9 @@ public class Client {
 
                 // Get hex digest
                 System.out.println("Calculating hex digest with algorithm: " + algorithm);
-                String streamDigest = calculateHexDigest(metadataStream, algorithm);
+                String streamDigest = FileHashStoreUtility.calculateHexDigest(
+                    metadataStream, algorithm
+                );
                 metadataStream.close();
 
                 // If checksums don't match, write a .txt file
@@ -812,37 +810,7 @@ public class Client {
     }
 
 
-    // Utility methods
-
-    /**
-     * Calculate the hex digest of a pid's respective object with the given algorithm
-     *
-     * @param stream    Path to object
-     * @param algorithm Hash algorithm to use
-     * @return Hex digest of the pid's respective object
-     * @throws IOException              Error when calculating hex digest
-     * @throws NoSuchAlgorithmException Algorithm not supported
-     */
-    private static String calculateHexDigest(InputStream stream, String algorithm)
-        throws IOException, NoSuchAlgorithmException {
-        MessageDigest mdObject = MessageDigest.getInstance(algorithm);
-        try {
-            byte[] buffer = new byte[8192];
-            int bytesRead;
-            while ((bytesRead = stream.read(buffer)) != -1) {
-                mdObject.update(buffer, 0, bytesRead);
-
-            }
-            // Close stream
-            stream.close();
-
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
-
-        }
-        // mdObjectHexDigest
-        return DatatypeConverter.printHexBinary(mdObject.digest()).toLowerCase();
-    }
+    // Utility methods specific to Client
 
     /**
      * Format an algorithm string value to be compatible with MessageDigest class
