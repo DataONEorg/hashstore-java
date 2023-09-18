@@ -24,6 +24,8 @@ import java.sql.Statement;
 
 import javax.xml.bind.DatatypeConverter;
 
+import org.dataone.hashstore.filehashstore.FileHashStoreUtility;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -73,6 +75,7 @@ public class Client {
                 String storeWidth = cmd.getOptionValue("wp");
                 String storeAlgorithm = cmd.getOptionValue("ap");
                 String storeNameSpace = cmd.getOptionValue("nsp");
+
                 createNewHashStore(
                     storePath, storeDepth, storeWidth, storeAlgorithm, storeNameSpace
                 );
@@ -114,16 +117,20 @@ public class Client {
                     String objType = cmd.getOptionValue("stype");
                     String originDirectory = cmd.getOptionValue("sdir");
                     String numObjects = cmd.getOptionValue("nobj");
-                    ensureNotNull(objType, "-stype");
-                    ensureNotNull(originDirectory, "-sdir");
-                    ensureNotNull(action, "-sts, -rav, -dfs");
+                    FileHashStoreUtility.ensureNotNull(objType, "-stype", "HashStoreClient");
+                    FileHashStoreUtility.ensureNotNull(originDirectory, "-sdir", "HashStoreClient");
+                    FileHashStoreUtility.ensureNotNull(
+                        action, "-sts, -rav, -dfs", "HashStoreClient"
+                    );
+
                     testWithKnbvm(action, objType, originDirectory, numObjects);
 
                 } else if (cmd.hasOption("getchecksum")) {
                     String pid = cmd.getOptionValue("pid");
                     String algo = cmd.getOptionValue("algo");
-                    ensureNotNull(pid, "-pid");
-                    ensureNotNull(algo, "-algo");
+                    FileHashStoreUtility.ensureNotNull(pid, "-pid", "HashStoreClient");
+                    FileHashStoreUtility.ensureNotNull(algo, "-algo", "HashStoreClient");
+
                     String hexDigest = hashStore.getHexDigest(pid, algo);
                     System.out.println(hexDigest);
 
@@ -131,8 +138,9 @@ public class Client {
                     System.out.println("Storing object");
                     String pid = cmd.getOptionValue("pid");
                     Path path = Paths.get(cmd.getOptionValue("path"));
-                    ensureNotNull(pid, "-pid");
-                    ensureNotNull(path, "-path");
+                    FileHashStoreUtility.ensureNotNull(pid, "-pid", "HashStoreClient");
+                    FileHashStoreUtility.ensureNotNull(path, "-path", "HashStoreClient");
+
                     String additional_algo = null;
                     if (cmd.hasOption("algo")) {
                         additional_algo = cmd.getOptionValue("algo");
@@ -162,9 +170,9 @@ public class Client {
                     String pid = cmd.getOptionValue("pid");
                     Path path = Paths.get(cmd.getOptionValue("path"));
                     String formatId = cmd.getOptionValue("format_id");
-                    ensureNotNull(pid, "-pid");
-                    ensureNotNull(path, "-path");
-                    ensureNotNull(formatId, "-format_id");
+                    FileHashStoreUtility.ensureNotNull(pid, "-pid", "HashStoreClient");
+                    FileHashStoreUtility.ensureNotNull(path, "-path", "HashStoreClient");
+                    FileHashStoreUtility.ensureNotNull(formatId, "-formatId", "HashStoreClient");
 
                     InputStream pidObjStream = Files.newInputStream(path);
                     String metadataCid = hashStore.storeMetadata(pidObjStream, pid, formatId);
@@ -174,7 +182,7 @@ public class Client {
 
                 } else if (cmd.hasOption("retrieveobject")) {
                     String pid = cmd.getOptionValue("pid");
-                    ensureNotNull(pid, "-pid");
+                    FileHashStoreUtility.ensureNotNull(pid, "-pid", "HashStoreClient");
 
                     InputStream objStream = hashStore.retrieveObject(pid);
                     byte[] buffer = new byte[1000];
@@ -186,8 +194,8 @@ public class Client {
                 } else if (cmd.hasOption("retrievemetadata")) {
                     String pid = cmd.getOptionValue("pid");
                     String formatId = cmd.getOptionValue("format_id");
-                    ensureNotNull(pid, "-pid");
-                    ensureNotNull(formatId, "-format_id");
+                    FileHashStoreUtility.ensureNotNull(pid, "-pid", "HashStoreClient");
+                    FileHashStoreUtility.ensureNotNull(formatId, "-formatId", "HashStoreClient");
 
                     InputStream metadataStream = hashStore.retrieveMetadata(pid, formatId);
                     byte[] buffer = new byte[1000];
@@ -200,16 +208,15 @@ public class Client {
 
                 } else if (cmd.hasOption("deleteobject")) {
                     String pid = cmd.getOptionValue("pid");
-                    ensureNotNull(pid, "-pid");
-
+                    FileHashStoreUtility.ensureNotNull(pid, "-pid", "HashStoreClient");
                     hashStore.deleteObject(pid);
                     System.out.println("Object for pid (" + pid + ") has been deleted.");
 
                 } else if (cmd.hasOption("deletemetadata")) {
                     String pid = cmd.getOptionValue("pid");
                     String formatId = cmd.getOptionValue("format_id");
-                    ensureNotNull(pid, "-pid");
-                    ensureNotNull(formatId, "-format_id");
+                    FileHashStoreUtility.ensureNotNull(pid, "-pid", "HashStoreClient");
+                    FileHashStoreUtility.ensureNotNull(formatId, "-formatId", "HashStoreClient");
 
                     hashStore.deleteMetadata(pid, formatId);
                     System.out.println(
@@ -306,6 +313,12 @@ public class Client {
         String storePath, String storeDepth, String storeWidth, String storeAlgorithm,
         String storeNameSpace
     ) throws HashStoreFactoryException, IOException {
+        FileHashStoreUtility.ensureNotNull(storePath, "storePath", "HashStoreClient");
+        FileHashStoreUtility.ensureNotNull(storeDepth, "storeDepth", "HashStoreClient");
+        FileHashStoreUtility.ensureNotNull(storeWidth, "storeWidth", "HashStoreClient");
+        FileHashStoreUtility.ensureNotNull(storeAlgorithm, "storeAlgorithm", "HashStoreClient");
+        FileHashStoreUtility.ensureNotNull(storeNameSpace, "storeNameSpace", "HashStoreClient");
+
         Properties storeProperties = new Properties();
         storeProperties.setProperty("storePath", storePath);
         storeProperties.setProperty("storeDepth", storeDepth);
@@ -800,19 +813,6 @@ public class Client {
 
 
     // Utility methods
-
-    /**
-     * Checks whether a given object is null and throws an exception if so
-     *
-     * @param object   Object to check
-     * @param argument Value that is being checked
-     */
-    private static void ensureNotNull(Object object, String argument) {
-        if (object == null) {
-            String errMsg = "HashStoreClient - " + argument + " cannot be null.";
-            throw new NullPointerException(errMsg);
-        }
-    }
 
     /**
      * Calculate the hex digest of a pid's respective object with the given algorithm
