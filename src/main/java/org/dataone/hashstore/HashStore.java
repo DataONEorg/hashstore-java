@@ -135,7 +135,6 @@ public interface HashStore {
          * from HashStore using a given persistent identifier.
          * 
          * @param pid Authority-based identifier
-         * @return True if successful
          * @throws IllegalArgumentException When pid is null or empty
          * @throws FileNotFoundException    When requested pid has no associated object
          * @throws IOException              I/O error when deleting empty directories
@@ -150,7 +149,6 @@ public interface HashStore {
          * 
          * @param pid      Authority-based identifier
          * @param formatId Metadata namespace/format
-         * @return True if successfulÏ
          * @throws IllegalArgumentException When pid or formatId is null or empty
          * @throws FileNotFoundException    When requested pid has no metadata
          * @throws IOException              I/O error when deleting empty directories
