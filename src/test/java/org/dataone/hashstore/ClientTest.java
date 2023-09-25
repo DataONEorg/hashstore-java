@@ -1,10 +1,5 @@
 package org.dataone.hashstore;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -15,12 +10,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.dataone.hashstore.testdata.TestDataHarness;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 public class ClientTest {
     private static HashStore hashStore;
@@ -30,13 +25,13 @@ public class ClientTest {
     /**
      * Temporary folder for tests to run in
      */
-    @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
+    @TempDir
+    public Path tempFolder;
 
-    @Before
+    @BeforeEach
     public void getHashStore() {
         String classPackage = "org.dataone.hashstore.filehashstore.FileHashStore";
-        Path rootDirectory = tempFolder.getRoot().toPath().resolve("metacat");
+        Path rootDirectory = tempFolder.resolve("metacat");
 
         Properties storeProperties = new Properties();
         storeProperties.setProperty("storePath", rootDirectory.toString());
@@ -118,7 +113,7 @@ public class ClientTest {
     public void client_createHashStore() throws Exception {
         String optCreateHashstore = "-chs";
         String optStore = "-store";
-        String optStorePath = tempFolder.getRoot() + "/metacat";
+        String optStorePath = tempFolder + "/metacat";
         String optStoreDepth = "-dp";
         String optStoreDepthValue = "3";
         String optStoreWidth = "-wp";
