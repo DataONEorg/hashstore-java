@@ -65,7 +65,7 @@ public class Client {
 
             // First check if user is looking for help
             if (cmd.hasOption("h")) {
-                formatter.printHelp("CommandLineApp", options);
+                formatter.printHelp("HashStore Client", options);
                 return;
             }
 
@@ -256,55 +256,82 @@ public class Client {
         // Mandatory option
         options.addOption("store", "storepath", true, "Path to HashStore.");
         // HashStore creation options
-        options.addOption("chs", "createhashstore", false, "Create a HashStore.");
-        options.addOption("dp", "storedepth", true, "Depth of HashStore.");
-        options.addOption("wp", "storewidth", true, "Width of HashStore.");
-        options.addOption("ap", "storealgo", true, "Algorithm of HashStore.");
-        options.addOption("nsp", "storenamespace", true, "Default metadata namespace");
+        options.addOption("chs", "createhashstore", false, "Flag to create a HashStore.");
+        options.addOption("dp", "storedepth", true, "Depth of HashStore to create.");
+        options.addOption("wp", "storewidth", true, "Width of HashStore to create.");
+        options.addOption(
+            "ap", "storealgo", true, "Algorithm used for calculating file addresses in a HashStore."
+        );
+        options.addOption(
+            "nsp", "storenamespace", true, "Default metadata namespace in a HashStore."
+        );
         // Public API options
         options.addOption(
             "getchecksum", "client_getchecksum", false,
-            "Get the hex digest of a data object in a HashStore"
+            "Flag to get the hex digest of a data object in a HashStore."
         );
         options.addOption(
-            "storeobject", "client_storeobject", false, "Store object to a HashStore."
+            "storeobject", "client_storeobject", false, "Flag to store objs to a HashStore."
         );
         options.addOption(
-            "storemetadata", "client_storemetadata", false, "Store metadata to a HashStore"
+            "storemetadata", "client_storemetadata", false, "Flag to store metadata to a HashStore"
         );
         options.addOption(
-            "retrieveobject", "client_retrieveobject", false, "Retrieve an object from a HashStore."
+            "retrieveobject", "client_retrieveobject", false,
+            "Flag to retrieve objs from a HashStore."
         );
         options.addOption(
             "retrievemetadata", "client_retrievemetadata", false,
-            "Retrieve a metadata obj from a HashStore."
+            "Flag to retrieve metadata objs from a HashStore."
         );
         options.addOption(
-            "deleteobject", "client_deleteobject", false, "Delete an object from a HashStore."
+            "deleteobject", "client_deleteobject", false, "Flag to delete objs from a HashStore."
         );
         options.addOption(
             "deletemetadata", "client_deletemetadata", false,
-            "Delete a metadata obj from a HashStore."
+            "Flag to delete metadata objs from a HashStore."
         );
-        options.addOption("pid", "pidguid", true, "PID or GUID of object.");
-        options.addOption("path", "filepath", true, "Path to object.");
-        options.addOption("algo", "objectalgo", true, "Algorithm to use in calculations.");
-        options.addOption("checksum", "obj_checksum", true, "Checksum of object.");
+        options.addOption("pid", "pidguid", true, "PID or GUID of object/metadata.");
+        options.addOption("path", "filepath", true, "Path to object/metadata.");
+        options.addOption(
+            "algo", "objectalgo", true,
+            "Algorithm to use when calling '-getchecksum' or '-storeobject' flag."
+        );
+        options.addOption("checksum", "obj_checksum", true, "Checksum of object to store.");
         options.addOption(
             "checksum_algo", "obj_checksum_algo", true, "Algorithm of checksum supplied."
         );
-        options.addOption("size", "obj_size", true, "Size of object");
-        options.addOption("format_id", "metadata_format", true, "Metadata format_id/namespace");
-        // knbvm (test.arcticdata.io) options
-        options.addOption("knbvm", "knbvmtestadc", false, "Specify testing with knbvm.");
-        options.addOption("nobj", "numberofobj", false, "Number of objects to work with.");
-        options.addOption("sdir", "storedirectory", true, "Location of objects to convert.");
-        options.addOption("stype", "storetype", true, "Type of store 'objects' or 'metadata'");
-        options.addOption("sts", "storetohs", false, "Flag to store objs to a HashStore");
+        options.addOption("size", "obj_size", true, "Size of object to store/validate.");
         options.addOption(
-            "rav", "retandval", false, "Retrieve and validate objs from a HashStore."
+            "format_id", "metadata_format", true,
+            "Format_id/namespace of metadata to store, retrieve or delete."
         );
-        options.addOption("dfs", "delfromhs", false, "Delete objs from a HashStore.");
+        // knbvm (test.arcticdata.io) options. Note: In order to test with knbvm, you must manually create
+        // a `pgdb.yaml` file with the respective JDBC values to access a Metacat db.
+        options.addOption(
+            "knbvm", "knbvmtestadc", false, "(knbvm) Flag to specify testing with knbvm."
+        );
+        options.addOption(
+            "nobj", "numberofobj", false,
+            "(knbvm) Option to specify number of objects to retrieve from a Metacat db."
+        );
+        options.addOption(
+            "sdir", "storedirectory", true,
+            "(knbvm) Option to specify the directory of objects to convert."
+        );
+        options.addOption(
+            "stype", "storetype", true, "(knbvm) Option to specify 'objects' or 'metadata'"
+        );
+        options.addOption(
+            "sts", "storetohs", false, "(knbvm) Test flag to store objs to a HashStore"
+        );
+        options.addOption(
+            "rav", "retandval", false,
+            "(knbvm) Test flag to retrieve and validate objs from a HashStore."
+        );
+        options.addOption(
+            "dfs", "delfromhs", false, "(knbvm) Test flag to delete objs from a HashStore"
+        );
         return options;
     }
 
@@ -415,6 +442,8 @@ public class Client {
         String actionFlag, String objType, String originDir, String numObjects
     ) throws IOException {
         // Load metacat db yaml
+        // Note: In order to test with knbvm, you must manually create a `pgdb.yaml` file with the
+        // respective JDBC values to access a Metacat db.
         System.out.println("Loading metacat db yaml.");
         Path pgdbYaml = storePath.resolve("pgdb.yaml");
         File pgdbYamlFile = pgdbYaml.toFile();
