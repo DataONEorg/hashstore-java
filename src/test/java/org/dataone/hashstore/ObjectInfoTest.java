@@ -3,11 +3,10 @@ package org.dataone.hashstore;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 
 /**
  * Test class for ObjectInfo
@@ -20,8 +19,8 @@ public class ObjectInfoTest {
     /**
      * Initialize ObjectInfo variables for test efficiency purposes
      */
-    @BeforeClass
-    public static void initializeInstanceVariables() {
+    @BeforeEach
+    public void initializeInstanceVariables() {
         id = "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
         size = 1999999;
         hexDigests = new HashMap<>();
