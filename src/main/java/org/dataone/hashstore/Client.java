@@ -34,10 +34,21 @@ import org.dataone.hashstore.exceptions.PidObjectExistsException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
+/**
+ * HashStore's 'Client' class is a command line interface that allows a developer to create a new
+ * HashStore or interact directly with an existing HashStore. See 'README.md' for usage examples.
+ */
 public class Client {
     private static HashStore hashStore;
     private static Path storePath;
 
+    /**
+     * Entry point to the HashStore Client interface.
+     * 
+     * @param args Command line arguments
+     * @throws Exception General exception class to catch all exceptions. See the HashStore
+     *                   interface for details.
+     */
     public static void main(String[] args) throws Exception {
         if (args.length == 0) {
             System.out.println("HashStoreClient - No arguments provided. Use flag '-h' for help.");
@@ -186,6 +197,8 @@ public class Client {
                     String objPreview = new String(buffer, 0, bytesRead, StandardCharsets.UTF_8);
                     objStream.close();
                     System.out.println(objPreview);
+                    String retrieveObjectMsg = "...\n<-- Truncated for Display Purposes -->";
+                    System.out.println(retrieveObjectMsg);
 
                 } else if (cmd.hasOption("retrievemetadata")) {
                     String pid = cmd.getOptionValue("pid");
