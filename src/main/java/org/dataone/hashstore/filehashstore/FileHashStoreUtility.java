@@ -22,12 +22,14 @@ public class FileHashStoreUtility {
      * @param object   Object to check
      * @param argument Value that is being checked
      * @param method   Calling method or class
+     * @throws IllegalArgumentException If the object is null
      */
-    public static void ensureNotNull(Object object, String argument, String method) {
+    public static void ensureNotNull(Object object, String argument, String method)
+        throws IllegalArgumentException {
         if (object == null) {
-            String errMsg = "FileHashStoreUtility.isStringNullOrEmpty - Calling Method: " + method
+            String errMsg = "FileHashStoreUtility.ensureNotNull - Calling Method: " + method
                 + "(): " + argument + " cannot be null.";
-            throw new NullPointerException(errMsg);
+            throw new IllegalArgumentException(errMsg);
         }
     }
 
@@ -91,10 +93,13 @@ public class FileHashStoreUtility {
      * @param string   String to check
      * @param argument Value that is being checked
      * @param method   Calling method
+     * @throws IllegalArgumentException If the string is empty or null
      */
-    public static void checkForEmptyString(String string, String argument, String method) {
+    public static void checkForEmptyString(String string, String argument, String method)
+        throws IllegalArgumentException {
+        ensureNotNull(string, "string", "checkForEmptyString");
         if (string.trim().isEmpty()) {
-            String errMsg = "FileHashStoreUtility.isStringNullOrEmpty - Calling Method: " + method
+            String errMsg = "FileHashStoreUtility.checkForEmptyString - Calling Method: " + method
                 + "(): " + argument + " cannot be empty.";
             throw new IllegalArgumentException(errMsg);
         }
@@ -105,11 +110,13 @@ public class FileHashStoreUtility {
      *
      * @param object Object to check
      * @param method Calling method
+     * @throws IllegalArgumentException If longInt is less than 0
      */
-    public static void checkNotNegative(long object, String method) {
-        if (object < 0) {
-            String errMsg = "FileHashStoreUtility.isObjectGreaterThanZero - Calling Method: "
-                + method + "(): objSize cannot be less than 0.";
+    public static void checkNotNegative(long longInt, String method)
+        throws IllegalArgumentException {
+        if (longInt < 0) {
+            String errMsg = "FileHashStoreUtility.checkNotNegative - Calling Method: " + method
+                + "(): objSize cannot be less than 0.";
             throw new IllegalArgumentException(errMsg);
         }
     }

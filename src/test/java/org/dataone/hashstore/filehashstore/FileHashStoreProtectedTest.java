@@ -134,11 +134,11 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Check algorithm support for null algorithm value
+     * Check algorithm support for null algorithm value throws exception
      */
     @Test
     public void isValidAlgorithm_algorithmNull() {
-        assertThrows(NullPointerException.class, () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             try {
                 fileHashStore.validateAlgorithm(null);
 
@@ -341,7 +341,7 @@ public class FileHashStoreProtectedTest {
      */
     @Test
     public void putObject_nullChecksumValue() throws Exception {
-        assertThrows(NullPointerException.class, () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             // Get test file to "upload"
             String pid = "jtao.1700.1";
             Path testDataFile = testData.getTestFile(pid);
@@ -371,7 +371,7 @@ public class FileHashStoreProtectedTest {
      */
     @Test
     public void putObject_nullChecksumAlgorithmValue() throws Exception {
-        assertThrows(NullPointerException.class, () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             // Get test file to "upload"
             String pid = "jtao.1700.1";
             Path testDataFile = testData.getTestFile(pid);
@@ -493,7 +493,7 @@ public class FileHashStoreProtectedTest {
      */
     @Test
     public void putObject_nullPid() throws Exception {
-        assertThrows(NullPointerException.class, () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             // Get test file to "upload"
             String pid = "jtao.1700.1";
             Path testDataFile = testData.getTestFile(pid);
@@ -508,7 +508,7 @@ public class FileHashStoreProtectedTest {
      */
     @Test
     public void putObject_nullObject() throws Exception {
-        assertThrows(NullPointerException.class, () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             // Get test file to "upload"
             String pid = "jtao.1700.1";
             fileHashStore.putObject(null, pid, "MD2", null, null, 0);
@@ -709,7 +709,7 @@ public class FileHashStoreProtectedTest {
      */
     @Test
     public void testMove_entityNull() throws Exception {
-        assertThrows(NullPointerException.class, () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             File newTmpFile = generateTemporaryFile();
             String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
             File targetFile = new File(targetString);
@@ -775,7 +775,7 @@ public class FileHashStoreProtectedTest {
     @Test
     public void putMetadata_metadataNull() throws Exception {
         for (String pid : testData.pidList) {
-            assertThrows(NullPointerException.class, () -> {
+            assertThrows(IllegalArgumentException.class, () -> {
                 fileHashStore.putMetadata(null, pid, null);
             });
         }
@@ -787,7 +787,7 @@ public class FileHashStoreProtectedTest {
     @Test
     public void putMetadata_pidNull() throws Exception {
         for (String pid : testData.pidList) {
-            assertThrows(NullPointerException.class, () -> {
+            assertThrows(IllegalArgumentException.class, () -> {
                 String pidFormatted = pid.replace("/", "_");
 
                 // Get test metadata file

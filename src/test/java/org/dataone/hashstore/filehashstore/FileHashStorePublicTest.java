@@ -73,7 +73,7 @@ public class FileHashStorePublicTest {
      */
     @Test
     public void constructor_nullProperties() throws Exception {
-        assertThrows(NullPointerException.class, () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             new FileHashStore(null);
         });
     }

@@ -158,7 +158,7 @@ public class FileHashStoreInterfaceTest {
      */
     @Test
     public void storeObject_null() throws Exception {
-        assertThrows(NullPointerException.class, () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             String pid = "j.tao.1700.1";
             fileHashStore.storeObject(null, pid, null, null, null, 0);
         });
@@ -170,7 +170,7 @@ public class FileHashStoreInterfaceTest {
     @Test
     public void storeObject_nullPid() throws Exception {
         for (String pid : testData.pidList) {
-            assertThrows(NullPointerException.class, () -> {
+            assertThrows(IllegalArgumentException.class, () -> {
                 String pidFormatted = pid.replace("/", "_");
                 Path testDataFile = testData.getTestFile(pidFormatted);
 
@@ -332,7 +332,7 @@ public class FileHashStoreInterfaceTest {
      */
     @Test
     public void storeObject_nullChecksumValue() throws Exception {
-        assertThrows(NullPointerException.class, () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             // Get single test file to "upload"
             String pid = "jtao.1700.1";
             Path testDataFile = testData.getTestFile(pid);
@@ -729,7 +729,7 @@ public class FileHashStoreInterfaceTest {
     @Test
     public void storeMetadata_metadataNull() throws Exception {
         for (String pid : testData.pidList) {
-            assertThrows(NullPointerException.class, () -> {
+            assertThrows(IllegalArgumentException.class, () -> {
                 fileHashStore.storeMetadata(null, pid, null);
             });
         }
@@ -741,7 +741,7 @@ public class FileHashStoreInterfaceTest {
     @Test
     public void storeMetadata_pidNull() throws Exception {
         for (String pid : testData.pidList) {
-            assertThrows(NullPointerException.class, () -> {
+            assertThrows(IllegalArgumentException.class, () -> {
                 String pidFormatted = pid.replace("/", "_");
 
                 // Get test metadata file
@@ -891,7 +891,7 @@ public class FileHashStoreInterfaceTest {
      */
     @Test
     public void retrieveObject_pidNull() throws Exception {
-        assertThrows(NullPointerException.class, () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             InputStream pidInputStream = fileHashStore.retrieveObject(null);
             pidInputStream.close();
         });
@@ -1023,7 +1023,7 @@ public class FileHashStoreInterfaceTest {
      */
     @Test
     public void retrieveMetadata_pidNull() throws Exception {
-        assertThrows(NullPointerException.class, () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             String storeFormatId = (String) fhsProperties.get("storeMetadataNamespace");
             InputStream pidInputStream = fileHashStore.retrieveMetadata(null, storeFormatId);
             pidInputStream.close();
@@ -1059,7 +1059,7 @@ public class FileHashStoreInterfaceTest {
      */
     @Test
     public void retrieveMetadata_formatNull() throws Exception {
-        assertThrows(NullPointerException.class, () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             InputStream pidInputStream = fileHashStore.retrieveMetadata("dou.2023.hs.1", null);
             pidInputStream.close();
         });
@@ -1197,7 +1197,7 @@ public class FileHashStoreInterfaceTest {
      */
     @Test
     public void deleteObject_pidNull() throws Exception {
-        assertThrows(NullPointerException.class, () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             fileHashStore.deleteObject(null);
         });
     }
@@ -1294,7 +1294,7 @@ public class FileHashStoreInterfaceTest {
      */
     @Test
     public void deleteMetadata_pidNull() throws Exception {
-        assertThrows(NullPointerException.class, () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             String formatId = "http://hashstore.tests/types/v1.0";
             fileHashStore.deleteMetadata(null, formatId);
         });
@@ -1327,7 +1327,7 @@ public class FileHashStoreInterfaceTest {
      */
     @Test
     public void deleteMetadata_formatIdNull() throws Exception {
-        assertThrows(NullPointerException.class, () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             String pid = "dou.2023.hashstore.1";
             fileHashStore.deleteMetadata(pid, null);
         });
@@ -1395,7 +1395,7 @@ public class FileHashStoreInterfaceTest {
      */
     @Test
     public void getHexDigest_pidNull() throws Exception {
-        assertThrows(NullPointerException.class, () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             fileHashStore.getHexDigest(null, "SHA-256");
         });
     }
