@@ -734,7 +734,9 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public InputStream retrieveMetadata(String pid, String formatId) throws Exception {
+    public InputStream retrieveMetadata(String pid, String formatId)
+        throws IllegalArgumentException, FileNotFoundException, IOException,
+        NoSuchAlgorithmException {
         logFileHashStore.debug(
             "FileHashStore.retrieveMetadata - Called to retrieve metadata for pid: " + pid
                 + " with formatId: " + formatId
@@ -778,7 +780,8 @@ public class FileHashStore implements HashStore {
     /**
      * Overload method for retrieveMetadata with default metadata namespace
      */
-    public InputStream retrieveMetadata(String pid) throws Exception {
+    public InputStream retrieveMetadata(String pid) throws IllegalArgumentException,
+        FileNotFoundException, IOException, NoSuchAlgorithmException {
         logFileHashStore.debug(
             "FileHashStore.retrieveMetadata - Called to retrieve metadata for pid: " + pid
                 + " with default metadata namespace: " + METADATA_NAMESPACE

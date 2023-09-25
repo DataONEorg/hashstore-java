@@ -16,12 +16,12 @@ import org.dataone.hashstore.exceptions.PidObjectExistsException;
  */
 public interface HashStore {
         /**
-         * The `storeObject` method is responsible for the atomic storage of objects to HashStore
-         * using a given InputStream and a persistent identifier (pid). Upon successful storage, the
-         * method returns an 'ObjectInfo' object containing the object's file information, such
-         * as the id, file size, and hex digest map of algorithms and hex digests/checksums. An
-         * object is stored once and only once - and `storeObject` also enforces this rule by
-         * synchronizing multiple calls and rejecting calls to store duplicate objects.
+         * Atomically stores objects to HashStore using a given InputStream and a persistent
+         * identifier (pid). Upon successful storage, the method returns an 'ObjectInfo' object
+         * containing the object's file information, such as the id, file size, and hex digest map
+         * of algorithms and hex digests/checksums. An object is stored once and only once - and
+         * `storeObject` also enforces this rule by synchronizing multiple calls and rejecting calls
+         * to store duplicate objects.
          * 
          * The file's id is determined by calculating the SHA-256 hex digest of the provided pid,
          * which is also used as the permanent address of the file. The file's identifier is then
@@ -59,23 +59,32 @@ public interface HashStore {
                 String checksumAlgorithm, long objSize
         ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException;
 
+        /**
+         * @see #storeObject(InputStream, String, String, String, String, long)
+         */
         ObjectInfo storeObject(
                 InputStream object, String pid, String checksum, String checksumAlgorithm
         ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException;
 
+        /**
+         * @see #storeObject(InputStream, String, String, String, String, long)
+         */
         ObjectInfo storeObject(InputStream object, String pid, String additionalAlgorithm)
                 throws NoSuchAlgorithmException, IOException, PidObjectExistsException,
                 RuntimeException;
 
+        /**
+         * @see #storeObject(InputStream, String, String, String, String, long)
+         */
         ObjectInfo storeObject(InputStream object, String pid, long objSize)
                 throws NoSuchAlgorithmException, IOException, PidObjectExistsException,
                 RuntimeException;
 
         /**
-         * The `storeMetadata` method is responsible for adding/updating metadata (ex. `sysmeta`) to
-         * the HashStore by using a given InputStream, a persistent identifier (`pid`) and metadata
-         * format (`formatId`). The permanent address of the stored metadata document is determined
-         * by calculating the SHA-256 hex digest of the provided `pid` + `formatId`.
+         * Adds/updates metadata (ex. `sysmeta`) to the HashStore by using a given InputStream, a
+         * persistent identifier (`pid`) and metadata format (`formatId`). The permanent address of
+         * the stored metadata document is determined by calculating the SHA-256 hex digest of the
+         * provided `pid` + `formatId`.
          * 
          * Note, multiple calls to store the same metadata content will all be accepted, but is not
          * guaranteed to execute sequentially.
@@ -96,13 +105,15 @@ public interface HashStore {
                 IllegalArgumentException, FileNotFoundException, InterruptedException,
                 NoSuchAlgorithmException;
 
+        /**
+         * @see #storeMetadata(InputStream, String, String)
+         */
         String storeMetadata(InputStream metadata, String pid) throws IOException,
                 IllegalArgumentException, FileNotFoundException, InterruptedException,
                 NoSuchAlgorithmException;
 
         /**
-         * The `retrieveObject` method retrieves an object from HashStore using a given persistent
-         * identifier (pid).
+         * Returns an InputStream to an object from HashStore using a given persistent identifier.
          * 
          * @param pid Authority-based identifier
          * @return Object InputStream
@@ -116,8 +127,8 @@ public interface HashStore {
                 FileNotFoundException, IOException, NoSuchAlgorithmException;
 
         /**
-         * The 'retrieveMetadata' method retrieves the metadata content of a given pid and metadata
-         * namespace from HashStore.
+         * Returns an InputStream to the metadata content of a given pid and metadata namespace from
+         * HashStore.
          * 
          * @param pid      Authority-based identifier
          * @param formatId Metadata namespace/format
@@ -128,11 +139,12 @@ public interface HashStore {
          * @throws NoSuchAlgorithmException When algorithm used to calculate metadata address is not
          *                                  supported
          */
-        InputStream retrieveMetadata(String pid, String formatId) throws Exception;
+        InputStream retrieveMetadata(String pid, String formatId) throws IllegalArgumentException,
+                FileNotFoundException, IOException, NoSuchAlgorithmException;
 
         /**
-         * The 'deleteObject' method deletes an object (and its empty subdirectories) permanently
-         * from HashStore using a given persistent identifier.
+         * Deletes an object (and its empty subdirectories) permanently from HashStore using a given
+         * persistent identifier.
          * 
          * @param pid Authority-based identifier
          * @throws IllegalArgumentException When pid is null or empty
@@ -141,11 +153,12 @@ public interface HashStore {
          * @throws NoSuchAlgorithmException When algorithm used to calculate object address is not
          *                                  supported
          */
-        void deleteObject(String pid) throws Exception;
+        void deleteObject(String pid) throws IllegalArgumentException, FileNotFoundException,
+                IOException, NoSuchAlgorithmException;
 
         /**
-         * The 'deleteMetadata' method deletes a metadata document (ex. `sysmeta`) permanently from
-         * HashStore using a given persistent identifier and its respective metadata namespace.
+         * Deletes a metadata document (ex. `sysmeta`) permanently from HashStore using a given
+         * persistent identifier and its respective metadata namespace.
          * 
          * @param pid      Authority-based identifier
          * @param formatId Metadata namespace/format
@@ -155,11 +168,12 @@ public interface HashStore {
          * @throws NoSuchAlgorithmException When algorithm used to calculate object address is not
          *                                  supported
          */
-        void deleteMetadata(String pid, String formatId) throws Exception;
+        void deleteMetadata(String pid, String formatId) throws IllegalArgumentException,
+                FileNotFoundException, IOException, NoSuchAlgorithmException;
 
         /**
-         * The 'getHexDigest' method calculates the hex digest of an object that exists in HashStore
-         * using a given persistent identifier and hash algorithm.
+         * Calculates the hex digest of an object that exists in HashStore using a given persistent
+         * identifier and hash algorithm.
          * 
          * @param pid       Authority-based identifier
          * @param algorithm Algorithm of desired hex digest
@@ -170,5 +184,6 @@ public interface HashStore {
          * @throws NoSuchAlgorithmException When algorithm used to calculate object address is not
          *                                  supported
          */
-        String getHexDigest(String pid, String algorithm) throws Exception;
+        String getHexDigest(String pid, String algorithm) throws IllegalArgumentException,
+                FileNotFoundException, IOException, NoSuchAlgorithmException;
 }
