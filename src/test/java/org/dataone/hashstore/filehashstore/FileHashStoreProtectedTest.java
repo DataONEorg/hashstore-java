@@ -14,18 +14,14 @@ import java.util.Properties;
 
 import javax.xml.bind.DatatypeConverter;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import org.dataone.hashstore.ObjectInfo;
 import org.dataone.hashstore.exceptions.PidObjectExistsException;
 import org.dataone.hashstore.testdata.TestDataHarness;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Test class for FileHashStore protected members
@@ -38,9 +34,9 @@ public class FileHashStoreProtectedTest {
     /**
      * Initialize each FileHashStore test with a new root temporary folder
      */
-    @Before
+    @BeforeEach
     public void initializeFileHashStore() {
-        Path rootDirectory = tempFolder.getRoot().toPath().resolve("metacat");
+        Path rootDirectory = tempFolder.resolve("metacat");
 
         Properties storeProperties = new Properties();
         storeProperties.setProperty("storePath", rootDirectory.toString());
@@ -68,7 +64,8 @@ public class FileHashStoreProtectedTest {
      * Non-test method using to generate a temp file
      */
     public File generateTemporaryFile() throws Exception {
-        Path directory = tempFolder.getRoot().toPath();
+        Path directory = tempFolder.resolve("metacat");
+        System.out.println(directory);
         // newFile
         return fileHashStore.generateTmpFile("testfile", directory);
     }
@@ -76,8 +73,8 @@ public class FileHashStoreProtectedTest {
     /**
      * Temporary folder for tests to run in
      */
-    @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
+    @TempDir
+    public Path tempFolder;
 
     /**
      * Check algorithm support for supported algorithm
@@ -98,52 +95,58 @@ public class FileHashStoreProtectedTest {
     /**
      * Check algorithm support for unsupported algorithm
      */
-    @Test(expected = NoSuchAlgorithmException.class)
+    @Test
     public void isValidAlgorithm_notSupported() throws NoSuchAlgorithmException {
-        try {
-            String sm3 = "SM3";
-            boolean not_supported = fileHashStore.validateAlgorithm(sm3);
-            assertFalse(not_supported);
+        assertThrows(NoSuchAlgorithmException.class, () -> {
+            try {
+                String sm3 = "SM3";
+                boolean not_supported = fileHashStore.validateAlgorithm(sm3);
+                assertFalse(not_supported);
 
-        } catch (NoSuchAlgorithmException nsae) {
-            throw new NoSuchAlgorithmException(
-                "NoSuchAlgorithmException encountered: " + nsae.getMessage()
-            );
+            } catch (NoSuchAlgorithmException nsae) {
+                throw new NoSuchAlgorithmException(
+                    "NoSuchAlgorithmException encountered: " + nsae.getMessage()
+                );
 
-        }
+            }
+        });
     }
 
     /**
      * Check algorithm support for unsupported algorithm with lower cases
      */
-    @Test(expected = NoSuchAlgorithmException.class)
+    @Test
     public void isValidAlgorithm_notSupportedLowerCase() throws NoSuchAlgorithmException {
-        try {
-            // Must match string to reduce complexity, no string formatting
-            String md2_lowercase = "md2";
-            boolean lowercase_not_supported = fileHashStore.validateAlgorithm(md2_lowercase);
-            assertFalse(lowercase_not_supported);
+        assertThrows(NoSuchAlgorithmException.class, () -> {
+            try {
+                // Must match string to reduce complexity, no string formatting
+                String md2_lowercase = "md2";
+                boolean lowercase_not_supported = fileHashStore.validateAlgorithm(md2_lowercase);
+                assertFalse(lowercase_not_supported);
 
-        } catch (NoSuchAlgorithmException nsae) {
-            throw new NoSuchAlgorithmException(
-                "NoSuchAlgorithmException encountered: " + nsae.getMessage()
-            );
+            } catch (NoSuchAlgorithmException nsae) {
+                throw new NoSuchAlgorithmException(
+                    "NoSuchAlgorithmException encountered: " + nsae.getMessage()
+                );
 
-        }
+            }
+        });
     }
 
     /**
      * Check algorithm support for null algorithm value
      */
-    @Test(expected = NullPointerException.class)
+    @Test
     public void isValidAlgorithm_algorithmNull() {
-        try {
-            fileHashStore.validateAlgorithm(null);
+        assertThrows(NullPointerException.class, () -> {
+            try {
+                fileHashStore.validateAlgorithm(null);
 
-        } catch (NoSuchAlgorithmException nsae) {
-            fail("NoSuchAlgorithmException encountered: " + nsae.getMessage());
+            } catch (NoSuchAlgorithmException nsae) {
+                fail("NoSuchAlgorithmException encountered: " + nsae.getMessage());
 
-        }
+            }
+        });
     }
 
     /**
@@ -183,10 +186,13 @@ public class FileHashStoreProtectedTest {
     /**
      * Check that getPidHexDigest throws NoSuchAlgorithmException
      */
-    @Test(expected = NoSuchAlgorithmException.class)
+    @Test
     public void getPidHexDigest_badAlgorithm() throws Exception {
         for (String pid : testData.pidList) {
-            fileHashStore.getPidHexDigest(pid, "SM2");
+            assertThrows(NoSuchAlgorithmException.class, () -> {
+                fileHashStore.getPidHexDigest(pid, "SM2");
+            });
+
         }
     }
 
@@ -301,67 +307,77 @@ public class FileHashStoreProtectedTest {
     /**
      * Verify putObject throws exception when checksum provided does not match
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void putObject_incorrectChecksumValue() throws Exception {
-        // Get test file to "upload"
-        String pid = "jtao.1700.1";
-        Path testDataFile = testData.getTestFile(pid);
+        assertThrows(IllegalArgumentException.class, () -> {
+            // Get test file to "upload"
+            String pid = "jtao.1700.1";
+            Path testDataFile = testData.getTestFile(pid);
 
-        String checksumIncorrect = "1c25df1c8ba1d2e57bb3fd4785878b85";
+            String checksumIncorrect = "1c25df1c8ba1d2e57bb3fd4785878b85";
 
-        InputStream dataStream = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStream, pid, null, checksumIncorrect, "MD2", 0);
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            fileHashStore.putObject(dataStream, pid, null, checksumIncorrect, "MD2", 0);
+        });
     }
 
     /**
      * Verify putObject throws exception when checksum is empty and algorithm supported
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void putObject_emptyChecksumValue() throws Exception {
-        // Get test file to "upload"
-        String pid = "jtao.1700.1";
-        Path testDataFile = testData.getTestFile(pid);
+        assertThrows(IllegalArgumentException.class, () -> {
+            // Get test file to "upload"
+            String pid = "jtao.1700.1";
+            Path testDataFile = testData.getTestFile(pid);
 
-        InputStream dataStream = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStream, pid, null, "   ", "MD2", 0);
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            fileHashStore.putObject(dataStream, pid, null, "   ", "MD2", 0);
+        });
     }
 
     /**
      * Verify putObject throws exception when checksum is null and algorithm supported
      */
-    @Test(expected = NullPointerException.class)
+    @Test
     public void putObject_nullChecksumValue() throws Exception {
-        // Get test file to "upload"
-        String pid = "jtao.1700.1";
-        Path testDataFile = testData.getTestFile(pid);
+        assertThrows(NullPointerException.class, () -> {
+            // Get test file to "upload"
+            String pid = "jtao.1700.1";
+            Path testDataFile = testData.getTestFile(pid);
 
-        InputStream dataStream = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStream, pid, null, null, "MD2", 0);
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            fileHashStore.putObject(dataStream, pid, null, null, "MD2", 0);
+        });
     }
 
     /**
      * Verify putObject throws exception when checksumAlgorithm is empty and checksum is supplied
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void putObject_emptyChecksumAlgorithmValue() throws Exception {
-        // Get test file to "upload"
-        String pid = "jtao.1700.1";
-        Path testDataFile = testData.getTestFile(pid);
+        assertThrows(IllegalArgumentException.class, () -> {
+            // Get test file to "upload"
+            String pid = "jtao.1700.1";
+            Path testDataFile = testData.getTestFile(pid);
 
-        InputStream dataStream = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStream, pid, null, "abc", "   ", 0);
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            fileHashStore.putObject(dataStream, pid, null, "abc", "   ", 0);
+        });
     }
 
     /**
      * Verify putObject throws exception when checksumAlgorithm is null and checksum supplied
      */
-    @Test(expected = NullPointerException.class)
+    @Test
     public void putObject_nullChecksumAlgorithmValue() throws Exception {
-        // Get test file to "upload"
-        String pid = "jtao.1700.1";
-        Path testDataFile = testData.getTestFile(pid);
-        InputStream dataStream = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStream, pid, null, "abc", null, 0);
+        assertThrows(NullPointerException.class, () -> {
+            // Get test file to "upload"
+            String pid = "jtao.1700.1";
+            Path testDataFile = testData.getTestFile(pid);
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            fileHashStore.putObject(dataStream, pid, null, "abc", null, 0);
+        });
     }
 
 
@@ -388,100 +404,115 @@ public class FileHashStoreProtectedTest {
     /**
      * Check that store object throws exception when incorrect file size provided
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void putObject_objSizeIncorrect() throws Exception {
         for (String pid : testData.pidList) {
-            String pidFormatted = pid.replace("/", "_");
-            Path testDataFile = testData.getTestFile(pidFormatted);
+            assertThrows(IllegalArgumentException.class, () -> {
+                String pidFormatted = pid.replace("/", "_");
+                Path testDataFile = testData.getTestFile(pidFormatted);
 
-            InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectInfo objInfo = fileHashStore.putObject(dataStream, pid, null, null, null, 1000);
+                InputStream dataStream = Files.newInputStream(testDataFile);
+                ObjectInfo objInfo = fileHashStore.putObject(
+                    dataStream, pid, null, null, null, 1000
+                );
 
-            // Check id (sha-256 hex digest of the ab_id (pid))
-            long objectSize = Long.parseLong(testData.pidData.get(pid).get("size"));
-            assertEquals(objectSize, objInfo.getSize());
+                // Check id (sha-256 hex digest of the ab_id (pid))
+                long objectSize = Long.parseLong(testData.pidData.get(pid).get("size"));
+                assertEquals(objectSize, objInfo.getSize());
+            });
         }
     }
 
     /**
      * Verify putObject throws exception when storing a duplicate object
      */
-    @Test(expected = PidObjectExistsException.class)
+    @Test
     public void putObject_duplicateObject() throws Exception {
-        // Get test file to "upload"
-        String pid = "jtao.1700.1";
-        Path testDataFile = testData.getTestFile(pid);
+        assertThrows(PidObjectExistsException.class, () -> {
+            // Get test file to "upload"
+            String pid = "jtao.1700.1";
+            Path testDataFile = testData.getTestFile(pid);
 
-        InputStream dataStream = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStream, pid, null, null, null, 0);
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            fileHashStore.putObject(dataStream, pid, null, null, null, 0);
 
-        // Try duplicate upload
-        InputStream dataStreamTwo = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStreamTwo, pid, null, null, null, 0);
+            // Try duplicate upload
+            InputStream dataStreamTwo = Files.newInputStream(testDataFile);
+            fileHashStore.putObject(dataStreamTwo, pid, null, null, null, 0);
+        });
     }
 
     /**
      * Verify putObject throws exception when unsupported additional algorithm provided
      */
-    @Test(expected = NoSuchAlgorithmException.class)
+    @Test
     public void putObject_invalidAlgorithm() throws Exception {
-        // Get test file to "upload"
-        String pid = "jtao.1700.1";
-        Path testDataFile = testData.getTestFile(pid);
+        assertThrows(NoSuchAlgorithmException.class, () -> {
+            // Get test file to "upload"
+            String pid = "jtao.1700.1";
+            Path testDataFile = testData.getTestFile(pid);
 
-        InputStream dataStream = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStream, pid, "SM2", null, null, 0);
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            fileHashStore.putObject(dataStream, pid, "SM2", null, null, 0);
+        });
     }
 
     /**
      * Verify putObject throws exception when empty algorithm is supplied
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void putObject_emptyAlgorithm() throws Exception {
-        // Get test file to "upload"
-        String pid = "jtao.1700.1";
-        Path testDataFile = testData.getTestFile(pid);
+        assertThrows(IllegalArgumentException.class, () -> {
+            // Get test file to "upload"
+            String pid = "jtao.1700.1";
+            Path testDataFile = testData.getTestFile(pid);
 
-        InputStream dataStream = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStream, pid, "   ", null, null, 0);
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            fileHashStore.putObject(dataStream, pid, "   ", null, null, 0);
+        });
     }
 
     /**
      * Verify putObject throws exception when pid is empty
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void putObject_emptyPid() throws Exception {
-        // Get test file to "upload"
-        String pidEmpty = "";
-        String pid = "jtao.1700.1";
-        Path testDataFile = testData.getTestFile(pid);
+        assertThrows(IllegalArgumentException.class, () -> {
+            // Get test file to "upload"
+            String pidEmpty = "";
+            String pid = "jtao.1700.1";
+            Path testDataFile = testData.getTestFile(pid);
 
-        InputStream dataStream = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStream, pidEmpty, null, null, null, 0);
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            fileHashStore.putObject(dataStream, pidEmpty, null, null, null, 0);
+        });
     }
 
     /**
      * Verify putObject throws exception when pid is null
      */
-    @Test(expected = NullPointerException.class)
+    @Test
     public void putObject_nullPid() throws Exception {
-        // Get test file to "upload"
-        String pid = "jtao.1700.1";
-        Path testDataFile = testData.getTestFile(pid);
+        assertThrows(NullPointerException.class, () -> {
+            // Get test file to "upload"
+            String pid = "jtao.1700.1";
+            Path testDataFile = testData.getTestFile(pid);
 
-        InputStream dataStream = Files.newInputStream(testDataFile);
-        fileHashStore.putObject(dataStream, null, "MD2", null, null, 0);
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            fileHashStore.putObject(dataStream, null, "MD2", null, null, 0);
+        });
     }
 
     /**
      * Verify putObject throws exception object is null
      */
-    @Test(expected = NullPointerException.class)
+    @Test
     public void putObject_nullObject() throws Exception {
-        // Get test file to "upload"
-        String pid = "jtao.1700.1";
-
-        fileHashStore.putObject(null, pid, "MD2", null, null, 0);
+        assertThrows(NullPointerException.class, () -> {
+            // Get test file to "upload"
+            String pid = "jtao.1700.1";
+            fileHashStore.putObject(null, pid, "MD2", null, null, 0);
+        });
     }
 
     /**
@@ -623,20 +654,24 @@ public class FileHashStoreProtectedTest {
     /**
      * Check that exception is thrown when unsupported algorithm supplied
      */
-    @Test(expected = NoSuchAlgorithmException.class)
+    @Test
     public void writeToTmpFileAndGenerateChecksums_invalidAlgo() throws Exception {
         for (String pid : testData.pidList) {
-            File newTmpFile = generateTemporaryFile();
-            String pidFormatted = pid.replace("/", "_");
+            assertThrows(NoSuchAlgorithmException.class, () -> {
+                File newTmpFile = generateTemporaryFile();
+                String pidFormatted = pid.replace("/", "_");
 
-            // Get test file
-            Path testDataFile = testData.getTestFile(pidFormatted);
+                // Get test file
+                Path testDataFile = testData.getTestFile(pidFormatted);
 
-            // Extra algo to calculate - MD2
-            String addAlgo = "SM2";
+                // Extra algo to calculate - MD2
+                String addAlgo = "SM2";
 
-            InputStream dataStream = Files.newInputStream(testDataFile);
-            fileHashStore.writeToTmpFileAndGenerateChecksums(newTmpFile, dataStream, addAlgo, null);
+                InputStream dataStream = Files.newInputStream(testDataFile);
+                fileHashStore.writeToTmpFileAndGenerateChecksums(
+                    newTmpFile, dataStream, addAlgo, null
+                );
+            });
         }
     }
 
@@ -646,7 +681,7 @@ public class FileHashStoreProtectedTest {
     @Test
     public void testMove() throws Exception {
         File newTmpFile = generateTemporaryFile();
-        String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
+        String targetString = tempFolder.toString() + "/testmove/test_tmp_object.tmp";
         File targetFile = new File(targetString);
 
         fileHashStore.move(newTmpFile, targetFile, "object");
@@ -656,48 +691,56 @@ public class FileHashStoreProtectedTest {
     /**
      * Confirm that FileAlreadyExistsException is thrown when target already exists
      */
-    @Test(expected = FileAlreadyExistsException.class)
+    @Test
     public void testMove_targetExists() throws Exception {
-        File newTmpFile = generateTemporaryFile();
-        String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
-        File targetFile = new File(targetString);
-        fileHashStore.move(newTmpFile, targetFile, "object");
+        assertThrows(FileAlreadyExistsException.class, () -> {
+            File newTmpFile = generateTemporaryFile();
+            String targetString = tempFolder.toString() + "/testmove/test_tmp_object.tmp";
+            File targetFile = new File(targetString);
+            fileHashStore.move(newTmpFile, targetFile, "object");
 
-        File newTmpFileTwo = generateTemporaryFile();
-        fileHashStore.move(newTmpFileTwo, targetFile, "object");
+            File newTmpFileTwo = generateTemporaryFile();
+            fileHashStore.move(newTmpFileTwo, targetFile, "object");
+        });
     }
 
     /**
      * Confirm that NullPointerException is thrown when entity is null
      */
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testMove_entityNull() throws Exception {
-        File newTmpFile = generateTemporaryFile();
-        String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
-        File targetFile = new File(targetString);
-        fileHashStore.move(newTmpFile, targetFile, null);
+        assertThrows(NullPointerException.class, () -> {
+            File newTmpFile = generateTemporaryFile();
+            String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
+            File targetFile = new File(targetString);
+            fileHashStore.move(newTmpFile, targetFile, null);
+        });
     }
 
     /**
      * Confirm that FileAlreadyExistsException is thrown entity is empty
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testMove_entityEmpty() throws Exception {
-        File newTmpFile = generateTemporaryFile();
-        String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
-        File targetFile = new File(targetString);
-        fileHashStore.move(newTmpFile, targetFile, "");
+        assertThrows(IllegalArgumentException.class, () -> {
+            File newTmpFile = generateTemporaryFile();
+            String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
+            File targetFile = new File(targetString);
+            fileHashStore.move(newTmpFile, targetFile, "");
+        });
     }
 
     /**
      * Confirm that FileAlreadyExistsException is thrown when entity is empty spaces
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testMove_entityEmptySpaces() throws Exception {
-        File newTmpFile = generateTemporaryFile();
-        String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
-        File targetFile = new File(targetString);
-        fileHashStore.move(newTmpFile, targetFile, "     ");
+        assertThrows(IllegalArgumentException.class, () -> {
+            File newTmpFile = generateTemporaryFile();
+            String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
+            File targetFile = new File(targetString);
+            fileHashStore.move(newTmpFile, targetFile, "     ");
+        });
     }
 
     /**
@@ -729,61 +772,69 @@ public class FileHashStoreProtectedTest {
     /**
      * Test putMetadata throws exception when metadata is null
      */
-    @Test(expected = NullPointerException.class)
+    @Test
     public void putMetadata_metadataNull() throws Exception {
         for (String pid : testData.pidList) {
-            fileHashStore.putMetadata(null, pid, null);
+            assertThrows(NullPointerException.class, () -> {
+                fileHashStore.putMetadata(null, pid, null);
+            });
         }
     }
 
     /**
      * Test putMetadata throws exception when pid is null
      */
-    @Test(expected = NullPointerException.class)
+    @Test
     public void putMetadata_pidNull() throws Exception {
         for (String pid : testData.pidList) {
-            String pidFormatted = pid.replace("/", "_");
+            assertThrows(NullPointerException.class, () -> {
+                String pidFormatted = pid.replace("/", "_");
 
-            // Get test metadata file
-            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+                // Get test metadata file
+                Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
 
-            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+                InputStream metadataStream = Files.newInputStream(testMetaDataFile);
 
-            fileHashStore.putMetadata(metadataStream, null, null);
+                fileHashStore.putMetadata(metadataStream, null, null);
+            });
         }
     }
 
     /**
      * Test putMetadata throws exception when pid is empty
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void putMetadata_pidEmpty() throws Exception {
         for (String pid : testData.pidList) {
-            String pidFormatted = pid.replace("/", "_");
+            assertThrows(IllegalArgumentException.class, () -> {
+                String pidFormatted = pid.replace("/", "_");
 
-            // Get test metadata file
-            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+                // Get test metadata file
+                Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
 
-            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+                InputStream metadataStream = Files.newInputStream(testMetaDataFile);
 
-            fileHashStore.putMetadata(metadataStream, "", null);
+                fileHashStore.putMetadata(metadataStream, "", null);
+            });
         }
     }
 
     /**
      * Test putMetadata throws exception when pid is empty with spaces
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void putMetadata_pidEmptySpaces() throws Exception {
         for (String pid : testData.pidList) {
-            String pidFormatted = pid.replace("/", "_");
+            assertThrows(IllegalArgumentException.class, () -> {
+                String pidFormatted = pid.replace("/", "_");
 
-            // Get test metadata file
-            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+                // Get test metadata file
+                Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
 
-            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+                InputStream metadataStream = Files.newInputStream(testMetaDataFile);
 
-            fileHashStore.putMetadata(metadataStream, "     ", null);
+                fileHashStore.putMetadata(metadataStream, "     ", null);
+            });
         }
     }
 
