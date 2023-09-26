@@ -1277,6 +1277,7 @@ public class FileHashStore implements HashStore {
             logFileHashStore.trace(
                 "FileHashStore.generateTmpFile - tmpFile generated: " + newFile.getAbsolutePath()
             );
+            newFile.deleteOnExit();
             return newFile;
 
         } catch (IOException ioe) {
