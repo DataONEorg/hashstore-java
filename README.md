@@ -32,11 +32,11 @@ We also maintain a parallel [Python-based version of HashStore](https://github.c
 $ mvn clean package -Dmaven.test.skip=true
 
 # Get help
-$ java -cp ./target/.../hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.Client -h
+$ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.Client -h
 
 # Step 2:
 ## Create a HashStore (long option)
-$ java -cp ./target/.../hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.Client --createhashstore --storepath=/path/to/store --storedepth=3 --storewidth=2 --storealgo=SHA-256 --storenamespace=http://ns.dataone.org/service/types/v2.0
+$ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.Client --createhashstore --storepath=/path/to/store --storedepth=3 --storewidth=2 --storealgo=SHA-256 --storenamespace=http://ns.dataone.org/service/types/v2.0
 
 ## Create a HashStore (short option)
 $ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.Client -chs -store /path/to/store -dp 3 -wp 2 -ap SHA-256 -nsp http://ns.dataone.org/service/types/v2
