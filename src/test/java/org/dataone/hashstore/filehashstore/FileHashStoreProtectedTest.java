@@ -100,7 +100,7 @@ public class FileHashStoreProtectedTest {
      * Check algorithm support for unsupported algorithm
      */
     @Test
-    public void isValidAlgorithm_notSupported() throws NoSuchAlgorithmException {
+    public void isValidAlgorithm_notSupported() {
         assertThrows(NoSuchAlgorithmException.class, () -> {
             try {
                 String sm3 = "SM3";
@@ -120,7 +120,7 @@ public class FileHashStoreProtectedTest {
      * Check algorithm support for unsupported algorithm with lower cases
      */
     @Test
-    public void isValidAlgorithm_notSupportedLowerCase() throws NoSuchAlgorithmException {
+    public void isValidAlgorithm_notSupportedLowerCase() {
         assertThrows(NoSuchAlgorithmException.class, () -> {
             try {
                 // Must match string to reduce complexity, no string formatting
@@ -191,11 +191,11 @@ public class FileHashStoreProtectedTest {
      * Check that getPidHexDigest throws NoSuchAlgorithmException
      */
     @Test
-    public void getPidHexDigest_badAlgorithm() throws Exception {
+    public void getPidHexDigest_badAlgorithm() {
         for (String pid : testData.pidList) {
-            assertThrows(NoSuchAlgorithmException.class, () -> {
-                fileHashStore.getPidHexDigest(pid, "SM2");
-            });
+            assertThrows(
+                NoSuchAlgorithmException.class, () -> fileHashStore.getPidHexDigest(pid, "SM2")
+            );
 
         }
     }
@@ -312,7 +312,7 @@ public class FileHashStoreProtectedTest {
      * Verify putObject throws exception when checksum provided does not match
      */
     @Test
-    public void putObject_incorrectChecksumValue() throws Exception {
+    public void putObject_incorrectChecksumValue() {
         assertThrows(IllegalArgumentException.class, () -> {
             // Get test file to "upload"
             String pid = "jtao.1700.1";
@@ -329,7 +329,7 @@ public class FileHashStoreProtectedTest {
      * Verify putObject throws exception when checksum is empty and algorithm supported
      */
     @Test
-    public void putObject_emptyChecksumValue() throws Exception {
+    public void putObject_emptyChecksumValue() {
         assertThrows(IllegalArgumentException.class, () -> {
             // Get test file to "upload"
             String pid = "jtao.1700.1";
@@ -344,7 +344,7 @@ public class FileHashStoreProtectedTest {
      * Verify putObject throws exception when checksum is null and algorithm supported
      */
     @Test
-    public void putObject_nullChecksumValue() throws Exception {
+    public void putObject_nullChecksumValue() {
         assertThrows(IllegalArgumentException.class, () -> {
             // Get test file to "upload"
             String pid = "jtao.1700.1";
@@ -359,7 +359,7 @@ public class FileHashStoreProtectedTest {
      * Verify putObject throws exception when checksumAlgorithm is empty and checksum is supplied
      */
     @Test
-    public void putObject_emptyChecksumAlgorithmValue() throws Exception {
+    public void putObject_emptyChecksumAlgorithmValue() {
         assertThrows(IllegalArgumentException.class, () -> {
             // Get test file to "upload"
             String pid = "jtao.1700.1";
@@ -374,7 +374,7 @@ public class FileHashStoreProtectedTest {
      * Verify putObject throws exception when checksumAlgorithm is null and checksum supplied
      */
     @Test
-    public void putObject_nullChecksumAlgorithmValue() throws Exception {
+    public void putObject_nullChecksumAlgorithmValue() {
         assertThrows(IllegalArgumentException.class, () -> {
             // Get test file to "upload"
             String pid = "jtao.1700.1";
@@ -409,7 +409,7 @@ public class FileHashStoreProtectedTest {
      * Check that store object throws exception when incorrect file size provided
      */
     @Test
-    public void putObject_objSizeIncorrect() throws Exception {
+    public void putObject_objSizeIncorrect() {
         for (String pid : testData.pidList) {
             assertThrows(IllegalArgumentException.class, () -> {
                 String pidFormatted = pid.replace("/", "_");
@@ -431,7 +431,7 @@ public class FileHashStoreProtectedTest {
      * Verify putObject throws exception when storing a duplicate object
      */
     @Test
-    public void putObject_duplicateObject() throws Exception {
+    public void putObject_duplicateObject() {
         assertThrows(PidObjectExistsException.class, () -> {
             // Get test file to "upload"
             String pid = "jtao.1700.1";
@@ -450,7 +450,7 @@ public class FileHashStoreProtectedTest {
      * Verify putObject throws exception when unsupported additional algorithm provided
      */
     @Test
-    public void putObject_invalidAlgorithm() throws Exception {
+    public void putObject_invalidAlgorithm() {
         assertThrows(NoSuchAlgorithmException.class, () -> {
             // Get test file to "upload"
             String pid = "jtao.1700.1";
@@ -465,7 +465,7 @@ public class FileHashStoreProtectedTest {
      * Verify putObject throws exception when empty algorithm is supplied
      */
     @Test
-    public void putObject_emptyAlgorithm() throws Exception {
+    public void putObject_emptyAlgorithm() {
         assertThrows(IllegalArgumentException.class, () -> {
             // Get test file to "upload"
             String pid = "jtao.1700.1";
@@ -480,7 +480,7 @@ public class FileHashStoreProtectedTest {
      * Verify putObject throws exception when pid is empty
      */
     @Test
-    public void putObject_emptyPid() throws Exception {
+    public void putObject_emptyPid() {
         assertThrows(IllegalArgumentException.class, () -> {
             // Get test file to "upload"
             String pidEmpty = "";
@@ -496,7 +496,7 @@ public class FileHashStoreProtectedTest {
      * Verify putObject throws exception when pid is null
      */
     @Test
-    public void putObject_nullPid() throws Exception {
+    public void putObject_nullPid() {
         assertThrows(IllegalArgumentException.class, () -> {
             // Get test file to "upload"
             String pid = "jtao.1700.1";
@@ -511,7 +511,7 @@ public class FileHashStoreProtectedTest {
      * Verify putObject throws exception object is null
      */
     @Test
-    public void putObject_nullObject() throws Exception {
+    public void putObject_nullObject() {
         assertThrows(IllegalArgumentException.class, () -> {
             // Get test file to "upload"
             String pid = "jtao.1700.1";
@@ -659,7 +659,7 @@ public class FileHashStoreProtectedTest {
      * Check that exception is thrown when unsupported algorithm supplied
      */
     @Test
-    public void writeToTmpFileAndGenerateChecksums_invalidAlgo() throws Exception {
+    public void writeToTmpFileAndGenerateChecksums_invalidAlgo() {
         for (String pid : testData.pidList) {
             assertThrows(NoSuchAlgorithmException.class, () -> {
                 File newTmpFile = generateTemporaryFile();
@@ -696,7 +696,7 @@ public class FileHashStoreProtectedTest {
      * Confirm that FileAlreadyExistsException is thrown when target already exists
      */
     @Test
-    public void testMove_targetExists() throws Exception {
+    public void testMove_targetExists() {
         assertThrows(FileAlreadyExistsException.class, () -> {
             File newTmpFile = generateTemporaryFile();
             String targetString = tempFolder.toString() + "/testmove/test_tmp_object.tmp";
@@ -712,7 +712,7 @@ public class FileHashStoreProtectedTest {
      * Confirm that NullPointerException is thrown when entity is null
      */
     @Test
-    public void testMove_entityNull() throws Exception {
+    public void testMove_entityNull() {
         assertThrows(IllegalArgumentException.class, () -> {
             File newTmpFile = generateTemporaryFile();
             String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
@@ -725,7 +725,7 @@ public class FileHashStoreProtectedTest {
      * Confirm that FileAlreadyExistsException is thrown entity is empty
      */
     @Test
-    public void testMove_entityEmpty() throws Exception {
+    public void testMove_entityEmpty() {
         assertThrows(IllegalArgumentException.class, () -> {
             File newTmpFile = generateTemporaryFile();
             String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
@@ -738,7 +738,7 @@ public class FileHashStoreProtectedTest {
      * Confirm that FileAlreadyExistsException is thrown when entity is empty spaces
      */
     @Test
-    public void testMove_entityEmptySpaces() throws Exception {
+    public void testMove_entityEmptySpaces() {
         assertThrows(IllegalArgumentException.class, () -> {
             File newTmpFile = generateTemporaryFile();
             String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
@@ -777,11 +777,11 @@ public class FileHashStoreProtectedTest {
      * Test putMetadata throws exception when metadata is null
      */
     @Test
-    public void putMetadata_metadataNull() throws Exception {
+    public void putMetadata_metadataNull() {
         for (String pid : testData.pidList) {
-            assertThrows(IllegalArgumentException.class, () -> {
-                fileHashStore.putMetadata(null, pid, null);
-            });
+            assertThrows(
+                IllegalArgumentException.class, () -> fileHashStore.putMetadata(null, pid, null)
+            );
         }
     }
 
@@ -789,7 +789,7 @@ public class FileHashStoreProtectedTest {
      * Test putMetadata throws exception when pid is null
      */
     @Test
-    public void putMetadata_pidNull() throws Exception {
+    public void putMetadata_pidNull() {
         for (String pid : testData.pidList) {
             assertThrows(IllegalArgumentException.class, () -> {
                 String pidFormatted = pid.replace("/", "_");
@@ -808,7 +808,7 @@ public class FileHashStoreProtectedTest {
      * Test putMetadata throws exception when pid is empty
      */
     @Test
-    public void putMetadata_pidEmpty() throws Exception {
+    public void putMetadata_pidEmpty() {
         for (String pid : testData.pidList) {
             assertThrows(IllegalArgumentException.class, () -> {
                 String pidFormatted = pid.replace("/", "_");
@@ -827,7 +827,7 @@ public class FileHashStoreProtectedTest {
      * Test putMetadata throws exception when pid is empty with spaces
      */
     @Test
-    public void putMetadata_pidEmptySpaces() throws Exception {
+    public void putMetadata_pidEmptySpaces() {
         for (String pid : testData.pidList) {
             assertThrows(IllegalArgumentException.class, () -> {
                 String pidFormatted = pid.replace("/", "_");

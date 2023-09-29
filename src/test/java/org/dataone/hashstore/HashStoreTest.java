@@ -69,7 +69,7 @@ public class HashStoreTest {
      * Check that getHashStore throws exception when classPackage is null
      */
     @Test
-    public void hashStore_classPackageNull() throws Exception {
+    public void hashStore_classPackageNull() {
         assertThrows(HashStoreFactoryException.class, () -> {
             Properties storeProperties = new Properties();
             storeProperties.setProperty("storePath", "/test");
@@ -88,7 +88,7 @@ public class HashStoreTest {
      * Check that getHashStore throws exception when classPackage is not found
      */
     @Test
-    public void hashStore_classPackageNotFound() throws Exception {
+    public void hashStore_classPackageNotFound() {
         assertThrows(HashStoreFactoryException.class, () -> {
             String classPackage = "org.dataone.hashstore.filehashstore.AnotherHashStore";
 
@@ -110,7 +110,7 @@ public class HashStoreTest {
      * Check that getHashStore throws exception when storeProperties is null
      */
     @Test
-    public void hashStore_nullStoreProperties() throws Exception {
+    public void hashStore_nullStoreProperties() {
         assertThrows(HashStoreFactoryException.class, () -> {
             String classPackage = "org.dataone.hashstore.filehashstore.FileHashStore";
             hashStore = HashStoreFactory.getHashStore(classPackage, null);
