@@ -108,7 +108,7 @@ public class FileHashStoreUtility {
     /**
      * Checks whether a given long integer is greater than 0
      *
-     * @param object Object to check
+     * @param longInt Object to check
      * @param method Calling method
      * @throws IllegalArgumentException If longInt is less than 0
      */
