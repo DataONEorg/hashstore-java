@@ -241,7 +241,10 @@ public class HashStoreClient {
                     for (int i = 1; i <= 10; ++i) {
                         Map<String, String> resultObj = new HashMap<>();
                         resultObj.put("pid", "douemptyfile0.5");
-                        resultObj.put("path", "/Users/doumok/Code/hashstore/douhsRF_0.5_GB.bin");
+                        resultObj.put(
+                            "path",
+                            "/Users/doumok/Code/testing/hashstore_testfiles/douhsRF_0.5_GB.bin"
+                        );
                         resultObj.put(
                             "checksum",
                             "de1faf7112541ca8cfaf95833fd0097909cc70e4d9eb9c8c961c77a9a7656c3a"
@@ -250,7 +253,10 @@ public class HashStoreClient {
                         resultObjList.add(resultObj);
                         Map<String, String> resultObjTwo = new HashMap<>();
                         resultObjTwo.put("pid", "douemptyfile1.5");
-                        resultObjTwo.put("path", "/Users/doumok/Code/hashstore/douhsRF_1.5_GB.bin");
+                        resultObjTwo.put(
+                            "path",
+                            "/Users/doumok/Code/testing/hashstore_testfiles/douhsRF_1.5_GB.bin"
+                        );
                         resultObjTwo.put(
                             "checksum",
                             "ea4c223f4a2ff6ed3d94a291ad372e2d9851253d5f0e491ffaa18675e434e52a"
@@ -260,7 +266,10 @@ public class HashStoreClient {
                         if (i == 1) {
                             Map<String, String> robj = new HashMap<>();
                             robj.put("pid", "douemptyfile2");
-                            robj.put("path", "/Users/doumok/Code/hashstore/douhsRF_2_GB.bin");
+                            robj.put(
+                                "path",
+                                "/Users/doumok/Code/testing/hashstore_testfiles/douhsRF_2_GB.bin"
+                            );
                             robj.put(
                                 "checksum",
                                 "2b902b985371a266b59642b7adea0fd7817fd92cf32dd30848b3964c0af61469"
@@ -269,7 +278,10 @@ public class HashStoreClient {
                             resultObjList.add(robj);
                             Map<String, String> robjtwo = new HashMap<>();
                             robjtwo.put("pid", "douemptyfile2.5");
-                            robjtwo.put("path", "/Users/doumok/Code/hashstore/douhsRF_2.5_GB.bin");
+                            robjtwo.put(
+                                "path",
+                                "/Users/doumok/Code/testing/hashstore_testfiles/douhsRF_2.5_GB.bin"
+                            );
                             robjtwo.put(
                                 "checksum",
                                 "437e8160bb7f81ae5a1a38445df619bb4f39da9ab08b94a2b4e6c00446af9fbc"
@@ -290,12 +302,12 @@ public class HashStoreClient {
                             String checksumAlgo = item.get("checksum_algorithm");
 
                             // Store object
-                            // System.out.println("Storing object for guid: " + guid);
-                            // hashStore.storeObject(objStream, guid, checksum, checksumAlgo);
+                            System.out.println("Storing object for guid: " + guid);
+                            hashStore.storeObject(objStream, guid, checksum, checksumAlgo);
 
                             // Delete object
-                            System.out.println("Deleting object for guid: " + guid);
-                            hashStore.deleteObject(guid);
+                            // System.out.println("Deleting object for guid: " + guid);
+                            // hashStore.deleteObject(guid);
 
                         } catch (PidObjectExistsException poee) {
                             String errMsg = "Unexpected Error: " + poee.fillInStackTrace();
