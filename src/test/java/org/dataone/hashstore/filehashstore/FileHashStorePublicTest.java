@@ -75,17 +75,15 @@ public class FileHashStorePublicTest {
      * Test constructor invalid depth value
      */
     @Test
-    public void constructor_nullProperties() throws Exception {
-        assertThrows(IllegalArgumentException.class, () -> {
-            new FileHashStore(null);
-        });
+    public void constructor_nullProperties() {
+        assertThrows(IllegalArgumentException.class, () -> new FileHashStore(null));
     }
 
     /**
      * Test constructor null store path
      */
     @Test
-    public void constructor_nullStorePath() throws Exception {
+    public void constructor_nullStorePath() {
         assertThrows(NullPointerException.class, () -> {
             Properties storeProperties = new Properties();
             storeProperties.setProperty("storePath", null);
@@ -104,7 +102,7 @@ public class FileHashStorePublicTest {
      * Test constructor invalid depth property value
      */
     @Test
-    public void constructor_illegalDepthArg() throws Exception {
+    public void constructor_illegalDepthArg() {
         assertThrows(IllegalArgumentException.class, () -> {
             Properties storeProperties = new Properties();
             storeProperties.setProperty("storePath", rootDirectory.toString());
@@ -123,7 +121,7 @@ public class FileHashStorePublicTest {
      * Test constructor invalid width property value
      */
     @Test
-    public void constructor_illegalWidthArg() throws Exception {
+    public void constructor_illegalWidthArg() {
         assertThrows(IllegalArgumentException.class, () -> {
             Properties storeProperties = new Properties();
             storeProperties.setProperty("storePath", rootDirectory.toString());
@@ -142,7 +140,7 @@ public class FileHashStorePublicTest {
      * Test constructor unsupported algorithm property value
      */
     @Test
-    public void constructor_illegalAlgorithmArg() throws Exception {
+    public void constructor_illegalAlgorithmArg() {
         assertThrows(IllegalArgumentException.class, () -> {
             Properties storeProperties = new Properties();
             storeProperties.setProperty("storePath", rootDirectory.toString());
@@ -161,7 +159,7 @@ public class FileHashStorePublicTest {
      * Test constructor empty algorithm property value throws exception
      */
     @Test
-    public void constructor_emptyAlgorithmArg() throws Exception {
+    public void constructor_emptyAlgorithmArg() {
         assertThrows(IllegalArgumentException.class, () -> {
             Properties storeProperties = new Properties();
             storeProperties.setProperty("storePath", rootDirectory.toString());
@@ -180,7 +178,7 @@ public class FileHashStorePublicTest {
      * Test constructor algorithm property value with empty spaces throws exception
      */
     @Test
-    public void constructor_emptySpacesAlgorithmArg() throws Exception {
+    public void constructor_emptySpacesAlgorithmArg() {
         assertThrows(IllegalArgumentException.class, () -> {
             Properties storeProperties = new Properties();
             storeProperties.setProperty("storePath", rootDirectory.toString());
@@ -199,7 +197,7 @@ public class FileHashStorePublicTest {
      * Test constructor empty metadata namespace property value throws exception
      */
     @Test
-    public void constructor_emptyMetadataNameSpaceArg() throws Exception {
+    public void constructor_emptyMetadataNameSpaceArg() {
         assertThrows(IllegalArgumentException.class, () -> {
             Properties storeProperties = new Properties();
             storeProperties.setProperty("storePath", rootDirectory.toString());
@@ -216,7 +214,7 @@ public class FileHashStorePublicTest {
      * Test constructor metadata namespace property value with empty spaces
      */
     @Test
-    public void constructor_emptySpacesMetadataNameSpaceArg() throws Exception {
+    public void constructor_emptySpacesMetadataNameSpaceArg() {
         assertThrows(IllegalArgumentException.class, () -> {
             Properties storeProperties = new Properties();
             storeProperties.setProperty("storePath", rootDirectory.toString());
@@ -233,7 +231,7 @@ public class FileHashStorePublicTest {
      * Confirm that exception is thrown when storeDirectory property value is null
      */
     @Test
-    public void initDefaultStore_directoryNull() throws Exception {
+    public void initDefaultStore_directoryNull() {
         assertThrows(NullPointerException.class, () -> {
             Properties storeProperties = new Properties();
             storeProperties.setProperty("storePath", null);
@@ -330,7 +328,7 @@ public class FileHashStorePublicTest {
      * instantiating FileHashStore
      */
     @Test
-    public void testExistingHashStoreConfiguration_diffAlgorithm() throws Exception {
+    public void testExistingHashStoreConfiguration_diffAlgorithm() {
         assertThrows(IllegalArgumentException.class, () -> {
             Properties storeProperties = new Properties();
             storeProperties.setProperty("storePath", rootDirectory.toString());
@@ -350,7 +348,7 @@ public class FileHashStorePublicTest {
      * instantiating FileHashStore
      */
     @Test
-    public void testExistingHashStoreConfiguration_diffDepth() throws Exception {
+    public void testExistingHashStoreConfiguration_diffDepth() {
         assertThrows(IllegalArgumentException.class, () -> {
             Properties storeProperties = new Properties();
             storeProperties.setProperty("storePath", rootDirectory.toString());
@@ -370,7 +368,7 @@ public class FileHashStorePublicTest {
      * instantiating FileHashStore
      */
     @Test
-    public void testExistingHashStoreConfiguration_diffWidth() throws Exception {
+    public void testExistingHashStoreConfiguration_diffWidth() {
         assertThrows(IllegalArgumentException.class, () -> {
             Properties storeProperties = new Properties();
             storeProperties.setProperty("storePath", rootDirectory.toString());
@@ -390,7 +388,7 @@ public class FileHashStorePublicTest {
      * when instantiating FileHashStore
      */
     @Test
-    public void testExistingHashStoreConfiguration_diffMetadataNamespace() throws Exception {
+    public void testExistingHashStoreConfiguration_diffMetadataNamespace() {
         assertThrows(IllegalArgumentException.class, () -> {
             Properties storeProperties = new Properties();
             storeProperties.setProperty("storePath", rootDirectory.toString());
@@ -410,7 +408,7 @@ public class FileHashStorePublicTest {
      * 'hashstore.yaml'
      */
     @Test
-    public void testExistingHashStoreConfiguration_missingYaml() throws Exception {
+    public void testExistingHashStoreConfiguration_missingYaml() {
         assertThrows(IllegalStateException.class, () -> {
             // Create separate store
             Path newStoreDirectory = rootDirectory.resolve("test");

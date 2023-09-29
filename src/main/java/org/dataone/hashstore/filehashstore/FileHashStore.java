@@ -1025,9 +1025,26 @@ public class FileHashStore implements HashStore {
         // Generate tmp file and write to it
         logFileHashStore.debug("FileHashStore.putObject - Generating tmpFile");
         File tmpFile = generateTmpFile("tmp", OBJECT_TMP_FILE_DIRECTORY);
-        Map<String, String> hexDigests = writeToTmpFileAndGenerateChecksums(
-            tmpFile, object, additionalAlgorithm, checksumAlgorithm
-        );
+        Map<String, String> hexDigests;
+        try {
+            hexDigests = writeToTmpFileAndGenerateChecksums(
+                tmpFile, object, additionalAlgorithm, checksumAlgorithm
+            );
+        } catch (Exception ge) {
+            // If the process to write to the tmpFile is interrupted for any reason,
+            // we will delete the tmpFile. 
+            boolean deleteStatus = tmpFile.delete();
+            String errMsg =
+                "FileHashStore.putObject - Unexpected Exception while storing object for: " + pid;
+            if (deleteStatus) {
+                errMsg = errMsg + ". Deleting temp file: " + tmpFile + ". Aborting request.";
+            } else {
+                errMsg = errMsg + ". Failed to delete temp file: " + tmpFile
+                    + ". Aborting request.";
+            }
+            logFileHashStore.error(errMsg);
+            throw new IOException(errMsg);
+        }
         long storedObjFileSize = Files.size(Paths.get(tmpFile.toString()));
 
         // Validate object if checksum and checksum algorithm is passed
@@ -1277,6 +1294,7 @@ public class FileHashStore implements HashStore {
             logFileHashStore.trace(
                 "FileHashStore.generateTmpFile - tmpFile generated: " + newFile.getAbsolutePath()
             );
+            newFile.deleteOnExit();
             return newFile;
 
         } catch (IOException ioe) {

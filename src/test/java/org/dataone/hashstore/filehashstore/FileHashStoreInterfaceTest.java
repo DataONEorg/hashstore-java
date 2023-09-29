@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -163,7 +164,7 @@ public class FileHashStoreInterfaceTest {
      * Check that store object throws exception when object is null
      */
     @Test
-    public void storeObject_null() throws Exception {
+    public void storeObject_null() {
         assertThrows(IllegalArgumentException.class, () -> {
             String pid = "j.tao.1700.1";
             fileHashStore.storeObject(null, pid, null, null, null, 0);
@@ -174,7 +175,7 @@ public class FileHashStoreInterfaceTest {
      * Check that store object throws exception when pid is null
      */
     @Test
-    public void storeObject_nullPid() throws Exception {
+    public void storeObject_nullPid() {
         for (String pid : testData.pidList) {
             assertThrows(IllegalArgumentException.class, () -> {
                 String pidFormatted = pid.replace("/", "_");
@@ -190,7 +191,7 @@ public class FileHashStoreInterfaceTest {
      * Check that store object throws exception when pid is empty
      */
     @Test
-    public void storeObject_emptyPid() throws Exception {
+    public void storeObject_emptyPid() {
         for (String pid : testData.pidList) {
             assertThrows(IllegalArgumentException.class, () -> {
                 String pidFormatted = pid.replace("/", "_");
@@ -302,7 +303,7 @@ public class FileHashStoreInterfaceTest {
      * Verify exception thrown when checksum provided does not match
      */
     @Test
-    public void storeObject_incorrectChecksumValue() throws Exception {
+    public void storeObject_incorrectChecksumValue() {
         assertThrows(IllegalArgumentException.class, () -> {
             // Get test file to "upload"
             String pid = "jtao.1700.1";
@@ -320,7 +321,7 @@ public class FileHashStoreInterfaceTest {
      * Verify exception thrown when checksum is empty and algorithm supported
      */
     @Test
-    public void storeObject_emptyChecksumValue() throws Exception {
+    public void storeObject_emptyChecksumValue() {
         assertThrows(IllegalArgumentException.class, () -> {
             // Get test file to "upload"
             String pid = "jtao.1700.1";
@@ -337,7 +338,7 @@ public class FileHashStoreInterfaceTest {
      * Verify exception thrown when checksum is null and algorithm supported
      */
     @Test
-    public void storeObject_nullChecksumValue() throws Exception {
+    public void storeObject_nullChecksumValue() {
         assertThrows(IllegalArgumentException.class, () -> {
             // Get single test file to "upload"
             String pid = "jtao.1700.1";
@@ -372,7 +373,7 @@ public class FileHashStoreInterfaceTest {
      * Check that store object throws exception when incorrect file size provided
      */
     @Test
-    public void storeObject_objSizeIncorrect() throws Exception {
+    public void storeObject_objSizeIncorrect() {
         for (String pid : testData.pidList) {
             assertThrows(IllegalArgumentException.class, () -> {
                 String pidFormatted = pid.replace("/", "_");
@@ -394,7 +395,7 @@ public class FileHashStoreInterfaceTest {
      * Verify exception thrown when unsupported additional algorithm provided
      */
     @Test
-    public void storeObject_invalidAlgorithm() throws Exception {
+    public void storeObject_invalidAlgorithm() {
         assertThrows(NoSuchAlgorithmException.class, () -> {
             // Get single test file to "upload"
             String pid = "jtao.1700.1";
@@ -409,7 +410,7 @@ public class FileHashStoreInterfaceTest {
      * Check that store object throws FileAlreadyExists error when storing duplicate object
      */
     @Test
-    public void storeObject_duplicate() throws Exception {
+    public void storeObject_duplicate() {
         for (String pid : testData.pidList) {
             assertThrows(PidObjectExistsException.class, () -> {
                 String pidFormatted = pid.replace("/", "_");
@@ -458,6 +459,50 @@ public class FileHashStoreInterfaceTest {
         Path objCidAbsPath = getObjectAbsPath(objCid);
         assertTrue(Files.exists(objCidAbsPath));
 
+    }
+
+    /**
+     * Tests that temporary objects that are being worked on while storeObject is in
+     * progress and gets interrupted are deleted.
+     */
+    @Test
+    public void storeObject_interruptProcess() throws Exception {
+        long fileSize = 1L * 1024L * 1024L * 1024L; // 1GB
+        // Get tmp directory to initially store test file
+        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+        Path testFilePath = storePath.resolve("random_file.bin");
+
+        // Generate a random file with the specified size
+        try (FileOutputStream fileOutputStream = new FileOutputStream(testFilePath.toString())) {
+            FileChannel fileChannel = fileOutputStream.getChannel();
+            FileLock lock = fileChannel.lock();
+            fileChannel.position(fileSize - 1);
+            fileChannel.write(java.nio.ByteBuffer.wrap(new byte[]{0}));
+            lock.release();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+            throw ioe;
+        }
+
+        Thread toInterrupt = new Thread(() -> {
+            try {
+                InputStream dataStream = Files.newInputStream(testFilePath);
+                String pid = "dou.sparsefile.1";
+                fileHashStore.storeObject(dataStream, pid, null, null, null, 0);
+            } catch (IOException | NoSuchAlgorithmException ioe) {
+                ioe.printStackTrace();
+            }
+        });
+
+        toInterrupt.start();
+        Thread.sleep(5000);
+        toInterrupt.interrupt();
+        toInterrupt.join();
+
+        // Confirm there are no files in 'objects/tmp' directory
+        File[] files = storePath.resolve("objects/tmp").toFile().listFiles();
+        assert files != null;
+        assertEquals(0, files.length);
     }
 
     /**
@@ -733,11 +778,11 @@ public class FileHashStoreInterfaceTest {
      * Test storeMetadata throws exception when metadata is null
      */
     @Test
-    public void storeMetadata_metadataNull() throws Exception {
+    public void storeMetadata_metadataNull() {
         for (String pid : testData.pidList) {
-            assertThrows(IllegalArgumentException.class, () -> {
-                fileHashStore.storeMetadata(null, pid, null);
-            });
+            assertThrows(
+                IllegalArgumentException.class, () -> fileHashStore.storeMetadata(null, pid, null)
+            );
         }
     }
 
@@ -745,7 +790,7 @@ public class FileHashStoreInterfaceTest {
      * Test storeMetadata throws exception when pid is null
      */
     @Test
-    public void storeMetadata_pidNull() throws Exception {
+    public void storeMetadata_pidNull() {
         for (String pid : testData.pidList) {
             assertThrows(IllegalArgumentException.class, () -> {
                 String pidFormatted = pid.replace("/", "_");
@@ -764,7 +809,7 @@ public class FileHashStoreInterfaceTest {
      * Test storeMetadata throws exception when pid is empty
      */
     @Test
-    public void storeMetadata_pidEmpty() throws Exception {
+    public void storeMetadata_pidEmpty() {
         for (String pid : testData.pidList) {
             assertThrows(IllegalArgumentException.class, () -> {
                 String pidFormatted = pid.replace("/", "_");
@@ -783,7 +828,7 @@ public class FileHashStoreInterfaceTest {
      * Test storeMetadata throws exception when pid is empty with spaces
      */
     @Test
-    public void storeMetadata_pidEmptySpaces() throws Exception {
+    public void storeMetadata_pidEmptySpaces() {
         for (String pid : testData.pidList) {
             assertThrows(IllegalArgumentException.class, () -> {
                 String pidFormatted = pid.replace("/", "_");
@@ -896,7 +941,7 @@ public class FileHashStoreInterfaceTest {
      * Check that retrieveObject throws exception when pid is null
      */
     @Test
-    public void retrieveObject_pidNull() throws Exception {
+    public void retrieveObject_pidNull() {
         assertThrows(IllegalArgumentException.class, () -> {
             InputStream pidInputStream = fileHashStore.retrieveObject(null);
             pidInputStream.close();
@@ -907,7 +952,7 @@ public class FileHashStoreInterfaceTest {
      * Check that retrieveObject throws exception when pid is empty
      */
     @Test
-    public void retrieveObject_pidEmpty() throws Exception {
+    public void retrieveObject_pidEmpty() {
         assertThrows(IllegalArgumentException.class, () -> {
             InputStream pidInputStream = fileHashStore.retrieveObject("");
             pidInputStream.close();
@@ -918,7 +963,7 @@ public class FileHashStoreInterfaceTest {
      * Check that retrieveObject throws exception when pid is empty spaces
      */
     @Test
-    public void retrieveObject_pidEmptySpaces() throws Exception {
+    public void retrieveObject_pidEmptySpaces() {
         assertThrows(IllegalArgumentException.class, () -> {
             InputStream pidInputStream = fileHashStore.retrieveObject("      ");
             pidInputStream.close();
@@ -929,7 +974,7 @@ public class FileHashStoreInterfaceTest {
      * Check that retrieveObject throws exception when file is not found
      */
     @Test
-    public void retrieveObject_pidNotFound() throws Exception {
+    public void retrieveObject_pidNotFound() {
         assertThrows(FileNotFoundException.class, () -> {
             InputStream pidInputStream = fileHashStore.retrieveObject("dou.2023.hs.1");
             pidInputStream.close();
@@ -1028,7 +1073,7 @@ public class FileHashStoreInterfaceTest {
      * Check that retrieveMetadata throws exception when pid is null
      */
     @Test
-    public void retrieveMetadata_pidNull() throws Exception {
+    public void retrieveMetadata_pidNull() {
         assertThrows(IllegalArgumentException.class, () -> {
             String storeFormatId = (String) fhsProperties.get("storeMetadataNamespace");
             InputStream pidInputStream = fileHashStore.retrieveMetadata(null, storeFormatId);
@@ -1040,7 +1085,7 @@ public class FileHashStoreInterfaceTest {
      * Check that retrieveMetadata throws exception when pid is empty
      */
     @Test
-    public void retrieveMetadata_pidEmpty() throws Exception {
+    public void retrieveMetadata_pidEmpty() {
         assertThrows(IllegalArgumentException.class, () -> {
             String storeFormatId = (String) fhsProperties.get("storeMetadataNamespace");
             InputStream pidInputStream = fileHashStore.retrieveMetadata("", storeFormatId);
@@ -1052,7 +1097,7 @@ public class FileHashStoreInterfaceTest {
      * Check that retrieveMetadata throws exception when pid is empty spaces
      */
     @Test
-    public void retrieveMetadata_pidEmptySpaces() throws Exception {
+    public void retrieveMetadata_pidEmptySpaces() {
         assertThrows(IllegalArgumentException.class, () -> {
             String storeFormatId = (String) fhsProperties.get("storeMetadataNamespace");
             InputStream pidInputStream = fileHashStore.retrieveMetadata("      ", storeFormatId);
@@ -1064,7 +1109,7 @@ public class FileHashStoreInterfaceTest {
      * Check that retrieveMetadata throws exception when format is null
      */
     @Test
-    public void retrieveMetadata_formatNull() throws Exception {
+    public void retrieveMetadata_formatNull() {
         assertThrows(IllegalArgumentException.class, () -> {
             InputStream pidInputStream = fileHashStore.retrieveMetadata("dou.2023.hs.1", null);
             pidInputStream.close();
@@ -1075,7 +1120,7 @@ public class FileHashStoreInterfaceTest {
      * Check that retrieveMetadata throws exception when format is empty
      */
     @Test
-    public void retrieveMetadata_formatEmpty() throws Exception {
+    public void retrieveMetadata_formatEmpty() {
         assertThrows(IllegalArgumentException.class, () -> {
             InputStream pidInputStream = fileHashStore.retrieveMetadata("dou.2023.hs.1", "");
             pidInputStream.close();
@@ -1086,7 +1131,7 @@ public class FileHashStoreInterfaceTest {
      * Check that retrieveMetadata throws exception when format is empty spaces
      */
     @Test
-    public void retrieveMetadata_formatEmptySpaces() throws Exception {
+    public void retrieveMetadata_formatEmptySpaces() {
         assertThrows(IllegalArgumentException.class, () -> {
             InputStream pidInputStream = fileHashStore.retrieveMetadata("dou.2023.hs.1", "      ");
             pidInputStream.close();
@@ -1097,7 +1142,7 @@ public class FileHashStoreInterfaceTest {
      * Check that retrieveMetadata throws exception when file is not found
      */
     @Test
-    public void retrieveMetadata_pidNotFound() throws Exception {
+    public void retrieveMetadata_pidNotFound() {
         assertThrows(FileNotFoundException.class, () -> {
             String storeFormatId = (String) fhsProperties.get("storeMetadataNamespace");
             InputStream pidInputStream = fileHashStore.retrieveMetadata(
@@ -1192,40 +1237,34 @@ public class FileHashStoreInterfaceTest {
      * Confirm that deleteObject throws exception when associated pid obj not found
      */
     @Test
-    public void deleteObject_pidNotFound() throws Exception {
-        assertThrows(FileNotFoundException.class, () -> {
-            fileHashStore.deleteObject("dou.2023.hashstore.1");
-        });
+    public void deleteObject_pidNotFound() {
+        assertThrows(
+            FileNotFoundException.class, () -> fileHashStore.deleteObject("dou.2023.hashstore.1")
+        );
     }
 
     /**
      * Confirm that deleteObject throws exception when pid is null
      */
     @Test
-    public void deleteObject_pidNull() throws Exception {
-        assertThrows(IllegalArgumentException.class, () -> {
-            fileHashStore.deleteObject(null);
-        });
+    public void deleteObject_pidNull() {
+        assertThrows(IllegalArgumentException.class, () -> fileHashStore.deleteObject(null));
     }
 
     /**
      * Confirm that deleteObject throws exception when pid is empty
      */
     @Test
-    public void deleteObject_pidEmpty() throws Exception {
-        assertThrows(IllegalArgumentException.class, () -> {
-            fileHashStore.deleteObject("");
-        });
+    public void deleteObject_pidEmpty() {
+        assertThrows(IllegalArgumentException.class, () -> fileHashStore.deleteObject(""));
     }
 
     /**
      * Confirm that deleteObject throws exception when pid is empty spaces
      */
     @Test
-    public void deleteObject_pidEmptySpaces() throws Exception {
-        assertThrows(IllegalArgumentException.class, () -> {
-            fileHashStore.deleteObject("      ");
-        });
+    public void deleteObject_pidEmptySpaces() {
+        assertThrows(IllegalArgumentException.class, () -> fileHashStore.deleteObject("      "));
     }
 
     /**
@@ -1288,7 +1327,7 @@ public class FileHashStoreInterfaceTest {
      * Confirm that deleteMetadata throws exception when associated pid obj not found
      */
     @Test
-    public void deleteMetadata_pidNotFound() throws Exception {
+    public void deleteMetadata_pidNotFound() {
         assertThrows(FileNotFoundException.class, () -> {
             String formatId = "http://hashstore.tests/types/v1.0";
             fileHashStore.deleteMetadata("dou.2023.hashstore.1", formatId);
@@ -1299,7 +1338,7 @@ public class FileHashStoreInterfaceTest {
      * Confirm that deleteMetadata throws exception when pid is null
      */
     @Test
-    public void deleteMetadata_pidNull() throws Exception {
+    public void deleteMetadata_pidNull() {
         assertThrows(IllegalArgumentException.class, () -> {
             String formatId = "http://hashstore.tests/types/v1.0";
             fileHashStore.deleteMetadata(null, formatId);
@@ -1310,7 +1349,7 @@ public class FileHashStoreInterfaceTest {
      * Confirm that deleteMetadata throws exception when pid is empty
      */
     @Test
-    public void deleteMetadata_pidEmpty() throws Exception {
+    public void deleteMetadata_pidEmpty() {
         assertThrows(IllegalArgumentException.class, () -> {
             String formatId = "http://hashstore.tests/types/v1.0";
             fileHashStore.deleteMetadata("", formatId);
@@ -1321,7 +1360,7 @@ public class FileHashStoreInterfaceTest {
      * Confirm that deleteMetadata throws exception when pid is empty spaces
      */
     @Test
-    public void deleteMetadata_pidEmptySpaces() throws Exception {
+    public void deleteMetadata_pidEmptySpaces() {
         assertThrows(IllegalArgumentException.class, () -> {
             String formatId = "http://hashstore.tests/types/v1.0";
             fileHashStore.deleteMetadata("      ", formatId);
@@ -1332,7 +1371,7 @@ public class FileHashStoreInterfaceTest {
      * Confirm that deleteMetadata throws exception when formatId is null
      */
     @Test
-    public void deleteMetadata_formatIdNull() throws Exception {
+    public void deleteMetadata_formatIdNull() {
         assertThrows(IllegalArgumentException.class, () -> {
             String pid = "dou.2023.hashstore.1";
             fileHashStore.deleteMetadata(pid, null);
@@ -1343,7 +1382,7 @@ public class FileHashStoreInterfaceTest {
      * Confirm that deleteMetadata throws exception when formatId is empty
      */
     @Test
-    public void deleteMetadata_formatIdEmpty() throws Exception {
+    public void deleteMetadata_formatIdEmpty() {
         assertThrows(IllegalArgumentException.class, () -> {
             String pid = "dou.2023.hashstore.1";
             fileHashStore.deleteMetadata(pid, "");
@@ -1354,7 +1393,7 @@ public class FileHashStoreInterfaceTest {
      * Confirm that deleteMetadata throws exception when formatId is empty spaces
      */
     @Test
-    public void deleteMetadata_formatIdEmptySpaces() throws Exception {
+    public void deleteMetadata_formatIdEmptySpaces() {
         assertThrows(IllegalArgumentException.class, () -> {
             String pid = "dou.2023.hashstore.1";
             fileHashStore.deleteMetadata(pid, "     ");
@@ -1387,7 +1426,7 @@ public class FileHashStoreInterfaceTest {
      * Confirm getHexDigest throws exception when file is not found
      */
     @Test
-    public void getHexDigest_pidNotFound() throws Exception {
+    public void getHexDigest_pidNotFound() {
         for (String pid : testData.pidList) {
             assertThrows(FileNotFoundException.class, () -> {
                 String pidFormatted = pid.replace("/", "_");
@@ -1400,37 +1439,37 @@ public class FileHashStoreInterfaceTest {
      * Confirm getHexDigest throws exception when file is not found
      */
     @Test
-    public void getHexDigest_pidNull() throws Exception {
-        assertThrows(IllegalArgumentException.class, () -> {
-            fileHashStore.getHexDigest(null, "SHA-256");
-        });
+    public void getHexDigest_pidNull() {
+        assertThrows(
+            IllegalArgumentException.class, () -> fileHashStore.getHexDigest(null, "SHA-256")
+        );
     }
 
     /**
      * Confirm getHexDigest throws exception when file is not found
      */
     @Test
-    public void getHexDigest_pidEmpty() throws Exception {
-        assertThrows(IllegalArgumentException.class, () -> {
-            fileHashStore.getHexDigest("", "SHA-256");
-        });
+    public void getHexDigest_pidEmpty() {
+        assertThrows(
+            IllegalArgumentException.class, () -> fileHashStore.getHexDigest("", "SHA-256")
+        );
     }
 
     /**
      * Confirm getHexDigest throws exception when file is not found
      */
     @Test
-    public void getHexDigest_pidEmptySpaces() throws Exception {
-        assertThrows(IllegalArgumentException.class, () -> {
-            fileHashStore.getHexDigest("      ", "SHA-256");
-        });
+    public void getHexDigest_pidEmptySpaces() {
+        assertThrows(
+            IllegalArgumentException.class, () -> fileHashStore.getHexDigest("      ", "SHA-256")
+        );
     }
 
     /**
      * Confirm getHexDigest throws exception when unsupported algorithm supplied
      */
     @Test
-    public void getHexDigest_badAlgo() throws Exception {
+    public void getHexDigest_badAlgo() {
         for (String pid : testData.pidList) {
             assertThrows(NoSuchAlgorithmException.class, () -> {
                 // Store object first
