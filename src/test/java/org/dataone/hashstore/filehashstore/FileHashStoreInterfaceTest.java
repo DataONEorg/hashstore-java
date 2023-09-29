@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -458,6 +459,51 @@ public class FileHashStoreInterfaceTest {
         Path objCidAbsPath = getObjectAbsPath(objCid);
         assertTrue(Files.exists(objCidAbsPath));
 
+    }
+
+    /**
+     * Tests that temporary objects that are being worked on while storeObject is in
+     * progress and gets interrupted are deleted.
+     */
+    @Test
+    public void storeObject_interruptProcess() throws Exception {
+        long fileSize = 1L * 1024L * 1024L * 1024L; // 1GB
+        // Get tmp directory to initially store test file
+        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+        Path testFilePath = storePath.resolve("random_file.bin");
+
+        // Generate a random file with the specified size
+        try (FileOutputStream fileOutputStream = new FileOutputStream(testFilePath.toString())) {
+            FileChannel fileChannel = fileOutputStream.getChannel();
+            FileLock lock = fileChannel.lock();
+            fileChannel.position(fileSize - 1);
+            fileChannel.write(java.nio.ByteBuffer.wrap(new byte[]{0}));
+            lock.release();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+            throw ioe;
+        }
+
+        Thread toInterrupt = new Thread(() -> {
+            try {
+                InputStream dataStream = Files.newInputStream(testFilePath);
+                String pid = "dou.sparsefile.1";
+                fileHashStore.storeObject(dataStream, pid, null, null, null, 0);
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
+            } catch (NoSuchAlgorithmException nsae) {
+                nsae.printStackTrace();
+            }
+        });
+
+        toInterrupt.start();
+        Thread.sleep(5000);
+        toInterrupt.interrupt();
+        toInterrupt.join();
+
+        // Confirm there are no files in 'objects/tmp' directory
+        File[] files = storePath.resolve("objects/tmp").toFile().listFiles();
+        assertTrue(files.length == 0);
     }
 
     /**
