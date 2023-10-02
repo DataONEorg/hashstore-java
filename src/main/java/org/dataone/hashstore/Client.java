@@ -214,6 +214,8 @@ public class Client {
                     );
                     metadataStream.close();
                     System.out.println(metadataPreview);
+                    String retrieveMetadataMsg = "...\n<-- Truncated for Display Purposes -->";
+                    System.out.println(retrieveMetadataMsg);
 
                 } else if (cmd.hasOption("deleteobject")) {
                     String pid = cmd.getOptionValue("pid");
