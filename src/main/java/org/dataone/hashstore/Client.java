@@ -383,8 +383,7 @@ public class Client {
 
         try {
             HashMap<?, ?> hashStoreYamlProperties = om.readValue(hashStoreYamlFile, HashMap.class);
-            String yamlStorePath = (String) hashStoreYamlProperties.get("store_path");
-            hsProperties.put("storePath", Paths.get(yamlStorePath));
+            hsProperties.put("storePath", storePath.toString());
             hsProperties.put("storeDepth", hashStoreYamlProperties.get("store_depth"));
             hsProperties.put("storeWidth", hashStoreYamlProperties.get("store_width"));
             hsProperties.put("storeAlgorithm", hashStoreYamlProperties.get("store_algorithm"));
@@ -413,7 +412,7 @@ public class Client {
         // Load properties and get HashStore
         HashMap<String, Object> hsProperties = loadHashStoreYaml(storePath);
         Properties storeProperties = new Properties();
-        storeProperties.setProperty("storePath", hsProperties.get("storePath").toString());
+        storeProperties.setProperty("storePath", storePath.toString());
         storeProperties.setProperty("storeDepth", hsProperties.get("storeDepth").toString());
         storeProperties.setProperty("storeWidth", hsProperties.get("storeWidth").toString());
         storeProperties.setProperty(
