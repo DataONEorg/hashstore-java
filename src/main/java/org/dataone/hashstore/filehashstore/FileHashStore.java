@@ -158,8 +158,7 @@ public class FileHashStore implements HashStore {
         Path hashstoreYaml = STORE_ROOT.resolve("hashstore.yaml");
         if (!Files.exists(hashstoreYaml)) {
             String hashstoreYamlContent = buildHashStoreYamlString(
-                STORE_ROOT, DIRECTORY_DEPTH, DIRECTORY_WIDTH, OBJECT_STORE_ALGORITHM,
-                METADATA_NAMESPACE
+                DIRECTORY_DEPTH, DIRECTORY_WIDTH, OBJECT_STORE_ALGORITHM, METADATA_NAMESPACE
             );
             writeHashStoreYaml(hashstoreYamlContent);
             logFileHashStore.info(
@@ -220,7 +219,6 @@ public class FileHashStore implements HashStore {
             logFileHashStore.debug("FileHashStore - 'hashstore.yaml' found, verifying properties.");
 
             HashMap<String, Object> hsProperties = loadHashStoreYaml(storePath);
-            Path existingStorePath = (Path) hsProperties.get(HashStoreProperties.storePath.name());
             int existingStoreDepth = (int) hsProperties.get(HashStoreProperties.storeDepth.name());
             int existingStoreWidth = (int) hsProperties.get(HashStoreProperties.storeWidth.name());
             String existingStoreAlgorithm = (String) hsProperties.get(
@@ -231,7 +229,6 @@ public class FileHashStore implements HashStore {
             );
 
             // Verify properties when 'hashstore.yaml' found
-            checkConfigurationEquality("store path", storePath, existingStorePath);
             checkConfigurationEquality("store depth", storeDepth, existingStoreDepth);
             checkConfigurationEquality("store width", storeWidth, existingStoreWidth);
             checkConfigurationEquality("store algorithm", storeAlgorithm, existingStoreAlgorithm);
@@ -277,8 +274,6 @@ public class FileHashStore implements HashStore {
 
         try {
             HashMap<?, ?> hashStoreYamlProperties = om.readValue(hashStoreYamlFile, HashMap.class);
-            String yamlStorePath = (String) hashStoreYamlProperties.get("store_path");
-            hsProperties.put(HashStoreProperties.storePath.name(), Paths.get(yamlStorePath));
             hsProperties.put(
                 HashStoreProperties.storeDepth.name(), hashStoreYamlProperties.get("store_depth")
             );
@@ -354,7 +349,6 @@ public class FileHashStore implements HashStore {
     /**
      * Build the string content of the configuration file for HashStore - 'hashstore.yaml'
      *
-     * @param storePath              Root path of store
      * @param storeDepth             Depth of store
      * @param storeWidth             Width of store
      * @param storeAlgorithm         Algorithm to use to calculate the hex digest for the permanent
@@ -363,15 +357,12 @@ public class FileHashStore implements HashStore {
      * @return String that representing the contents of 'hashstore.yaml'
      */
     protected String buildHashStoreYamlString(
-        Path storePath, int storeDepth, int storeWidth, String storeAlgorithm,
-        String storeMetadataNamespace
+        int storeDepth, int storeWidth, String storeAlgorithm, String storeMetadataNamespace
     ) {
 
         return String.format(
             "# Default configuration variables for HashStore\n\n"
-                + "############### Store Path ###############\n"
-                + "# Default path for `FileHashStore` if no path is provided\n"
-                + "store_path: \"%s\"\n\n" + "############### Directory Structure ###############\n"
+                + "############### Directory Structure ###############\n"
                 + "# Desired amount of directories when sharding an object to "
                 + "form the permanent address\n"
                 + "store_depth: %d  # WARNING: DO NOT CHANGE UNLESS SETTING UP " + "NEW HASHSTORE\n"
@@ -396,8 +387,8 @@ public class FileHashStore implements HashStore {
                 + "calculated when storing an\n"
                 + "# object to disk and returned to the caller after successful " + "storage.\n"
                 + "store_default_algo_list:\n" + "- \"MD5\"\n" + "- \"SHA-1\"\n" + "- \"SHA-256\"\n"
-                + "- \"SHA-384\"\n" + "- \"SHA-512\"\n", storePath, storeDepth, storeWidth,
-            storeAlgorithm, storeMetadataNamespace
+                + "- \"SHA-384\"\n" + "- \"SHA-512\"\n", storeDepth, storeWidth, storeAlgorithm,
+            storeMetadataNamespace
         );
     }
 
