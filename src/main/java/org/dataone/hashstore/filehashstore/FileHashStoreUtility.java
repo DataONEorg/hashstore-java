@@ -52,8 +52,6 @@ public class FileHashStoreUtility {
                 mdObject.update(buffer, 0, bytesRead);
 
             }
-            // Close dataStream
-            dataStream.close();
 
         } catch (IOException ioe) {
             String errMsg =
@@ -61,6 +59,9 @@ public class FileHashStoreUtility {
                     + ioe.getMessage();
             throw new IOException(errMsg);
 
+        } finally {
+            // Close dataStream
+            dataStream.close();
         }
         // mdObjectHexDigest
         return DatatypeConverter.printHexBinary(mdObject.digest()).toLowerCase();
@@ -109,7 +110,7 @@ public class FileHashStoreUtility {
      * Checks whether a given long integer is greater than 0
      *
      * @param longInt Object to check
-     * @param method Calling method
+     * @param method  Calling method
      * @throws IllegalArgumentException If longInt is less than 0
      */
     public static void checkNotNegative(long longInt, String method)
