@@ -318,6 +318,7 @@ public class FileHashStore implements HashStore {
             new OutputStreamWriter(Files.newOutputStream(hashstoreYaml), StandardCharsets.UTF_8)
         )) {
             writer.write(yamlString);
+            writer.close();
 
         } catch (IOException ioe) {
             logFileHashStore.fatal(
