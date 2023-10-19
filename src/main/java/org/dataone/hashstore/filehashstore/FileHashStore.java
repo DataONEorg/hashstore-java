@@ -1130,7 +1130,7 @@ public class FileHashStore implements HashStore {
                 throw new NoSuchAlgorithmException(errMsg);
             }
 
-            if (!checksum.equals(digestFromHexDigests)) {
+            if (!checksum.equalsIgnoreCase(digestFromHexDigests)) {
                 // Delete tmp File
                 boolean deleteStatus = tmpFile.delete();
                 if (!deleteStatus) {
