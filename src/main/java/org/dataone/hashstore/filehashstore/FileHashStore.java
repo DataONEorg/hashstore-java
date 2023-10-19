@@ -56,6 +56,8 @@ public class FileHashStore implements HashStore {
     private final Path METADATA_STORE_DIRECTORY;
     private final Path METADATA_TMP_FILE_DIRECTORY;
 
+    public static final String HASHSTORE_YAML = "hashstore.yaml";
+
     public static final String[] SUPPORTED_HASH_ALGORITHMS = {"MD2", "MD5", "SHA-1", "SHA-256",
         "SHA-384", "SHA-512", "SHA-512/224", "SHA-512/256"};
 
@@ -155,7 +157,7 @@ public class FileHashStore implements HashStore {
         );
 
         // Write configuration file 'hashstore.yaml' to store HashStore properties
-        Path hashstoreYaml = STORE_ROOT.resolve("hashstore.yaml");
+        Path hashstoreYaml = STORE_ROOT.resolve(HASHSTORE_YAML);
         if (!Files.exists(hashstoreYaml)) {
             String hashstoreYamlContent = buildHashStoreYamlString(
                 DIRECTORY_DEPTH, DIRECTORY_WIDTH, OBJECT_STORE_ALGORITHM, METADATA_NAMESPACE
@@ -267,7 +269,7 @@ public class FileHashStore implements HashStore {
      * @throws IOException If `hashstore.yaml` doesn't exist
      */
     protected HashMap<String, Object> loadHashStoreYaml(Path storePath) throws IOException {
-        Path hashStoreYamlPath = storePath.resolve("hashstore.yaml");
+        Path hashStoreYamlPath = storePath.resolve(HASHSTORE_YAML);
         File hashStoreYamlFile = hashStoreYamlPath.toFile();
         ObjectMapper om = new ObjectMapper(new YAMLFactory());
         HashMap<String, Object> hsProperties = new HashMap<>();
@@ -309,7 +311,7 @@ public class FileHashStore implements HashStore {
      * @throws IOException If unable to write `hashstore.yaml`
      */
     protected void writeHashStoreYaml(String yamlString) throws IOException {
-        Path hashstoreYaml = STORE_ROOT.resolve("hashstore.yaml");
+        Path hashstoreYaml = STORE_ROOT.resolve(HASHSTORE_YAML);
 
         try (BufferedWriter writer = new BufferedWriter(
             new OutputStreamWriter(Files.newOutputStream(hashstoreYaml), StandardCharsets.UTF_8)
