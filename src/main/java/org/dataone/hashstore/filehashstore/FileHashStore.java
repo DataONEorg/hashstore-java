@@ -425,7 +425,7 @@ public class FileHashStore implements HashStore {
         }
         FileHashStoreUtility.checkNotNegative(objSize, "storeObject");
 
-        return syncPubObject(
+        return syncPutObject(
             object, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize
         );
     }
@@ -433,7 +433,7 @@ public class FileHashStore implements HashStore {
     /**
      * Method to synchronize storing objects with FileHashStore
      */
-    private ObjectInfo syncPubObject(
+    private ObjectInfo syncPutObject(
         InputStream object, String pid, String additionalAlgorithm, String checksum,
         String checksumAlgorithm, long objSize
     ) throws NoSuchAlgorithmException, PidObjectExistsException, IOException, RuntimeException {
@@ -530,7 +530,7 @@ public class FileHashStore implements HashStore {
             validateAlgorithm(additionalAlgorithm);
         }
 
-        return syncPubObject(object, pid, additionalAlgorithm, null, null, 0);
+        return syncPutObject(object, pid, additionalAlgorithm, null, null, 0);
     }
 
     /**
@@ -556,7 +556,7 @@ public class FileHashStore implements HashStore {
             validateAlgorithm(checksumAlgorithm);
         }
 
-        return syncPubObject(object, pid, null, checksum, checksumAlgorithm, 0);
+        return syncPutObject(object, pid, null, checksum, checksumAlgorithm, 0);
     }
 
     /**
@@ -575,7 +575,7 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "storeObject");
         FileHashStoreUtility.checkNotNegative(objSize, "storeObject");
 
-        return syncPubObject(object, pid, null, null, null, objSize);
+        return syncPutObject(object, pid, null, null, null, objSize);
     }
 
     @Override
