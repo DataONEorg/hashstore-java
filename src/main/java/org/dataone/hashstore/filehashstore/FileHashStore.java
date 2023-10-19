@@ -52,7 +52,7 @@ public class FileHashStore implements HashStore {
     private final String OBJECT_STORE_ALGORITHM;
     private final Path OBJECT_STORE_DIRECTORY;
     private final Path OBJECT_TMP_FILE_DIRECTORY;
-    private final String METADATA_NAMESPACE;
+    private final String DEFAULT_METADATA_NAMESPACE;
     private final Path METADATA_STORE_DIRECTORY;
     private final Path METADATA_TMP_FILE_DIRECTORY;
 
@@ -127,7 +127,7 @@ public class FileHashStore implements HashStore {
         DIRECTORY_DEPTH = storeDepth;
         DIRECTORY_WIDTH = storeWidth;
         OBJECT_STORE_ALGORITHM = storeAlgorithm;
-        METADATA_NAMESPACE = storeMetadataNamespace;
+        DEFAULT_METADATA_NAMESPACE = storeMetadataNamespace;
         // Resolve object/metadata directories
         OBJECT_STORE_DIRECTORY = storePath.resolve("objects");
         METADATA_STORE_DIRECTORY = storePath.resolve("metadata");
@@ -153,14 +153,15 @@ public class FileHashStore implements HashStore {
         logFileHashStore.debug(
             "FileHashStore - HashStore initialized. Store Depth: " + DIRECTORY_DEPTH
                 + ". Store Width: " + DIRECTORY_WIDTH + ". Store Algorithm: "
-                + OBJECT_STORE_ALGORITHM + ". Store Metadata Namespace: " + METADATA_NAMESPACE
+                + OBJECT_STORE_ALGORITHM + ". Store Metadata Namespace: "
+                + DEFAULT_METADATA_NAMESPACE
         );
 
         // Write configuration file 'hashstore.yaml' to store HashStore properties
         Path hashstoreYaml = STORE_ROOT.resolve(HASHSTORE_YAML);
         if (!Files.exists(hashstoreYaml)) {
             String hashstoreYamlContent = buildHashStoreYamlString(
-                DIRECTORY_DEPTH, DIRECTORY_WIDTH, OBJECT_STORE_ALGORITHM, METADATA_NAMESPACE
+                DIRECTORY_DEPTH, DIRECTORY_WIDTH, OBJECT_STORE_ALGORITHM, DEFAULT_METADATA_NAMESPACE
             );
             writeHashStoreYaml(hashstoreYamlContent);
             logFileHashStore.info(
@@ -594,7 +595,7 @@ public class FileHashStore implements HashStore {
         // If no formatId is supplied, use the default namespace to store metadata
         String checkedFormatId;
         if (formatId == null) {
-            checkedFormatId = METADATA_NAMESPACE;
+            checkedFormatId = DEFAULT_METADATA_NAMESPACE;
         } else {
             FileHashStoreUtility.checkForEmptyString(formatId, "formatId", "storeMetadata");
             checkedFormatId = formatId;
@@ -684,7 +685,7 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(pid, "pid", "storeMetadata");
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "storeMetadata");
 
-        return syncPutMetadata(metadata, pid, METADATA_NAMESPACE);
+        return syncPutMetadata(metadata, pid, DEFAULT_METADATA_NAMESPACE);
     }
 
     @Override
@@ -777,19 +778,19 @@ public class FileHashStore implements HashStore {
         FileNotFoundException, IOException, NoSuchAlgorithmException {
         logFileHashStore.debug(
             "FileHashStore.retrieveMetadata - Called to retrieve metadata for pid: " + pid
-                + " with default metadata namespace: " + METADATA_NAMESPACE
+                + " with default metadata namespace: " + DEFAULT_METADATA_NAMESPACE
         );
         // Validate input parameters
         FileHashStoreUtility.ensureNotNull(pid, "pid", "retrieveMetadata");
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "retrieveMetadata");
 
         // Get permanent address of the pid by calculating its sha-256 hex digest
-        Path metadataCidPath = getRealPath(pid, "metadata", METADATA_NAMESPACE);
+        Path metadataCidPath = getRealPath(pid, "metadata", DEFAULT_METADATA_NAMESPACE);
 
         // Check to see if metadata exists
         if (!Files.exists(metadataCidPath)) {
             String errMsg = "FileHashStore.retrieveMetadata - Metadata does not exist for pid: "
-                + pid + " with formatId: " + METADATA_NAMESPACE + ". Metadata address: "
+                + pid + " with formatId: " + DEFAULT_METADATA_NAMESPACE + ". Metadata address: "
                 + metadataCidPath;
             logFileHashStore.warn(errMsg);
             throw new FileNotFoundException(errMsg);
@@ -801,12 +802,12 @@ public class FileHashStore implements HashStore {
             metadataCidInputStream = Files.newInputStream(metadataCidPath);
             logFileHashStore.info(
                 "FileHashStore.retrieveMetadata - Retrieved metadata for pid: " + pid
-                    + " with formatId: " + METADATA_NAMESPACE
+                    + " with formatId: " + DEFAULT_METADATA_NAMESPACE
             );
         } catch (IOException ioe) {
             String errMsg =
                 "FileHashStore.retrieveMetadata - Unexpected error when creating InputStream"
-                    + " for pid: " + pid + " with formatId: " + METADATA_NAMESPACE
+                    + " for pid: " + pid + " with formatId: " + DEFAULT_METADATA_NAMESPACE
                     + ". IOException: " + ioe.getMessage();
             logFileHashStore.error(errMsg);
             throw new IOException(errMsg);
@@ -888,7 +889,7 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "deleteMetadata");
 
         // Get permanent address of the pid by calculating its sha-256 hex digest
-        Path metadataCidPath = getRealPath(pid, "metadata", METADATA_NAMESPACE);
+        Path metadataCidPath = getRealPath(pid, "metadata", DEFAULT_METADATA_NAMESPACE);
 
         // Check to see if object exists
         if (!Files.exists(metadataCidPath)) {
@@ -1518,7 +1519,7 @@ public class FileHashStore implements HashStore {
         // If no formatId is supplied, use the default namespace to store metadata
         String checkedFormatId;
         if (formatId == null) {
-            checkedFormatId = METADATA_NAMESPACE;
+            checkedFormatId = DEFAULT_METADATA_NAMESPACE;
         } else {
             FileHashStoreUtility.checkForEmptyString(formatId, "formatId", "putMetadata");
             checkedFormatId = formatId;
