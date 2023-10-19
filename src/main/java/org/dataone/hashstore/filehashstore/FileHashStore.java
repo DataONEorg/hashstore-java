@@ -236,7 +236,7 @@ public class FileHashStore implements HashStore {
             checkConfigurationEquality("store width", storeWidth, existingStoreWidth);
             checkConfigurationEquality("store algorithm", storeAlgorithm, existingStoreAlgorithm);
             checkConfigurationEquality(
-                "store algorithm", storeMetadataNamespace, existingStoreMetadataNs
+                "store metadata namespace", storeMetadataNamespace, existingStoreMetadataNs
             );
 
         } else {
