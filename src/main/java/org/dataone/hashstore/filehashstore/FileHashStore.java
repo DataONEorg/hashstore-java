@@ -424,7 +424,10 @@ public class FileHashStore implements HashStore {
             );
             validateAlgorithm(checksumAlgorithm);
         }
-        FileHashStoreUtility.checkNotNegative(objSize, "storeObject");
+        if (objSize != -1) {
+            System.out.println("Checking not negative...");
+            FileHashStoreUtility.checkNotNegativeOrZero(objSize, "storeObject");
+        }
 
         return syncPutObject(
             object, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize
@@ -519,19 +522,11 @@ public class FileHashStore implements HashStore {
             "FileHashStore.storeObject - Called to store object for pid: " + pid
         );
 
-        // Begin input validation
-        FileHashStoreUtility.ensureNotNull(object, "object", "storeObject");
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "storeObject");
-        FileHashStoreUtility.checkForEmptyString(pid, "pid", "storeObject");
-        // Validate algorithms if not null or empty, throws exception if not supported
-        if (additionalAlgorithm != null) {
-            FileHashStoreUtility.checkForEmptyString(
-                additionalAlgorithm, "additionalAlgorithm", "storeObject"
-            );
-            validateAlgorithm(additionalAlgorithm);
-        }
+        FileHashStoreUtility.ensureNotNull(
+            additionalAlgorithm, "additionalAlgorithm", "storeObject"
+        );
 
-        return syncPutObject(object, pid, additionalAlgorithm, null, null, 0);
+        return storeObject(object, pid, additionalAlgorithm, null, null, -1);
     }
 
     /**
@@ -545,19 +540,10 @@ public class FileHashStore implements HashStore {
             "FileHashStore.storeObject - Called to store object for pid: " + pid
         );
 
-        // Begin input validation
-        FileHashStoreUtility.ensureNotNull(object, "object", "storeObject");
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "storeObject");
-        FileHashStoreUtility.checkForEmptyString(pid, "pid", "storeObject");
-        // Validate algorithms if not null or empty, throws exception if not supported
-        if (checksumAlgorithm != null) {
-            FileHashStoreUtility.checkForEmptyString(
-                checksumAlgorithm, "checksumAlgorithm", "storeObject"
-            );
-            validateAlgorithm(checksumAlgorithm);
-        }
+        FileHashStoreUtility.ensureNotNull(checksum, "checksum", "storeObject");
+        FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm", "storeObject");
 
-        return syncPutObject(object, pid, null, checksum, checksumAlgorithm, 0);
+        return storeObject(object, pid, null, checksum, checksumAlgorithm, -1);
     }
 
     /**
@@ -570,13 +556,9 @@ public class FileHashStore implements HashStore {
             "FileHashStore.storeObject - Called to store object for pid: " + pid
         );
 
-        // Begin input validation
-        FileHashStoreUtility.ensureNotNull(object, "object", "storeObject");
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "storeObject");
-        FileHashStoreUtility.checkForEmptyString(pid, "pid", "storeObject");
-        FileHashStoreUtility.checkNotNegative(objSize, "storeObject");
+        FileHashStoreUtility.checkNotNegativeOrZero(objSize, "storeObject");
 
-        return syncPutObject(object, pid, null, null, null, objSize);
+        return storeObject(object, pid, null, null, null, objSize);
     }
 
     @Override
@@ -997,7 +979,9 @@ public class FileHashStore implements HashStore {
             );
             validateAlgorithm(checksumAlgorithm);
         }
-        FileHashStoreUtility.checkNotNegative(objSize, "putObject");
+        if (objSize != -1) {
+            FileHashStoreUtility.checkNotNegativeOrZero(objSize, "putObject");
+        }
 
         // If validation is desired, checksumAlgorithm and checksum must both be present
         boolean requestValidation = verifyChecksumParameters(checksum, checksumAlgorithm);
