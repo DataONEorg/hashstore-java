@@ -35,11 +35,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 /**
- * HashStore's 'CommandLineTool' class is a command line interface that allows a developer to create
- * a new HashStore or interact directly with an existing HashStore. See 'README.md' for usage
- * examples.
+ * HashStoreClient is a command line interface that allows a developer to create a new HashStore or
+ * interact directly with an existing HashStore. See 'README.md' for usage examples.
  */
-public class CommandLineTool {
+public class HashStoreClient {
     private static HashStore hashStore;
     private static Path storePath;
 

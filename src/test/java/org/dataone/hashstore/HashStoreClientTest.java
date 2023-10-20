@@ -20,7 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-public class CommandLineToolTest {
+public class HashStoreClientTest {
     private static HashStore hashStore;
     private static final TestDataHarness testData = new TestDataHarness();
     private Properties hsProperties;
@@ -128,7 +128,7 @@ public class CommandLineToolTest {
         String[] args = {optCreateHashstore, optStore, optStorePath, optStoreDepth,
             optStoreDepthValue, optStoreWidth, optStoreWidthValue, optAlgo, optAlgoValue,
             optFormatId, optFormatIdValue};
-        CommandLineTool.main(args);
+        HashStoreClient.main(args);
 
         Path storePath = Paths.get(optStorePath);
         Path hashStoreObjectsPath = storePath.resolve("objects");
@@ -165,7 +165,7 @@ public class CommandLineToolTest {
             String optPidValue = pid;
             String[] args = {optStoreObject, optStore, optStorePath, optPath, optObjectPath, optPid,
                 optPidValue};
-            CommandLineTool.main(args);
+            HashStoreClient.main(args);
 
             // Confirm object was stored
             Path absPath = getObjectAbsPath(testData.pidData.get(pid).get("object_cid"), "object");
@@ -208,7 +208,7 @@ public class CommandLineToolTest {
             String optFormatIdValue = hsProperties.getProperty("storeMetadataNamespace");
             String[] args = {optStoreMetadata, optStore, optStorePath, optPath, optObjectPath,
                 optPid, optPidValue, optFormatId, optFormatIdValue};
-            CommandLineTool.main(args);
+            HashStoreClient.main(args);
 
             // Confirm metadata was stored
             Path absPath = getObjectAbsPath(
@@ -250,7 +250,7 @@ public class CommandLineToolTest {
             String optPid = "-pid";
             String optPidValue = pid;
             String[] args = {optRetrieveObject, optStore, optStorePath, optPid, optPidValue};
-            CommandLineTool.main(args);
+            HashStoreClient.main(args);
 
             // Put things back
             System.out.flush();
@@ -289,7 +289,7 @@ public class CommandLineToolTest {
             String optFormatIdValue = hsProperties.getProperty("storeMetadataNamespace");
             String[] args = {optRetrieveMetadata, optStore, optStorePath, optPid, optPidValue,
                 optFormatId, optFormatIdValue};
-            CommandLineTool.main(args);
+            HashStoreClient.main(args);
 
             // Put things back
             System.out.flush();
@@ -325,7 +325,7 @@ public class CommandLineToolTest {
             String optPid = "-pid";
             String optPidValue = pid;
             String[] args = {optDeleteObject, optStore, optStorePath, optPid, optPidValue};
-            CommandLineTool.main(args);
+            HashStoreClient.main(args);
 
             // Confirm object was deleted
             Path absPath = getObjectAbsPath(testData.pidData.get(pid).get("object_cid"), "object");
@@ -368,7 +368,7 @@ public class CommandLineToolTest {
             String optFormatIdValue = hsProperties.getProperty("storeMetadataNamespace");
             String[] args = {optDeleteMetadata, optStore, optStorePath, optPid, optPidValue,
                 optFormatId, optFormatIdValue};
-            CommandLineTool.main(args);
+            HashStoreClient.main(args);
 
             // Confirm metadata was deleted
             Path absPath = getObjectAbsPath(
@@ -413,7 +413,7 @@ public class CommandLineToolTest {
             String optAlgoValue = "SHA-256";
             String[] args = {optGetChecksum, optStore, optStorePath, optPid, optPidValue, optAlgo,
                 optAlgoValue};
-            CommandLineTool.main(args);
+            HashStoreClient.main(args);
 
 
             String testDataChecksum = testData.pidData.get(pid).get("sha256");
