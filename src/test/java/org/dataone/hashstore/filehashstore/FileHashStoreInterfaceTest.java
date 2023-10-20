@@ -1221,12 +1221,15 @@ public class FileHashStoreInterfaceTest {
 
             fileHashStore.deleteObject(pid);
 
-            // Double Check that file doesn't exist
+            // Check that file doesn't exist
             String objId = objInfo.getId();
             Path objCidAbsPath = getObjectAbsPath(objId);
             assertFalse(Files.exists(objCidAbsPath));
 
-            // Double check that object directory still exists
+            // Check that parent directories are not deleted
+            assertTrue(Files.exists(objCidAbsPath.getParent()));
+
+            // Check that object directory still exists
             Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
             Path storeObjectPath = storePath.resolve("objects");
             assertTrue(Files.exists(storeObjectPath));
@@ -1288,7 +1291,10 @@ public class FileHashStoreInterfaceTest {
             Path metadataCidPath = fileHashStore.getRealPath(pid, "metadata", storeFormatId);
             assertFalse(Files.exists(metadataCidPath));
 
-            // Double check that metadata directory still exists
+            // Check that parent directories are not deleted
+            assertTrue(Files.exists(metadataCidPath.getParent()));
+
+            // Check that metadata directory still exists
             Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
             Path storeObjectPath = storePath.resolve("metadata");
             assertTrue(Files.exists(storeObjectPath));
@@ -1316,7 +1322,10 @@ public class FileHashStoreInterfaceTest {
             Path metadataCidPath = fileHashStore.getRealPath(pid, "metadata", storeFormatId);
             assertFalse(Files.exists(metadataCidPath));
 
-            // Double check that metadata directory still exists
+            // Check that parent directories are not deleted
+            assertTrue(Files.exists(metadataCidPath.getParent()));
+
+            // Check that metadata directory still exists
             Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
             Path storeObjectPath = storePath.resolve("metadata");
             assertTrue(Files.exists(storeObjectPath));

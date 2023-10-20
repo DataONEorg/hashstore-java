@@ -839,7 +839,7 @@ public class FileHashStore implements HashStore {
         }
 
         // Proceed to delete
-        deleteObjectAndParentDirectories(objRealPath, pid, "deleteObject");
+        Files.delete(objRealPath);
         logFileHashStore.info(
             "FileHashStore.deleteObject - File deleted for: " + pid + " with object address: "
                 + objRealPath
@@ -870,7 +870,7 @@ public class FileHashStore implements HashStore {
         }
 
         // Proceed to delete
-        deleteObjectAndParentDirectories(metadataCidPath, pid, "deleteMetadata");
+        Files.delete(metadataCidPath);
         logFileHashStore.info(
             "FileHashStore.deleteMetadata - File deleted for: " + pid + " with metadata address: "
                 + metadataCidPath
@@ -901,7 +901,7 @@ public class FileHashStore implements HashStore {
         }
 
         // Proceed to delete
-        deleteObjectAndParentDirectories(metadataCidPath, pid, "deleteMetadata");
+        Files.delete(metadataCidPath);
         logFileHashStore.info(
             "FileHashStore.deleteMetadata - File deleted for: " + pid + " with metadata address: "
                 + metadataCidPath
@@ -1616,38 +1616,5 @@ public class FileHashStore implements HashStore {
             );
         }
         return realPath;
-    }
-
-    /**
-     * Deletes a given object and its parent directories if they are empty
-     *
-     * @param objectAbsPath Path of the object to delete
-     * @param pid           Authority-based identifier
-     * @param method        Calling method
-     * @throws IOException I/O error when deleting object or accessing directories
-     */
-    private void deleteObjectAndParentDirectories(Path objectAbsPath, String pid, String method)
-        throws IOException {
-        // Delete file
-        Files.delete(objectAbsPath);
-
-        // Then delete any empty directories
-        Path parent = objectAbsPath.getParent();
-        while (parent != null && FileHashStoreUtility.isDirectoryEmpty(parent)) {
-            if (parent.equals(METADATA_STORE_DIRECTORY)) {
-                // Do not delete the metadata store directory
-                break;
-
-            } else {
-                Files.delete(parent);
-                logFileHashStore.debug(
-                    "FileHashStore.deleteObjectAndParentDirectories - " + method
-                        + " : Deleting parent directory for: " + pid + " with parent address: "
-                        + parent
-                );
-                parent = parent.getParent();
-
-            }
-        }
     }
 }
