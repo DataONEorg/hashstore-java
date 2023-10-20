@@ -241,7 +241,7 @@ public class HashStoreClientTest {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
             InputStream dataStream = Files.newInputStream(testDataFile);
-            hashStore.storeObject(dataStream, pid, null, null, null, 0);
+            hashStore.storeObject(dataStream, pid, null, null, null, -1);
 
             // Call client
             String optRetrieveObject = "-retrieveobject";
@@ -316,7 +316,7 @@ public class HashStoreClientTest {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
             InputStream dataStream = Files.newInputStream(testDataFile);
-            hashStore.storeObject(dataStream, pid, null, null, null, 0);
+            hashStore.storeObject(dataStream, pid, null, null, null, -1);
 
             // Call client
             String optDeleteObject = "-deleteobject";
@@ -401,7 +401,7 @@ public class HashStoreClientTest {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
             InputStream dataStream = Files.newInputStream(testDataFile);
-            hashStore.storeObject(dataStream, pid, null, null, null, 0);
+            hashStore.storeObject(dataStream, pid, null, null, null, -1);
 
             // Call client
             String optGetChecksum = "-getchecksum";

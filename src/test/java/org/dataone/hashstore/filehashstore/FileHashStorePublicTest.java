@@ -432,7 +432,7 @@ public class FileHashStorePublicTest {
                 Path testDataFile = testData.getTestFile(pidFormatted);
 
                 InputStream dataStream = Files.newInputStream(testDataFile);
-                secondHashStore.storeObject(dataStream, pid, null, null, null, 0);
+                secondHashStore.storeObject(dataStream, pid, null, null, null, -1);
             }
 
             // Delete configuration
