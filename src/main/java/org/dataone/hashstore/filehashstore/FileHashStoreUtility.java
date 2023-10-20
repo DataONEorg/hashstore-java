@@ -107,17 +107,17 @@ public class FileHashStoreUtility {
     }
 
     /**
-     * Checks whether a given long integer is greater than 0
+     * Checks whether a given long integer is negative or zero
      *
      * @param longInt Object to check
      * @param method  Calling method
-     * @throws IllegalArgumentException If longInt is less than 0
+     * @throws IllegalArgumentException If longInt is less than or equal
      */
-    public static void checkNotNegative(long longInt, String method)
+    public static void checkNotNegativeOrZero(long longInt, String method)
         throws IllegalArgumentException {
-        if (longInt < 0) {
+        if (longInt < 0 || longInt == 0) {
             String errMsg = "FileHashStoreUtility.checkNotNegative - Calling Method: " + method
-                + "(): objSize cannot be less than 0.";
+                + "(): objSize cannot be less than or equal to 0.";
             throw new IllegalArgumentException(errMsg);
         }
     }
