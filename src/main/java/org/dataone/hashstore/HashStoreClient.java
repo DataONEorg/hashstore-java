@@ -163,6 +163,8 @@ public class HashStoreClient {
                     long size = 0;
                     if (cmd.hasOption("size")) {
                         size = Long.parseLong(cmd.getOptionValue("size"));
+                    } else {
+                        size = -1;
                     }
 
                     InputStream pidObjStream = Files.newInputStream(path);
