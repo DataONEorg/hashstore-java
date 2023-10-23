@@ -1041,8 +1041,10 @@ public class FileHashStore implements HashStore {
                 boolean deleteStatus = tmpFile.delete();
                 if (!deleteStatus) {
                     String errMsg =
-                        "FileHashStore.validateTmpObject - Object size stored does not match"
-                            + ". Failed" + " to delete tmpFile: " + tmpFile.getName();
+                        "FileHashStore.validateTmpObject - objSize given is not equal to the"
+                            + " stored object size. ObjSize: " + objSize + ". storedObjFileSize:"
+                            + storedObjFileSize + ". Failed to delete tmpFile: " + tmpFile
+                                .getName();
                     logFileHashStore.error(errMsg);
                     throw new IOException(errMsg);
                 }
@@ -1075,15 +1077,18 @@ public class FileHashStore implements HashStore {
                 boolean deleteStatus = tmpFile.delete();
                 if (!deleteStatus) {
                     String errMsg =
-                        "FileHashStore.validateTmpObject - Object cannot be validated, failed"
-                            + " to delete tmpFile: " + tmpFile.getName();
+                        "FileHashStore.validateTmpObject - Object cannot be validated. Checksum given"
+                            + " is not equal to the calculated hex digest: " + digestFromHexDigests
+                            + ". Checksum" + " provided: " + checksum
+                            + ". Failed to delete tmpFile: " + tmpFile.getName();
                     logFileHashStore.error(errMsg);
                     throw new IOException(errMsg);
                 }
                 String errMsg =
                     "FileHashStore.validateTmpObject - Checksum given is not equal to the"
                         + " calculated hex digest: " + digestFromHexDigests + ". Checksum"
-                        + " provided: " + checksum + ". Deleting tmpFile: " + tmpFile.getName();
+                        + " provided: " + checksum + ". tmpFile has been deleted: " + tmpFile
+                            .getName();
                 logFileHashStore.error(errMsg);
                 throw new IllegalArgumentException(errMsg);
             }
