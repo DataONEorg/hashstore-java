@@ -663,12 +663,8 @@ public class FileHashStore implements HashStore {
             "FileHashStore.storeMetadata - Called to store metadata for pid: " + pid
                 + ", with default namespace."
         );
-        // Validate input parameters
-        FileHashStoreUtility.ensureNotNull(metadata, "metadata", "storeMetadata");
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "storeMetadata");
-        FileHashStoreUtility.checkForEmptyString(pid, "pid", "storeMetadata");
 
-        return syncPutMetadata(metadata, pid, DEFAULT_METADATA_NAMESPACE);
+        return storeMetadata(metadata, pid, DEFAULT_METADATA_NAMESPACE);
     }
 
     @Override
