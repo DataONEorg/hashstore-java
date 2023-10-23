@@ -860,30 +860,7 @@ public class FileHashStore implements HashStore {
      */
     public void deleteMetadata(String pid) throws IllegalArgumentException, FileNotFoundException,
         IOException, NoSuchAlgorithmException {
-        logFileHashStore.debug(
-            "FileHashStore.deleteMetadata - Called to delete metadata for pid: " + pid
-        );
-        // Validate input parameters
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "deleteMetadata");
-        FileHashStoreUtility.checkForEmptyString(pid, "pid", "deleteMetadata");
-
-        // Get permanent address of the pid by calculating its sha-256 hex digest
-        Path metadataCidPath = getRealPath(pid, "metadata", DEFAULT_METADATA_NAMESPACE);
-
-        // Check to see if object exists
-        if (!Files.exists(metadataCidPath)) {
-            String errMsg = "FileHashStore.deleteMetadata - File does not exist for pid: " + pid
-                + " with metadata address: " + metadataCidPath;
-            logFileHashStore.warn(errMsg);
-            throw new FileNotFoundException(errMsg);
-        }
-
-        // Proceed to delete
-        Files.delete(metadataCidPath);
-        logFileHashStore.info(
-            "FileHashStore.deleteMetadata - File deleted for: " + pid + " with metadata address: "
-                + metadataCidPath
-        );
+        deleteMetadata(pid, DEFAULT_METADATA_NAMESPACE);
     }
 
     @Override
