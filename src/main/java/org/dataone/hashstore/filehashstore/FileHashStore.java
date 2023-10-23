@@ -447,7 +447,7 @@ public class FileHashStore implements HashStore {
         synchronized (objectLockedIds) {
             if (objectLockedIds.contains(pid)) {
                 String errMsg =
-                    "FileHashStore.storeObject - Duplicate object request encountered for pid: "
+                    "FileHashStore.syncPutObject - Duplicate object request encountered for pid: "
                         + pid + ". Already in progress.";
                 logFileHashStore.warn(errMsg);
                 throw new RuntimeException(errMsg);
@@ -460,7 +460,7 @@ public class FileHashStore implements HashStore {
 
         try {
             logFileHashStore.debug(
-                "FileHashStore.storeObject - called .putObject() to store pid: " + pid
+                "FileHashStore.syncPutObject - called .putObject() to store pid: " + pid
                     + ". additionalAlgorithm: " + additionalAlgorithm + ". checksum: " + checksum
                     + ". checksumAlgorithm: " + checksumAlgorithm
             );
@@ -469,33 +469,33 @@ public class FileHashStore implements HashStore {
                 object, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize
             );
             logFileHashStore.info(
-                "FileHashStore.storeObject - Object stored for pid: " + pid
+                "FileHashStore.syncPutObject - Object stored for pid: " + pid
                     + ". Permanent address: " + getRealPath(pid, "object", null)
             );
             return objInfo;
 
         } catch (NoSuchAlgorithmException nsae) {
-            String errMsg = "FileHashStore.storeObject - Unable to store object for pid: " + pid
+            String errMsg = "FileHashStore.syncPutObject - Unable to store object for pid: " + pid
                 + ". NoSuchAlgorithmException: " + nsae.getMessage();
             logFileHashStore.error(errMsg);
             throw nsae;
 
         } catch (PidObjectExistsException poee) {
-            String errMsg = "FileHashStore.storeObject - Unable to store object for pid: " + pid
+            String errMsg = "FileHashStore.syncPutObject - Unable to store object for pid: " + pid
                 + ". PidObjectExistsException: " + poee.getMessage();
             logFileHashStore.error(errMsg);
             throw poee;
 
         } catch (IOException ioe) {
             // Covers AtomicMoveNotSupportedException, FileNotFoundException
-            String errMsg = "FileHashStore.storeObject - Unable to store object for pid: " + pid
+            String errMsg = "FileHashStore.syncPutObject - Unable to store object for pid: " + pid
                 + ". IOException: " + ioe.getMessage();
             logFileHashStore.error(errMsg);
             throw ioe;
 
         } catch (RuntimeException re) {
             // Covers SecurityException, IllegalArgumentException, NullPointerException
-            String errMsg = "FileHashStore.storeObject - Unable to store object for pid: " + pid
+            String errMsg = "FileHashStore.syncPutObject - Unable to store object for pid: " + pid
                 + ". Runtime Exception: " + re.getMessage();
             logFileHashStore.error(errMsg);
             throw re;
@@ -504,7 +504,7 @@ public class FileHashStore implements HashStore {
             // Release lock
             synchronized (objectLockedIds) {
                 logFileHashStore.debug(
-                    "FileHashStore.storeObject - Releasing objectLockedIds for pid: " + pid
+                    "FileHashStore.syncPutObject - Releasing objectLockedIds for pid: " + pid
                 );
                 objectLockedIds.remove(pid);
                 objectLockedIds.notifyAll();
@@ -518,10 +518,6 @@ public class FileHashStore implements HashStore {
     @Override
     public ObjectInfo storeObject(InputStream object, String pid, String additionalAlgorithm)
         throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException {
-        logFileHashStore.debug(
-            "FileHashStore.storeObject - Called to store object for pid: " + pid
-        );
-
         FileHashStoreUtility.ensureNotNull(
             additionalAlgorithm, "additionalAlgorithm", "storeObject"
         );
@@ -536,10 +532,6 @@ public class FileHashStore implements HashStore {
     public ObjectInfo storeObject(
         InputStream object, String pid, String checksum, String checksumAlgorithm
     ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException {
-        logFileHashStore.debug(
-            "FileHashStore.storeObject - Called to store object for pid: " + pid
-        );
-
         FileHashStoreUtility.ensureNotNull(checksum, "checksum", "storeObject");
         FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm", "storeObject");
 
@@ -552,10 +544,6 @@ public class FileHashStore implements HashStore {
     @Override
     public ObjectInfo storeObject(InputStream object, String pid, long objSize)
         throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException {
-        logFileHashStore.debug(
-            "FileHashStore.storeObject - Called to store object for pid: " + pid
-        );
-
         FileHashStoreUtility.checkNotNegativeOrZero(objSize, "storeObject");
 
         return storeObject(object, pid, null, null, null, objSize);
@@ -659,11 +647,6 @@ public class FileHashStore implements HashStore {
     @Override
     public String storeMetadata(InputStream metadata, String pid) throws IOException,
         IllegalArgumentException, InterruptedException, NoSuchAlgorithmException {
-        logFileHashStore.debug(
-            "FileHashStore.storeMetadata - Called to store metadata for pid: " + pid
-                + ", with default namespace."
-        );
-
         return storeMetadata(metadata, pid, DEFAULT_METADATA_NAMESPACE);
     }
 
