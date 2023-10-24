@@ -24,7 +24,7 @@ and then install or build the package with `mvn install` or `mvn package`, respe
 
 We also maintain a parallel [Python-based version of HashStore](https://github.com/DataONEorg/hashstore).
 
-## HashStore CommandLineTool Usage
+## HashStore HashStoreClient Usage
 
 ```sh
 
@@ -32,35 +32,35 @@ We also maintain a parallel [Python-based version of HashStore](https://github.c
 $ mvn clean package -Dmaven.test.skip=true
 
 # Get help
-$ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.CommandLineTool -h
+$ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.HashStoreClient -h
 
 # Step 2:
 ## Create a HashStore (long option)
-$ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.CommandLineTool --createhashstore --storepath=/path/to/store --storedepth=3 --storewidth=2 --storealgo=SHA-256 --storenamespace=http://ns.dataone.org/service/types/v2.0
+$ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.HashStoreClient --createhashstore --storepath=/path/to/store --storedepth=3 --storewidth=2 --storealgo=SHA-256 --storenamespace=http://ns.dataone.org/service/types/v2.0
 
 ## Create a HashStore (short option)
-$ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.CommandLineTool -chs -store /path/to/store -dp 3 -wp 2 -ap SHA-256 -nsp http://ns.dataone.org/service/types/v2
+$ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.HashStoreClient -chs -store /path/to/store -dp 3 -wp 2 -ap SHA-256 -nsp http://ns.dataone.org/service/types/v2
 
 # Get the checksum of a data object
-$ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.CommandLineTool -store /path/to/store -getchecksum -pid testpid1 -algo SHA-256
+$ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.HashStoreClient -store /path/to/store -getchecksum -pid testpid1 -algo SHA-256
 
 # Store a data object
-$ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.CommandLineTool -store /path/to/store -storeobject -path /path/to/data.ext -pid testpid1
+$ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.HashStoreClient -store /path/to/store -storeobject -path /path/to/data.ext -pid testpid1
 
 # Store a metadata object
-$ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.CommandLineTool -store /path/to/store -storemetadata -path /path/to/metadata.ext -pid testpid1 -format_id http://ns.dataone.org/service/types/v2
+$ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.HashStoreClient -store /path/to/store -storemetadata -path /path/to/metadata.ext -pid testpid1 -format_id http://ns.dataone.org/service/types/v2
 
 # Retrieve a data object
-$ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.CommandLineTool -store /path/to/store -retrieveobject -pid testpid1
+$ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.HashStoreClient -store /path/to/store -retrieveobject -pid testpid1
 
 # Retrieve a metadata object
-$ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.CommandLineTool -store /path/to/store -retrievemetadata -pid testpid1 -format_id http://ns.dataone.org/service/types/v2
+$ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.HashStoreClient -store /path/to/store -retrievemetadata -pid testpid1 -format_id http://ns.dataone.org/service/types/v2
 
 # Delete a data object
-$ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.CommandLineTool -store /path/to/store -deleteobject -pid testpid1
+$ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.HashStoreClient -store /path/to/store -deleteobject -pid testpid1
 
 # Delete a metadata file
-$ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.CommandLineTool -store /path/to/store -deletemetadata -pid testpid1 -format_id http://ns.dataone.org/service/types/v2
+$ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.HashStoreClient -store /path/to/store -deletemetadata -pid testpid1 -format_id http://ns.dataone.org/service/types/v2
 ```
 
 ## License
