@@ -582,16 +582,19 @@ public class FileHashStore implements HashStore {
         throws InterruptedException, IOException, NoSuchAlgorithmException {
         // Lock pid for thread safety, transaction control and atomic writing
         // Metadata storage requests for the same pid must be written serially
+        // However, the same pid could be used with different formatIds, so
+        // synchronize ids with pid + formatId;
+        String pidFormatId = pid + checkedFormatId;
         synchronized (metadataLockedIds) {
-            while (metadataLockedIds.contains(pid)) {
+            while (metadataLockedIds.contains(pidFormatId)) {
                 try {
                     metadataLockedIds.wait(TIME_OUT_MILLISEC);
 
                 } catch (InterruptedException ie) {
                     String errMsg =
                         "FileHashStore.storeMetadata - Metadata lock was interrupted while"
-                            + " storing metadata for: " + pid + ". InterruptedException: " + ie
-                                .getMessage();
+                            + " storing metadata for: " + pid + " and formatId: " + checkedFormatId
+                            + ". InterruptedException: " + ie.getMessage();
                     logFileHashStore.warn(errMsg);
                     throw ie;
                 }
@@ -599,7 +602,7 @@ public class FileHashStore implements HashStore {
             logFileHashStore.debug(
                 "FileHashStore.storeMetadata - Synchronizing metadataLockedIds for pid: " + pid
             );
-            metadataLockedIds.add(pid);
+            metadataLockedIds.add(pidFormatId);
         }
 
         try {
@@ -634,8 +637,9 @@ public class FileHashStore implements HashStore {
             synchronized (metadataLockedIds) {
                 logFileHashStore.debug(
                     "FileHashStore.storeMetadata - Releasing metadataLockedIds for pid: " + pid
+                        + " and formatId " + checkedFormatId
                 );
-                metadataLockedIds.remove(pid);
+                metadataLockedIds.remove(pidFormatId);
                 metadataLockedIds.notifyAll();
             }
         }
