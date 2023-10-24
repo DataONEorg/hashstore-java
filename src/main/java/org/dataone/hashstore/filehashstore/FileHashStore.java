@@ -997,15 +997,16 @@ public class FileHashStore implements HashStore {
             if (!deleteStatus) {
                 String errMsg =
                     "FileHashStore.putObject - Object is found to be a duplicate after writing"
-                        + " tmpFile. Attempted to delete tmpFile but failed: " + tmpFile.getName();
+                        + " tmpFile. Did not move object and failed to delete tmpFile: " + tmpFile
+                            .getName();
                 logFileHashStore.error(errMsg);
                 throw new IOException(errMsg);
             }
-            objectCid = null;
-            logFileHashStore.info(
+            String errMsg =
                 "FileHashStore.putObject - Did not move object, duplicate file found for pid: "
-                    + pid + ". Deleted tmpFile: " + tmpFile.getName()
-            );
+                    + pid + ". Deleted tmpFile: " + tmpFile.getName();
+            logFileHashStore.info(errMsg);
+            throw new PidObjectExistsException(errMsg);
         } else {
             File permFile = objRealPath.toFile();
             move(tmpFile, permFile, "object");
