@@ -993,31 +993,11 @@ public class FileHashStore implements HashStore {
         );
 
         // Move object
+        File permFile = objRealPath.toFile();
+        move(tmpFile, permFile, "object");
         logFileHashStore.debug(
-            "FileHashStore.putObject - Moving object: " + tmpFile + ". Destination: " + objRealPath
+            "FileHashStore.putObject - Move object success, permanent address: " + objRealPath
         );
-        if (Files.exists(objRealPath)) {
-            boolean deleteStatus = tmpFile.delete();
-            if (!deleteStatus) {
-                String errMsg =
-                    "FileHashStore.putObject - Object is found to be a duplicate after writing"
-                        + " tmpFile. Did not move object and failed to delete tmpFile: " + tmpFile
-                            .getName();
-                logFileHashStore.error(errMsg);
-                throw new IOException(errMsg);
-            }
-            String errMsg =
-                "FileHashStore.putObject - Did not move object, duplicate file found for pid: "
-                    + pid + ". Deleted tmpFile: " + tmpFile.getName();
-            logFileHashStore.info(errMsg);
-            throw new PidObjectExistsException(errMsg);
-        } else {
-            File permFile = objRealPath.toFile();
-            move(tmpFile, permFile, "object");
-            logFileHashStore.debug(
-                "FileHashStore.putObject - Move object success, permanent address: " + objRealPath
-            );
-        }
 
         // Create ObjectInfo to return with pertinent data
         return new ObjectInfo(objectCid, storedObjFileSize, hexDigests);
