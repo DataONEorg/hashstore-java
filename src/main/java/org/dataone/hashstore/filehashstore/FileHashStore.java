@@ -46,6 +46,7 @@ public class FileHashStore implements HashStore {
     private static final int TIME_OUT_MILLISEC = 1000;
     private static final ArrayList<String> objectLockedIds = new ArrayList<>(100);
     private static final ArrayList<String> metadataLockedIds = new ArrayList<>(100);
+    private static final ArrayList<String> referenceLockedCids = new ArrayList<>(100);
     private final Path STORE_ROOT;
     private final int DIRECTORY_DEPTH;
     private final int DIRECTORY_WIDTH;
@@ -551,7 +552,53 @@ public class FileHashStore implements HashStore {
 
     @Override
     public boolean tagObject(String pid, String cid) {
-        return true;
+        logFileHashStore.debug(
+            "FileHashStore.tagObject - Called to tag cid (" + cid + ") with pid: " + pid
+        );
+        // Validate input parameters
+        FileHashStoreUtility.ensureNotNull(pid, "pid", "tagObject");
+        FileHashStoreUtility.ensureNotNull(cid, "cid", "tagObject");
+        FileHashStoreUtility.checkForEmptyString(pid, "pid", "tagObject");
+        FileHashStoreUtility.checkForEmptyString(cid, "cid", "tagObject");
+
+        synchronized (referenceLockedCids) {
+            if (referenceLockedCids.contains(pid)) {
+                String errMsg =
+                    "FileHashStore.tagObject - Duplicate tag request encountered for cid: " + cid
+                        + ". Already in progress.";
+                logFileHashStore.error(errMsg);
+                throw new RuntimeException(errMsg);
+            }
+            logFileHashStore.debug(
+                "FileHashStore.storeObject - Synchronizing objectLockedIds for pid: " + pid
+            );
+            objectLockedIds.add(pid);
+        }
+
+        try {
+            // TODO:
+            // - Get absolute path for pid refs file
+            // - Get absolute path for cid refs file
+            // - Write pid refs file to tmp file
+            // - Write cid refs file to tmp file
+            // - Move pid refs file
+            // - Move cid refs file
+            // - Verify process succeeded
+
+            return true;
+
+        } finally {
+            // Release lock
+            synchronized (referenceLockedCids) {
+                logFileHashStore.debug(
+                    "FileHashStore.syncPutObject - Releasing objectLockedIds for pid: " + pid
+                );
+                referenceLockedCids.remove(pid);
+                referenceLockedCids.notifyAll();
+            }
+        }
+
+
     }
 
     @Override
