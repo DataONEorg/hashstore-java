@@ -213,8 +213,8 @@ public class FileHashStoreProtectedTest {
             ObjectInfo address = fileHashStore.putObject(dataStream, pid, null, null, null, -1);
 
             // Check id (sha-256 hex digest of the ab_id, aka object_cid)
-            String objAuthorityId = testData.pidData.get(pid).get("object_cid");
-            assertEquals(objAuthorityId, address.getId());
+            String objContentId = testData.pidData.get(pid).get("sha256");
+            assertEquals(objContentId, address.getId());
         }
     }
 

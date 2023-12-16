@@ -168,7 +168,7 @@ public class HashStoreClientTest {
             HashStoreClient.main(args);
 
             // Confirm object was stored
-            Path absPath = getObjectAbsPath(testData.pidData.get(pid).get("object_cid"), "object");
+            Path absPath = getObjectAbsPath(testData.pidData.get(pid).get("sha256"), "object");
             assertTrue(Files.exists(absPath));
 
             // Put things back

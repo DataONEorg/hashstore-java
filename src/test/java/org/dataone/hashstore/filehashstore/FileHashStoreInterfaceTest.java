@@ -108,8 +108,8 @@ public class FileHashStoreInterfaceTest {
             InputStream dataStream = Files.newInputStream(testDataFile);
             ObjectInfo objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
 
-            // Check id (sha-256 hex digest of the ab_id (pid))
-            String objectCid = testData.pidData.get(pid).get("object_cid");
+            // Check id (content identifier based on the store algorithm)
+            String objectCid = testData.pidData.get(pid).get("sha256");
             assertEquals(objectCid, objInfo.getId());
         }
     }

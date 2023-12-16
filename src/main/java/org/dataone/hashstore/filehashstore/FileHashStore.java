@@ -946,21 +946,6 @@ public class FileHashStore implements HashStore {
         // If validation is desired, checksumAlgorithm and checksum must both be present
         boolean requestValidation = verifyChecksumParameters(checksum, checksumAlgorithm);
 
-        // Gather ObjectInfo elements and prepare object permanent address
-        String objectCid = getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
-        String objShardString = getHierarchicalPathString(
-            DIRECTORY_DEPTH, DIRECTORY_WIDTH, objectCid
-        );
-        Path objRealPath = OBJECT_STORE_DIRECTORY.resolve(objShardString);
-
-        // If file (pid hash) exists, reject request immediately
-        if (Files.exists(objRealPath)) {
-            String errMsg = "FileHashStore.putObject - File already exists for pid: " + pid
-                + ". Object address: " + objRealPath + ". Aborting request.";
-            logFileHashStore.warn(errMsg);
-            throw new PidObjectExistsException(errMsg);
-        }
-
         // Generate tmp file and write to it
         logFileHashStore.debug("FileHashStore.putObject - Generating tmpFile");
         File tmpFile = generateTmpFile("tmp", OBJECT_TMP_FILE_DIRECTORY);
@@ -992,12 +977,28 @@ public class FileHashStore implements HashStore {
             storedObjFileSize
         );
 
-        // Move object
-        File permFile = objRealPath.toFile();
-        move(tmpFile, permFile, "object");
-        logFileHashStore.debug(
-            "FileHashStore.putObject - Move object success, permanent address: " + objRealPath
+        // Gather the elements to form the permanent address
+        String objectCid = hexDigests.get(OBJECT_STORE_ALGORITHM);
+        String objShardString = getHierarchicalPathString(
+            DIRECTORY_DEPTH, DIRECTORY_WIDTH, objectCid
         );
+        Path objRealPath = OBJECT_STORE_DIRECTORY.resolve(objShardString);
+
+        // Confirm that the object does not yet exist, delete tmpFile if so
+        if (Files.exists(objRealPath)) {
+            String errMsg = "FileHashStore.putObject - File already exists for pid: " + pid
+                + ". Object address: " + objRealPath + ". Aborting request.";
+            logFileHashStore.warn(errMsg);
+            tmpFile.delete();
+            throw new PidObjectExistsException(errMsg);
+        } else {
+            // Move object
+            File permFile = objRealPath.toFile();
+            move(tmpFile, permFile, "object");
+            logFileHashStore.debug(
+                "FileHashStore.putObject - Move object success, permanent address: " + objRealPath
+            );
+        }
 
         // Create ObjectInfo to return with pertinent data
         return new ObjectInfo(objectCid, storedObjFileSize, hexDigests);

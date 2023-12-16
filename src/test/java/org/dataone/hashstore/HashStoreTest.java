@@ -130,8 +130,8 @@ public class HashStoreTest {
             ObjectInfo objInfo = hashStore.storeObject(dataStream, pid, null, null, null, -1);
 
             // Check id (sha-256 hex digest of the ab_id, aka object_cid)
-            String objAuthorityId = testData.pidData.get(pid).get("object_cid");
-            assertEquals(objAuthorityId, objInfo.getId());
+            String objContentId = testData.pidData.get(pid).get("sha256");
+            assertEquals(objContentId, objInfo.getId());
         }
     }
 }
