@@ -81,6 +81,37 @@ public interface HashStore {
                 RuntimeException;
 
         /**
+         * Creates references that allow objects stored in HashStore to be discoverable. Retrieving,
+         * deleting or calculating a hex digest of an object is based on a pid argument; and to
+         * proceed, we must be able to find the object associated with the pid.
+         * 
+         * @param pid Authority-based identifier
+         * @param cid Content-identifier (hash identifier)
+         * @return Boolean to indicate the pid and cid has been tagged.
+         */
+        boolean tagObject(String pid, String cid);
+
+        /**
+         * Confirms that an object_metadata's content is equal to the given values.
+         * 
+         * @param objectInfo        ObjectInfo object with values
+         * @param checksum          Value of checksum to validate against
+         * @param checksumAlgorithm Algorithm of checksum submitted
+         * @param objSize           Expected size of object to validate after storing
+         */
+        void verifyObject(
+                ObjectInfo objectInfo, String checksum, String checksumAlgorithm, long objSize
+        );
+
+        /**
+         * Checks whether an object referenced by a pid exists and returns the content identifier.
+         * 
+         * @param pid Authority-based identifier
+         * @return Content identifier
+         */
+        String findObject(String pid);
+
+        /**
          * Adds/updates metadata (ex. `sysmeta`) to the HashStore by using a given InputStream, a
          * persistent identifier (`pid`) and metadata format (`formatId`). The permanent address of
          * the stored metadata document is determined by calculating the SHA-256 hex digest of the

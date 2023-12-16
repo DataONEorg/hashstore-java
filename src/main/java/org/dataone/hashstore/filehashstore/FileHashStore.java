@@ -550,6 +550,23 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
+    public boolean tagObject(String pid, String cid) {
+        return true;
+    }
+
+    @Override
+    public void verifyObject(
+        ObjectInfo objectInfo, String checksum, String checksumAlgorithm, long objSize
+    ) {
+        return;
+    }
+
+    @Override
+    public String findObject(String pid) {
+        return "CID";
+    }
+
+    @Override
     public String storeMetadata(InputStream metadata, String pid, String formatId)
         throws IOException, FileNotFoundException, IllegalArgumentException, InterruptedException,
         NoSuchAlgorithmException {
