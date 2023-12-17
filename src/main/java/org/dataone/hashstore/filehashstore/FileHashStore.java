@@ -597,7 +597,7 @@ public class FileHashStore implements HashStore {
             Path absPathPidRefsPath = REFS_CID_FILE_DIRECTORY.resolve(cidShardString);
 
             if (Files.exists(absPathPidRefsPath)) {
-                String errMsg = "FileHashStore.tagObject - pid ref files already exists for pid: "
+                String errMsg = "FileHashStore.tagObject - pid refs file already exists for pid: "
                     + pid + ". A pid can only reference one cid.";
                 logFileHashStore.error(errMsg);
                 throw new PidRefsFileExistsException(errMsg);
@@ -614,6 +614,7 @@ public class FileHashStore implements HashStore {
                 writePidRefsFile(pidRefsTmpFile, cid);
                 // - Write cid refs file to tmp file
                 File cidRefsTmpFile = generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
+                writePidRefsFile(cidRefsTmpFile, pid);
                 // - Move pid refs file
                 // - Move cid refs file
                 // - Verify process succeeded
@@ -1517,6 +1518,31 @@ public class FileHashStore implements HashStore {
             );
             throw ioe;
 
+        }
+    }
+
+    /**
+     * Writes the given 'pid' into the provided file.
+     * 
+     * @param tmpFile File object to write into
+     * @param pid     Authority-based or persistent identifier to write
+     * @throws IOException Failure to write pid refs file
+     */
+    protected void writeCidRefsFile(File tmpFile, String pid) throws IOException {
+        String pidNewLine = pid + "\n";
+
+        try (BufferedWriter writer = new BufferedWriter(
+            new OutputStreamWriter(Files.newOutputStream(tmpFile.toPath()), StandardCharsets.UTF_8)
+        )) {
+            writer.write(pidNewLine);
+            writer.close();
+
+        } catch (IOException ioe) {
+            logFileHashStore.error(
+                "FileHashStore.writeHashStoreYaml() - Unable to write cid refs file for pid: " + pid
+                    + " IOException: " + ioe.getMessage()
+            );
+            throw ioe;
         }
     }
 

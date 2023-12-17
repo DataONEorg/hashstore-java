@@ -64,7 +64,7 @@ public class FileHashStoreReferencesTest {
      * Check that the cid supplied is written into the file given
      */
     @Test
-    public void writePidRefsFile_Content() throws Exception {
+    public void writePidRefsFile_content() throws Exception {
         Path refsTmpFileDirectory = rootDirectory.resolve("refs/tmp");
         File refsTmpFile = fileHashStore.generateTmpFile("tmp", refsTmpFileDirectory);
         String cidToWrite = "test_cid_123";
@@ -72,6 +72,21 @@ public class FileHashStoreReferencesTest {
 
         String cidRead = new String(Files.readAllBytes(refsTmpFile.toPath()));
         assertEquals(cidRead, cidToWrite);
+
+    }
+
+    /**
+     * Check that the pid supplied is written into the file given with a new line
+     */
+    @Test
+    public void writeCidRefsFile_content() throws Exception {
+        Path refsTmpFileDirectory = rootDirectory.resolve("refs/tmp");
+        File refsTmpFile = fileHashStore.generateTmpFile("tmp", refsTmpFileDirectory);
+        String pidToWrite = "dou.test.123";
+        fileHashStore.writeCidRefsFile(refsTmpFile, pidToWrite);
+
+        String cidRead = new String(Files.readAllBytes(refsTmpFile.toPath()));
+        assertEquals(cidRead, pidToWrite + "\n");
 
     }
 }
