@@ -56,6 +56,10 @@ public class FileHashStore implements HashStore {
     private final String DEFAULT_METADATA_NAMESPACE;
     private final Path METADATA_STORE_DIRECTORY;
     private final Path METADATA_TMP_FILE_DIRECTORY;
+    private final Path REFS_STORE_DIRECTORY;
+    private final Path REFS_TMP_FILE_DIRECTORY;
+    private final Path REFS_PID_FILE_DIRECTORY;
+    private final Path REFS_CID_FILE_DIRECTORY;
 
     public static final String HASHSTORE_YAML = "hashstore.yaml";
 
@@ -129,19 +133,28 @@ public class FileHashStore implements HashStore {
         DIRECTORY_WIDTH = storeWidth;
         OBJECT_STORE_ALGORITHM = storeAlgorithm;
         DEFAULT_METADATA_NAMESPACE = storeMetadataNamespace;
-        // Resolve object/metadata directories
+        // Resolve object/metadata/refs directories
         OBJECT_STORE_DIRECTORY = storePath.resolve("objects");
         METADATA_STORE_DIRECTORY = storePath.resolve("metadata");
+        REFS_STORE_DIRECTORY = storePath.resolve("refs");
         // Resolve tmp object/metadata directory paths, this is where objects are
         // created before they are moved to their permanent address
         OBJECT_TMP_FILE_DIRECTORY = OBJECT_STORE_DIRECTORY.resolve("tmp");
         METADATA_TMP_FILE_DIRECTORY = METADATA_STORE_DIRECTORY.resolve("tmp");
+        REFS_TMP_FILE_DIRECTORY = REFS_STORE_DIRECTORY.resolve("tmp");
+        REFS_PID_FILE_DIRECTORY = REFS_STORE_DIRECTORY.resolve("pid");
+        REFS_CID_FILE_DIRECTORY = REFS_STORE_DIRECTORY.resolve("cid");
+
         try {
             // Physically create object & metadata store and tmp directories
             Files.createDirectories(OBJECT_STORE_DIRECTORY);
             Files.createDirectories(METADATA_STORE_DIRECTORY);
+            Files.createDirectories(REFS_STORE_DIRECTORY);
             Files.createDirectories(OBJECT_TMP_FILE_DIRECTORY);
             Files.createDirectories(METADATA_TMP_FILE_DIRECTORY);
+            Files.createDirectories(REFS_TMP_FILE_DIRECTORY);
+            Files.createDirectories(REFS_PID_FILE_DIRECTORY);
+            Files.createDirectories(REFS_CID_FILE_DIRECTORY);
             logFileHashStore.debug("FileHashStore - Created store and store tmp directories.");
 
         } catch (IOException ioe) {
