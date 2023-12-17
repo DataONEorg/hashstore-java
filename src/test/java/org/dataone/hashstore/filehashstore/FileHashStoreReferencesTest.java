@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -79,10 +78,10 @@ public class FileHashStoreReferencesTest {
     }
 
     /**
-     * Check that tagObject writes expected refs files
+     * Check that tagObject writes expected pid refs files
      */
     @Test
-    public void tagObject_refFilesWritten() throws Exception {
+    public void tagObject_pidRefsFile() throws Exception {
         String pid = "dou.test.1";
         String cid = "abcdef123456789";
         fileHashStore.tagObject(pid, cid);
@@ -92,10 +91,19 @@ public class FileHashStoreReferencesTest {
         );
         Path pidRefsFilePath = getObjectAbsPath(pidAddress, "refs/pid");
         assertTrue(Files.exists(pidRefsFilePath));
+    }
+
+    /**
+     * Check that tagObject writes expected cid refs files
+     */
+    @Test
+    public void tagObject_cidRefsFile() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
 
         Path cidRefsFilePath = getObjectAbsPath(cid, "refs/cid");
         assertTrue(Files.exists(cidRefsFilePath));
-
     }
 
     /**
@@ -138,8 +146,61 @@ public class FileHashStoreReferencesTest {
         String pidToWrite = "dou.test.123";
         fileHashStore.writeCidRefsFile(refsTmpFile, pidToWrite);
 
-        String cidRead = new String(Files.readAllBytes(refsTmpFile.toPath()));
-        assertEquals(cidRead, pidToWrite + "\n");
+        String pidRead = new String(Files.readAllBytes(refsTmpFile.toPath()));
+        assertEquals(pidRead, pidToWrite + "\n");
 
     }
+
+    /**
+     * Check that exception is thrown when incorrect cid in a pid refs file.
+     */
+    @Test
+    public void verifyHashStoreRefFiles_unexpectedCid() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        // Create a pid refs file with the incorrect cid
+        Path refsTmpFileDirectory = rootDirectory.resolve("refs/tmp");
+        File refsTmpFile = fileHashStore.generateTmpFile("tmp", refsTmpFileDirectory);
+        String cidToWrite = "dou.test.123";
+        fileHashStore.writePidRefsFile(refsTmpFile, cidToWrite);
+        Path refsTmpFileAbsPath = refsTmpFileDirectory.resolve(refsTmpFile.getName());
+
+        // Get path of the cid refs file
+        Path cidRefsFilePath = getObjectAbsPath(cid, "refs/cid");
+
+        assertThrows(IOException.class, () -> {
+            fileHashStore.verifyHashStoreRefFiles(pid, cid, refsTmpFileAbsPath, cidRefsFilePath);
+        });
+    }
+
+    /**
+     * Check that exception is thrown when an expected pid is not found in a cid refs file
+     */
+    @Test
+    public void verifyHashStoreRefFiles_pidNotFoundInCidRefsFile() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        // Create a cid refs file with the incorrect pid
+        Path refsTmpFileDirectory = rootDirectory.resolve("refs/tmp");
+        File refsTmpFile = fileHashStore.generateTmpFile("tmp", refsTmpFileDirectory);
+        String cidToWrite = "dou.test.2";
+        fileHashStore.writeCidRefsFile(refsTmpFile, cidToWrite);
+        Path refsTmpFileAbsPath = refsTmpFileDirectory.resolve(refsTmpFile.getName());
+
+        // Get path of the pid refs file
+        String pidAddress = fileHashStore.getPidHexDigest(
+            pid, fhsProperties.getProperty("storeAlgorithm")
+        );
+        Path pidRefsFilePath = getObjectAbsPath(pidAddress, "refs/pid");
+
+        assertThrows(IOException.class, () -> {
+            fileHashStore.verifyHashStoreRefFiles(pid, cid, pidRefsFilePath, refsTmpFileAbsPath);
+        });
+    }
+
+    // TODO: Write test for when updating a cid refs file with additional pids
 }

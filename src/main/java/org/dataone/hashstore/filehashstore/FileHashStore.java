@@ -593,13 +593,13 @@ public class FileHashStore implements HashStore {
         }
 
         try {
-            // Check that pid refs file doesn't exist yet
             String pidRefId = getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
             String pidShardString = getHierarchicalPathString(3, 2, pidRefId);
             String cidShardString = getHierarchicalPathString(3, 2, cid);
-            Path absPathCidRefsPath = REFS_PID_FILE_DIRECTORY.resolve(pidShardString);
-            Path absPathPidRefsPath = REFS_CID_FILE_DIRECTORY.resolve(cidShardString);
+            Path absPathPidRefsPath = REFS_PID_FILE_DIRECTORY.resolve(pidShardString);
+            Path absPathCidRefsPath = REFS_CID_FILE_DIRECTORY.resolve(cidShardString);
 
+            // Check that pid refs file doesn't exist yet
             if (Files.exists(absPathPidRefsPath)) {
                 String errMsg = "FileHashStore.tagObject - pid refs file already exists for pid: "
                     + pid + ". A pid can only reference one cid.";
@@ -617,15 +617,16 @@ public class FileHashStore implements HashStore {
                 writePidRefsFile(pidRefsTmpFile, cid);
                 // Write cid refs file to tmp file
                 File cidRefsTmpFile = generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
-                writePidRefsFile(cidRefsTmpFile, pid);
+                writeCidRefsFile(cidRefsTmpFile, pid);
                 // Move refs files to permanent location
                 File absPathPidRefsFile = absPathPidRefsPath.toFile();
                 File absPathCidRefsFile = absPathCidRefsPath.toFile();
                 move(pidRefsTmpFile, absPathPidRefsFile, "refs");
                 move(cidRefsTmpFile, absPathCidRefsFile, "refs");
-                // - Verify process succeeded
-                return true;
+                // Verify tagging process, this throws exceptions if there's an issue
+                verifyHashStoreRefFiles(pid, cid, absPathPidRefsPath, absPathCidRefsPath);
 
+                return true;
             }
 
 
@@ -1572,6 +1573,66 @@ public class FileHashStore implements HashStore {
                     + " IOException: " + ioe.getMessage()
             );
             throw ioe;
+        }
+    }
+
+    /**
+     * Verifies that the reference files for the given pid and cid exist and contain
+     * the expected values.
+     * 
+     * @param pid                Authority-based or persistent identifier
+     * @param cid                Content identifier
+     * @param absPathPidRefsPath Path to where the pid refs file exists
+     * @param absPathCidRefsPath Path to where the cid refs file exists
+     * @throws FileNotFoundException Any refs files are missing
+     * @throws IOException           Unable to read any of the refs files or if the refs content
+     *                               is not what is expected
+     */
+    protected void verifyHashStoreRefFiles(
+        String pid, String cid, Path absPathPidRefsPath, Path absPathCidRefsPath
+    ) throws FileNotFoundException, IOException {
+        // First check that the files exist
+        if (!Files.exists(absPathCidRefsPath)) {
+            String errMsg = "FileHashStore.verifyHashStoreRefFiles - cid refs file is missing: "
+                + absPathCidRefsPath + " for pid: " + pid;
+            logFileHashStore.error(errMsg);
+            throw new FileNotFoundException(errMsg);
+        }
+        if (!Files.exists(absPathPidRefsPath)) {
+            String errMsg = "FileHashStore.verifyHashStoreRefFiles - pid refs file is missing: "
+                + absPathPidRefsPath + " for cid: " + cid;
+            logFileHashStore.error(errMsg);
+            throw new FileNotFoundException(errMsg);
+        }
+        // Now verify the content
+        try {
+            String cidRead = new String(Files.readAllBytes(absPathPidRefsPath));
+            if (!cidRead.equals(cid)) {
+                System.out.println(cidRead);
+                System.out.println(cid);
+                String errMsg = "FileHashStore.verifyHashStoreRefFiles - Unexpected cid: " + cidRead
+                    + " found in pid refs file: " + absPathPidRefsPath + ". Expected cid: " + cid;
+                logFileHashStore.error(errMsg);
+                throw new IOException(errMsg);
+            }
+            // This will strip new line characters
+            List<String> lines = Files.readAllLines(absPathCidRefsPath);
+            boolean pidFoundInCidRefFiles = false;
+            for (String line : lines) {
+                if (line.equals(pid)) {
+                    pidFoundInCidRefFiles = true;
+                }
+            }
+            if (!pidFoundInCidRefFiles) {
+                String errMsg = "FileHashStore.verifyHashStoreRefFiles - Missing expected pid: "
+                    + pid + " in cid refs file: " + absPathCidRefsPath;
+                logFileHashStore.error(errMsg);
+                throw new IOException(errMsg);
+            }
+        } catch (IOException ioe) {
+            String errMsg = "FileHashStore.verifyHashStoreRefFiles - " + ioe.getMessage();
+            logFileHashStore.error(errMsg);
+            throw new IOException(errMsg);
         }
     }
 
