@@ -568,7 +568,7 @@ public class FileHashStore implements HashStore {
 
     @Override
     public boolean tagObject(String pid, String cid) throws IOException, PidRefsFileExistsException,
-        NoSuchAlgorithmException {
+        NoSuchAlgorithmException, FileNotFoundException {
         logFileHashStore.debug(
             "FileHashStore.tagObject - Called to tag cid (" + cid + ") with pid: " + pid
         );
@@ -628,7 +628,6 @@ public class FileHashStore implements HashStore {
 
                 return true;
             }
-
 
         } finally {
             // Release lock

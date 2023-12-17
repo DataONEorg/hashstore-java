@@ -92,10 +92,11 @@ public interface HashStore {
          * @throws IOException                Failure to create tmp file
          * @throws PidRefsFileExistsException When pid refs file already exists
          * @throws NoSuchAlgorithmException   When algorithm used to calculate pid refs address does
-         *                                    not exist.
+         *                                    not exist
+         * @throws FileNotFoundException      If refs file is missing during verification
          */
         boolean tagObject(String pid, String cid) throws IOException, PidRefsFileExistsException,
-                NoSuchAlgorithmException;
+                NoSuchAlgorithmException, FileNotFoundException;
 
         /**
          * Confirms that an object_metadata's content is equal to the given values.
