@@ -601,21 +601,26 @@ public class FileHashStore implements HashStore {
                     + pid + ". A pid can only reference one cid.";
                 logFileHashStore.error(errMsg);
                 throw new PidRefsFileExistsException(errMsg);
+
             } else if (Files.exists(absPathCidRefsPath)) {
                 // TODO:
                 // Update cid refs file
+                return true;
+
             } else {
                 // TODO:
                 // - Write pid refs file to tmp file
                 File pidRefsTmpFile = generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
+                writePidRefsFile(pidRefsTmpFile, cid);
                 // - Write cid refs file to tmp file
                 File cidRefsTmpFile = generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
                 // - Move pid refs file
                 // - Move cid refs file
                 // - Verify process succeeded
+                return true;
+
             }
 
-            return true;
 
         } finally {
             // Release lock
@@ -1512,6 +1517,29 @@ public class FileHashStore implements HashStore {
             );
             throw ioe;
 
+        }
+    }
+
+    /**
+     * Writes the given 'cid' into the provided file.
+     * 
+     * @param tmpFile File object to write into
+     * @param cid     Content identifier to write
+     * @throws IOException Failure to write pid refs file
+     */
+    protected void writePidRefsFile(File tmpFile, String cid) throws IOException {
+        try (BufferedWriter writer = new BufferedWriter(
+            new OutputStreamWriter(Files.newOutputStream(tmpFile.toPath()), StandardCharsets.UTF_8)
+        )) {
+            writer.write(cid);
+            writer.close();
+
+        } catch (IOException ioe) {
+            logFileHashStore.error(
+                "FileHashStore.writeHashStoreYaml() - Unable to write pid refs file for cid: " + cid
+                    + " IOException: " + ioe.getMessage()
+            );
+            throw ioe;
         }
     }
 
