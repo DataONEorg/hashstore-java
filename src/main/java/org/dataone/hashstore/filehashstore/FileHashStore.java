@@ -527,6 +527,8 @@ public class FileHashStore implements HashStore {
         }
     }
 
+    // TODO: storeObject with just InputStream
+
     /**
      * Overload method for storeObject with an additionalAlgorithm
      */
@@ -565,7 +567,8 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public boolean tagObject(String pid, String cid) throws IOException {
+    public boolean tagObject(String pid, String cid) throws IOException, PidRefsFileExistsException,
+        NoSuchAlgorithmException {
         logFileHashStore.debug(
             "FileHashStore.tagObject - Called to tag cid (" + cid + ") with pid: " + pid
         );
@@ -591,7 +594,8 @@ public class FileHashStore implements HashStore {
 
         try {
             // Check that pid refs file doesn't exist yet
-            String pidShardString = getHierarchicalPathString(3, 2, pid);
+            String pidRefId = getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
+            String pidShardString = getHierarchicalPathString(3, 2, pidRefId);
             String cidShardString = getHierarchicalPathString(3, 2, cid);
             Path absPathCidRefsPath = REFS_PID_FILE_DIRECTORY.resolve(pidShardString);
             Path absPathPidRefsPath = REFS_CID_FILE_DIRECTORY.resolve(cidShardString);
@@ -608,15 +612,17 @@ public class FileHashStore implements HashStore {
                 return true;
 
             } else {
-                // TODO:
-                // - Write pid refs file to tmp file
+                // Write pid refs file to tmp file
                 File pidRefsTmpFile = generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
                 writePidRefsFile(pidRefsTmpFile, cid);
-                // - Write cid refs file to tmp file
+                // Write cid refs file to tmp file
                 File cidRefsTmpFile = generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
                 writePidRefsFile(cidRefsTmpFile, pid);
-                // - Move pid refs file
-                // - Move cid refs file
+                // Move refs files to permanent location
+                File absPathPidRefsFile = absPathPidRefsPath.toFile();
+                File absPathCidRefsFile = absPathCidRefsPath.toFile();
+                move(pidRefsTmpFile, absPathPidRefsFile, "refs");
+                move(cidRefsTmpFile, absPathCidRefsFile, "refs");
                 // - Verify process succeeded
                 return true;
 

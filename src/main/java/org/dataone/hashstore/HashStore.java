@@ -91,8 +91,11 @@ public interface HashStore {
          * @return Boolean to indicate the pid and cid has been tagged.
          * @throws IOException                Failure to create tmp file
          * @throws PidRefsFileExistsException When pid refs file already exists
+         * @throws NoSuchAlgorithmException   When algorithm used to calculate pid refs address does
+         *                                    not exist.
          */
-        boolean tagObject(String pid, String cid) throws IOException, PidRefsFileExistsException;
+        boolean tagObject(String pid, String cid) throws IOException, PidRefsFileExistsException,
+                NoSuchAlgorithmException;
 
         /**
          * Confirms that an object_metadata's content is equal to the given values.

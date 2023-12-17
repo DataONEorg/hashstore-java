@@ -1,15 +1,20 @@
 package org.dataone.hashstore.filehashstore;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.Properties;
 
+import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -57,8 +62,56 @@ public class FileHashStoreReferencesTest {
     @TempDir
     public Path tempFolder;
 
-    // TODO: Add tests for tag object
-    // TODO: Add tests to check exception thrown when pid refs file already exists
+    /**
+     * Utility method to get absolute path of a given object
+     */
+    public Path getObjectAbsPath(String id, String entity) {
+        int shardDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
+        int shardWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
+        // Get relative path
+        String objCidShardString = fileHashStore.getHierarchicalPathString(
+            shardDepth, shardWidth, id
+        );
+        // Get absolute path
+        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+
+        return storePath.resolve(entity).resolve(objCidShardString);
+    }
+
+    /**
+     * Check that tagObject writes expected refs files
+     */
+    @Test
+    public void tagObject_refFilesWritten() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        String pidAddress = fileHashStore.getPidHexDigest(
+            pid, fhsProperties.getProperty("storeAlgorithm")
+        );
+        Path pidRefsFilePath = getObjectAbsPath(pidAddress, "refs/pid");
+        assertTrue(Files.exists(pidRefsFilePath));
+
+        Path cidRefsFilePath = getObjectAbsPath(cid, "refs/cid");
+        assertTrue(Files.exists(cidRefsFilePath));
+
+    }
+
+    /**
+     * Check that tagObject throws exception when pid refs file already exists
+     */
+    @Test
+    public void tagObject_pidRefsFileExists() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        assertThrows(PidRefsFileExistsException.class, () -> {
+            fileHashStore.tagObject(pid, cid);
+        });
+
+    }
 
     /**
      * Check that the cid supplied is written into the file given
