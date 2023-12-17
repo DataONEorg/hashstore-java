@@ -35,6 +35,7 @@ import org.apache.commons.logging.LogFactory;
 import org.dataone.hashstore.ObjectInfo;
 import org.dataone.hashstore.HashStore;
 import org.dataone.hashstore.exceptions.PidObjectExistsException;
+import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 
 /**
  * FileHashStore is a HashStore adapter class that manages the storage of objects and metadata to a
@@ -564,7 +565,7 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public boolean tagObject(String pid, String cid) {
+    public boolean tagObject(String pid, String cid) throws IOException {
         logFileHashStore.debug(
             "FileHashStore.tagObject - Called to tag cid (" + cid + ") with pid: " + pid
         );
@@ -589,14 +590,30 @@ public class FileHashStore implements HashStore {
         }
 
         try {
-            // TODO:
-            // - Get absolute path for pid refs file
-            // - Get absolute path for cid refs file
-            // - Write pid refs file to tmp file
-            // - Write cid refs file to tmp file
-            // - Move pid refs file
-            // - Move cid refs file
-            // - Verify process succeeded
+            // Check that pid refs file doesn't exist yet
+            String pidShardString = getHierarchicalPathString(3, 2, pid);
+            String cidShardString = getHierarchicalPathString(3, 2, cid);
+            Path absPathCidRefsPath = REFS_PID_FILE_DIRECTORY.resolve(pidShardString);
+            Path absPathPidRefsPath = REFS_CID_FILE_DIRECTORY.resolve(cidShardString);
+
+            if (Files.exists(absPathPidRefsPath)) {
+                String errMsg = "FileHashStore.tagObject - pid ref files already exists for pid: "
+                    + pid + ". A pid can only reference one cid.";
+                logFileHashStore.error(errMsg);
+                throw new PidRefsFileExistsException(errMsg);
+            } else if (Files.exists(absPathCidRefsPath)) {
+                // TODO:
+                // Update cid refs file
+            } else {
+                // TODO:
+                // - Write pid refs file to tmp file
+                File pidRefsTmpFile = generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
+                // - Write cid refs file to tmp file
+                File cidRefsTmpFile = generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
+                // - Move pid refs file
+                // - Move cid refs file
+                // - Verify process succeeded
+            }
 
             return true;
 
@@ -1455,7 +1472,6 @@ public class FileHashStore implements HashStore {
         );
         // Validate input parameters
         FileHashStoreUtility.ensureNotNull(entity, "entity", "move");
-
         FileHashStoreUtility.checkForEmptyString(entity, "entity", "move");
         // Entity is only used when checking for an existence of an object
         if (entity.equals("object") && target.exists()) {

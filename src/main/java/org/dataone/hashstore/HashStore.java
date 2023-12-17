@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
 
 import org.dataone.hashstore.exceptions.PidObjectExistsException;
+import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 
 /**
  * HashStore is a content-addressable file management system that utilizes the hash/hex digest of a
@@ -88,8 +89,10 @@ public interface HashStore {
          * @param pid Authority-based identifier
          * @param cid Content-identifier (hash identifier)
          * @return Boolean to indicate the pid and cid has been tagged.
+         * @throws IOException                Failure to create tmp file
+         * @throws PidRefsFileExistsException When pid refs file already exists
          */
-        boolean tagObject(String pid, String cid);
+        boolean tagObject(String pid, String cid) throws IOException, PidRefsFileExistsException;
 
         /**
          * Confirms that an object_metadata's content is equal to the given values.
