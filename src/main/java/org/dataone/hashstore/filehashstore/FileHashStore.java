@@ -591,7 +591,7 @@ public class FileHashStore implements HashStore {
 
                 } catch (InterruptedException ie) {
                     String errMsg =
-                        "FileHashStore.tagObject - referecenceLockedCids lock was interrupted while"
+                        "FileHashStore.tagObject - referenceLockedCids lock was interrupted while"
                             + " waiting to tag pid: " + pid + " and cid: " + cid
                             + ". InterruptedException: " + ie.getMessage();
                     logFileHashStore.error(errMsg);
@@ -620,13 +620,7 @@ public class FileHashStore implements HashStore {
 
             } else if (Files.exists(absPathCidRefsPath)) {
                 // Ensure that the pid is not already found in the file
-                List<String> lines = Files.readAllLines(absPathCidRefsPath);
-                boolean pidFoundInCidRefFiles = false;
-                for (String line : lines) {
-                    if (line.equals(pid)) {
-                        pidFoundInCidRefFiles = true;
-                    }
-                }
+                boolean pidFoundInCidRefFiles = isPidInCidRefsFile(pid, absPathCidRefsPath);
                 if (pidFoundInCidRefFiles) {
                     String errMsg = "FileHashStore.tagObject - cid refs file already contains pid: "
                         + pid + ". Refs file not created for both the given pid. Cid refs file ("
@@ -636,8 +630,7 @@ public class FileHashStore implements HashStore {
                 }
 
                 // Write pid refs file to tmp file
-                File pidRefsTmpFile = generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
-                writePidRefsFile(pidRefsTmpFile, cid);
+                File pidRefsTmpFile = writePidRefsFile(cid);
                 File absPathPidRefsFile = absPathPidRefsPath.toFile();
                 move(pidRefsTmpFile, absPathPidRefsFile, "refs");
                 // Now update cid refs file
@@ -652,12 +645,9 @@ public class FileHashStore implements HashStore {
                 return true;
 
             } else {
-                // Write pid refs file to tmp file
-                File pidRefsTmpFile = generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
-                writePidRefsFile(pidRefsTmpFile, cid);
-                // Write cid refs file to tmp file
-                File cidRefsTmpFile = generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
-                writeCidRefsFile(cidRefsTmpFile, pid);
+                // Get pid and cid refs files 
+                File pidRefsTmpFile = writePidRefsFile(cid);
+                File cidRefsTmpFile = writeCidRefsFile(pid);
                 // Move refs files to permanent location
                 File absPathPidRefsFile = absPathPidRefsPath.toFile();
                 File absPathCidRefsFile = absPathCidRefsPath.toFile();
@@ -1572,20 +1562,25 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Writes the given 'pid' into the provided file.
-     * 
-     * @param tmpFile File object to write into
-     * @param pid     Authority-based or persistent identifier to write
+     * Writes the given 'pid' into a tmp file in the cid refs file format, which consists of
+     * multiple pids that references a 'cid' delimited by "\n".
+     *
+     * @param pid Authority-based or persistent identifier to write
      * @throws IOException Failure to write pid refs file
      */
-    protected void writeCidRefsFile(File tmpFile, String pid) throws IOException {
+    protected File writeCidRefsFile(String pid) throws IOException {
+        File cidRefsTmpFile = generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
         String pidNewLine = pid + "\n";
 
         try (BufferedWriter writer = new BufferedWriter(
-            new OutputStreamWriter(Files.newOutputStream(tmpFile.toPath()), StandardCharsets.UTF_8)
+            new OutputStreamWriter(
+                Files.newOutputStream(cidRefsTmpFile.toPath()), StandardCharsets.UTF_8
+            )
         )) {
             writer.write(pidNewLine);
             writer.close();
+
+            return cidRefsTmpFile;
 
         } catch (IOException ioe) {
             logFileHashStore.error(
@@ -1597,18 +1592,23 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Writes the given 'cid' into the provided file.
+     * Writes the given 'cid' into a tmp file in the 'pid' refs file format. A pid refs file
+     * contains a single 'cid'. Note, a 'pid' can only ever reference one 'cid'.
      * 
-     * @param tmpFile File object to write into
-     * @param cid     Content identifier to write
+     * @param cid Content identifier to write
      * @throws IOException Failure to write pid refs file
      */
-    protected void writePidRefsFile(File tmpFile, String cid) throws IOException {
+    protected File writePidRefsFile(String cid) throws IOException {
+        File pidRefsTmpFile = generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
         try (BufferedWriter writer = new BufferedWriter(
-            new OutputStreamWriter(Files.newOutputStream(tmpFile.toPath()), StandardCharsets.UTF_8)
+            new OutputStreamWriter(
+                Files.newOutputStream(pidRefsTmpFile.toPath()), StandardCharsets.UTF_8
+            )
         )) {
             writer.write(cid);
             writer.close();
+
+            return pidRefsTmpFile;
 
         } catch (IOException ioe) {
             logFileHashStore.error(
@@ -1618,6 +1618,27 @@ public class FileHashStore implements HashStore {
             throw ioe;
         }
     }
+
+    /**
+     * Checks a given cid refs file for a pid.
+     * 
+     * @param pid                Authority-based or persistent identifier to search
+     * @param absPathCidRefsPath Path to the cid refs file to check
+     * @return True if cid is found, false otherwise
+     * @throws IOException If unable to read the cid refs file.
+     */
+    private boolean isPidInCidRefsFile(String pid, Path absPathCidRefsPath) throws IOException {
+        List<String> lines = Files.readAllLines(absPathCidRefsPath);
+        boolean pidFoundInCidRefFiles = false;
+        for (String line : lines) {
+            if (line.equals(pid)) {
+                pidFoundInCidRefFiles = true;
+                break;
+            }
+        }
+        return pidFoundInCidRefFiles;
+    }
+
 
     /**
      * Verifies that the reference files for the given pid and cid exist and contain
@@ -1660,13 +1681,7 @@ public class FileHashStore implements HashStore {
                 throw new IOException(errMsg);
             }
             // This will strip new line characters
-            List<String> lines = Files.readAllLines(absPathCidRefsPath);
-            boolean pidFoundInCidRefFiles = false;
-            for (String line : lines) {
-                if (line.equals(pid)) {
-                    pidFoundInCidRefFiles = true;
-                }
-            }
+            boolean pidFoundInCidRefFiles = isPidInCidRefsFile(pid, absPathCidRefsPath);
             if (!pidFoundInCidRefFiles) {
                 String errMsg = "FileHashStore.verifyHashStoreRefsFiles - Missing expected pid: "
                     + pid + " in cid refs file: " + absPathCidRefsPath;
@@ -1690,7 +1705,7 @@ public class FileHashStore implements HashStore {
     protected void updateCidRefsFiles(String pid, Path absPathCidRefsPath) throws IOException {
         File absPathCidRefsFile = absPathCidRefsPath.toFile();
         try {
-            // Obtain a lock on the file 
+            // Obtain a lock on the file before updating it
             try (RandomAccessFile raf = new RandomAccessFile(absPathCidRefsFile, "rw");
                  FileChannel channel = raf.getChannel(); FileLock lock = channel.lock()) {
 
