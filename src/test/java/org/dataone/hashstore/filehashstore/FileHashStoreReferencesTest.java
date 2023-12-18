@@ -174,6 +174,31 @@ public class FileHashStoreReferencesTest {
     }
 
     /**
+     * Confirm expected cid is returned
+     */
+    @Test
+    public void findObject_content() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        String cidRetrieved = fileHashStore.findObject(pid);
+
+        assertEquals(cid, cidRetrieved);
+    }
+
+    /**
+     * Check that exception is thrown when pid refs file doesn't exist
+     */
+    @Test
+    public void findObject_pidNotFound() throws Exception {
+        String pid = "dou.test.1";
+        assertThrows(IOException.class, () -> {
+            fileHashStore.findObject(pid);
+        });
+    }
+
+    /**
      * Check that the cid supplied is written into the file given
      */
     @Test
@@ -183,7 +208,6 @@ public class FileHashStoreReferencesTest {
 
         String cidRead = new String(Files.readAllBytes(pidRefsTmpFile.toPath()));
         assertEquals(cidRead, cidToWrite);
-
     }
 
     /**
@@ -196,7 +220,6 @@ public class FileHashStoreReferencesTest {
 
         String pidRead = new String(Files.readAllBytes(cidRefsTmpFile.toPath()));
         assertEquals(pidRead, pidToWrite + "\n");
-
     }
 
     /**

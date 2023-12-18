@@ -120,8 +120,12 @@ public interface HashStore {
          * 
          * @param pid Authority-based identifier
          * @return Content identifier
+         * @throws NoSuchAlgorithmException When algorithm used to calculate pid refs file's
+         *                                  absolute address is not valid
+         * @throws IOException              Unable to read from a pid refs file or pid refs file
+         *                                  does not exist
          */
-        String findObject(String pid);
+        String findObject(String pid) throws NoSuchAlgorithmException, IOException;
 
         /**
          * Adds/updates metadata (ex. `sysmeta`) to the HashStore by using a given InputStream, a

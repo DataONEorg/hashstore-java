@@ -685,8 +685,26 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public String findObject(String pid) {
-        return "CID";
+    public String findObject(String pid) throws NoSuchAlgorithmException, IOException {
+        logFileHashStore.debug("FileHashStore.findObject - Called to find object for pid: " + pid);
+        FileHashStoreUtility.ensureNotNull(pid, "pid", "findObject");
+        FileHashStoreUtility.checkForEmptyString(pid, "pid", "findObject");
+
+        // Get path of the pid references file
+        String pidRefId = getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
+        String pidShardString = getHierarchicalPathString(3, 2, pidRefId);
+        Path absPathPidRefsPath = REFS_PID_FILE_DIRECTORY.resolve(pidShardString);
+
+        if (Files.exists(absPathPidRefsPath)) {
+            String cidFromPidRefsFile = new String(Files.readAllBytes(absPathPidRefsPath));
+            return cidFromPidRefsFile;
+
+        } else {
+            String errMsg = "FileHashStore.findObject - Unable to find cid for pid: " + pid
+                + ". Pid refs file does not exist at: " + absPathPidRefsPath;
+            logFileHashStore.error(errMsg);
+            throw new IOException(errMsg);
+        }
     }
 
     @Override
@@ -1725,6 +1743,8 @@ public class FileHashStore implements HashStore {
             throw new IOException(errMsg);
         }
     }
+
+    // TODO: Implement delete methods for pid and cid refs files
 
     /**
      * Takes a given input stream and writes it to its permanent address on disk based on the
