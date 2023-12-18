@@ -96,9 +96,12 @@ public interface HashStore {
          * @throws NoSuchAlgorithmException        When algorithm used to calculate pid refs address
          *                                         does not exist
          * @throws FileNotFoundException           If refs file is missing during verification
+         * @throws InterruptedException            When tagObject is waiting to execute but is
+         *                                         interrupted
          */
         boolean tagObject(String pid, String cid) throws IOException, PidRefsFileExistsException,
-                PidExistsInCidRefsFileException, NoSuchAlgorithmException, FileNotFoundException;
+                PidExistsInCidRefsFileException, NoSuchAlgorithmException, FileNotFoundException,
+                InterruptedException;
 
         /**
          * Confirms that an object_metadata's content is equal to the given values.

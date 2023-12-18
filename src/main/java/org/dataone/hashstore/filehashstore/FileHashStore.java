@@ -573,7 +573,8 @@ public class FileHashStore implements HashStore {
 
     @Override
     public boolean tagObject(String pid, String cid) throws IOException, PidRefsFileExistsException,
-        NoSuchAlgorithmException, FileNotFoundException, PidExistsInCidRefsFileException {
+        NoSuchAlgorithmException, FileNotFoundException, PidExistsInCidRefsFileException,
+        InterruptedException {
         logFileHashStore.debug(
             "FileHashStore.tagObject - Called to tag cid (" + cid + ") with pid: " + pid
         );
@@ -584,17 +585,23 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(cid, "cid", "tagObject");
 
         synchronized (referenceLockedCids) {
-            if (referenceLockedCids.contains(cid)) {
-                String errMsg =
-                    "FileHashStore.tagObject - Duplicate tag request encountered for cid: " + cid
-                        + ". Already in progress.";
-                logFileHashStore.error(errMsg);
-                throw new RuntimeException(errMsg);
+            while (referenceLockedCids.contains(cid)) {
+                try {
+                    referenceLockedCids.wait(TIME_OUT_MILLISEC);
+
+                } catch (InterruptedException ie) {
+                    String errMsg =
+                        "FileHashStore.tagObject - referecenceLockedCids lock was interrupted while"
+                            + " waiting to tag pid: " + pid + " and cid: " + cid
+                            + ". InterruptedException: " + ie.getMessage();
+                    logFileHashStore.error(errMsg);
+                    throw new InterruptedException(errMsg);
+                }
             }
             logFileHashStore.debug(
-                "FileHashStore.tagObject - Synchronizing referenceLockedCids for pid: " + pid
+                "FileHashStore.tagObject - Synchronizing referenceLockedCids for cid: " + cid
             );
-            objectLockedIds.add(cid);
+            referenceLockedCids.add(cid);
         }
 
         try {
@@ -622,7 +629,8 @@ public class FileHashStore implements HashStore {
                 }
                 if (pidFoundInCidRefFiles) {
                     String errMsg = "FileHashStore.tagObject - cid refs file already contains pid: "
-                        + pid;
+                        + pid + ". Refs file not created for both the given pid. Cid refs file ("
+                        + absPathCidRefsPath + ") has not been updated.";
                     logFileHashStore.error(errMsg);
                     throw new PidExistsInCidRefsFileException(errMsg);
                 }
@@ -737,8 +745,8 @@ public class FileHashStore implements HashStore {
                         "FileHashStore.storeMetadata - Metadata lock was interrupted while"
                             + " storing metadata for: " + pid + " and formatId: " + checkedFormatId
                             + ". InterruptedException: " + ie.getMessage();
-                    logFileHashStore.warn(errMsg);
-                    throw ie;
+                    logFileHashStore.error(errMsg);
+                    throw new InterruptedException(errMsg);
                 }
             }
             logFileHashStore.debug(
@@ -1677,13 +1685,14 @@ public class FileHashStore implements HashStore {
      * 
      * @param pid                Authority-based or persistent identifier
      * @param absPathCidRefsPath Path to the cid refs file to update
+     * @throws IOException Issue with updating a cid refs file
      */
-    protected void updateCidRefsFiles(String pid, Path absPathCidRefsPath) {
+    protected void updateCidRefsFiles(String pid, Path absPathCidRefsPath) throws IOException {
         File absPathCidRefsFile = absPathCidRefsPath.toFile();
         try {
             // Obtain a lock on the file 
-            try (FileChannel channel = new RandomAccessFile(absPathCidRefsFile, "rw").getChannel();
-                 FileLock lock = channel.lock()) {
+            try (RandomAccessFile raf = new RandomAccessFile(absPathCidRefsFile, "rw");
+                 FileChannel channel = raf.getChannel(); FileLock lock = channel.lock()) {
 
                 try (BufferedWriter writer = new BufferedWriter(
                     new FileWriter(absPathCidRefsFile, true)
@@ -1695,8 +1704,10 @@ public class FileHashStore implements HashStore {
             }
             // The lock is automatically released when the try block exits
 
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException ioe) {
+            String errMsg = "FileHashStore.updateCidRefsFiles - " + ioe.getMessage();
+            logFileHashStore.error(errMsg);
+            throw new IOException(errMsg);
         }
     }
 
