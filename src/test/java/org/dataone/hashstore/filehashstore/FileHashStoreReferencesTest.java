@@ -171,7 +171,7 @@ public class FileHashStoreReferencesTest {
         Path cidRefsFilePath = getObjectAbsPath(cid, "refs/cid");
 
         assertThrows(IOException.class, () -> {
-            fileHashStore.verifyHashStoreRefFiles(pid, cid, refsTmpFileAbsPath, cidRefsFilePath);
+            fileHashStore.verifyHashStoreRefsFiles(pid, cid, refsTmpFileAbsPath, cidRefsFilePath);
         });
     }
 
@@ -198,7 +198,7 @@ public class FileHashStoreReferencesTest {
         Path pidRefsFilePath = getObjectAbsPath(pidAddress, "refs/pid");
 
         assertThrows(IOException.class, () -> {
-            fileHashStore.verifyHashStoreRefFiles(pid, cid, pidRefsFilePath, refsTmpFileAbsPath);
+            fileHashStore.verifyHashStoreRefsFiles(pid, cid, pidRefsFilePath, refsTmpFileAbsPath);
         });
     }
 
