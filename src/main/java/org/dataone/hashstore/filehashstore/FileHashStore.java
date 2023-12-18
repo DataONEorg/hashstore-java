@@ -579,7 +579,7 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(cid, "cid", "tagObject");
 
         synchronized (referenceLockedCids) {
-            if (referenceLockedCids.contains(pid)) {
+            if (referenceLockedCids.contains(cid)) {
                 String errMsg =
                     "FileHashStore.tagObject - Duplicate tag request encountered for cid: " + cid
                         + ". Already in progress.";
@@ -587,9 +587,9 @@ public class FileHashStore implements HashStore {
                 throw new RuntimeException(errMsg);
             }
             logFileHashStore.debug(
-                "FileHashStore.storeObject - Synchronizing objectLockedIds for pid: " + pid
+                "FileHashStore.tagObject - Synchronizing referenceLockedCids for pid: " + pid
             );
-            objectLockedIds.add(pid);
+            objectLockedIds.add(cid);
         }
 
         try {
@@ -633,9 +633,9 @@ public class FileHashStore implements HashStore {
             // Release lock
             synchronized (referenceLockedCids) {
                 logFileHashStore.debug(
-                    "FileHashStore.syncPutObject - Releasing objectLockedIds for pid: " + pid
+                    "FileHashStore.tagObject - Releasing referenceLockedCids for cid: " + cid
                 );
-                referenceLockedCids.remove(pid);
+                referenceLockedCids.remove(cid);
                 referenceLockedCids.notifyAll();
             }
         }
@@ -1545,7 +1545,7 @@ public class FileHashStore implements HashStore {
 
         } catch (IOException ioe) {
             logFileHashStore.error(
-                "FileHashStore.writeHashStoreYaml() - Unable to write cid refs file for pid: " + pid
+                "FileHashStore.writeCidRefsFile - Unable to write cid refs file for pid: " + pid
                     + " IOException: " + ioe.getMessage()
             );
             throw ioe;
@@ -1568,7 +1568,7 @@ public class FileHashStore implements HashStore {
 
         } catch (IOException ioe) {
             logFileHashStore.error(
-                "FileHashStore.writeHashStoreYaml() - Unable to write pid refs file for cid: " + cid
+                "FileHashStore.writePidRefsFile - Unable to write pid refs file for cid: " + cid
                     + " IOException: " + ioe.getMessage()
             );
             throw ioe;
