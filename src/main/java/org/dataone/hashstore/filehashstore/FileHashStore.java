@@ -4,9 +4,13 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileAlreadyExistsException;
@@ -34,6 +38,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.dataone.hashstore.ObjectInfo;
 import org.dataone.hashstore.HashStore;
+import org.dataone.hashstore.exceptions.PidExistsInCidRefsFileException;
 import org.dataone.hashstore.exceptions.PidObjectExistsException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 
@@ -568,7 +573,7 @@ public class FileHashStore implements HashStore {
 
     @Override
     public boolean tagObject(String pid, String cid) throws IOException, PidRefsFileExistsException,
-        NoSuchAlgorithmException, FileNotFoundException {
+        NoSuchAlgorithmException, FileNotFoundException, PidExistsInCidRefsFileException {
         logFileHashStore.debug(
             "FileHashStore.tagObject - Called to tag cid (" + cid + ") with pid: " + pid
         );
@@ -607,8 +612,35 @@ public class FileHashStore implements HashStore {
                 throw new PidRefsFileExistsException(errMsg);
 
             } else if (Files.exists(absPathCidRefsPath)) {
-                // TODO:
-                // Update cid refs file
+                // Ensure that the pid is not already found in the file
+                List<String> lines = Files.readAllLines(absPathCidRefsPath);
+                boolean pidFoundInCidRefFiles = false;
+                for (String line : lines) {
+                    if (line.equals(pid)) {
+                        pidFoundInCidRefFiles = true;
+                    }
+                }
+                if (pidFoundInCidRefFiles) {
+                    String errMsg = "FileHashStore.tagObject - cid refs file already contains pid: "
+                        + pid;
+                    logFileHashStore.error(errMsg);
+                    throw new PidExistsInCidRefsFileException(errMsg);
+                }
+
+                // Write pid refs file to tmp file
+                File pidRefsTmpFile = generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
+                writePidRefsFile(pidRefsTmpFile, cid);
+                File absPathPidRefsFile = absPathPidRefsPath.toFile();
+                move(pidRefsTmpFile, absPathPidRefsFile, "refs");
+                // Now update cid refs file
+                updateCidRefsFiles(pid, absPathCidRefsPath);
+                // Verify tagging process, this throws exceptions if there's an issue
+                verifyHashStoreRefsFiles(pid, cid, absPathPidRefsPath, absPathCidRefsPath);
+
+                logFileHashStore.info(
+                    "FileHashStore.tagObject - Object with cid: " + cid
+                        + " has been updated successfully with pid: " + pid
+                );
                 return true;
 
             } else {
@@ -626,6 +658,10 @@ public class FileHashStore implements HashStore {
                 // Verify tagging process, this throws exceptions if there's an issue
                 verifyHashStoreRefsFiles(pid, cid, absPathPidRefsPath, absPathCidRefsPath);
 
+                logFileHashStore.info(
+                    "FileHashStore.tagObject - Object with cid: " + cid
+                        + " has been tagged successfully with pid: " + pid
+                );
                 return true;
             }
 
@@ -1633,6 +1669,34 @@ public class FileHashStore implements HashStore {
             String errMsg = "FileHashStore.verifyHashStoreRefsFiles - " + ioe.getMessage();
             logFileHashStore.error(errMsg);
             throw new IOException(errMsg);
+        }
+    }
+
+    /**
+     * Updates a cid refs file with a pid that references the cid
+     * 
+     * @param pid                Authority-based or persistent identifier
+     * @param absPathCidRefsPath Path to the cid refs file to update
+     */
+    protected void updateCidRefsFiles(String pid, Path absPathCidRefsPath) {
+        File absPathCidRefsFile = absPathCidRefsPath.toFile();
+        try {
+            // Obtain a lock on the file 
+            try (FileChannel channel = new RandomAccessFile(absPathCidRefsFile, "rw").getChannel();
+                 FileLock lock = channel.lock()) {
+
+                try (BufferedWriter writer = new BufferedWriter(
+                    new FileWriter(absPathCidRefsFile, true)
+                )) {
+                    writer.write(pid + "\n");
+                    writer.close();
+                }
+
+            }
+            // The lock is automatically released when the try block exits
+
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 

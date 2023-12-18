@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
 
+import org.dataone.hashstore.exceptions.PidExistsInCidRefsFileException;
 import org.dataone.hashstore.exceptions.PidObjectExistsException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 
@@ -89,14 +90,15 @@ public interface HashStore {
          * @param pid Authority-based identifier
          * @param cid Content-identifier (hash identifier)
          * @return Boolean to indicate the pid and cid has been tagged.
-         * @throws IOException                Failure to create tmp file
-         * @throws PidRefsFileExistsException When pid refs file already exists
-         * @throws NoSuchAlgorithmException   When algorithm used to calculate pid refs address does
-         *                                    not exist
-         * @throws FileNotFoundException      If refs file is missing during verification
+         * @throws IOException                     Failure to create tmp file
+         * @throws PidRefsFileExistsException      When pid refs file already exists
+         * @throws PidExistsInCidRefsFileException pid to write already exists in a cid refs file
+         * @throws NoSuchAlgorithmException        When algorithm used to calculate pid refs address
+         *                                         does not exist
+         * @throws FileNotFoundException           If refs file is missing during verification
          */
         boolean tagObject(String pid, String cid) throws IOException, PidRefsFileExistsException,
-                NoSuchAlgorithmException, FileNotFoundException;
+                PidExistsInCidRefsFileException, NoSuchAlgorithmException, FileNotFoundException;
 
         /**
          * Confirms that an object_metadata's content is equal to the given values.

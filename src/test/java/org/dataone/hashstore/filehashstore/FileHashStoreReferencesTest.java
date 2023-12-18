@@ -11,8 +11,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 import java.util.Properties;
 
+import org.dataone.hashstore.exceptions.PidExistsInCidRefsFileException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -122,6 +124,57 @@ public class FileHashStoreReferencesTest {
     }
 
     /**
+     * Check that tagObject creates a pid refs file and updates an existing cid refs file
+     */
+    @Test
+    public void tagObject_cidRefsFileExists() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        String pidAdditional = "another.pid.2";
+        fileHashStore.tagObject(pidAdditional, cid);
+
+        String pidAddress = fileHashStore.getPidHexDigest(
+            pid, fhsProperties.getProperty("storeAlgorithm")
+        );
+        Path pidRefsFilePath = getObjectAbsPath(pidAddress, "refs/pid");
+        assertTrue(Files.exists(pidRefsFilePath));
+
+
+        // Check cid refs file
+        Path cidRefsFilePath = getObjectAbsPath(cid, "refs/cid");
+        List<String> lines = Files.readAllLines(cidRefsFilePath);
+        boolean pidFoundInCidRefFiles = false;
+        for (String line : lines) {
+            if (line.equals(pidAdditional)) {
+                pidFoundInCidRefFiles = true;
+            }
+        }
+        assertTrue(pidFoundInCidRefFiles);
+    }
+
+    /**
+     * Check that tagObject throws an exception when calling to write a pid into a cid refs
+     * file that already contains the pid
+     */
+    @Test
+    public void tagObject_pidExistsInCidRefsFile() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+
+        Path refsTmpFileDirectory = rootDirectory.resolve("refs/tmp");
+        File refsTmpFile = fileHashStore.generateTmpFile("tmp", refsTmpFileDirectory);
+        fileHashStore.writeCidRefsFile(refsTmpFile, pid);
+        Path cidRefsFilePath = getObjectAbsPath(cid, "refs/cid");
+        fileHashStore.move(refsTmpFile, cidRefsFilePath.toFile(), "refs");
+
+        assertThrows(PidExistsInCidRefsFileException.class, () -> {
+            fileHashStore.tagObject(pid, cid);
+        });
+    }
+
+    /**
      * Check that the cid supplied is written into the file given
      */
     @Test
@@ -202,5 +255,28 @@ public class FileHashStoreReferencesTest {
         });
     }
 
-    // TODO: Write test for when updating a cid refs file with additional pids
+    /**
+     * Confirm that cid refs file has been updated successfully
+     */
+    @Test
+    public void updateCidRefsFiles_content() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        // Get path of the cid refs file
+        Path cidRefsFilePath = getObjectAbsPath(cid, "refs/cid");
+
+        String pidAdditional = "dou.test.2";
+        fileHashStore.updateCidRefsFiles("dou.test.2", cidRefsFilePath);
+
+        List<String> lines = Files.readAllLines(cidRefsFilePath);
+        boolean pidFoundInCidRefFiles = false;
+        for (String line : lines) {
+            if (line.equals(pidAdditional)) {
+                pidFoundInCidRefFiles = true;
+            }
+        }
+        assertTrue(pidFoundInCidRefFiles);
+    }
 }
