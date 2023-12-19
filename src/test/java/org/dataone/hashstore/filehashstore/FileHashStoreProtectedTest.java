@@ -477,49 +477,6 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Verify putObject throws exception when pid is empty
-     */
-    @Test
-    public void putObject_emptyPid() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            // Get test file to "upload"
-            String pidEmpty = "";
-            String pid = "jtao.1700.1";
-            Path testDataFile = testData.getTestFile(pid);
-
-            InputStream dataStream = Files.newInputStream(testDataFile);
-            fileHashStore.putObject(dataStream, pidEmpty, null, null, null, -1);
-        });
-    }
-
-    /**
-     * Verify putObject throws exception when pid is null
-     */
-    @Test
-    public void putObject_nullPid() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            // Get test file to "upload"
-            String pid = "jtao.1700.1";
-            Path testDataFile = testData.getTestFile(pid);
-
-            InputStream dataStream = Files.newInputStream(testDataFile);
-            fileHashStore.putObject(dataStream, null, "MD2", null, null, -1);
-        });
-    }
-
-    /**
-     * Verify putObject throws exception object is null
-     */
-    @Test
-    public void putObject_nullObject() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            // Get test file to "upload"
-            String pid = "jtao.1700.1";
-            fileHashStore.putObject(null, pid, "MD2", null, null, -1);
-        });
-    }
-
-    /**
      * Check default checksums are generated
      */
     @Test

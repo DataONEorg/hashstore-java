@@ -1099,10 +1099,6 @@ public class FileHashStore implements HashStore {
         AtomicMoveNotSupportedException {
         logFileHashStore.debug("FileHashStore.putObject - Called to put object for pid: " + pid);
 
-        // Begin input validation
-        FileHashStoreUtility.ensureNotNull(object, "object", "putObject");
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "putObject");
-        FileHashStoreUtility.checkForEmptyString(pid, "pid", "putObject");
         // Validate algorithms if not null or empty, throws exception if not supported
         if (additionalAlgorithm != null) {
             FileHashStoreUtility.checkForEmptyString(
