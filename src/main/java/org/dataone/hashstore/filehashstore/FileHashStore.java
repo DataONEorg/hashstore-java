@@ -1795,6 +1795,99 @@ public class FileHashStore implements HashStore {
         }
     }
 
+
+    /**
+     * Removes a pid from a cid refs file.
+     * 
+     * @param pid Authority-based or persistent identifier.
+     * @param cid Content identifier
+     * @throws NoSuchAlgorithmException Incompatible algorithm used to find pid refs file
+     * @throws IOException              Unable to delete object or open pid refs file
+     */
+    protected void deleteCidRefsPid(String pid, String cid) throws NoSuchAlgorithmException,
+        IOException {
+        FileHashStoreUtility.ensureNotNull(cid, "pid", "deleteCidRefsPid");
+        FileHashStoreUtility.checkForEmptyString(cid, "pid", "deleteCidRefsPid");
+
+        Path absPathCidRefsPath = getRealPath(cid, "refs", "cid");
+
+        // Check to see if cid refs file exists
+        if (!Files.exists(absPathCidRefsPath)) {
+            String errMsg =
+                "FileHashStore.deleteCidRefsPid - Cid refs file does not exist for cid: " + cid
+                    + " with address" + absPathCidRefsPath;
+            logFileHashStore.error(errMsg);
+            throw new FileNotFoundException(errMsg);
+
+        } else {
+            if (isPidInCidRefsFile(pid, absPathCidRefsPath)) {
+                try {
+                    List<String> lines = new ArrayList<>(Files.readAllLines(absPathCidRefsPath));
+                    lines.remove(pid);
+                    Files.write(
+                        absPathCidRefsPath, lines, StandardOpenOption.WRITE,
+                        StandardOpenOption.TRUNCATE_EXISTING
+                    );
+                    logFileHashStore.debug(
+                        "FileHashStore.deleteCidRefsPid - Pid: " + pid
+                            + " removed from cid refs file: " + absPathCidRefsPath
+                    );
+
+                } catch (IOException ioe) {
+                    String errMsg = "FileHashStore.deleteCidRefsPid - Unable to remove pid: " + pid
+                        + "from cid refs file: " + absPathCidRefsPath;
+                    logFileHashStore.error(errMsg);
+                    throw new IOException(errMsg);
+                }
+
+            } else {
+                String errMsg = "FileHashStore.deleteCidRefsPid - pid: " + pid
+                    + " not found in cid refs file: " + absPathCidRefsPath;
+                logFileHashStore.error(errMsg);
+                throw new IllegalArgumentException(errMsg);
+            }
+        }
+    }
+
+
+    /**
+     * Deletes a cid refs file if it is empty.
+     * 
+     * @param cid Content identifier
+     * @throws IOException Unable to delete object cid refs file
+     */
+    protected void deleteCidRefsFile(String cid) throws NoSuchAlgorithmException, IOException {
+        FileHashStoreUtility.ensureNotNull(cid, "pid", "deleteCidRefsFile");
+        FileHashStoreUtility.checkForEmptyString(cid, "pid", "deleteCidRefsFile");
+
+        Path absPathCidRefsPath = getRealPath(cid, "refs", "cid");
+
+        // Check to see if cid refs file exists
+        if (!Files.exists(absPathCidRefsPath)) {
+            String errMsg =
+                "FileHashStore.deleteCidRefsFile - Cid refs file does not exist for cid: " + cid
+                    + " with address" + absPathCidRefsPath;
+            logFileHashStore.error(errMsg);
+            throw new FileNotFoundException(errMsg);
+
+        } else {
+            // A cid refs file is only deleted if it is empty. Client must removed pids first
+            if (Files.size(absPathCidRefsPath) == 0) {
+                Files.delete(absPathCidRefsPath);
+                logFileHashStore.debug(
+                    "FileHashStore.deleteCidRefsFile - Deleted cid refs file: " + absPathCidRefsPath
+                );
+
+            } else {
+                String errMsg =
+                    "FileHashStore.deleteCidRefsFile - Unable to delete cid refs file, it is not empty: "
+                        + absPathCidRefsPath;
+                logFileHashStore.error(errMsg);
+                throw new IllegalArgumentException(errMsg);
+            }
+        }
+    }
+
     /**
      * Takes a given input stream and writes it to its permanent address on disk based on the
      * SHA-256 hex digest of the given pid + formatId. If no formatId is supplied, it will use the
