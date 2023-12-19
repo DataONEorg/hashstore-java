@@ -446,7 +446,6 @@ public class FileHashStore implements HashStore {
             validateAlgorithm(checksumAlgorithm);
         }
         if (objSize != -1) {
-            System.out.println("Checking not negative...");
             FileHashStoreUtility.checkNotNegativeOrZero(objSize, "storeObject");
         }
 
@@ -540,6 +539,7 @@ public class FileHashStore implements HashStore {
     @Override
     public ObjectInfo storeObject(InputStream object) throws NoSuchAlgorithmException, IOException,
         PidObjectExistsException, RuntimeException, InterruptedException {
+        // TODO
         return storeObject(object, null, null, null, null, -1);
     }
 
@@ -1709,8 +1709,6 @@ public class FileHashStore implements HashStore {
         try {
             String cidRead = new String(Files.readAllBytes(absPathPidRefsPath));
             if (!cidRead.equals(cid)) {
-                System.out.println(cidRead);
-                System.out.println(cid);
                 String errMsg = "FileHashStore.verifyHashStoreRefsFiles - Unexpected cid: "
                     + cidRead + " found in pid refs file: " + absPathPidRefsPath
                     + ". Expected cid: " + cid;
