@@ -629,11 +629,8 @@ public class FileHashStore implements HashStore {
         }
 
         try {
-            String pidRefId = getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
-            String pidShardString = getHierarchicalPathString(3, 2, pidRefId);
-            String cidShardString = getHierarchicalPathString(3, 2, cid);
-            Path absPathPidRefsPath = REFS_PID_FILE_DIRECTORY.resolve(pidShardString);
-            Path absPathCidRefsPath = REFS_CID_FILE_DIRECTORY.resolve(cidShardString);
+            Path absPathPidRefsPath = getRealPath(pid, "refs", "pid");
+            Path absPathCidRefsPath = getRealPath(cid, "refs", "cid");
 
             // Check that pid refs file doesn't exist yet
             if (Files.exists(absPathPidRefsPath)) {
@@ -713,9 +710,7 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "findObject");
 
         // Get path of the pid references file
-        String pidRefId = getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
-        String pidShardString = getHierarchicalPathString(3, 2, pidRefId);
-        Path absPathPidRefsPath = REFS_PID_FILE_DIRECTORY.resolve(pidShardString);
+        Path absPathPidRefsPath = getRealPath(pid, "refs", "pid");
 
         if (Files.exists(absPathPidRefsPath)) {
             String cidFromPidRefsFile = new String(Files.readAllBytes(absPathPidRefsPath));
@@ -1866,30 +1861,50 @@ public class FileHashStore implements HashStore {
     /**
      * Get the absolute path of a HashStore object or metadata file
      *
-     * @param pid      Authority-based identifier
+     * @param abId     Authority-based, persistent or content idenfitier
      * @param entity   "object" or "metadata"
-     * @param formatId Metadata namespace
+     * @param formatId Metadata namespace or reference type (pid/cid)
      * @return Actual path to object
      * @throws IllegalArgumentException If entity is not object or metadata
      * @throws NoSuchAlgorithmException If store algorithm is not supported
      * @throws IOException              If unable to retrieve cid
      */
-    protected Path getRealPath(String pid, String entity, String formatId)
+    protected Path getRealPath(String abId, String entity, String formatId)
         throws IllegalArgumentException, NoSuchAlgorithmException, IOException {
         Path realPath;
         if (entity.equalsIgnoreCase("object")) {
-            String objectCid = findObject(pid);
+            // 'abId' is expected to be a pid
+            String objectCid = findObject(abId);
             String objShardString = getHierarchicalPathString(
                 DIRECTORY_DEPTH, DIRECTORY_WIDTH, objectCid
             );
             realPath = OBJECT_STORE_DIRECTORY.resolve(objShardString);
 
         } else if (entity.equalsIgnoreCase("metadata")) {
-            String objectCid = getPidHexDigest(pid + formatId, OBJECT_STORE_ALGORITHM);
+            String objectCid = getPidHexDigest(abId + formatId, OBJECT_STORE_ALGORITHM);
             String objShardString = getHierarchicalPathString(
                 DIRECTORY_DEPTH, DIRECTORY_WIDTH, objectCid
             );
             realPath = METADATA_STORE_DIRECTORY.resolve(objShardString);
+
+        } else if (entity.equalsIgnoreCase("refs")) {
+            if (formatId.equalsIgnoreCase("pid")) {
+                String pidRefId = getPidHexDigest(abId, OBJECT_STORE_ALGORITHM);
+                String pidShardString = getHierarchicalPathString(
+                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, pidRefId
+                );
+                realPath = REFS_PID_FILE_DIRECTORY.resolve(pidShardString);
+            } else if (formatId.equalsIgnoreCase("cid")) {
+                String cidShardString = getHierarchicalPathString(
+                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, abId
+                );
+                realPath = REFS_CID_FILE_DIRECTORY.resolve(cidShardString);
+            } else {
+                String errMsg =
+                    "FileHashStore.getRealPath - formatId must be 'pid' or 'cid' when entity is 'refs'.";
+                logFileHashStore.error(errMsg);
+                throw new IllegalArgumentException(errMsg);
+            }
 
         } else {
             throw new IllegalArgumentException(

@@ -10,7 +10,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Properties;
@@ -26,7 +25,6 @@ import org.junit.jupiter.api.io.TempDir;
  */
 public class FileHashStoreReferencesTest {
     private FileHashStore fileHashStore;
-    private Properties fhsProperties;
     private Path rootDirectory;
 
     /**
@@ -46,7 +44,6 @@ public class FileHashStoreReferencesTest {
         );
 
         try {
-            fhsProperties = storeProperties;
             fileHashStore = new FileHashStore(storeProperties);
 
         } catch (IOException ioe) {
@@ -65,22 +62,6 @@ public class FileHashStoreReferencesTest {
     public Path tempFolder;
 
     /**
-     * Utility method to get absolute path of a given object
-     */
-    public Path getObjectAbsPath(String id, String entity) {
-        int shardDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
-        int shardWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
-        // Get relative path
-        String objCidShardString = fileHashStore.getHierarchicalPathString(
-            shardDepth, shardWidth, id
-        );
-        // Get absolute path
-        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
-
-        return storePath.resolve(entity).resolve(objCidShardString);
-    }
-
-    /**
      * Check that tagObject writes expected pid refs files
      */
     @Test
@@ -89,10 +70,7 @@ public class FileHashStoreReferencesTest {
         String cid = "abcdef123456789";
         fileHashStore.tagObject(pid, cid);
 
-        String pidAddress = fileHashStore.getPidHexDigest(
-            pid, fhsProperties.getProperty("storeAlgorithm")
-        );
-        Path pidRefsFilePath = getObjectAbsPath(pidAddress, "refs/pid");
+        Path pidRefsFilePath = fileHashStore.getRealPath(pid, "refs", "pid");
         assertTrue(Files.exists(pidRefsFilePath));
     }
 
@@ -105,7 +83,7 @@ public class FileHashStoreReferencesTest {
         String cid = "abcdef123456789";
         fileHashStore.tagObject(pid, cid);
 
-        Path cidRefsFilePath = getObjectAbsPath(cid, "refs/cid");
+        Path cidRefsFilePath = fileHashStore.getRealPath(cid, "refs", "cid");
         assertTrue(Files.exists(cidRefsFilePath));
     }
 
@@ -136,15 +114,12 @@ public class FileHashStoreReferencesTest {
         String pidAdditional = "another.pid.2";
         fileHashStore.tagObject(pidAdditional, cid);
 
-        String pidAddress = fileHashStore.getPidHexDigest(
-            pid, fhsProperties.getProperty("storeAlgorithm")
-        );
-        Path pidRefsFilePath = getObjectAbsPath(pidAddress, "refs/pid");
+        Path pidRefsFilePath = fileHashStore.getRealPath(pid, "refs", "pid");
         assertTrue(Files.exists(pidRefsFilePath));
 
 
         // Check cid refs file
-        Path cidRefsFilePath = getObjectAbsPath(cid, "refs/cid");
+        Path cidRefsFilePath = fileHashStore.getRealPath(cid, "refs", "cid");
         List<String> lines = Files.readAllLines(cidRefsFilePath);
         boolean pidFoundInCidRefFiles = false;
         for (String line : lines) {
@@ -166,7 +141,7 @@ public class FileHashStoreReferencesTest {
 
         File cidRefsTmpFile = fileHashStore.writeCidRefsFile(pid);
 
-        Path cidRefsFilePath = getObjectAbsPath(cid, "refs/cid");
+        Path cidRefsFilePath = fileHashStore.getRealPath(cid, "refs", "cid");
         fileHashStore.move(cidRefsTmpFile, cidRefsFilePath.toFile(), "refs");
 
         assertThrows(PidExistsInCidRefsFileException.class, () -> {
@@ -238,7 +213,7 @@ public class FileHashStoreReferencesTest {
         Path pidRefsTmpFilePath = pidRefsTmpFile.toPath();
 
         // Get path of the cid refs file
-        Path cidRefsFilePath = getObjectAbsPath(cid, "refs/cid");
+        Path cidRefsFilePath = fileHashStore.getRealPath(cid, "refs", "cid");
 
         assertThrows(IOException.class, () -> {
             fileHashStore.verifyHashStoreRefsFiles(pid, cid, pidRefsTmpFilePath, cidRefsFilePath);
@@ -260,10 +235,7 @@ public class FileHashStoreReferencesTest {
         Path cidRefsTmpFilePath = cidRefsTmpFile.toPath();
 
         // Get path of the pid refs file
-        String pidAddress = fileHashStore.getPidHexDigest(
-            pid, fhsProperties.getProperty("storeAlgorithm")
-        );
-        Path pidRefsFilePath = getObjectAbsPath(pidAddress, "refs/pid");
+        Path pidRefsFilePath = fileHashStore.getRealPath(pid, "refs", "pid");
 
         assertThrows(IOException.class, () -> {
             fileHashStore.verifyHashStoreRefsFiles(pid, cid, pidRefsFilePath, cidRefsTmpFilePath);
@@ -280,18 +252,23 @@ public class FileHashStoreReferencesTest {
         fileHashStore.tagObject(pid, cid);
 
         // Get path of the cid refs file
-        Path cidRefsFilePath = getObjectAbsPath(cid, "refs/cid");
+        Path cidRefsFilePath = fileHashStore.getRealPath(cid, "refs", "cid");
 
         String pidAdditional = "dou.test.2";
         fileHashStore.updateCidRefsFiles("dou.test.2", cidRefsFilePath);
 
         List<String> lines = Files.readAllLines(cidRefsFilePath);
-        boolean pidFoundInCidRefFiles = false;
+        boolean pidOriginal_foundInCidRefFiles = false;
+        boolean pidAdditional_foundInCidRefFiles = false;
         for (String line : lines) {
             if (line.equals(pidAdditional)) {
-                pidFoundInCidRefFiles = true;
+                pidAdditional_foundInCidRefFiles = true;
+            }
+            if (line.equals(pidAdditional)) {
+                pidOriginal_foundInCidRefFiles = true;
             }
         }
-        assertTrue(pidFoundInCidRefFiles);
+        assertTrue(pidOriginal_foundInCidRefFiles);
+        assertTrue(pidAdditional_foundInCidRefFiles);
     }
 }
