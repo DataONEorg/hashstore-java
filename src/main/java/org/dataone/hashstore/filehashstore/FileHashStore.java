@@ -18,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -1667,7 +1668,7 @@ public class FileHashStore implements HashStore {
      * @return True if cid is found, false otherwise
      * @throws IOException If unable to read the cid refs file.
      */
-    private boolean isPidInCidRefsFile(String pid, Path absPathCidRefsPath) throws IOException {
+    protected boolean isPidInCidRefsFile(String pid, Path absPathCidRefsPath) throws IOException {
         List<String> lines = Files.readAllLines(absPathCidRefsPath);
         boolean pidFoundInCidRefFiles = false;
         for (String line : lines) {
@@ -1764,7 +1765,35 @@ public class FileHashStore implements HashStore {
         }
     }
 
-    // TODO: Implement delete methods for pid and cid refs files
+    /**
+     * Deletes a pid references file
+     * 
+     * @param pid Authority-based or persistent identifier
+     * @throws NoSuchAlgorithmException Incompatible algorithm used to find pid refs file
+     * @throws IOException              Unable to delete object or open pid refs file
+     */
+    protected void deletePidRefsFile(String pid) throws NoSuchAlgorithmException, IOException {
+        FileHashStoreUtility.ensureNotNull(pid, "pid", "deletePidRefsFile");
+        FileHashStoreUtility.checkForEmptyString(pid, "pid", "deletePidRefsFile");
+
+        Path absPathPidRefsPath = getRealPath(pid, "refs", "pid");
+
+        // Check to see if pid refs file exists
+        if (!Files.exists(absPathPidRefsPath)) {
+            String errMsg =
+                "FileHashStore.deletePidRefsFile - File refs file does not exist for pid: " + pid
+                    + " with address" + absPathPidRefsPath;
+            logFileHashStore.warn(errMsg);
+            throw new FileNotFoundException(errMsg);
+        } else {
+            // Proceed to delete
+            Files.delete(absPathPidRefsPath);
+            logFileHashStore.debug(
+                "FileHashStore.deletePidRefsFile - Pid refs file deleted for: " + pid
+                    + " with address: " + absPathPidRefsPath
+            );
+        }
+    }
 
     /**
      * Takes a given input stream and writes it to its permanent address on disk based on the
@@ -1901,7 +1930,7 @@ public class FileHashStore implements HashStore {
                 realPath = REFS_CID_FILE_DIRECTORY.resolve(cidShardString);
             } else {
                 String errMsg =
-                    "FileHashStore.getRealPath - formatId must be 'pid' or 'cid' when entity is 'refs'.";
+                    "FileHashStore.getRealPath - formatId must be 'pid' or 'cid' when entity is 'refs'";
                 logFileHashStore.error(errMsg);
                 throw new IllegalArgumentException(errMsg);
             }

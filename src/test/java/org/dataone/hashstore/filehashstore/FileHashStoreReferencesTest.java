@@ -1,6 +1,7 @@
 package org.dataone.hashstore.filehashstore;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -270,5 +271,32 @@ public class FileHashStoreReferencesTest {
         }
         assertTrue(pidOriginal_foundInCidRefFiles);
         assertTrue(pidAdditional_foundInCidRefFiles);
+    }
+
+    /**
+     * Check that deletePidRefsFile deletes file
+     */
+    @Test
+    public void deletePidRefsFile_fileDeleted() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        fileHashStore.deletePidRefsFile(pid);
+
+        Path pidRefsFilePath = fileHashStore.getRealPath(pid, "refs", "pid");
+        assertFalse(Files.exists(pidRefsFilePath));
+    }
+
+    /**
+     * Check that deletePidRefsFile throws exception when there is no file to delete
+     */
+    @Test
+    public void deletePidRefsFile_missingPidRefsFile() throws Exception {
+        String pid = "dou.test.1";
+
+        assertThrows(FileNotFoundException.class, () -> {
+            fileHashStore.deletePidRefsFile(pid);
+        });
     }
 }
