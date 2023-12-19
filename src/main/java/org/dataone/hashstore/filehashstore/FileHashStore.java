@@ -536,11 +536,23 @@ public class FileHashStore implements HashStore {
         }
     }
 
+    /**
+     * Overload method for storeObject with just an InputStream
+     */
     @Override
     public ObjectInfo storeObject(InputStream object) throws NoSuchAlgorithmException, IOException,
         PidObjectExistsException, RuntimeException, InterruptedException {
-        // TODO
-        return storeObject(object, null, null, null, null, -1);
+        // 'putObject' is called directly to bypass the pid synchronization implemented to
+        // efficiently handle duplicate object store requests. Since there is no pid, calling
+        // 'storeObject' would unintentionally create a bottleneck for all requests without a
+        // pid (they would be executed sequentially). This scenario occurs when metadata about
+        // the object (ex. form data including the pid, checksum, checksum algorithm, etc.) is
+        // unavailable.
+        //
+        // Note: This method does not tag the object to make it discoverable, so the client must
+        // call 'tagObject' and 'verifyObject' separately to ensure that the object stored
+        // is discoverable and is what is expected.
+        return putObject(object, "HashStoreNoPid", null, null, null, -1);
     }
 
     /**

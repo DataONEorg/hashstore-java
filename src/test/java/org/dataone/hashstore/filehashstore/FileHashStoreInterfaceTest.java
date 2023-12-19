@@ -83,7 +83,7 @@ public class FileHashStoreInterfaceTest {
     /**
      * Utility method to get absolute path of a given object
      */
-    public Path getObjectAbsPath(String id) {
+    public Path getObjectAbsPath(String id, String entity) {
         int shardDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
         int shardWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
         // Get relative path
@@ -93,7 +93,8 @@ public class FileHashStoreInterfaceTest {
         // Get absolute path
         Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
 
-        return storePath.resolve("objects/" + objCidShardString);
+        // return storePath.resolve("objects/" + objCidShardString);
+        return storePath.resolve(entity).resolve(objCidShardString);
     }
 
     /**
@@ -277,7 +278,35 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Verify that storeObject stores an object with a good checksum value
+     * Check that store object executes as expected with only an InputStream (does not create
+     * any reference files)
+     */
+    @Test
+    public void storeObject_inputStream_overload() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectInfo objInfo = fileHashStore.storeObject(dataStream);
+
+            Map<String, String> hexDigests = objInfo.getHexDigests();
+            String defaultStoreAlgorithm = fhsProperties.getProperty("storeAlgorithm");
+            String cid = objInfo.getId();
+
+            assertEquals(hexDigests.get(defaultStoreAlgorithm), cid);
+
+            assertThrows(FileNotFoundException.class, () -> {
+                fileHashStore.findObject(pid);
+            });
+
+            Path cidRefsFilePath = getObjectAbsPath(cid, "refs/cid");
+            assertFalse(Files.exists(cidRefsFilePath));
+        }
+    }
+
+    /**
+     * Verify that storeObject returns the expected checksum value
      */
     @Test
     public void storeObject_validateChecksumValue() throws Exception {
@@ -293,7 +322,7 @@ public class FileHashStoreInterfaceTest {
         );
 
         String objCid = address.getId();
-        Path objCidAbsPath = getObjectAbsPath(objCid);
+        Path objCidAbsPath = getObjectAbsPath(objCid, "objects");
         assertTrue(Files.exists(objCidAbsPath));
     }
 
@@ -472,7 +501,7 @@ public class FileHashStoreInterfaceTest {
         );
 
         String objCid = sparseFileObjInfo.getId();
-        Path objCidAbsPath = getObjectAbsPath(objCid);
+        Path objCidAbsPath = getObjectAbsPath(objCid, "objects");
         assertTrue(Files.exists(objCidAbsPath));
 
     }
@@ -553,8 +582,8 @@ public class FileHashStoreInterfaceTest {
                     dataStream, pid, null, null, null, 0
                 );
                 if (objInfo != null) {
-                    String objId = objInfo.getId();
-                    Path objCidAbsPath = getObjectAbsPath(objId);
+                    String objCid = objInfo.getId();
+                    Path objCidAbsPath = getObjectAbsPath(objCid, "objects");
                     assertTrue(Files.exists(objCidAbsPath));
                 }
             } catch (Exception e) {
@@ -570,8 +599,8 @@ public class FileHashStoreInterfaceTest {
                     dataStream, pid, null, null, null, 0
                 );
                 if (objInfo != null) {
-                    String objId = objInfo.getId();
-                    Path objCidAbsPath = getObjectAbsPath(objId);
+                    String objCid = objInfo.getId();
+                    Path objCidAbsPath = getObjectAbsPath(objCid, "objects");
                     assertTrue(Files.exists(objCidAbsPath));
                 }
             } catch (Exception e) {
@@ -587,8 +616,8 @@ public class FileHashStoreInterfaceTest {
                     dataStream, pid, null, null, null, 0
                 );
                 if (objInfo != null) {
-                    String objId = objInfo.getId();
-                    Path objCidAbsPath = getObjectAbsPath(objId);
+                    String objCid = objInfo.getId();
+                    Path objCidAbsPath = getObjectAbsPath(objCid, "objects");
                     assertTrue(Files.exists(objCidAbsPath));
                 }
             } catch (Exception e) {
@@ -604,8 +633,8 @@ public class FileHashStoreInterfaceTest {
                     dataStream, pid, null, null, null, 0
                 );
                 if (objInfo != null) {
-                    String objId = objInfo.getId();
-                    Path objCidAbsPath = getObjectAbsPath(objId);
+                    String objCid = objInfo.getId();
+                    Path objCidAbsPath = getObjectAbsPath(objCid, "objects");
                     assertTrue(Files.exists(objCidAbsPath));
                 }
             } catch (Exception e) {
@@ -621,8 +650,8 @@ public class FileHashStoreInterfaceTest {
                     dataStream, pid, null, null, null, 0
                 );
                 if (objInfo != null) {
-                    String objId = objInfo.getId();
-                    Path objCidAbsPath = getObjectAbsPath(objId);
+                    String objCid = objInfo.getId();
+                    Path objCidAbsPath = getObjectAbsPath(objCid, "objects");
                     assertTrue(Files.exists(objCidAbsPath));
                 }
             } catch (Exception e) {
@@ -666,8 +695,8 @@ public class FileHashStoreInterfaceTest {
                     dataStream, pid, null, null, null, 0
                 );
                 if (objInfo != null) {
-                    String objId = objInfo.getId();
-                    Path objCidAbsPath = getObjectAbsPath(objId);
+                    String objCid = objInfo.getId();
+                    Path objCidAbsPath = getObjectAbsPath(objCid, "objects");
                     assertTrue(Files.exists(objCidAbsPath));
                 }
             } catch (Exception e) {
@@ -683,8 +712,8 @@ public class FileHashStoreInterfaceTest {
                     dataStream, pid, null, null, null, 0
                 );
                 if (objInfo != null) {
-                    String objId = objInfo.getId();
-                    Path objCidAbsPath = getObjectAbsPath(objId);
+                    String objCid = objInfo.getId();
+                    Path objCidAbsPath = getObjectAbsPath(objCid, "objects");
                     assertTrue(Files.exists(objCidAbsPath));
                 }
             } catch (Exception e) {
@@ -1238,8 +1267,8 @@ public class FileHashStoreInterfaceTest {
             fileHashStore.deleteObject(pid);
 
             // Check that file doesn't exist
-            String objId = objInfo.getId();
-            Path objCidAbsPath = getObjectAbsPath(objId);
+            String objCid = objInfo.getId();
+            Path objCidAbsPath = getObjectAbsPath(objCid, "objects");
             assertFalse(Files.exists(objCidAbsPath));
 
             // Check that parent directories are not deleted
