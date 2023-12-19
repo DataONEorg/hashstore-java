@@ -505,7 +505,7 @@ public class FileHashStoreInterfaceTest {
                 InputStream dataStream = Files.newInputStream(testFilePath);
                 String pid = "dou.sparsefile.1";
                 fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
-            } catch (IOException | NoSuchAlgorithmException ioe) {
+            } catch (IOException | NoSuchAlgorithmException | InterruptedException ioe) {
                 ioe.printStackTrace();
             }
         });

@@ -422,7 +422,8 @@ public class FileHashStore implements HashStore {
     public ObjectInfo storeObject(
         InputStream object, String pid, String additionalAlgorithm, String checksum,
         String checksumAlgorithm, long objSize
-    ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException {
+    ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException,
+        InterruptedException {
         logFileHashStore.debug(
             "FileHashStore.storeObject - Called to store object for pid: " + pid
         );
@@ -460,7 +461,8 @@ public class FileHashStore implements HashStore {
     private ObjectInfo syncPutObject(
         InputStream object, String pid, String additionalAlgorithm, String checksum,
         String checksumAlgorithm, long objSize
-    ) throws NoSuchAlgorithmException, PidObjectExistsException, IOException, RuntimeException {
+    ) throws NoSuchAlgorithmException, PidObjectExistsException, IOException, RuntimeException,
+        InterruptedException {
         // Lock pid for thread safety, transaction control and atomic writing
         // A pid can only be stored once and only once, subsequent calls will
         // be accepted but will be rejected if pid hash object exists
@@ -488,6 +490,9 @@ public class FileHashStore implements HashStore {
             ObjectInfo objInfo = putObject(
                 object, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize
             );
+            // Tag object
+            String cid = objInfo.getId();
+            tagObject(pid, cid);
             logFileHashStore.info(
                 "FileHashStore.syncPutObject - Object stored for pid: " + pid
                     + ". Permanent address: " + getRealPath(pid, "object", null)
@@ -539,7 +544,8 @@ public class FileHashStore implements HashStore {
      */
     @Override
     public ObjectInfo storeObject(InputStream object, String pid, String additionalAlgorithm)
-        throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException {
+        throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException,
+        InterruptedException {
         FileHashStoreUtility.ensureNotNull(
             additionalAlgorithm, "additionalAlgorithm", "storeObject"
         );
@@ -553,7 +559,8 @@ public class FileHashStore implements HashStore {
     @Override
     public ObjectInfo storeObject(
         InputStream object, String pid, String checksum, String checksumAlgorithm
-    ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException {
+    ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException,
+        InterruptedException {
         FileHashStoreUtility.ensureNotNull(checksum, "checksum", "storeObject");
         FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm", "storeObject");
 
@@ -565,7 +572,8 @@ public class FileHashStore implements HashStore {
      */
     @Override
     public ObjectInfo storeObject(InputStream object, String pid, long objSize)
-        throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException {
+        throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException,
+        InterruptedException {
         FileHashStoreUtility.checkNotNegativeOrZero(objSize, "storeObject");
 
         return storeObject(object, pid, null, null, null, objSize);
@@ -673,8 +681,6 @@ public class FileHashStore implements HashStore {
                 referenceLockedCids.notifyAll();
             }
         }
-
-
     }
 
     @Override
@@ -703,7 +709,7 @@ public class FileHashStore implements HashStore {
             String errMsg = "FileHashStore.findObject - Unable to find cid for pid: " + pid
                 + ". Pid refs file does not exist at: " + absPathPidRefsPath;
             logFileHashStore.error(errMsg);
-            throw new IOException(errMsg);
+            throw new FileNotFoundException(errMsg);
         }
     }
 
@@ -1019,24 +1025,33 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "getHexDigest");
         validateAlgorithm(algorithm);
 
-        // Get permanent address of the pid by calculating its sha-256 hex digest
-        Path objRealPath = getRealPath(pid, "object", null);
+        // Find the content identifier
+        if (algorithm.equals(OBJECT_STORE_ALGORITHM)) {
+            String cid = findObject(pid);
+            return cid;
 
-        // Check to see if object exists
-        if (!Files.exists(objRealPath)) {
-            String errMsg = "FileHashStore.getHexDigest - File does not exist for pid: " + pid
-                + " with object address: " + objRealPath;
-            logFileHashStore.warn(errMsg);
-            throw new FileNotFoundException(errMsg);
+        } else {
+            // Get permanent address of the pid
+            Path objRealPath = getRealPath(pid, "object", null);
+
+            // Check to see if object exists
+            if (!Files.exists(objRealPath)) {
+                String errMsg = "FileHashStore.getHexDigest - File does not exist for pid: " + pid
+                    + " with object address: " + objRealPath;
+                logFileHashStore.warn(errMsg);
+                throw new FileNotFoundException(errMsg);
+            }
+
+            InputStream dataStream = Files.newInputStream(objRealPath);
+            String mdObjectHexDigest = FileHashStoreUtility.calculateHexDigest(
+                dataStream, algorithm
+            );
+            logFileHashStore.info(
+                "FileHashStore.getHexDigest - Hex digest calculated for pid: " + pid
+                    + ", with hex digest value: " + mdObjectHexDigest
+            );
+            return mdObjectHexDigest;
         }
-
-        InputStream dataStream = Files.newInputStream(objRealPath);
-        String mdObjectHexDigest = FileHashStoreUtility.calculateHexDigest(dataStream, algorithm);
-        logFileHashStore.info(
-            "FileHashStore.getHexDigest - Hex digest calculated for pid: " + pid
-                + ", with hex digest value: " + mdObjectHexDigest
-        );
-        return mdObjectHexDigest;
     }
 
     // FileHashStore Core & Supporting Methods
@@ -1847,12 +1862,13 @@ public class FileHashStore implements HashStore {
      * @return Actual path to object
      * @throws IllegalArgumentException If entity is not object or metadata
      * @throws NoSuchAlgorithmException If store algorithm is not supported
+     * @throws IOException              If unable to retrieve cid
      */
     protected Path getRealPath(String pid, String entity, String formatId)
-        throws IllegalArgumentException, NoSuchAlgorithmException {
+        throws IllegalArgumentException, NoSuchAlgorithmException, IOException {
         Path realPath;
         if (entity.equalsIgnoreCase("object")) {
-            String objectCid = getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
+            String objectCid = findObject(pid);
             String objShardString = getHierarchicalPathString(
                 DIRECTORY_DEPTH, DIRECTORY_WIDTH, objectCid
             );

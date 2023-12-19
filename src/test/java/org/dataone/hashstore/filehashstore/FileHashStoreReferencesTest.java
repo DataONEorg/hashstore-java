@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -193,7 +194,7 @@ public class FileHashStoreReferencesTest {
     @Test
     public void findObject_pidNotFound() throws Exception {
         String pid = "dou.test.1";
-        assertThrows(IOException.class, () -> {
+        assertThrows(FileNotFoundException.class, () -> {
             fileHashStore.findObject(pid);
         });
     }

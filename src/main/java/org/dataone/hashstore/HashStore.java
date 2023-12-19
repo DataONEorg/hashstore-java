@@ -55,32 +55,35 @@ public interface HashStore {
          * @throws PidObjectExistsException When duplicate pid object is found
          * @throws RuntimeException         Thrown when there is an issue with permissions, illegal
          *                                  arguments (ex. empty pid) or null pointers
+         * @throws InterruptedException     When tagging pid and cid process is interrupted
          */
         ObjectInfo storeObject(
                 InputStream object, String pid, String additionalAlgorithm, String checksum,
                 String checksumAlgorithm, long objSize
-        ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException;
+        ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException,
+                InterruptedException;
 
         /**
          * @see #storeObject(InputStream, String, String, String, String, long)
          */
         ObjectInfo storeObject(
                 InputStream object, String pid, String checksum, String checksumAlgorithm
-        ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException;
+        ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException,
+                InterruptedException;
 
         /**
          * @see #storeObject(InputStream, String, String, String, String, long)
          */
         ObjectInfo storeObject(InputStream object, String pid, String additionalAlgorithm)
                 throws NoSuchAlgorithmException, IOException, PidObjectExistsException,
-                RuntimeException;
+                RuntimeException, InterruptedException;
 
         /**
          * @see #storeObject(InputStream, String, String, String, String, long)
          */
         ObjectInfo storeObject(InputStream object, String pid, long objSize)
                 throws NoSuchAlgorithmException, IOException, PidObjectExistsException,
-                RuntimeException;
+                RuntimeException, InterruptedException;
 
         /**
          * Creates references that allow objects stored in HashStore to be discoverable. Retrieving,
