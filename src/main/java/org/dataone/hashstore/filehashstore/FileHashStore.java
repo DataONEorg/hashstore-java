@@ -537,7 +537,11 @@ public class FileHashStore implements HashStore {
         }
     }
 
-    // TODO: storeObject with just InputStream
+    @Override
+    public ObjectInfo storeObject(InputStream object) throws NoSuchAlgorithmException, IOException,
+        PidObjectExistsException, RuntimeException, InterruptedException {
+        return storeObject(object, null, null, null, null, -1);
+    }
 
     /**
      * Overload method for storeObject with an additionalAlgorithm

@@ -18,28 +18,35 @@ import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
  */
 public interface HashStore {
         /**
-         * Atomically stores objects to HashStore using a given InputStream and a persistent
-         * identifier (pid). Upon successful storage, the method returns an 'ObjectInfo' object
-         * containing the object's file information, such as the id, file size, and hex digest map
-         * of algorithms and hex digests/checksums. An object is stored once and only once - and
-         * `storeObject` also enforces this rule by synchronizing multiple calls and rejecting calls
-         * to store duplicate objects.
+         * The `storeOject` method is responsible for the atomic storage of objects to disk using a
+         * given InputStream. Upon successful storage, the method returns a (ObjectInfo) object
+         * containing relevant file information, such as the file's id (which can be used to locate
+         * the object on disk), the file's size, and a hex digest dict of algorithms and checksums.
+         * Storing an object with `store_object` also tags an object (creating references) which
+         * allow the object to be discoverable.
          * 
-         * The file's id is determined by calculating the SHA-256 hex digest of the provided pid,
-         * which is also used as the permanent address of the file. The file's identifier is then
-         * sharded using a depth of 3 and width of 2, delimited by '/' and concatenated to produce
-         * the final permanent address, which is stored in the object store directory (ex.
-         * `./[storePath]/objects/`).
+         * `storeObject` also ensures that an object is stored only once by synchronizing multiple
+         * calls and rejecting calls to store duplicate objects. Note, calling `storeObject` without
+         * a pid is a possibility, but should only store the object without tagging the object. It
+         * is then the caller's responsibility to finalize the process by calling `tagObject` after
+         * veriftying the correct object is stored.
+         * 
+         * The file's id is determined by calculating the object's content identifier based on the
+         * store's default algorithm, which is also used as the permanent address of the file. The
+         * file's identifier is then sharded using the store's configured depth and width, delimited
+         * by '/' and concatenated to produce the final permanent address and is stored in the
+         * `./[storePath]/objects/` directory.
          * 
          * By default, the hex digest map includes the following hash algorithms: MD5, SHA-1,
-         * SHA-256, SHA-384 and SHA-512, which are the most commonly used algorithms in dataset
+         * SHA-256, SHA-384, SHA-512 - which are the most commonly used algorithms in dataset
          * submissions to DataONE and the Arctic Data Center. If an additional algorithm is
-         * provided, the `storeObject` method checks if it is supported and adds it to the map along
-         * with its corresponding hex digest. An algorithm is considered "supported" if it is
-         * recognized as a valid hash algorithm in the `java.security.MessageDigest` class.
+         * provided, the `storeObject` method checks if it is supported and adds it to the hex
+         * digests dict along with its corresponding hex digest. An algorithm is considered
+         * "supported" if it is recognized as a valid hash algorithm in
+         * `java.security.MessageDigest` class.
          * 
-         * Similarly, if a checksum and a checksumAlgorithm or an object size value is provided,
-         * `storeObject` validates the object to ensure it matches what is provided before moving
+         * Similarly, if a file size and/or checksum & checksumAlgorithm value are provided,
+         * `storeObject` validates the object to ensure it matches the given arguments before moving
          * the file to its permanent address.
          * 
          * @param object              Input stream to file
@@ -62,6 +69,12 @@ public interface HashStore {
                 String checksumAlgorithm, long objSize
         ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException,
                 InterruptedException;
+
+        /**
+         * @see #storeObject(InputStream, String, String, String, String, long)
+         */
+        ObjectInfo storeObject(InputStream object) throws NoSuchAlgorithmException, IOException,
+                PidObjectExistsException, RuntimeException, InterruptedException;
 
         /**
          * @see #storeObject(InputStream, String, String, String, String, long)
