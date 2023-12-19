@@ -1652,11 +1652,11 @@ public class FileHashStore implements HashStore {
             return pidRefsTmpFile;
 
         } catch (IOException ioe) {
-            logFileHashStore.error(
+            String errMsg =
                 "FileHashStore.writePidRefsFile - Unable to write pid refs file for cid: " + cid
-                    + " IOException: " + ioe.getMessage()
-            );
-            throw ioe;
+                    + " IOException: " + ioe.getMessage();
+            logFileHashStore.error(errMsg);
+            throw new IOException(errMsg);
         }
     }
 
@@ -1718,14 +1718,15 @@ public class FileHashStore implements HashStore {
                     + ". Expected cid: " + cid;
                 logFileHashStore.error(errMsg);
                 throw new IOException(errMsg);
+
             }
-            // This will strip new line characters
             boolean pidFoundInCidRefFiles = isPidInCidRefsFile(pid, absPathCidRefsPath);
             if (!pidFoundInCidRefFiles) {
                 String errMsg = "FileHashStore.verifyHashStoreRefsFiles - Missing expected pid: "
                     + pid + " in cid refs file: " + absPathCidRefsPath;
                 logFileHashStore.error(errMsg);
                 throw new IOException(errMsg);
+
             }
         } catch (IOException ioe) {
             String errMsg = "FileHashStore.verifyHashStoreRefsFiles - " + ioe.getMessage();
@@ -1754,7 +1755,10 @@ public class FileHashStore implements HashStore {
                     writer.write(pid + "\n");
                     writer.close();
                 }
-
+                logFileHashStore.debug(
+                    "FileHashStore.updateCidRefsFiles - Pid: " + pid
+                        + " has been added to cid refs file: " + absPathCidRefsFile
+                );
             }
             // The lock is automatically released when the try block exits
 
@@ -1783,8 +1787,9 @@ public class FileHashStore implements HashStore {
             String errMsg =
                 "FileHashStore.deletePidRefsFile - File refs file does not exist for pid: " + pid
                     + " with address" + absPathPidRefsPath;
-            logFileHashStore.warn(errMsg);
+            logFileHashStore.error(errMsg);
             throw new FileNotFoundException(errMsg);
+
         } else {
             // Proceed to delete
             Files.delete(absPathPidRefsPath);
@@ -1801,8 +1806,7 @@ public class FileHashStore implements HashStore {
      * 
      * @param pid Authority-based or persistent identifier.
      * @param cid Content identifier
-     * @throws NoSuchAlgorithmException Incompatible algorithm used to find pid refs file
-     * @throws IOException              Unable to delete object or open pid refs file
+     * @throws IOException Unable to access cid refs file
      */
     protected void deleteCidRefsPid(String pid, String cid) throws NoSuchAlgorithmException,
         IOException {
@@ -1835,7 +1839,8 @@ public class FileHashStore implements HashStore {
 
                 } catch (IOException ioe) {
                     String errMsg = "FileHashStore.deleteCidRefsPid - Unable to remove pid: " + pid
-                        + "from cid refs file: " + absPathCidRefsPath;
+                        + "from cid refs file: " + absPathCidRefsPath + ". Additional Info: " + ioe
+                            .getMessage();
                     logFileHashStore.error(errMsg);
                     throw new IOException(errMsg);
                 }
@@ -1871,7 +1876,7 @@ public class FileHashStore implements HashStore {
             throw new FileNotFoundException(errMsg);
 
         } else {
-            // A cid refs file is only deleted if it is empty. Client must removed pids first
+            // A cid refs file is only deleted if it is empty. Client must removed pid(s) first
             if (Files.size(absPathCidRefsPath) == 0) {
                 Files.delete(absPathCidRefsPath);
                 logFileHashStore.debug(

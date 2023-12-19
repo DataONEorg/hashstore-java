@@ -345,7 +345,7 @@ public class FileHashStoreReferencesTest {
     }
 
     /**
-     * Check that deleteCidRefsFile deletes a file when it is empty.
+     * Check that deleteCidRefsFile deletes a file when it is empty
      */
     @Test
     public void deleteCidRefsFile_fileDeleted() throws Exception {
@@ -361,7 +361,7 @@ public class FileHashStoreReferencesTest {
     }
 
     /**
-     * Check that deleteCidRefsFile throws exception when cid refs file is not empty.
+     * Check that deleteCidRefsFile throws exception when cid refs file is not empty
      */
     @Test
     public void deleteCidRefsFile_cidRefsFileNotEmpty() throws Exception {
