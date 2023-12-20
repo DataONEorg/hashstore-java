@@ -393,6 +393,32 @@ public class FileHashStoreReferencesTest {
     }
 
     /**
+     * Check that verifyObject verifies with good values
+     */
+    @Test
+    public void verifyObject_mismatchedValuesBadSize() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectInfo objInfo = fileHashStore.storeObject(dataStream);
+
+            String defaultStoreAlgorithm = fhsProperties.getProperty("storeAlgorithm");
+
+            // Get verifyObject args
+            String expectedChecksum = testData.pidData.get(pid).get("sha256");
+            long expectedSize = 123456789;
+
+            assertThrows(IllegalArgumentException.class, () -> {
+                fileHashStore.verifyObject(
+                    objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize
+                );
+            });
+        }
+    }
+
+    /**
      * Check that verifyObject deletes file when there is a mismatch
      */
     @Test
