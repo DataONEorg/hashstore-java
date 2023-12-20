@@ -10,10 +10,10 @@ import org.dataone.hashstore.exceptions.PidObjectExistsException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 
 /**
- * HashStore is a content-addressable file management system that utilizes the hash/hex digest of a
- * given persistent identifier (PID) to address files. The system stores both objects and metadata
- * in its respective directories and provides an API for interacting with the store. HashStore
- * storage classes (like `FileHashStore`) must implement the HashStore interface to ensure proper
+ * HashStore is a content-addressable file management system that utilizes the content identifier of
+ * an object to address files. The system stores both objects, references (refs) and metadata in its
+ * respective directories and provides an API for interacting with the store. HashStore storage
+ * classes (like `FileHashStore`) must implement the HashStore interface to ensure the expected
  * usage of the system.
  */
 public interface HashStore {
