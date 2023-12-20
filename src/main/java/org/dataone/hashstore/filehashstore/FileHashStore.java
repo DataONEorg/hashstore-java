@@ -630,35 +630,35 @@ public class FileHashStore implements HashStore {
         }
 
         try {
-            Path absPathPidRefsPath = getRealPath(pid, "refs", "pid");
-            Path absPathCidRefsPath = getRealPath(cid, "refs", "cid");
+            Path absPidRefsPath = getRealPath(pid, "refs", "pid");
+            Path absCidRefsPath = getRealPath(cid, "refs", "cid");
 
             // Check that pid refs file doesn't exist yet
-            if (Files.exists(absPathPidRefsPath)) {
+            if (Files.exists(absPidRefsPath)) {
                 String errMsg = "FileHashStore.tagObject - pid refs file already exists for pid: "
                     + pid + ". A pid can only reference one cid.";
                 logFileHashStore.error(errMsg);
                 throw new PidRefsFileExistsException(errMsg);
 
-            } else if (Files.exists(absPathCidRefsPath)) {
+            } else if (Files.exists(absCidRefsPath)) {
                 // Ensure that the pid is not already found in the file
-                boolean pidFoundInCidRefFiles = isPidInCidRefsFile(pid, absPathCidRefsPath);
+                boolean pidFoundInCidRefFiles = isPidInCidRefsFile(pid, absCidRefsPath);
                 if (pidFoundInCidRefFiles) {
                     String errMsg = "FileHashStore.tagObject - cid refs file already contains pid: "
                         + pid + ". Refs file not created for both the given pid. Cid refs file ("
-                        + absPathCidRefsPath + ") has not been updated.";
+                        + absCidRefsPath + ") has not been updated.";
                     logFileHashStore.error(errMsg);
                     throw new PidExistsInCidRefsFileException(errMsg);
                 }
 
                 // Write pid refs file to tmp file
                 File pidRefsTmpFile = writePidRefsFile(cid);
-                File absPathPidRefsFile = absPathPidRefsPath.toFile();
+                File absPathPidRefsFile = absPidRefsPath.toFile();
                 move(pidRefsTmpFile, absPathPidRefsFile, "refs");
                 // Now update cid refs file
-                updateCidRefsFiles(pid, absPathCidRefsPath);
+                updateCidRefsFiles(pid, absCidRefsPath);
                 // Verify tagging process, this throws exceptions if there's an issue
-                verifyHashStoreRefsFiles(pid, cid, absPathPidRefsPath, absPathCidRefsPath);
+                verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
 
                 logFileHashStore.info(
                     "FileHashStore.tagObject - Object with cid: " + cid
@@ -671,12 +671,12 @@ public class FileHashStore implements HashStore {
                 File pidRefsTmpFile = writePidRefsFile(cid);
                 File cidRefsTmpFile = writeCidRefsFile(pid);
                 // Move refs files to permanent location
-                File absPathPidRefsFile = absPathPidRefsPath.toFile();
-                File absPathCidRefsFile = absPathCidRefsPath.toFile();
+                File absPathPidRefsFile = absPidRefsPath.toFile();
+                File absPathCidRefsFile = absCidRefsPath.toFile();
                 move(pidRefsTmpFile, absPathPidRefsFile, "refs");
                 move(cidRefsTmpFile, absPathCidRefsFile, "refs");
                 // Verify tagging process, this throws exceptions if there's an issue
-                verifyHashStoreRefsFiles(pid, cid, absPathPidRefsPath, absPathCidRefsPath);
+                verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
 
                 logFileHashStore.info(
                     "FileHashStore.tagObject - Object with cid: " + cid
@@ -711,15 +711,18 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "findObject");
 
         // Get path of the pid references file
-        Path absPathPidRefsPath = getRealPath(pid, "refs", "pid");
+        Path absPidRefsPath = getRealPath(pid, "refs", "pid");
 
-        if (Files.exists(absPathPidRefsPath)) {
-            String cidFromPidRefsFile = new String(Files.readAllBytes(absPathPidRefsPath));
+        if (Files.exists(absPidRefsPath)) {
+            String cidFromPidRefsFile = new String(Files.readAllBytes(absPidRefsPath));
+            logFileHashStore.info(
+                "FileHashStore.findObject - Cid (" + cidFromPidRefsFile + ") found for pid:" + pid
+            );
             return cidFromPidRefsFile;
 
         } else {
             String errMsg = "FileHashStore.findObject - Unable to find cid for pid: " + pid
-                + ". Pid refs file does not exist at: " + absPathPidRefsPath;
+                + ". Pid refs file does not exist at: " + absPidRefsPath;
             logFileHashStore.error(errMsg);
             throw new FileNotFoundException(errMsg);
         }
@@ -1669,13 +1672,13 @@ public class FileHashStore implements HashStore {
     /**
      * Checks a given cid refs file for a pid.
      * 
-     * @param pid                Authority-based or persistent identifier to search
-     * @param absPathCidRefsPath Path to the cid refs file to check
+     * @param pid            Authority-based or persistent identifier to search
+     * @param absCidRefsPath Path to the cid refs file to check
      * @return True if cid is found, false otherwise
      * @throws IOException If unable to read the cid refs file.
      */
-    protected boolean isPidInCidRefsFile(String pid, Path absPathCidRefsPath) throws IOException {
-        List<String> lines = Files.readAllLines(absPathCidRefsPath);
+    protected boolean isPidInCidRefsFile(String pid, Path absCidRefsPath) throws IOException {
+        List<String> lines = Files.readAllLines(absCidRefsPath);
         boolean pidFoundInCidRefFiles = false;
         for (String line : lines) {
             if (line.equals(pid)) {
@@ -1691,45 +1694,45 @@ public class FileHashStore implements HashStore {
      * Verifies that the reference files for the given pid and cid exist and contain
      * the expected values.
      * 
-     * @param pid                Authority-based or persistent identifier
-     * @param cid                Content identifier
-     * @param absPathPidRefsPath Path to where the pid refs file exists
-     * @param absPathCidRefsPath Path to where the cid refs file exists
+     * @param pid            Authority-based or persistent identifier
+     * @param cid            Content identifier
+     * @param absPidRefsPath Path to where the pid refs file exists
+     * @param absCidRefsPath Path to where the cid refs file exists
      * @throws FileNotFoundException Any refs files are missing
      * @throws IOException           Unable to read any of the refs files or if the refs content
      *                               is not what is expected
      */
     protected void verifyHashStoreRefsFiles(
-        String pid, String cid, Path absPathPidRefsPath, Path absPathCidRefsPath
+        String pid, String cid, Path absPidRefsPath, Path absCidRefsPath
     ) throws FileNotFoundException, IOException {
         // First check that the files exist
-        if (!Files.exists(absPathCidRefsPath)) {
+        if (!Files.exists(absCidRefsPath)) {
             String errMsg = "FileHashStore.verifyHashStoreRefsFiles - cid refs file is missing: "
-                + absPathCidRefsPath + " for pid: " + pid;
+                + absCidRefsPath + " for pid: " + pid;
             logFileHashStore.error(errMsg);
             throw new FileNotFoundException(errMsg);
         }
-        if (!Files.exists(absPathPidRefsPath)) {
+        if (!Files.exists(absPidRefsPath)) {
             String errMsg = "FileHashStore.verifyHashStoreRefsFiles - pid refs file is missing: "
-                + absPathPidRefsPath + " for cid: " + cid;
+                + absPidRefsPath + " for cid: " + cid;
             logFileHashStore.error(errMsg);
             throw new FileNotFoundException(errMsg);
         }
         // Now verify the content
         try {
-            String cidRead = new String(Files.readAllBytes(absPathPidRefsPath));
+            String cidRead = new String(Files.readAllBytes(absPidRefsPath));
             if (!cidRead.equals(cid)) {
                 String errMsg = "FileHashStore.verifyHashStoreRefsFiles - Unexpected cid: "
-                    + cidRead + " found in pid refs file: " + absPathPidRefsPath
-                    + ". Expected cid: " + cid;
+                    + cidRead + " found in pid refs file: " + absPidRefsPath + ". Expected cid: "
+                    + cid;
                 logFileHashStore.error(errMsg);
                 throw new IOException(errMsg);
 
             }
-            boolean pidFoundInCidRefFiles = isPidInCidRefsFile(pid, absPathCidRefsPath);
+            boolean pidFoundInCidRefFiles = isPidInCidRefsFile(pid, absCidRefsPath);
             if (!pidFoundInCidRefFiles) {
                 String errMsg = "FileHashStore.verifyHashStoreRefsFiles - Missing expected pid: "
-                    + pid + " in cid refs file: " + absPathCidRefsPath;
+                    + pid + " in cid refs file: " + absCidRefsPath;
                 logFileHashStore.error(errMsg);
                 throw new IOException(errMsg);
 
@@ -1744,12 +1747,12 @@ public class FileHashStore implements HashStore {
     /**
      * Updates a cid refs file with a pid that references the cid
      * 
-     * @param pid                Authority-based or persistent identifier
-     * @param absPathCidRefsPath Path to the cid refs file to update
+     * @param pid            Authority-based or persistent identifier
+     * @param absCidRefsPath Path to the cid refs file to update
      * @throws IOException Issue with updating a cid refs file
      */
-    protected void updateCidRefsFiles(String pid, Path absPathCidRefsPath) throws IOException {
-        File absPathCidRefsFile = absPathCidRefsPath.toFile();
+    protected void updateCidRefsFiles(String pid, Path absCidRefsPath) throws IOException {
+        File absPathCidRefsFile = absCidRefsPath.toFile();
         try {
             // Obtain a lock on the file before updating it
             try (RandomAccessFile raf = new RandomAccessFile(absPathCidRefsFile, "rw");
@@ -1786,22 +1789,22 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(pid, "pid", "deletePidRefsFile");
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "deletePidRefsFile");
 
-        Path absPathPidRefsPath = getRealPath(pid, "refs", "pid");
+        Path absPidRefsPath = getRealPath(pid, "refs", "pid");
 
         // Check to see if pid refs file exists
-        if (!Files.exists(absPathPidRefsPath)) {
+        if (!Files.exists(absPidRefsPath)) {
             String errMsg =
                 "FileHashStore.deletePidRefsFile - File refs file does not exist for pid: " + pid
-                    + " with address" + absPathPidRefsPath;
+                    + " with address" + absPidRefsPath;
             logFileHashStore.error(errMsg);
             throw new FileNotFoundException(errMsg);
 
         } else {
             // Proceed to delete
-            Files.delete(absPathPidRefsPath);
+            Files.delete(absPidRefsPath);
             logFileHashStore.debug(
                 "FileHashStore.deletePidRefsFile - Pid refs file deleted for: " + pid
-                    + " with address: " + absPathPidRefsPath
+                    + " with address: " + absPidRefsPath
             );
         }
     }
@@ -1819,45 +1822,45 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(cid, "pid", "deleteCidRefsPid");
         FileHashStoreUtility.checkForEmptyString(cid, "pid", "deleteCidRefsPid");
 
-        Path absPathCidRefsPath = getRealPath(cid, "refs", "cid");
+        Path absCidRefsPath = getRealPath(cid, "refs", "cid");
 
         // Check to see if cid refs file exists
-        if (!Files.exists(absPathCidRefsPath)) {
+        if (!Files.exists(absCidRefsPath)) {
             String errMsg =
                 "FileHashStore.deleteCidRefsPid - Cid refs file does not exist for cid: " + cid
-                    + " with address" + absPathCidRefsPath;
+                    + " with address" + absCidRefsPath;
             logFileHashStore.error(errMsg);
             throw new FileNotFoundException(errMsg);
 
         } else {
-            if (isPidInCidRefsFile(pid, absPathCidRefsPath)) {
+            if (isPidInCidRefsFile(pid, absCidRefsPath)) {
                 try {
-                    List<String> lines = new ArrayList<>(Files.readAllLines(absPathCidRefsPath));
+                    List<String> lines = new ArrayList<>(Files.readAllLines(absCidRefsPath));
                     lines.remove(pid);
                     Files.write(
-                        absPathCidRefsPath, lines, StandardOpenOption.WRITE,
+                        absCidRefsPath, lines, StandardOpenOption.WRITE,
                         StandardOpenOption.TRUNCATE_EXISTING
                     );
                     logFileHashStore.debug(
                         "FileHashStore.deleteCidRefsPid - Pid: " + pid
-                            + " removed from cid refs file: " + absPathCidRefsPath
+                            + " removed from cid refs file: " + absCidRefsPath
                     );
 
                 } catch (IOException ioe) {
                     String errMsg = "FileHashStore.deleteCidRefsPid - Unable to remove pid: " + pid
-                        + "from cid refs file: " + absPathCidRefsPath + ". Additional Info: " + ioe
+                        + "from cid refs file: " + absCidRefsPath + ". Additional Info: " + ioe
                             .getMessage();
                     logFileHashStore.error(errMsg);
                     throw new IOException(errMsg);
                 }
                 // Perform clean up on cid refs file - if it is empty, delete it
-                if (Files.size(absPathCidRefsPath) == 0) {
-                    Files.delete(absPathCidRefsPath);
+                if (Files.size(absCidRefsPath) == 0) {
+                    Files.delete(absCidRefsPath);
                 }
 
             } else {
                 String errMsg = "FileHashStore.deleteCidRefsPid - pid: " + pid
-                    + " not found in cid refs file: " + absPathCidRefsPath;
+                    + " not found in cid refs file: " + absCidRefsPath;
                 logFileHashStore.error(errMsg);
                 throw new IllegalArgumentException(errMsg);
             }
@@ -1875,28 +1878,28 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(cid, "pid", "deleteCidRefsFile");
         FileHashStoreUtility.checkForEmptyString(cid, "pid", "deleteCidRefsFile");
 
-        Path absPathCidRefsPath = getRealPath(cid, "refs", "cid");
+        Path absCidRefsPath = getRealPath(cid, "refs", "cid");
 
         // Check to see if cid refs file exists
-        if (!Files.exists(absPathCidRefsPath)) {
+        if (!Files.exists(absCidRefsPath)) {
             String errMsg =
                 "FileHashStore.deleteCidRefsFile - Cid refs file does not exist for cid: " + cid
-                    + " with address" + absPathCidRefsPath;
+                    + " with address" + absCidRefsPath;
             logFileHashStore.error(errMsg);
             throw new FileNotFoundException(errMsg);
 
         } else {
             // A cid refs file is only deleted if it is empty. Client must removed pid(s) first
-            if (Files.size(absPathCidRefsPath) == 0) {
-                Files.delete(absPathCidRefsPath);
+            if (Files.size(absCidRefsPath) == 0) {
+                Files.delete(absCidRefsPath);
                 logFileHashStore.debug(
-                    "FileHashStore.deleteCidRefsFile - Deleted cid refs file: " + absPathCidRefsPath
+                    "FileHashStore.deleteCidRefsFile - Deleted cid refs file: " + absCidRefsPath
                 );
 
             } else {
                 String errMsg =
                     "FileHashStore.deleteCidRefsFile - Unable to delete cid refs file, it is not empty: "
-                        + absPathCidRefsPath;
+                        + absCidRefsPath;
                 logFileHashStore.warn(errMsg);
             }
         }
