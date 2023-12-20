@@ -9,14 +9,17 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Properties;
 
+import org.dataone.hashstore.ObjectInfo;
 import org.dataone.hashstore.exceptions.PidExistsInCidRefsFileException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
+import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -27,6 +30,8 @@ import org.junit.jupiter.api.io.TempDir;
 public class FileHashStoreReferencesTest {
     private FileHashStore fileHashStore;
     private Path rootDirectory;
+    private Properties fhsProperties;
+    private static final TestDataHarness testData = new TestDataHarness();
 
     /**
      * Initialize FileHashStore before each test to creates tmp directories
@@ -45,6 +50,7 @@ public class FileHashStoreReferencesTest {
         );
 
         try {
+            fhsProperties = storeProperties;
             fileHashStore = new FileHashStore(storeProperties);
 
         } catch (IOException ioe) {
@@ -360,5 +366,66 @@ public class FileHashStoreReferencesTest {
 
         Path cidRefsFilePath = fileHashStore.getRealPath(cid, "refs", "cid");
         assertTrue(Files.exists(cidRefsFilePath));
+    }
+
+    /**
+     * Check that verifyObject verifies with good values
+     */
+    @Test
+    public void verifyObject_correctValues() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectInfo objInfo = fileHashStore.storeObject(dataStream);
+
+            String defaultStoreAlgorithm = fhsProperties.getProperty("storeAlgorithm");
+
+            // Get verifyObject args
+            String expectedChecksum = testData.pidData.get(pid).get("sha256");
+            long expectedSize = Long.parseLong(testData.pidData.get(pid).get("size"));
+
+            fileHashStore.verifyObject(
+                objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize
+            );
+        }
+    }
+
+    /**
+     * Check that verifyObject deletes file when there is a mismatch
+     */
+    @Test
+    public void verifyObject_mismatchedValuesObjectDeleted() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectInfo objInfo = fileHashStore.storeObject(dataStream);
+
+            String defaultStoreAlgorithm = fhsProperties.getProperty("storeAlgorithm");
+
+            // Get verifyObject args
+            String expectedChecksum = "intentionallyWrongValue";
+            long expectedSize = Long.parseLong(testData.pidData.get(pid).get("size"));
+
+            assertThrows(IllegalArgumentException.class, () -> {
+                fileHashStore.verifyObject(
+                    objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize
+                );
+            });
+
+            int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
+            int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
+            String actualCid = objInfo.getId();
+            String cidShardString = fileHashStore.getHierarchicalPathString(
+                storeDepth, storeWidth, actualCid
+            );
+            Path objectStoreDirectory = rootDirectory.resolve("objects").resolve(cidShardString);
+            System.out.println(objectStoreDirectory);
+            assertFalse(Files.exists(objectStoreDirectory));
+
+        }
     }
 }

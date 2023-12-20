@@ -596,6 +596,30 @@ public class FileHashStore implements HashStore {
         return storeObject(object, pid, null, null, null, objSize);
     }
 
+    // TODO: Clean up code and review everything line by line
+
+    @Override
+    public void verifyObject(
+        ObjectInfo objectInfo, String checksum, String checksumAlgorithm, long objSize
+    ) throws IOException, NoSuchAlgorithmException, IllegalArgumentException {
+        FileHashStoreUtility.ensureNotNull(objectInfo, "objectInfo", "verifyObject");
+        FileHashStoreUtility.ensureNotNull(checksum, "checksum", "verifyObject");
+        FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm", "verifyObject");
+        FileHashStoreUtility.ensureNotNull(objSize, "objSize", "verifyObject");
+
+        Map<String, String> hexDigests = objectInfo.getHexDigests();
+        long objInfoRetrievedSize = objectInfo.getSize();
+        String objId = objectInfo.getId();
+        // Object is not tagged at this stage, so we must manually form the permanent address of the file
+        String cidShardString = getHierarchicalPathString(DIRECTORY_DEPTH, DIRECTORY_WIDTH, objId);
+        Path objAbsPath = OBJECT_STORE_DIRECTORY.resolve(cidShardString);
+
+        validateTmpObject(
+            true, checksum, checksumAlgorithm, objAbsPath, hexDigests, objSize, objInfoRetrievedSize
+        );
+        return;
+    }
+
     @Override
     public boolean tagObject(String pid, String cid) throws IOException, PidRefsFileExistsException,
         NoSuchAlgorithmException, FileNotFoundException, PidExistsInCidRefsFileException,
@@ -695,13 +719,6 @@ public class FileHashStore implements HashStore {
                 referenceLockedCids.notifyAll();
             }
         }
-    }
-
-    @Override
-    public void verifyObject(
-        ObjectInfo objectInfo, String checksum, String checksumAlgorithm, long objSize
-    ) {
-        return;
     }
 
     @Override
@@ -1139,6 +1156,7 @@ public class FileHashStore implements HashStore {
         // Generate tmp file and write to it
         logFileHashStore.debug("FileHashStore.putObject - Generating tmpFile");
         File tmpFile = generateTmpFile("tmp", OBJECT_TMP_FILE_DIRECTORY);
+        Path tmpFilePath = tmpFile.toPath();
         Map<String, String> hexDigests;
         try {
             hexDigests = writeToTmpFileAndGenerateChecksums(
@@ -1163,7 +1181,7 @@ public class FileHashStore implements HashStore {
 
         // Validate object if checksum and checksum algorithm is passed
         validateTmpObject(
-            requestValidation, checksum, checksumAlgorithm, tmpFile, hexDigests, objSize,
+            requestValidation, checksum, checksumAlgorithm, tmpFilePath, hexDigests, objSize,
             storedObjFileSize
         );
 
@@ -1208,26 +1226,28 @@ public class FileHashStore implements HashStore {
      * @throws IOException              When tmpFile fails to be deleted
      */
     private void validateTmpObject(
-        boolean requestValidation, String checksum, String checksumAlgorithm, File tmpFile,
+        boolean requestValidation, String checksum, String checksumAlgorithm, Path tmpFile,
         Map<String, String> hexDigests, long objSize, long storedObjFileSize
     ) throws NoSuchAlgorithmException, IOException {
         if (objSize > 0) {
             if (objSize != storedObjFileSize) {
                 // Delete tmp File
-                boolean deleteStatus = tmpFile.delete();
-                if (!deleteStatus) {
+                try {
+                    Files.delete(tmpFile);
+
+                } catch (Exception ge) {
                     String errMsg =
                         "FileHashStore.validateTmpObject - objSize given is not equal to the"
                             + " stored object size. ObjSize: " + objSize + ". storedObjFileSize:"
-                            + storedObjFileSize + ". Failed to delete tmpFile: " + tmpFile
-                                .getName();
+                            + storedObjFileSize + ". Failed to delete tmpFile: " + tmpFile;
                     logFileHashStore.error(errMsg);
                     throw new IOException(errMsg);
                 }
+
                 String errMsg =
                     "FileHashStore.validateTmpObject - objSize given is not equal to the"
                         + " stored object size. ObjSize: " + objSize + ". storedObjFileSize:"
-                        + storedObjFileSize + ". Deleting tmpFile: " + tmpFile.getName();
+                        + storedObjFileSize + ". Deleting tmpFile: " + tmpFile;
                 logFileHashStore.error(errMsg);
                 throw new IllegalArgumentException(errMsg);
             }
@@ -1248,23 +1268,28 @@ public class FileHashStore implements HashStore {
                 throw new NoSuchAlgorithmException(errMsg);
             }
 
-            if (!checksum.equalsIgnoreCase(digestFromHexDigests)) {
+            if (checksum.equalsIgnoreCase(digestFromHexDigests)) {
+                return;
+
+            } else {
                 // Delete tmp File
-                boolean deleteStatus = tmpFile.delete();
-                if (!deleteStatus) {
+                try {
+                    Files.delete(tmpFile);
+
+                } catch (Exception ge) {
                     String errMsg =
                         "FileHashStore.validateTmpObject - Object cannot be validated. Checksum given"
                             + " is not equal to the calculated hex digest: " + digestFromHexDigests
                             + ". Checksum" + " provided: " + checksum
-                            + ". Failed to delete tmpFile: " + tmpFile.getName();
+                            + ". Failed to delete tmpFile: " + tmpFile;
                     logFileHashStore.error(errMsg);
                     throw new IOException(errMsg);
                 }
+
                 String errMsg =
                     "FileHashStore.validateTmpObject - Checksum given is not equal to the"
                         + " calculated hex digest: " + digestFromHexDigests + ". Checksum"
-                        + " provided: " + checksum + ". tmpFile has been deleted: " + tmpFile
-                            .getName();
+                        + " provided: " + checksum + ". tmpFile has been deleted: " + tmpFile;
                 logFileHashStore.error(errMsg);
                 throw new IllegalArgumentException(errMsg);
             }

@@ -120,16 +120,22 @@ public interface HashStore {
                 InterruptedException;
 
         /**
-         * Confirms that an object_metadata's content is equal to the given values.
+         * Confirms that an ObjectInfo's content is equal to the given values. If it is not equal,
+         * it will delete the object referenced by the ObjectInfo object.
          * 
          * @param objectInfo        ObjectInfo object with values
          * @param checksum          Value of checksum to validate against
          * @param checksumAlgorithm Algorithm of checksum submitted
          * @param objSize           Expected size of object to validate after storing
+         * @throws IOException              An issue with deleting the object when there is a
+         *                                  mismatch
+         * @throws NoSuchAlgorithmException If checksum algorithm (and its respective checksum) is
+         *                                  not in objectInfo
+         * @throws IllegalArgumentException An expected value does not match
          */
         void verifyObject(
                 ObjectInfo objectInfo, String checksum, String checksumAlgorithm, long objSize
-        );
+        ) throws IOException, NoSuchAlgorithmException, IllegalArgumentException;
 
         /**
          * Checks whether an object referenced by a pid exists and returns the content identifier.
