@@ -596,8 +596,6 @@ public class FileHashStore implements HashStore {
         return storeObject(object, pid, null, null, null, objSize);
     }
 
-    // TODO: Clean up code and review everything line by line
-
     @Override
     public void verifyObject(
         ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize
@@ -976,7 +974,7 @@ public class FileHashStore implements HashStore {
 
     @Override
     public void deleteObject(String pid) throws IllegalArgumentException, FileNotFoundException,
-        IOException, NoSuchAlgorithmException {
+        IOException, NoSuchAlgorithmException, InterruptedException {
         logFileHashStore.debug(
             "FileHashStore.deleteObject - Called to delete object for pid: " + pid
         );
@@ -984,29 +982,63 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(pid, "pid", "deleteObject");
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "deleteObject");
 
-        // Get permanent address of the pid by calculating its sha-256 hex digest
-        Path objRealPath = getRealPath(pid, "object", null);
+        String cid = findObject(pid);
 
-        // Check to see if object exists
-        if (!Files.exists(objRealPath)) {
-            String errMsg = "FileHashStore.deleteObject - File does not exist for pid: " + pid
-                + " with object address: " + objRealPath;
-            logFileHashStore.warn(errMsg);
-            throw new FileNotFoundException(errMsg);
+        synchronized (referenceLockedCids) {
+            while (referenceLockedCids.contains(cid)) {
+                try {
+                    referenceLockedCids.wait(TIME_OUT_MILLISEC);
+
+                } catch (InterruptedException ie) {
+                    String errMsg =
+                        "FileHashStore.deleteObject - referenceLockedCids lock was interrupted while"
+                            + " waiting to delete object with cid: " + cid
+                            + ". InterruptedException: " + ie.getMessage();
+                    logFileHashStore.error(errMsg);
+                    throw new InterruptedException(errMsg);
+                }
+            }
+            logFileHashStore.debug(
+                "FileHashStore.deleteObject - Synchronizing referenceLockedCids for cid: " + cid
+            );
+            referenceLockedCids.add(cid);
         }
 
-        // Proceed to delete
-        Files.delete(objRealPath);
-        // Remove pid from the cid refs file
-        String cid = findObject(pid);
-        deleteCidRefsPid(pid, cid);
-        // Delete pid reference file
-        deletePidRefsFile(pid);
+        try {
+            // Get permanent address of the pid by calculating its sha-256 hex digest
+            Path objRealPath = getRealPath(pid, "object", null);
 
-        logFileHashStore.info(
-            "FileHashStore.deleteObject - File deleted for: " + pid + " with object address: "
-                + objRealPath
-        );
+            // Check to see if object exists
+            if (!Files.exists(objRealPath)) {
+                String errMsg = "FileHashStore.deleteObject - File does not exist for pid: " + pid
+                    + " with object address: " + objRealPath;
+                logFileHashStore.warn(errMsg);
+                throw new FileNotFoundException(errMsg);
+            }
+
+            // Proceed to delete
+            Files.delete(objRealPath);
+            // Remove pid from the cid refs file
+            deleteCidRefsPid(pid, cid);
+            // Delete pid reference file
+            deletePidRefsFile(pid);
+
+            logFileHashStore.info(
+                "FileHashStore.deleteObject - File and references deleted for: " + pid
+                    + " with object address: " + objRealPath
+            );
+
+        } finally {
+            // Release lock
+            synchronized (referenceLockedCids) {
+                logFileHashStore.debug(
+                    "FileHashStore.deleteObject - Releasing referenceLockedCids for cid: " + cid
+                );
+                referenceLockedCids.remove(cid);
+                referenceLockedCids.notifyAll();
+            }
+        }
+
     }
 
     @Override
