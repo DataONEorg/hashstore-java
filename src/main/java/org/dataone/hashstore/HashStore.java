@@ -18,7 +18,7 @@ import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
  */
 public interface HashStore {
         /**
-         * The `storeOject` method is responsible for the atomic storage of objects to disk using a
+         * The `storeObject` method is responsible for the atomic storage of objects to disk using a
          * given InputStream. Upon successful storage, the method returns a (ObjectMetadata) object
          * containing relevant file information, such as the file's id (which can be used to locate
          * the object on disk), the file's size, and a hex digest dict of algorithms and checksums.
@@ -29,7 +29,7 @@ public interface HashStore {
          * calls and rejecting calls to store duplicate objects. Note, calling `storeObject` without
          * a pid is a possibility, but should only store the object without tagging the object. It
          * is then the caller's responsibility to finalize the process by calling `tagObject` after
-         * veriftying the correct object is stored.
+         * verifying the correct object is stored.
          * 
          * The file's id is determined by calculating the object's content identifier based on the
          * store's default algorithm, which is also used as the permanent address of the file. The
@@ -105,7 +105,6 @@ public interface HashStore {
          * 
          * @param pid Authority-based identifier
          * @param cid Content-identifier (hash identifier)
-         * @return Boolean to indicate the pid and cid has been tagged.
          * @throws IOException                     Failure to create tmp file
          * @throws PidRefsFileExistsException      When pid refs file already exists
          * @throws PidExistsInCidRefsFileException pid to write already exists in a cid refs file
@@ -115,7 +114,7 @@ public interface HashStore {
          * @throws InterruptedException            When tagObject is waiting to execute but is
          *                                         interrupted
          */
-        boolean tagObject(String pid, String cid) throws IOException, PidRefsFileExistsException,
+        void tagObject(String pid, String cid) throws IOException, PidRefsFileExistsException,
                 PidExistsInCidRefsFileException, NoSuchAlgorithmException, FileNotFoundException,
                 InterruptedException;
 

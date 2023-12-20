@@ -160,7 +160,7 @@ public class HashStoreClient {
                     if (cmd.hasOption("checksum_algo")) {
                         checksum_algo = cmd.getOptionValue("checksum_algo");
                     }
-                    long size = 0;
+                    long size;
                     if (cmd.hasOption("size")) {
                         size = Long.parseLong(cmd.getOptionValue("size"));
                     } else {

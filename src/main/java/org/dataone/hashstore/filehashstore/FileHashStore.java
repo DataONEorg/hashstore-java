@@ -542,7 +542,7 @@ public class FileHashStore implements HashStore {
      */
     @Override
     public ObjectMetadata storeObject(InputStream object) throws NoSuchAlgorithmException,
-        IOException, PidObjectExistsException, RuntimeException, InterruptedException {
+        IOException, PidObjectExistsException, RuntimeException {
         // 'putObject' is called directly to bypass the pid synchronization implemented to
         // efficiently handle duplicate object store requests. Since there is no pid, calling
         // 'storeObject' would unintentionally create a bottleneck for all requests without a
@@ -605,7 +605,6 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(objectInfo, "objectInfo", "verifyObject");
         FileHashStoreUtility.ensureNotNull(checksum, "checksum", "verifyObject");
         FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm", "verifyObject");
-        FileHashStoreUtility.ensureNotNull(objSize, "objSize", "verifyObject");
 
         Map<String, String> hexDigests = objectInfo.getHexDigests();
         long objInfoRetrievedSize = objectInfo.getSize();
@@ -617,11 +616,10 @@ public class FileHashStore implements HashStore {
         validateTmpObject(
             true, checksum, checksumAlgorithm, objAbsPath, hexDigests, objSize, objInfoRetrievedSize
         );
-        return;
     }
 
     @Override
-    public boolean tagObject(String pid, String cid) throws IOException, PidRefsFileExistsException,
+    public void tagObject(String pid, String cid) throws IOException, PidRefsFileExistsException,
         NoSuchAlgorithmException, FileNotFoundException, PidExistsInCidRefsFileException,
         InterruptedException {
         logFileHashStore.debug(
@@ -688,7 +686,6 @@ public class FileHashStore implements HashStore {
                     "FileHashStore.tagObject - Object with cid: " + cid
                         + " has been updated successfully with pid: " + pid
                 );
-                return true;
 
             } else {
                 // Get pid and cid refs files 
@@ -706,7 +703,6 @@ public class FileHashStore implements HashStore {
                     "FileHashStore.tagObject - Object with cid: " + cid
                         + " has been tagged successfully with pid: " + pid
                 );
-                return true;
             }
 
         } finally {
@@ -1268,10 +1264,7 @@ public class FileHashStore implements HashStore {
                 throw new NoSuchAlgorithmException(errMsg);
             }
 
-            if (checksum.equalsIgnoreCase(digestFromHexDigests)) {
-                return;
-
-            } else {
+            if (!checksum.equalsIgnoreCase(digestFromHexDigests)) {
                 // Delete tmp File
                 try {
                     Files.delete(tmpFile);
@@ -1914,7 +1907,7 @@ public class FileHashStore implements HashStore {
             throw new FileNotFoundException(errMsg);
 
         } else {
-            // A cid refs file is only deleted if it is empty. Client must removed pid(s) first
+            // A cid refs file is only deleted if it is empty. Client must remove pid(s) first
             if (Files.size(absCidRefsPath) == 0) {
                 Files.delete(absCidRefsPath);
                 logFileHashStore.debug(
@@ -2025,7 +2018,7 @@ public class FileHashStore implements HashStore {
     /**
      * Get the absolute path of a HashStore object or metadata file
      *
-     * @param abId     Authority-based, persistent or content idenfitier
+     * @param abId     Authority-based, persistent or content identifier
      * @param entity   "object" or "metadata"
      * @param formatId Metadata namespace or reference type (pid/cid)
      * @return Actual path to object

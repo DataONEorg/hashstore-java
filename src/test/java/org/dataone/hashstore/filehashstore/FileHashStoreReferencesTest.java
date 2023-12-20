@@ -132,6 +132,7 @@ public class FileHashStoreReferencesTest {
         for (String line : lines) {
             if (line.equals(pidAdditional)) {
                 pidFoundInCidRefFiles = true;
+                break;
             }
         }
         assertTrue(pidFoundInCidRefFiles);
@@ -174,7 +175,7 @@ public class FileHashStoreReferencesTest {
      * Check that exception is thrown when pid refs file doesn't exist
      */
     @Test
-    public void findObject_pidNotFound() throws Exception {
+    public void findObject_pidNotFound() {
         String pid = "dou.test.1";
         assertThrows(FileNotFoundException.class, () -> {
             fileHashStore.findObject(pid);
@@ -271,7 +272,7 @@ public class FileHashStoreReferencesTest {
             if (line.equals(pidAdditional)) {
                 pidAdditional_foundInCidRefFiles = true;
             }
-            if (line.equals(pidAdditional)) {
+            if (line.equals(pid)) {
                 pidOriginal_foundInCidRefFiles = true;
             }
         }
