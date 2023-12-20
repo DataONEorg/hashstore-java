@@ -69,7 +69,6 @@ public class FileHashStoreProtectedTest {
      */
     public File generateTemporaryFile() throws Exception {
         Path directory = tempFolder.resolve("metacat");
-        System.out.println(directory);
         // newFile
         return fileHashStore.generateTmpFile("testfile", directory);
     }

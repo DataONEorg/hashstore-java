@@ -1662,8 +1662,8 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Writes the given 'pid' into a tmp file in the cid refs file format, which consists of
-     * multiple pids that references a 'cid' delimited by "\n".
+     * Writes the given 'pid' into a file in the 'cid' refs file format, which consists of
+     * multiple pids that references a 'cid' on its own line/delimited by "\n".
      *
      * @param pid Authority-based or persistent identifier to write
      * @throws IOException Failure to write pid refs file
@@ -1692,7 +1692,7 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Writes the given 'cid' into a tmp file in the 'pid' refs file format. A pid refs file
+     * Writes the given 'cid' into a file in the 'pid' refs file format. A pid refs file
      * contains a single 'cid'. Note, a 'pid' can only ever reference one 'cid'.
      * 
      * @param cid Content identifier to write
@@ -1755,7 +1755,7 @@ public class FileHashStore implements HashStore {
     protected void verifyHashStoreRefsFiles(
         String pid, String cid, Path absPidRefsPath, Path absCidRefsPath
     ) throws FileNotFoundException, IOException {
-        // First check that the files exist
+        // First confirm that the files were created
         if (!Files.exists(absCidRefsPath)) {
             String errMsg = "FileHashStore.verifyHashStoreRefsFiles - cid refs file is missing: "
                 + absCidRefsPath + " for pid: " + pid;
@@ -1811,6 +1811,7 @@ public class FileHashStore implements HashStore {
                 try (BufferedWriter writer = new BufferedWriter(
                     new FileWriter(absPathCidRefsFile, true)
                 )) {
+                    // Adds the given pid on its own new line, without any other changes
                     writer.write(pid + "\n");
                     writer.close();
                 }

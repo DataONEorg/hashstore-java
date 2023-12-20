@@ -450,7 +450,6 @@ public class FileHashStoreReferencesTest {
                 storeDepth, storeWidth, actualCid
             );
             Path objectStoreDirectory = rootDirectory.resolve("objects").resolve(cidShardString);
-            System.out.println(objectStoreDirectory);
             assertFalse(Files.exists(objectStoreDirectory));
 
         }
