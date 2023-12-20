@@ -1241,10 +1241,10 @@ public class FileHashStoreInterfaceTest {
             InputStream dataStream = Files.newInputStream(testDataFile);
             fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
 
+            Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
             fileHashStore.deleteObject(pid);
 
             // Check that file doesn't exist
-            Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
             assertFalse(Files.exists(objCidAbsPath));
 
             // Check that parent directories are not deleted
@@ -1254,6 +1254,28 @@ public class FileHashStoreInterfaceTest {
             Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
             Path storeObjectPath = storePath.resolve("objects");
             assertTrue(Files.exists(storeObjectPath));
+        }
+    }
+
+    /**
+     * Confirm that deleteObject deletes reference files
+     */
+    @Test
+    public void deleteObject_referencesDeleted() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectInfo objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
+            String cid = objInfo.getId();
+
+            // Path objAbsPath = fileHashStore.getRealPath(pid, "object", null);
+            Path absPathPidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
+            Path absPathCidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
+            fileHashStore.deleteObject(pid);
+            assertFalse(Files.exists(absPathPidRefsPath));
+            assertFalse(Files.exists(absPathCidRefsPath));
         }
     }
 

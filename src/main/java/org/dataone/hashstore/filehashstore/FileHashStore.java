@@ -981,6 +981,12 @@ public class FileHashStore implements HashStore {
 
         // Proceed to delete
         Files.delete(objRealPath);
+        // Remove pid from the cid refs file
+        String cid = findObject(pid);
+        deleteCidRefsPid(pid, cid);
+        // Delete pid reference file
+        deletePidRefsFile(pid);
+
         logFileHashStore.info(
             "FileHashStore.deleteObject - File deleted for: " + pid + " with object address: "
                 + objRealPath
@@ -1844,6 +1850,10 @@ public class FileHashStore implements HashStore {
                     logFileHashStore.error(errMsg);
                     throw new IOException(errMsg);
                 }
+                // Perform clean up on cid refs file - if it is empty, delete it
+                if (Files.size(absPathCidRefsPath) == 0) {
+                    Files.delete(absPathCidRefsPath);
+                }
 
             } else {
                 String errMsg = "FileHashStore.deleteCidRefsPid - pid: " + pid
@@ -1887,8 +1897,7 @@ public class FileHashStore implements HashStore {
                 String errMsg =
                     "FileHashStore.deleteCidRefsFile - Unable to delete cid refs file, it is not empty: "
                         + absPathCidRefsPath;
-                logFileHashStore.error(errMsg);
-                throw new IllegalArgumentException(errMsg);
+                logFileHashStore.warn(errMsg);
             }
         }
     }
