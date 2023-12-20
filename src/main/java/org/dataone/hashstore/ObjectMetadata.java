@@ -8,7 +8,7 @@ import java.util.Map;
  * ObjectMetadata objects, client code can easily obtain metadata of a store object in HashStore
  * without needing to know the underlying file system details.
  */
-public class ObjectInfo {
+public class ObjectMetadata {
     private final String id;
     private final long size;
     private final Map<String, String> hexDigests;
@@ -21,7 +21,7 @@ public class ObjectInfo {
      * @param hexDigests A map of hash algorithm names to their hex-encoded digest values for the
      *                   file
      */
-    public ObjectInfo(String id, long size, Map<String, String> hexDigests) {
+    public ObjectMetadata(String id, long size, Map<String, String> hexDigests) {
         this.id = id;
         this.size = size;
         this.hexDigests = hexDigests;

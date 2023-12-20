@@ -20,7 +20,7 @@ import java.util.Properties;
 
 import javax.xml.bind.DatatypeConverter;
 
-import org.dataone.hashstore.ObjectInfo;
+import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.exceptions.PidObjectExistsException;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.jupiter.api.BeforeEach;
@@ -210,7 +210,7 @@ public class FileHashStoreProtectedTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectInfo address = fileHashStore.putObject(dataStream, pid, null, null, null, -1);
+            ObjectMetadata address = fileHashStore.putObject(dataStream, pid, null, null, null, -1);
 
             // Check id (sha-256 hex digest of the ab_id, aka object_cid)
             String objContentId = testData.pidData.get(pid).get("sha256");
@@ -219,7 +219,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Check that store object returns the correct ObjectInfo size
+     * Check that store object returns the correct ObjectMetadata size
      */
     @Test
     public void putObject_objSize() throws Exception {
@@ -228,7 +228,7 @@ public class FileHashStoreProtectedTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectInfo objInfo = fileHashStore.putObject(dataStream, pid, null, null, null, -1);
+            ObjectMetadata objInfo = fileHashStore.putObject(dataStream, pid, null, null, null, -1);
 
             // Check id (sha-256 hex digest of the ab_id (pid))
             long objectSize = Long.parseLong(testData.pidData.get(pid).get("size"));
@@ -246,7 +246,7 @@ public class FileHashStoreProtectedTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectInfo address = fileHashStore.putObject(dataStream, pid, null, null, null, -1);
+            ObjectMetadata address = fileHashStore.putObject(dataStream, pid, null, null, null, -1);
 
             Map<String, String> hexDigests = address.getHexDigests();
 
@@ -276,7 +276,7 @@ public class FileHashStoreProtectedTest {
         String checksumCorrect = "9c25df1c8ba1d2e57bb3fd4785878b85";
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        ObjectInfo address = fileHashStore.putObject(
+        ObjectMetadata address = fileHashStore.putObject(
             dataStream, pid, null, checksumCorrect, "MD2", -1
         );
 
@@ -396,7 +396,7 @@ public class FileHashStoreProtectedTest {
             long objectSize = Long.parseLong(testData.pidData.get(pid).get("size"));
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectInfo objInfo = fileHashStore.putObject(
+            ObjectMetadata objInfo = fileHashStore.putObject(
                 dataStream, pid, null, null, null, objectSize
             );
 
@@ -416,7 +416,7 @@ public class FileHashStoreProtectedTest {
                 Path testDataFile = testData.getTestFile(pidFormatted);
 
                 InputStream dataStream = Files.newInputStream(testDataFile);
-                ObjectInfo objInfo = fileHashStore.putObject(
+                ObjectMetadata objInfo = fileHashStore.putObject(
                     dataStream, pid, null, null, null, 1000
                 );
 

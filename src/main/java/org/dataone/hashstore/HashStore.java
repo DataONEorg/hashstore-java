@@ -19,7 +19,7 @@ import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 public interface HashStore {
         /**
          * The `storeOject` method is responsible for the atomic storage of objects to disk using a
-         * given InputStream. Upon successful storage, the method returns a (ObjectInfo) object
+         * given InputStream. Upon successful storage, the method returns a (ObjectMetadata) object
          * containing relevant file information, such as the file's id (which can be used to locate
          * the object on disk), the file's size, and a hex digest dict of algorithms and checksums.
          * Storing an object with `store_object` also tags an object (creating references) which
@@ -55,7 +55,7 @@ public interface HashStore {
          * @param checksum            Value of checksum to validate against
          * @param checksumAlgorithm   Algorithm of checksum submitted
          * @param objSize             Expected size of object to validate after storing
-         * @return ObjectInfo object encapsulating file information
+         * @return ObjectMetadata object encapsulating file information
          * @throws NoSuchAlgorithmException When additionalAlgorithm or checksumAlgorithm is invalid
          * @throws IOException              I/O Error when writing file, generating checksums and/or
          *                                  moving file
@@ -64,7 +64,7 @@ public interface HashStore {
          *                                  arguments (ex. empty pid) or null pointers
          * @throws InterruptedException     When tagging pid and cid process is interrupted
          */
-        ObjectInfo storeObject(
+        ObjectMetadata storeObject(
                 InputStream object, String pid, String additionalAlgorithm, String checksum,
                 String checksumAlgorithm, long objSize
         ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException,
@@ -73,13 +73,13 @@ public interface HashStore {
         /**
          * @see #storeObject(InputStream, String, String, String, String, long)
          */
-        ObjectInfo storeObject(InputStream object) throws NoSuchAlgorithmException, IOException,
+        ObjectMetadata storeObject(InputStream object) throws NoSuchAlgorithmException, IOException,
                 PidObjectExistsException, RuntimeException, InterruptedException;
 
         /**
          * @see #storeObject(InputStream, String, String, String, String, long)
          */
-        ObjectInfo storeObject(
+        ObjectMetadata storeObject(
                 InputStream object, String pid, String checksum, String checksumAlgorithm
         ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException,
                 InterruptedException;
@@ -87,14 +87,14 @@ public interface HashStore {
         /**
          * @see #storeObject(InputStream, String, String, String, String, long)
          */
-        ObjectInfo storeObject(InputStream object, String pid, String additionalAlgorithm)
+        ObjectMetadata storeObject(InputStream object, String pid, String additionalAlgorithm)
                 throws NoSuchAlgorithmException, IOException, PidObjectExistsException,
                 RuntimeException, InterruptedException;
 
         /**
          * @see #storeObject(InputStream, String, String, String, String, long)
          */
-        ObjectInfo storeObject(InputStream object, String pid, long objSize)
+        ObjectMetadata storeObject(InputStream object, String pid, long objSize)
                 throws NoSuchAlgorithmException, IOException, PidObjectExistsException,
                 RuntimeException, InterruptedException;
 
@@ -120,10 +120,11 @@ public interface HashStore {
                 InterruptedException;
 
         /**
-         * Confirms that an ObjectInfo's content is equal to the given values. If it is not equal,
-         * it will delete the object referenced by the ObjectInfo object.
+         * Confirms that an ObjectMetadata's content is equal to the given values. If it is not
+         * equal,
+         * it will delete the object referenced by the ObjectMetadata object.
          * 
-         * @param objectInfo        ObjectInfo object with values
+         * @param objectInfo        ObjectMetadata object with values
          * @param checksum          Value of checksum to validate against
          * @param checksumAlgorithm Algorithm of checksum submitted
          * @param objSize           Expected size of object to validate after storing
@@ -134,7 +135,7 @@ public interface HashStore {
          * @throws IllegalArgumentException An expected value does not match
          */
         void verifyObject(
-                ObjectInfo objectInfo, String checksum, String checksumAlgorithm, long objSize
+                ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize
         ) throws IOException, NoSuchAlgorithmException, IllegalArgumentException;
 
         /**

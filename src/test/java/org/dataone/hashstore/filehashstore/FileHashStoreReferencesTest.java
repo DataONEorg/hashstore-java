@@ -16,7 +16,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Properties;
 
-import org.dataone.hashstore.ObjectInfo;
+import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.exceptions.PidExistsInCidRefsFileException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 import org.dataone.hashstore.testdata.TestDataHarness;
@@ -378,7 +378,7 @@ public class FileHashStoreReferencesTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectInfo objInfo = fileHashStore.storeObject(dataStream);
+            ObjectMetadata objInfo = fileHashStore.storeObject(dataStream);
 
             String defaultStoreAlgorithm = fhsProperties.getProperty("storeAlgorithm");
 
@@ -402,7 +402,7 @@ public class FileHashStoreReferencesTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectInfo objInfo = fileHashStore.storeObject(dataStream);
+            ObjectMetadata objInfo = fileHashStore.storeObject(dataStream);
 
             String defaultStoreAlgorithm = fhsProperties.getProperty("storeAlgorithm");
 
@@ -428,7 +428,7 @@ public class FileHashStoreReferencesTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectInfo objInfo = fileHashStore.storeObject(dataStream);
+            ObjectMetadata objInfo = fileHashStore.storeObject(dataStream);
 
             String defaultStoreAlgorithm = fhsProperties.getProperty("storeAlgorithm");
 

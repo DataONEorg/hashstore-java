@@ -127,7 +127,7 @@ public class HashStoreTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectInfo objInfo = hashStore.storeObject(dataStream, pid, null, null, null, -1);
+            ObjectMetadata objInfo = hashStore.storeObject(dataStream, pid, null, null, null, -1);
 
             // Check id (sha-256 hex digest of the ab_id, aka object_cid)
             String objContentId = testData.pidData.get(pid).get("sha256");

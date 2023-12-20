@@ -37,7 +37,7 @@ import javax.xml.bind.DatatypeConverter;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.dataone.hashstore.ObjectInfo;
+import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.HashStore;
 import org.dataone.hashstore.exceptions.PidExistsInCidRefsFileException;
 import org.dataone.hashstore.exceptions.PidObjectExistsException;
@@ -420,7 +420,7 @@ public class FileHashStore implements HashStore {
     // HashStore Public API Methods
 
     @Override
-    public ObjectInfo storeObject(
+    public ObjectMetadata storeObject(
         InputStream object, String pid, String additionalAlgorithm, String checksum,
         String checksumAlgorithm, long objSize
     ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException,
@@ -458,7 +458,7 @@ public class FileHashStore implements HashStore {
     /**
      * Method to synchronize storing objects with FileHashStore
      */
-    private ObjectInfo syncPutObject(
+    private ObjectMetadata syncPutObject(
         InputStream object, String pid, String additionalAlgorithm, String checksum,
         String checksumAlgorithm, long objSize
     ) throws NoSuchAlgorithmException, PidObjectExistsException, IOException, RuntimeException,
@@ -487,7 +487,7 @@ public class FileHashStore implements HashStore {
                     + ". checksumAlgorithm: " + checksumAlgorithm
             );
             // Store object
-            ObjectInfo objInfo = putObject(
+            ObjectMetadata objInfo = putObject(
                 object, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize
             );
             // Tag object
@@ -541,8 +541,8 @@ public class FileHashStore implements HashStore {
      * Overload method for storeObject with just an InputStream
      */
     @Override
-    public ObjectInfo storeObject(InputStream object) throws NoSuchAlgorithmException, IOException,
-        PidObjectExistsException, RuntimeException, InterruptedException {
+    public ObjectMetadata storeObject(InputStream object) throws NoSuchAlgorithmException,
+        IOException, PidObjectExistsException, RuntimeException, InterruptedException {
         // 'putObject' is called directly to bypass the pid synchronization implemented to
         // efficiently handle duplicate object store requests. Since there is no pid, calling
         // 'storeObject' would unintentionally create a bottleneck for all requests without a
@@ -560,7 +560,7 @@ public class FileHashStore implements HashStore {
      * Overload method for storeObject with an additionalAlgorithm
      */
     @Override
-    public ObjectInfo storeObject(InputStream object, String pid, String additionalAlgorithm)
+    public ObjectMetadata storeObject(InputStream object, String pid, String additionalAlgorithm)
         throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException,
         InterruptedException {
         FileHashStoreUtility.ensureNotNull(
@@ -574,7 +574,7 @@ public class FileHashStore implements HashStore {
      * Overload method for storeObject with just a checksum and checksumAlgorithm
      */
     @Override
-    public ObjectInfo storeObject(
+    public ObjectMetadata storeObject(
         InputStream object, String pid, String checksum, String checksumAlgorithm
     ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException,
         InterruptedException {
@@ -588,7 +588,7 @@ public class FileHashStore implements HashStore {
      * Overload method for storeObject with size of object to validate
      */
     @Override
-    public ObjectInfo storeObject(InputStream object, String pid, long objSize)
+    public ObjectMetadata storeObject(InputStream object, String pid, long objSize)
         throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException,
         InterruptedException {
         FileHashStoreUtility.checkNotNegativeOrZero(objSize, "storeObject");
@@ -600,7 +600,7 @@ public class FileHashStore implements HashStore {
 
     @Override
     public void verifyObject(
-        ObjectInfo objectInfo, String checksum, String checksumAlgorithm, long objSize
+        ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize
     ) throws IOException, NoSuchAlgorithmException, IllegalArgumentException {
         FileHashStoreUtility.ensureNotNull(objectInfo, "objectInfo", "verifyObject");
         FileHashStoreUtility.ensureNotNull(checksum, "checksum", "verifyObject");
@@ -1110,7 +1110,7 @@ public class FileHashStore implements HashStore {
      * @param checksum            Value of checksum to validate against
      * @param checksumAlgorithm   Algorithm of checksum submitted
      * @param objSize             Expected size of object to validate after storing
-     * @return 'ObjectInfo' object that contains the file id, size, and a checksum map based on
+     * @return 'ObjectMetadata' object that contains the file id, size, and a checksum map based on
      *         the default algorithm list.
      * @throws IOException                     I/O Error when writing file, generating checksums,
      *                                         moving file or deleting tmpFile upon duplicate found
@@ -1125,7 +1125,7 @@ public class FileHashStore implements HashStore {
      * @throws NullPointerException            Arguments are null for pid or object
      * @throws AtomicMoveNotSupportedException When attempting to move files across file systems
      */
-    protected ObjectInfo putObject(
+    protected ObjectMetadata putObject(
         InputStream object, String pid, String additionalAlgorithm, String checksum,
         String checksumAlgorithm, long objSize
     ) throws IOException, NoSuchAlgorithmException, SecurityException, FileNotFoundException,
@@ -1208,8 +1208,8 @@ public class FileHashStore implements HashStore {
             );
         }
 
-        // Create ObjectInfo to return with pertinent data
-        return new ObjectInfo(objectCid, storedObjFileSize, hexDigests);
+        // Create ObjectMetadata to return with pertinent data
+        return new ObjectMetadata(objectCid, storedObjFileSize, hexDigests);
     }
 
     /**

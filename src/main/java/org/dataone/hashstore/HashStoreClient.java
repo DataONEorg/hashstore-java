@@ -168,7 +168,7 @@ public class HashStoreClient {
                     }
 
                     InputStream pidObjStream = Files.newInputStream(path);
-                    ObjectInfo objInfo = hashStore.storeObject(
+                    ObjectMetadata objInfo = hashStore.storeObject(
                         pidObjStream, pid, additional_algo, checksum, checksum_algo, size
                     );
                     pidObjStream.close();
