@@ -4,11 +4,9 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
-import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
@@ -28,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.Random;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -1739,7 +1736,7 @@ public class FileHashStore implements HashStore {
             // Obtain a lock on the file before updating it
             try (FileChannel channel = FileChannel.open(
                 absCidRefsPath, StandardOpenOption.READ, StandardOpenOption.WRITE
-            ); FileLock lock = channel.lock()) {
+            ); FileLock ignored = channel.lock()) {
                 String newPidReference = pid + "\n";
                 List<String> lines = new ArrayList<>(Files.readAllLines(absCidRefsPath));
                 lines.add(newPidReference);
@@ -1819,7 +1816,7 @@ public class FileHashStore implements HashStore {
             if (isPidInCidRefsFile(pid, absCidRefsPath)) {
                 try (FileChannel channel = FileChannel.open(
                     absCidRefsPath, StandardOpenOption.READ, StandardOpenOption.WRITE
-                ); FileLock lock = channel.lock()) {
+                ); FileLock ignored = channel.lock()) {
                     // Read all lines into a List
                     List<String> lines = new ArrayList<>(Files.readAllLines(absCidRefsPath));
                     lines.remove(pid);
