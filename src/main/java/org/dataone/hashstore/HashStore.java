@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
 
-import org.dataone.hashstore.exceptions.PidExistsInCidRefsFileException;
 import org.dataone.hashstore.exceptions.PidObjectExistsException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 
@@ -115,8 +114,7 @@ public interface HashStore {
          *                                         interrupted
          */
         void tagObject(String pid, String cid) throws IOException, PidRefsFileExistsException,
-                PidExistsInCidRefsFileException, NoSuchAlgorithmException, FileNotFoundException,
-                InterruptedException;
+                NoSuchAlgorithmException, FileNotFoundException, InterruptedException;
 
         /**
          * Confirms that an ObjectMetadata's content is equal to the given values. If it is not

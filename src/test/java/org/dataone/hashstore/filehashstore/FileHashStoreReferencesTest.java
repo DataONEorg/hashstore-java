@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Properties;
 
 import org.dataone.hashstore.ObjectMetadata;
-import org.dataone.hashstore.exceptions.PidExistsInCidRefsFileException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.jupiter.api.BeforeEach;
@@ -127,20 +126,14 @@ public class FileHashStoreReferencesTest {
 
         // Check cid refs file
         Path cidRefsFilePath = fileHashStore.getRealPath(cid, "refs", "cid");
-        List<String> lines = Files.readAllLines(cidRefsFilePath);
-        boolean pidFoundInCidRefFiles = false;
-        for (String line : lines) {
-            if (line.equals(pidAdditional)) {
-                pidFoundInCidRefFiles = true;
-                break;
-            }
-        }
+        boolean pidFoundInCidRefFiles = fileHashStore.isPidInCidRefsFile(
+            pidAdditional, cidRefsFilePath
+        );
         assertTrue(pidFoundInCidRefFiles);
     }
 
     /**
-     * Check that tagObject throws an exception when calling to write a pid into a cid refs
-     * file that already contains the pid
+     * Check that tagObject creates pid refs file when pid already exists in cid refs file
      */
     @Test
     public void tagObject_pidExistsInCidRefsFile() throws Exception {
@@ -148,13 +141,19 @@ public class FileHashStoreReferencesTest {
         String cid = "abcdef123456789";
 
         File cidRefsTmpFile = fileHashStore.writeCidRefsFile(pid);
-
         Path cidRefsFilePath = fileHashStore.getRealPath(cid, "refs", "cid");
         fileHashStore.move(cidRefsTmpFile, cidRefsFilePath.toFile(), "refs");
 
-        assertThrows(PidExistsInCidRefsFileException.class, () -> {
-            fileHashStore.tagObject(pid, cid);
-        });
+        fileHashStore.tagObject(pid, cid);
+
+        Path pidRefsFilePath = fileHashStore.getRealPath(pid, "refs", "pid");
+        assertTrue(Files.exists(pidRefsFilePath));
+
+        // Confirm that cid refs file only has 1 line
+        List<String> lines = Files.readAllLines(cidRefsFilePath);
+        int numberOfLines = lines.size();
+        assertEquals(numberOfLines, 1);
+
     }
 
     /**

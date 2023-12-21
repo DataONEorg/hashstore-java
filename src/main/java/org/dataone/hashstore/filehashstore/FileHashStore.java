@@ -39,7 +39,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.HashStore;
-import org.dataone.hashstore.exceptions.PidExistsInCidRefsFileException;
 import org.dataone.hashstore.exceptions.PidObjectExistsException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 
@@ -551,8 +550,8 @@ public class FileHashStore implements HashStore {
         // unavailable.
         //
         // Note: This method does not tag the object to make it discoverable, so the client must
-        // call 'tagObject' and 'verifyObject' separately to ensure that the object stored
-        // is discoverable and is what is expected.
+        // call 'verifyObject' and 'tagObject' separately to ensure that the object stored
+        // is what is expected and is discoverable.
         return putObject(object, "HashStoreNoPid", null, null, null, -1);
     }
 
@@ -600,6 +599,9 @@ public class FileHashStore implements HashStore {
     public void verifyObject(
         ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize
     ) throws IOException, NoSuchAlgorithmException, IllegalArgumentException {
+        logFileHashStore.debug(
+            "FileHashStore.verifyObject - Called to verify object with id: " + objectInfo.getId()
+        );
         FileHashStoreUtility.ensureNotNull(objectInfo, "objectInfo", "verifyObject");
         FileHashStoreUtility.ensureNotNull(checksum, "checksum", "verifyObject");
         FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm", "verifyObject");
@@ -614,12 +616,14 @@ public class FileHashStore implements HashStore {
         validateTmpObject(
             true, checksum, checksumAlgorithm, objAbsPath, hexDigests, objSize, objInfoRetrievedSize
         );
+        logFileHashStore.info(
+            "FileHashStore.verifyObject - Object with id: " + objId + " has been verified."
+        );
     }
 
     @Override
     public void tagObject(String pid, String cid) throws IOException, PidRefsFileExistsException,
-        NoSuchAlgorithmException, FileNotFoundException, PidExistsInCidRefsFileException,
-        InterruptedException {
+        NoSuchAlgorithmException, FileNotFoundException, InterruptedException {
         logFileHashStore.debug(
             "FileHashStore.tagObject - Called to tag cid (" + cid + ") with pid: " + pid
         );
@@ -661,28 +665,21 @@ public class FileHashStore implements HashStore {
                 throw new PidRefsFileExistsException(errMsg);
 
             } else if (Files.exists(absCidRefsPath)) {
-                // Ensure that the pid is not already found in the file
+                // Only update cid refs file if pid is not in the file
                 boolean pidFoundInCidRefFiles = isPidInCidRefsFile(pid, absCidRefsPath);
-                if (pidFoundInCidRefFiles) {
-                    String errMsg = "FileHashStore.tagObject - cid refs file already contains pid: "
-                        + pid + ". Refs file not created for both the given pid. Cid refs file ("
-                        + absCidRefsPath + ") has not been updated.";
-                    logFileHashStore.error(errMsg);
-                    throw new PidExistsInCidRefsFileException(errMsg);
+                if (!pidFoundInCidRefFiles) {
+                    updateCidRefsFiles(pid, absCidRefsPath);
                 }
-
-                // Write pid refs file to tmp file
+                // Get the pid refs file
                 File pidRefsTmpFile = writePidRefsFile(cid);
                 File absPathPidRefsFile = absPidRefsPath.toFile();
                 move(pidRefsTmpFile, absPathPidRefsFile, "refs");
-                // Now update cid refs file
-                updateCidRefsFiles(pid, absCidRefsPath);
                 // Verify tagging process, this throws exceptions if there's an issue
                 verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
 
                 logFileHashStore.info(
                     "FileHashStore.tagObject - Object with cid: " + cid
-                        + " has been updated successfully with pid: " + pid
+                        + " has been updated and tagged successfully with pid: " + pid
                 );
 
             } else {
