@@ -927,6 +927,7 @@ public class FileHashStore implements HashStore {
     /**
      * Overload method for retrieveMetadata with default metadata namespace
      */
+    @Override
     public InputStream retrieveMetadata(String pid) throws IllegalArgumentException,
         FileNotFoundException, IOException, NoSuchAlgorithmException {
         logFileHashStore.debug(
@@ -1072,6 +1073,7 @@ public class FileHashStore implements HashStore {
     /**
      * Overload method for deleteMetadata with default metadata namespace
      */
+    @Override
     public void deleteMetadata(String pid) throws IllegalArgumentException, FileNotFoundException,
         IOException, NoSuchAlgorithmException {
         deleteMetadata(pid, DEFAULT_METADATA_NAMESPACE);

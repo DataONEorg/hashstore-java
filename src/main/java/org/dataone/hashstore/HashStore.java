@@ -210,6 +210,12 @@ public interface HashStore {
                 FileNotFoundException, IOException, NoSuchAlgorithmException;
 
         /**
+         * @see #retrieveMetadata(String, String)
+         */
+        InputStream retrieveMetadata(String pid) throws IllegalArgumentException,
+                FileNotFoundException, IOException, NoSuchAlgorithmException;
+
+        /**
          * Deletes an object (and its empty subdirectories) permanently from HashStore using a given
          * persistent identifier.
          * 
@@ -239,6 +245,12 @@ public interface HashStore {
          */
         void deleteMetadata(String pid, String formatId) throws IllegalArgumentException,
                 FileNotFoundException, IOException, NoSuchAlgorithmException;
+
+        /**
+         * @see #deleteMetadata(String, String)
+         */
+        void deleteMetadata(String pid) throws IllegalArgumentException, FileNotFoundException,
+                IOException, NoSuchAlgorithmException;
 
         /**
          * Calculates the hex digest of an object that exists in HashStore using a given persistent
