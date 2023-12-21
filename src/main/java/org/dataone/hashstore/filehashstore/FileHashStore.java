@@ -1735,22 +1735,23 @@ public class FileHashStore implements HashStore {
      * @throws IOException Issue with updating a cid refs file
      */
     protected void updateCidRefsFiles(String pid, Path absCidRefsPath) throws IOException {
-        File absPathCidRefsFile = absCidRefsPath.toFile();
         try {
             // Obtain a lock on the file before updating it
-            try (RandomAccessFile raf = new RandomAccessFile(absPathCidRefsFile, "rw");
-                 FileChannel channel = raf.getChannel(); FileLock lock = channel.lock()) {
-                // The boolean 'true' in new FileWriter()'s constructor sets it to append mode
-                try (BufferedWriter writer = new BufferedWriter(
-                    new FileWriter(absPathCidRefsFile, true)
-                )) {
-                    // Adds the given pid on its own new line, without any other changes
-                    writer.write(pid + "\n");
-                    writer.close();
-                }
+            try (FileChannel channel = FileChannel.open(
+                absCidRefsPath, StandardOpenOption.READ, StandardOpenOption.WRITE
+            ); FileLock lock = channel.lock()) {
+                String newPidReference = pid + "\n";
+                List<String> lines = new ArrayList<>(Files.readAllLines(absCidRefsPath));
+                lines.add(newPidReference);
+                // This update process is atomic, so we first write the updated content
+                // into a temporary file before overwriting it.
+                File tmpFile = FileHashStoreUtility.generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
+                Path tmpFilePath = tmpFile.toPath();
+                Files.write(tmpFilePath, lines, StandardOpenOption.WRITE);
+                move(tmpFile, absCidRefsPath.toFile(), "refs");
                 logFileHashStore.debug(
                     "FileHashStore.updateCidRefsFiles - Pid: " + pid
-                        + " has been added to cid refs file: " + absPathCidRefsFile
+                        + " has been added to cid refs file: " + absCidRefsPath
                 );
             }
             // The lock is automatically released when the try block exits
@@ -1816,15 +1817,20 @@ public class FileHashStore implements HashStore {
 
         } else {
             if (isPidInCidRefsFile(pid, absCidRefsPath)) {
-                try {
+                try (FileChannel channel = FileChannel.open(
+                    absCidRefsPath, StandardOpenOption.READ, StandardOpenOption.WRITE
+                ); FileLock lock = channel.lock()) {
                     // Read all lines into a List
                     List<String> lines = new ArrayList<>(Files.readAllLines(absCidRefsPath));
                     lines.remove(pid);
-                    // TRUNCATE_EXISTING reduces a file size to zero bytes
-                    Files.write(
-                        absCidRefsPath, lines, StandardOpenOption.WRITE,
-                        StandardOpenOption.TRUNCATE_EXISTING
+                    // This delete process is atomic, so we first write the updated content
+                    // into a temporary file before overwriting it.
+                    File tmpFile = FileHashStoreUtility.generateTmpFile(
+                        "tmp", REFS_TMP_FILE_DIRECTORY
                     );
+                    Path tmpFilePath = tmpFile.toPath();
+                    Files.write(tmpFilePath, lines, StandardOpenOption.WRITE);
+                    move(tmpFile, absCidRefsPath.toFile(), "refs");
                     logFileHashStore.debug(
                         "FileHashStore.deleteCidRefsPid - Pid: " + pid
                             + " removed from cid refs file: " + absCidRefsPath
