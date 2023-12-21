@@ -1593,23 +1593,25 @@ public class FileHashStore implements HashStore {
 
     /**
      * Writes the given 'pid' into a file in the 'cid' refs file format, which consists of
-     * multiple pids that references a 'cid' on its own line/delimited by "\n".
+     * multiple pids that references a 'cid' each on its own line (delimited by "\n").
      *
      * @param pid Authority-based or persistent identifier to write
      * @throws IOException Failure to write pid refs file
      */
     protected File writeCidRefsFile(String pid) throws IOException {
         File cidRefsTmpFile = FileHashStoreUtility.generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
-        String pidNewLine = pid + "\n";
-
         try (BufferedWriter writer = new BufferedWriter(
             new OutputStreamWriter(
                 Files.newOutputStream(cidRefsTmpFile.toPath()), StandardCharsets.UTF_8
             )
         )) {
+            String pidNewLine = pid + "\n";
             writer.write(pidNewLine);
             writer.close();
 
+            logFileHashStore.debug(
+                "FileHashStore.writeCidRefsFile - cid refs file written for: " + pid
+            );
             return cidRefsTmpFile;
 
         } catch (IOException ioe) {
@@ -1638,6 +1640,9 @@ public class FileHashStore implements HashStore {
             writer.write(cid);
             writer.close();
 
+            logFileHashStore.debug(
+                "FileHashStore.writePidRefsFile - pid refs file written for: " + cid
+            );
             return pidRefsTmpFile;
 
         } catch (IOException ioe) {
@@ -1650,7 +1655,7 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Checks a given cid refs file for a pid.
+     * Checks a given cid refs file for a pid. This is case sensitive.
      * 
      * @param pid            Authority-based or persistent identifier to search
      * @param absCidRefsPath Path to the cid refs file to check
@@ -1707,7 +1712,6 @@ public class FileHashStore implements HashStore {
                     + cid;
                 logFileHashStore.error(errMsg);
                 throw new IOException(errMsg);
-
             }
             boolean pidFoundInCidRefFiles = isPidInCidRefsFile(pid, absCidRefsPath);
             if (!pidFoundInCidRefFiles) {
@@ -1715,7 +1719,6 @@ public class FileHashStore implements HashStore {
                     + pid + " in cid refs file: " + absCidRefsPath;
                 logFileHashStore.error(errMsg);
                 throw new IOException(errMsg);
-
             }
         } catch (IOException ioe) {
             String errMsg = "FileHashStore.verifyHashStoreRefsFiles - " + ioe.getMessage();
@@ -1737,7 +1740,7 @@ public class FileHashStore implements HashStore {
             // Obtain a lock on the file before updating it
             try (RandomAccessFile raf = new RandomAccessFile(absPathCidRefsFile, "rw");
                  FileChannel channel = raf.getChannel(); FileLock lock = channel.lock()) {
-
+                // The boolean 'true' in new FileWriter()'s constructor sets it to append mode
                 try (BufferedWriter writer = new BufferedWriter(
                     new FileWriter(absPathCidRefsFile, true)
                 )) {
@@ -1771,7 +1774,6 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "deletePidRefsFile");
 
         Path absPidRefsPath = getRealPath(pid, "refs", "pid");
-
         // Check to see if pid refs file exists
         if (!Files.exists(absPidRefsPath)) {
             String errMsg =
@@ -1804,7 +1806,6 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(cid, "pid", "deleteCidRefsPid");
 
         Path absCidRefsPath = getRealPath(cid, "refs", "cid");
-
         // Check to see if cid refs file exists
         if (!Files.exists(absCidRefsPath)) {
             String errMsg =
@@ -1816,8 +1817,10 @@ public class FileHashStore implements HashStore {
         } else {
             if (isPidInCidRefsFile(pid, absCidRefsPath)) {
                 try {
+                    // Read all lines into a List
                     List<String> lines = new ArrayList<>(Files.readAllLines(absCidRefsPath));
                     lines.remove(pid);
+                    // TRUNCATE_EXISTING reduces a file size to zero bytes
                     Files.write(
                         absCidRefsPath, lines, StandardOpenOption.WRITE,
                         StandardOpenOption.TRUNCATE_EXISTING
@@ -1850,7 +1853,7 @@ public class FileHashStore implements HashStore {
 
 
     /**
-     * Deletes a cid refs file if it is empty.
+     * Deletes a cid refs file only if it is empty.
      * 
      * @param cid Content identifier
      * @throws IOException Unable to delete object cid refs file
@@ -1860,7 +1863,6 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(cid, "pid", "deleteCidRefsFile");
 
         Path absCidRefsPath = getRealPath(cid, "refs", "cid");
-
         // Check to see if cid refs file exists
         if (!Files.exists(absCidRefsPath)) {
             String errMsg =
