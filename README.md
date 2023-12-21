@@ -15,6 +15,36 @@ DataONE in general, and HashStore in particular, are open source, community proj
 
 Documentation is a work in progress, and can be found on the [Metacat repository](https://github.com/NCEAS/metacat/blob/feature-1436-storage-and-indexing/docs/user/metacat/source/storage-subsystem.rst#physical-file-layout) as part of the storage redesign planning. Future updates will include documentation here as the package matures.
 
+## HashStore Summary
+
+HashStore is a content-addressable file management system that utilizes the content identifier of an object to address files. The system stores both objects, references (refs) and metadata in its respective directories and provides an API for interacting with the store. HashStore storage classes (like `FileHashStore`) must implement the HashStore interface to ensure the expected usage of the system.
+
+###### Working with objects
+
+As content identifiers are used to store objects (files) in HashStore, objects are stored once and only once. By calling the various interface methods for  `storeObject`, the calling app/client can validate, store and tag an object simultaneously if the relevant data is available. In the absence of an identfiier (ex. persistent identifier (pid)), `storeObject` can be called to solely store an object. The client is then expected to call `verifyObject` when the relevant metadata is available to confirm that the object has been stored as expected. And to finalize the process (to make the object discoverable), the client calls `tagObject``. In summary, there are two expected paths to store an object:
+```java
+// All-in-one process which stores, validates and tags an object
+objectMetadata objInfo = storeObject(InputStream, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize)
+
+// Manual Process
+// Store object
+objectMetadata objInfo = storeObject(InputStream)
+// Validate object, throws exceptions if there is a mismatch and deletes the associated file
+verifyObject(objInfo, checksum, checksumAlgorithn, objSize)
+// Tag object, makes the object discoverable (find, retrieve, delete)
+tagObject(pid, cid)
+```
+
+To retrieve an object, the client calls `retrieveObject` which returns a stream if the object exists. To find the location of the object, the client is expected to call `findObject` which will return the content identifier of the object. This can then be used to locate the object on disk.
+
+To delete an object, the client calls `deleteObject` which will delete the object and its associated references and reference files where relevant. Note, `deleteObject` and `tagObject` calls are synchronized so that the shared reference files are not unintentionally modified concurrently. An object that is in the process of being deleted should not be tagged, and vice versa. These calls have been implemented to occur sequentially to enhance clarity in the event of an unexpected conflict.issue.
+
+###### Working with metadata
+Coming Soon
+
+###### Additional information
+Coming Soon
+
 ## Development build
 
 HashStore is a Java package, and built using the [Maven](https://maven.apache.org/) build tool.
