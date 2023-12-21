@@ -37,7 +37,7 @@ tagObject(pid, cid)
 
 To retrieve an object, the client calls `retrieveObject` which returns a stream if the object exists. To find the location of the object, the client is expected to call `findObject` which will return the content identifier of the object. This can then be used to locate the object on disk.
 
-To delete an object, the client calls `deleteObject` which will delete the object and its associated references and reference files where relevant. Note, `deleteObject` and `tagObject` calls are synchronized so that the shared reference files are not unintentionally modified concurrently. An object that is in the process of being deleted should not be tagged, and vice versa. These calls have been implemented to occur sequentially to enhance clarity in the event of an unexpected conflict.issue.
+To delete an object, the client calls `deleteObject` which will delete the object and its associated references and reference files where relevant. Note, `deleteObject` and `tagObject` calls are synchronized so that the shared reference files are not unintentionally modified concurrently. An object that is in the process of being deleted should not be tagged, and vice versa. These calls have been implemented to occur sequentially to improve clarity in the event of an unexpected conflict or issue.
 
 ###### Working with metadata
 Coming Soon
