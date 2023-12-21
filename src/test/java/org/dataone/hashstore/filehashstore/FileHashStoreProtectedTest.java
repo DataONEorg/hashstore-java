@@ -166,7 +166,7 @@ public class FileHashStoreProtectedTest {
      */
     @Test
     public void getHierarchicalPathString() {
-        String shardedPath = fileHashStore.getHierarchicalPathString(
+        String shardedPath = FileHashStoreUtility.getHierarchicalPathString(
             3, 2, "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a"
         );
         String shardedPathExpected =
@@ -281,7 +281,7 @@ public class FileHashStoreProtectedTest {
 
         String objCid = address.getId();
         // Get relative path
-        String objCidShardString = fileHashStore.getHierarchicalPathString(3, 2, objCid);
+        String objCidShardString = FileHashStoreUtility.getHierarchicalPathString(3, 2, objCid);
         // Get absolute path
         Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
         Path objCidAbsPath = storePath.resolve("objects/" + objCidShardString);
@@ -718,7 +718,7 @@ public class FileHashStoreProtectedTest {
             String metadataCid = fileHashStore.putMetadata(metadataStream, pid, null);
 
             // Get relative path
-            String metadataCidShardString = fileHashStore.getHierarchicalPathString(
+            String metadataCidShardString = FileHashStoreUtility.getHierarchicalPathString(
                 3, 2, metadataCid
             );
             // Get absolute path

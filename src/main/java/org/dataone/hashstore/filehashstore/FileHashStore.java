@@ -610,7 +610,9 @@ public class FileHashStore implements HashStore {
         long objInfoRetrievedSize = objectInfo.getSize();
         String objId = objectInfo.getId();
         // Object is not tagged at this stage, so we must manually form the permanent address of the file
-        String cidShardString = getHierarchicalPathString(DIRECTORY_DEPTH, DIRECTORY_WIDTH, objId);
+        String cidShardString = FileHashStoreUtility.getHierarchicalPathString(
+            DIRECTORY_DEPTH, DIRECTORY_WIDTH, objId
+        );
         Path objAbsPath = OBJECT_STORE_DIRECTORY.resolve(cidShardString);
 
         validateTmpObject(
@@ -1214,7 +1216,7 @@ public class FileHashStore implements HashStore {
 
         // Gather the elements to form the permanent address
         String objectCid = hexDigests.get(OBJECT_STORE_ALGORITHM);
-        String objShardString = getHierarchicalPathString(
+        String objShardString = FileHashStoreUtility.getHierarchicalPathString(
             DIRECTORY_DEPTH, DIRECTORY_WIDTH, objectCid
         );
         Path objRealPath = OBJECT_STORE_DIRECTORY.resolve(objShardString);
@@ -1404,38 +1406,6 @@ public class FileHashStore implements HashStore {
         stringMessageDigest.update(bytes);
         // stringDigest
         return DatatypeConverter.printHexBinary(stringMessageDigest.digest()).toLowerCase();
-    }
-
-    /**
-     * Generates a hierarchical path by dividing a given digest into tokens of fixed width, and
-     * concatenating them with '/' as the delimiter.
-     *
-     * @param dirDepth integer to represent number of directories
-     * @param dirWidth width of each directory
-     * @param digest   value to shard
-     * @return String
-     */
-    protected String getHierarchicalPathString(int dirDepth, int dirWidth, String digest) {
-        List<String> tokens = new ArrayList<>();
-        int digestLength = digest.length();
-        for (int i = 0; i < dirDepth; i++) {
-            int start = i * dirWidth;
-            int end = Math.min((i + 1) * dirWidth, digestLength);
-            tokens.add(digest.substring(start, end));
-        }
-
-        if (dirDepth * dirWidth < digestLength) {
-            tokens.add(digest.substring(dirDepth * dirWidth));
-        }
-
-        List<String> stringArray = new ArrayList<>();
-        for (String str : tokens) {
-            if (!str.trim().isEmpty()) {
-                stringArray.add(str);
-            }
-        }
-        // stringShard
-        return String.join("/", stringArray);
     }
 
     /**
@@ -2064,14 +2034,14 @@ public class FileHashStore implements HashStore {
         if (entity.equalsIgnoreCase("object")) {
             // 'abId' is expected to be a pid
             String objectCid = findObject(abId);
-            String objShardString = getHierarchicalPathString(
+            String objShardString = FileHashStoreUtility.getHierarchicalPathString(
                 DIRECTORY_DEPTH, DIRECTORY_WIDTH, objectCid
             );
             realPath = OBJECT_STORE_DIRECTORY.resolve(objShardString);
 
         } else if (entity.equalsIgnoreCase("metadata")) {
             String objectCid = getPidHexDigest(abId + formatId, OBJECT_STORE_ALGORITHM);
-            String objShardString = getHierarchicalPathString(
+            String objShardString = FileHashStoreUtility.getHierarchicalPathString(
                 DIRECTORY_DEPTH, DIRECTORY_WIDTH, objectCid
             );
             realPath = METADATA_STORE_DIRECTORY.resolve(objShardString);
@@ -2079,12 +2049,12 @@ public class FileHashStore implements HashStore {
         } else if (entity.equalsIgnoreCase("refs")) {
             if (formatId.equalsIgnoreCase("pid")) {
                 String pidRefId = getPidHexDigest(abId, OBJECT_STORE_ALGORITHM);
-                String pidShardString = getHierarchicalPathString(
+                String pidShardString = FileHashStoreUtility.getHierarchicalPathString(
                     DIRECTORY_DEPTH, DIRECTORY_WIDTH, pidRefId
                 );
                 realPath = REFS_PID_FILE_DIRECTORY.resolve(pidShardString);
             } else if (formatId.equalsIgnoreCase("cid")) {
-                String cidShardString = getHierarchicalPathString(
+                String cidShardString = FileHashStoreUtility.getHierarchicalPathString(
                     DIRECTORY_DEPTH, DIRECTORY_WIDTH, abId
                 );
                 realPath = REFS_CID_FILE_DIRECTORY.resolve(cidShardString);

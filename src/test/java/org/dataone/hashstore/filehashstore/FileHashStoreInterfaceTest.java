@@ -729,7 +729,7 @@ public class FileHashStoreInterfaceTest {
             String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, null);
 
             // Get relative path
-            String metadataCidShardString = fileHashStore.getHierarchicalPathString(
+            String metadataCidShardString = FileHashStoreUtility.getHierarchicalPathString(
                 3, 2, metadataCid
             );
             // Get absolute path
@@ -759,7 +759,7 @@ public class FileHashStoreInterfaceTest {
             String metadataCid = fileHashStore.storeMetadata(metadataStream, pid);
 
             // Get relative path
-            String metadataCidShardString = fileHashStore.getHierarchicalPathString(
+            String metadataCidShardString = FileHashStoreUtility.getHierarchicalPathString(
                 3, 2, metadataCid
             );
             // Get absolute path
@@ -789,7 +789,7 @@ public class FileHashStoreInterfaceTest {
             String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, null);
 
             // Get relative path
-            String metadataCidShardString = fileHashStore.getHierarchicalPathString(
+            String metadataCidShardString = FileHashStoreUtility.getHierarchicalPathString(
                 3, 2, metadataCid
             );
             // Get absolute path

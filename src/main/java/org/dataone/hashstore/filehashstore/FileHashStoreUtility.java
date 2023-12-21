@@ -6,6 +6,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Stream;
 
 import javax.xml.bind.DatatypeConverter;
@@ -120,6 +122,38 @@ public class FileHashStoreUtility {
                 + "(): objSize cannot be less than or equal to 0.";
             throw new IllegalArgumentException(errMsg);
         }
+    }
+
+    /**
+     * Generates a hierarchical path by dividing a given digest into tokens of fixed width, and
+     * concatenating them with '/' as the delimiter.
+     *
+     * @param depth  integer to represent number of directories
+     * @param width  width of each directory
+     * @param digest value to shard
+     * @return String
+     */
+    public static String getHierarchicalPathString(int depth, int width, String digest) {
+        List<String> tokens = new ArrayList<>();
+        int digestLength = digest.length();
+        for (int i = 0; i < depth; i++) {
+            int start = i * width;
+            int end = Math.min((i + 1) * width, digestLength);
+            tokens.add(digest.substring(start, end));
+        }
+
+        if (depth * width < digestLength) {
+            tokens.add(digest.substring(depth * width));
+        }
+
+        List<String> stringArray = new ArrayList<>();
+        for (String str : tokens) {
+            if (!str.trim().isEmpty()) {
+                stringArray.add(str);
+            }
+        }
+        // stringShard
+        return String.join("/", stringArray);
     }
 
 }
