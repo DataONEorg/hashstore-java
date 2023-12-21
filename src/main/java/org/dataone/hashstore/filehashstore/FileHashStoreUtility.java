@@ -1,5 +1,6 @@
 package org.dataone.hashstore.filehashstore;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -8,6 +9,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Stream;
 
 import javax.xml.bind.DatatypeConverter;
@@ -156,4 +158,34 @@ public class FileHashStoreUtility {
         return String.join("/", stringArray);
     }
 
+    /**
+     * Creates a empty/temporary file in a given location. If this file is not moved, it will
+     * be deleted upon JVM gracefully exiting or shutting down.
+     *
+     * @param prefix    string to prepend before tmp file
+     * @param directory location to create tmp file
+     * @return Temporary file ready to write into
+     * @throws IOException       Issues with generating tmpFile
+     * @throws SecurityException Insufficient permissions to create tmpFile
+     */
+    public static File generateTmpFile(String prefix, Path directory) throws IOException,
+        SecurityException {
+        Random rand = new Random();
+        int randomNumber = rand.nextInt(1000000);
+        String newPrefix = prefix + "-" + System.currentTimeMillis() + randomNumber;
+
+        try {
+            Path newPath = Files.createTempFile(directory, newPrefix, null);
+            File newFile = newPath.toFile();
+            newFile.deleteOnExit();
+            return newFile;
+
+        } catch (IOException ioe) {
+            throw ioe;
+
+        } catch (SecurityException se) {
+            throw se;
+
+        }
+    }
 }

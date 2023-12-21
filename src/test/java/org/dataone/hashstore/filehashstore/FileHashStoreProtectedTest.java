@@ -70,7 +70,7 @@ public class FileHashStoreProtectedTest {
     public File generateTemporaryFile() throws Exception {
         Path directory = tempFolder.resolve("metacat");
         // newFile
-        return fileHashStore.generateTmpFile("testfile", directory);
+        return FileHashStoreUtility.generateTmpFile("testfile", directory);
     }
 
     /**

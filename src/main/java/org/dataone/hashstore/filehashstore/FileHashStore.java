@@ -1184,7 +1184,7 @@ public class FileHashStore implements HashStore {
 
         // Generate tmp file and write to it
         logFileHashStore.debug("FileHashStore.putObject - Generating tmpFile");
-        File tmpFile = generateTmpFile("tmp", OBJECT_TMP_FILE_DIRECTORY);
+        File tmpFile = FileHashStoreUtility.generateTmpFile("tmp", OBJECT_TMP_FILE_DIRECTORY);
         Path tmpFilePath = tmpFile.toPath();
         Map<String, String> hexDigests;
         try {
@@ -1409,45 +1409,6 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Creates an empty file in a given location
-     *
-     * @param prefix    string to prepend before tmp file
-     * @param directory location to create tmp file
-     * @return Temporary file (File) ready to write into
-     * @throws IOException       Issues with generating tmpFile
-     * @throws SecurityException Insufficient permissions to create tmpFile
-     */
-    protected File generateTmpFile(String prefix, Path directory) throws IOException,
-        SecurityException {
-        Random rand = new Random();
-        int randomNumber = rand.nextInt(1000000);
-        String newPrefix = prefix + "-" + System.currentTimeMillis() + randomNumber;
-
-        try {
-            Path newPath = Files.createTempFile(directory, newPrefix, null);
-            File newFile = newPath.toFile();
-            logFileHashStore.trace(
-                "FileHashStore.generateTmpFile - tmpFile generated: " + newFile.getAbsolutePath()
-            );
-            newFile.deleteOnExit();
-            return newFile;
-
-        } catch (IOException ioe) {
-            String errMsg = "FileHashStore.generateTmpFile - Unable to generate tmpFile: " + ioe
-                .fillInStackTrace();
-            logFileHashStore.error(errMsg);
-            throw new IOException(errMsg);
-
-        } catch (SecurityException se) {
-            String errMsg = "FileHashStore.generateTmpFile - Unable to generate tmpFile: " + se
-                .fillInStackTrace();
-            logFileHashStore.error(errMsg);
-            throw new SecurityException(errMsg);
-
-        }
-    }
-
-    /**
      * Write the input stream into a given file (tmpFile) and return a HashMap consisting of
      * algorithms and their respective hex digests. If an additional algorithm is supplied and
      * supported, it and its checksum value will be included in the hex digests map.
@@ -1638,7 +1599,7 @@ public class FileHashStore implements HashStore {
      * @throws IOException Failure to write pid refs file
      */
     protected File writeCidRefsFile(String pid) throws IOException {
-        File cidRefsTmpFile = generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
+        File cidRefsTmpFile = FileHashStoreUtility.generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
         String pidNewLine = pid + "\n";
 
         try (BufferedWriter writer = new BufferedWriter(
@@ -1668,7 +1629,7 @@ public class FileHashStore implements HashStore {
      * @throws IOException Failure to write pid refs file
      */
     protected File writePidRefsFile(String cid) throws IOException {
-        File pidRefsTmpFile = generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
+        File pidRefsTmpFile = FileHashStoreUtility.generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
         try (BufferedWriter writer = new BufferedWriter(
             new OutputStreamWriter(
                 Files.newOutputStream(pidRefsTmpFile.toPath()), StandardCharsets.UTF_8
@@ -1965,7 +1926,9 @@ public class FileHashStore implements HashStore {
         Path metadataCidPath = getRealPath(pid, "metadata", checkedFormatId);
 
         // Store metadata to tmpMetadataFile
-        File tmpMetadataFile = generateTmpFile("tmp", METADATA_TMP_FILE_DIRECTORY);
+        File tmpMetadataFile = FileHashStoreUtility.generateTmpFile(
+            "tmp", METADATA_TMP_FILE_DIRECTORY
+        );
         boolean tmpMetadataWritten = writeToTmpMetadataFile(tmpMetadataFile, metadata);
         if (tmpMetadataWritten) {
             logFileHashStore.debug(
