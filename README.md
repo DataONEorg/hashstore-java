@@ -15,13 +15,43 @@ DataONE in general, and HashStore in particular, are open source, community proj
 
 Documentation is a work in progress, and can be found on the [Metacat repository](https://github.com/NCEAS/metacat/blob/feature-1436-storage-and-indexing/docs/user/metacat/source/storage-subsystem.rst#physical-file-layout) as part of the storage redesign planning. Future updates will include documentation here as the package matures.
 
-## HashStore Summary
+## HashStore Overview
 
-HashStore is a content-addressable file management system that utilizes the content identifier of an object to address files. The system stores both objects, references (refs) and metadata in its respective directories and provides an API for interacting with the store. HashStore storage classes (like `FileHashStore`) must implement the HashStore interface to ensure the expected usage of the system.
+HashStore is a content-addressable file management system that utilizes the content identifier of an object to address files. The system stores both objects, references (refs) and metadata in its respective directories and provides an API for interacting with the store. HashStore storage classes (like `FileHashStore`) must implement the HashStore interface to ensure the expected usage of HashStore.
+
+###### How do I create a HashStore?
+
+To create or interact with a HashStore, the client should first instantiate a HashStore object with the following set of properties:
+- storePath
+- storeDepth
+- storeWidth
+- storeAlgorithm
+- storeMetadataNamespace
+
+```java
+String classPackage = "org.dataone.hashstore.filehashstore.FileHashStore";
+Path rootDirectory = tempFolder.resolve("metacat");
+
+Properties storeProperties = new Properties();
+storeProperties.setProperty("storePath", rootDirectory.toString());
+storeProperties.setProperty("storeDepth", "3");
+storeProperties.setProperty("storeWidth", "2");
+storeProperties.setProperty("storeAlgorithm", "SHA-256");
+storeProperties.setProperty(
+    "storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0"
+);
+
+// Instantiate a HashStore
+HashStore hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
+
+// Store an object
+hashStore.storeObject(stream, pid)
+// ...
+```
 
 ###### Working with objects
 
-As content identifiers are used to store objects (files) in HashStore, objects are stored once and only once. By calling the various interface methods for  `storeObject`, the calling app/client can validate, store and tag an object simultaneously if the relevant data is available. In the absence of an identfiier (ex. persistent identifier (pid)), `storeObject` can be called to solely store an object. The client is then expected to call `verifyObject` when the relevant metadata is available to confirm that the object has been stored as expected. And to finalize the process (to make the object discoverable), the client calls `tagObject``. In summary, there are two expected paths to store an object:
+As content identifiers are used to store objects/files in HashStore, objects are stored once and only once. By calling the various interface methods for  `storeObject`, the calling app/client can validate, store and tag an object simultaneously if the relevant data is available. In the absence of an identfiier (ex. persistent identifier (pid)), `storeObject` can be called to solely store an object. The client is then expected to call `verifyObject` when the relevant metadata is available to confirm that the object has been stored as expected. And to finalize the process (to make the object discoverable), the client calls `tagObject``. In summary, there are two expected paths to store an object:
 ```java
 // All-in-one process which stores, validates and tags an object
 objectMetadata objInfo = storeObject(InputStream, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize)
@@ -35,15 +65,66 @@ verifyObject(objInfo, checksum, checksumAlgorithn, objSize)
 tagObject(pid, cid)
 ```
 
-To retrieve an object, the client calls `retrieveObject` which returns a stream if the object exists. To find the location of the object, the client is expected to call `findObject` which will return the content identifier of the object. This can then be used to locate the object on disk.
+**How do I retrieve an object if I have the pid?**
+- To retrieve an object, the client calls `retrieveObject(pid)` which returns a stream if the object exists.
 
-To delete an object, the client calls `deleteObject` which will delete the object and its associated references and reference files where relevant. Note, `deleteObject` and `tagObject` calls are synchronized so that the shared reference files are not unintentionally modified concurrently. An object that is in the process of being deleted should not be tagged, and vice versa. These calls have been implemented to occur sequentially to improve clarity in the event of an unexpected conflict or issue.
+**How do I find an object or check that it exists if I have the pid?**
+- To find the location of the object, the client calls `findObject` which will return the content identifier (cid) of the object.
+- This cid can then be used to locate the object on disk by following HashStore's store configuration.
+
+**How do I delete an object if I have the pid?**
+- To delete an object, the client calls `deleteObject` which will delete the object and its associated references and reference files where relevant.
+- Note, `deleteObject` and `tagObject` calls are synchronized on their content identifier values so that the shared reference files are not unintentionally modified concurrently. An object that is in the process of being deleted should not be tagged, and vice versa. These calls have been implemented to occur sequentially to improve clarity in the event of an unexpected conflict or issue.
 
 ###### Working with metadata
+The metadata objects/files for an object are stored in HashStore's '/metadata' directory. By default, calling `storeMetadata` will use the HashStore's default metadata namespace as the 'formatId' when storing metadata. Should the calling app wish to store multiple metadata files about an object, the client app is expected to provide a 'formatId' that represents an object format for the metadata type (ex. `storeMetadata(stream, pid, formatId)`). 
+
+**How do I retrieve a metadata file?**
+- To find a metadata object, the client calls `retrieveMetadata` which returns a stream to the metadata file that's been stored with the default metadata namespace if it exists.
+- If there are multiple metadata objects, a 'formatId' must be specified when calling `retrieveMetadata` (ex. `retrieveMetadata(pid, formatId)`)
+
+**How do I delete a metadata file?**
+- Like `retrieveMetadata`, the client calls `deleteMetadata` which will delete the metadata object associated with the given pid.
+- If there are multiple metadata objects, a 'formatId' must be specified when calling `deleteMetadata` to ensure the expected metadata object is deleted.
+
+###### Working with references
+
 Coming Soon
 
-###### Additional information
-Coming Soon
+###### What does HashStore look like?
+
+```
+# Example layout in HashStore with a single file stored along with its metadata and reference files.
+# This uses a store depth of 3, with a width of 2 and "SHA-256" as its default store algorithm
+## Notes:
+## - Objects are stored using their content identifier as the file address
+## - The reference file for each pid contains a single cid
+## - The reference file for each cid contains multiple pids each on its own line
+
+.../metacat/hashstore/
+└─ objects
+    └─ /d5/95/3b/d802fa74edea72eb941...00d154a727ed7c2
+└─ metadata
+    └─ /15/8d/7e/55c36a810d7c14479c9...b20d7df66768b04
+└─ refs
+    └─ pid/0d/55/5e/d77052d7e166017f779...7230bcf7abcef65e
+    └─ cid/d5/95/3b/d802fa74edea72eb941...00d154a727ed7c2
+hashstore.yaml
+```
+
+###### Public API Methods
+- storeObject
+- verifyObject
+- tagObject
+- findObject
+- storeMetadata
+- retrieveObject
+- retrieveMetadata
+- deleteObject
+- deleteMetadata
+- getHexDigest
+
+For details, please see the HashStore interface (HashStore.java)
 
 ## Development build
 
