@@ -298,7 +298,7 @@ public class FileHashStoreReferencesTest {
      * Check that deletePidRefsFile throws exception when there is no file to delete
      */
     @Test
-    public void deletePidRefsFile_missingPidRefsFile() throws Exception {
+    public void deletePidRefsFile_missingPidRefsFile() {
         String pid = "dou.test.1";
 
         assertThrows(FileNotFoundException.class, () -> {
@@ -327,7 +327,7 @@ public class FileHashStoreReferencesTest {
      * Check that deleteCidRefsPid throws exception when there is no file to delete the pid from
      */
     @Test
-    public void deleteCidRefsPid_missingCidRefsFile() throws Exception {
+    public void deleteCidRefsPid_missingCidRefsFile() {
         String pid = "dou.test.1";
         String cid = "abc123456789";
 

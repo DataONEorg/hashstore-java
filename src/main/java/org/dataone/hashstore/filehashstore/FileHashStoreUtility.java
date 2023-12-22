@@ -159,7 +159,7 @@ public class FileHashStoreUtility {
     }
 
     /**
-     * Creates a empty/temporary file in a given location. If this file is not moved, it will
+     * Creates an empty/temporary file in a given location. If this file is not moved, it will
      * be deleted upon JVM gracefully exiting or shutting down.
      *
      * @param prefix    string to prepend before tmp file
@@ -174,18 +174,9 @@ public class FileHashStoreUtility {
         int randomNumber = rand.nextInt(1000000);
         String newPrefix = prefix + "-" + System.currentTimeMillis() + randomNumber;
 
-        try {
-            Path newPath = Files.createTempFile(directory, newPrefix, null);
-            File newFile = newPath.toFile();
-            newFile.deleteOnExit();
-            return newFile;
-
-        } catch (IOException ioe) {
-            throw ioe;
-
-        } catch (SecurityException se) {
-            throw se;
-
-        }
+        Path newPath = Files.createTempFile(directory, newPrefix, null);
+        File newFile = newPath.toFile();
+        newFile.deleteOnExit();
+        return newFile;
     }
 }

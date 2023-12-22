@@ -1652,7 +1652,7 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Checks a given cid refs file for a pid. This is case sensitive.
+     * Checks a given cid refs file for a pid. This is case-sensitive.
      * 
      * @param pid            Authority-based or persistent identifier to search
      * @param absCidRefsPath Path to the cid refs file to check
@@ -1820,7 +1820,7 @@ public class FileHashStore implements HashStore {
                     // Read all lines into a List
                     List<String> lines = new ArrayList<>(Files.readAllLines(absCidRefsPath));
                     lines.remove(pid);
-                    // This delete process is atomic, so we first write the updated content
+                    // This deletes process is atomic, so we first write the updated content
                     // into a temporary file before overwriting it.
                     File tmpFile = FileHashStoreUtility.generateTmpFile(
                         "tmp", REFS_TMP_FILE_DIRECTORY

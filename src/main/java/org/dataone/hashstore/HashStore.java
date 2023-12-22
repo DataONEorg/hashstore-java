@@ -106,7 +106,6 @@ public interface HashStore {
          * @param cid Content-identifier (hash identifier)
          * @throws IOException                     Failure to create tmp file
          * @throws PidRefsFileExistsException      When pid refs file already exists
-         * @throws PidExistsInCidRefsFileException pid to write already exists in a cid refs file
          * @throws NoSuchAlgorithmException        When algorithm used to calculate pid refs address
          *                                         does not exist
          * @throws FileNotFoundException           If refs file is missing during verification
