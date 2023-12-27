@@ -316,7 +316,7 @@ public class HashStoreClient {
             "knbvm", "knbvmtestadc", false, "(knbvm) Flag to specify testing with knbvm."
         );
         options.addOption(
-            "nobj", "numberofobj", false,
+            "nobj", "numberofobj", true,
             "(knbvm) Option to specify number of objects to retrieve from a Metacat db."
         );
         options.addOption(
