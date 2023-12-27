@@ -160,7 +160,7 @@ public class HashStoreClient {
                     if (cmd.hasOption("checksum_algo")) {
                         checksum_algo = cmd.getOptionValue("checksum_algo");
                     }
-                    long size = 0;
+                    long size;
                     if (cmd.hasOption("size")) {
                         size = Long.parseLong(cmd.getOptionValue("size"));
                     } else {
@@ -168,7 +168,7 @@ public class HashStoreClient {
                     }
 
                     InputStream pidObjStream = Files.newInputStream(path);
-                    ObjectInfo objInfo = hashStore.storeObject(
+                    ObjectMetadata objInfo = hashStore.storeObject(
                         pidObjStream, pid, additional_algo, checksum, checksum_algo, size
                     );
                     pidObjStream.close();

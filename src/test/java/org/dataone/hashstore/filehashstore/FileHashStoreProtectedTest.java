@@ -20,7 +20,7 @@ import java.util.Properties;
 
 import javax.xml.bind.DatatypeConverter;
 
-import org.dataone.hashstore.ObjectInfo;
+import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.exceptions.PidObjectExistsException;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,9 +69,8 @@ public class FileHashStoreProtectedTest {
      */
     public File generateTemporaryFile() throws Exception {
         Path directory = tempFolder.resolve("metacat");
-        System.out.println(directory);
         // newFile
-        return fileHashStore.generateTmpFile("testfile", directory);
+        return FileHashStoreUtility.generateTmpFile("testfile", directory);
     }
 
     /**
@@ -167,7 +166,7 @@ public class FileHashStoreProtectedTest {
      */
     @Test
     public void getHierarchicalPathString() {
-        String shardedPath = fileHashStore.getHierarchicalPathString(
+        String shardedPath = FileHashStoreUtility.getHierarchicalPathString(
             3, 2, "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a"
         );
         String shardedPathExpected =
@@ -210,16 +209,16 @@ public class FileHashStoreProtectedTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectInfo address = fileHashStore.putObject(dataStream, pid, null, null, null, -1);
+            ObjectMetadata address = fileHashStore.putObject(dataStream, pid, null, null, null, -1);
 
             // Check id (sha-256 hex digest of the ab_id, aka object_cid)
-            String objAuthorityId = testData.pidData.get(pid).get("object_cid");
-            assertEquals(objAuthorityId, address.getId());
+            String objContentId = testData.pidData.get(pid).get("sha256");
+            assertEquals(objContentId, address.getId());
         }
     }
 
     /**
-     * Check that store object returns the correct ObjectInfo size
+     * Check that store object returns the correct ObjectMetadata size
      */
     @Test
     public void putObject_objSize() throws Exception {
@@ -228,7 +227,7 @@ public class FileHashStoreProtectedTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectInfo objInfo = fileHashStore.putObject(dataStream, pid, null, null, null, -1);
+            ObjectMetadata objInfo = fileHashStore.putObject(dataStream, pid, null, null, null, -1);
 
             // Check id (sha-256 hex digest of the ab_id (pid))
             long objectSize = Long.parseLong(testData.pidData.get(pid).get("size"));
@@ -246,7 +245,7 @@ public class FileHashStoreProtectedTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectInfo address = fileHashStore.putObject(dataStream, pid, null, null, null, -1);
+            ObjectMetadata address = fileHashStore.putObject(dataStream, pid, null, null, null, -1);
 
             Map<String, String> hexDigests = address.getHexDigests();
 
@@ -276,13 +275,13 @@ public class FileHashStoreProtectedTest {
         String checksumCorrect = "9c25df1c8ba1d2e57bb3fd4785878b85";
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        ObjectInfo address = fileHashStore.putObject(
+        ObjectMetadata address = fileHashStore.putObject(
             dataStream, pid, null, checksumCorrect, "MD2", -1
         );
 
         String objCid = address.getId();
         // Get relative path
-        String objCidShardString = fileHashStore.getHierarchicalPathString(3, 2, objCid);
+        String objCidShardString = FileHashStoreUtility.getHierarchicalPathString(3, 2, objCid);
         // Get absolute path
         Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
         Path objCidAbsPath = storePath.resolve("objects/" + objCidShardString);
@@ -396,7 +395,7 @@ public class FileHashStoreProtectedTest {
             long objectSize = Long.parseLong(testData.pidData.get(pid).get("size"));
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectInfo objInfo = fileHashStore.putObject(
+            ObjectMetadata objInfo = fileHashStore.putObject(
                 dataStream, pid, null, null, null, objectSize
             );
 
@@ -416,7 +415,7 @@ public class FileHashStoreProtectedTest {
                 Path testDataFile = testData.getTestFile(pidFormatted);
 
                 InputStream dataStream = Files.newInputStream(testDataFile);
-                ObjectInfo objInfo = fileHashStore.putObject(
+                ObjectMetadata objInfo = fileHashStore.putObject(
                     dataStream, pid, null, null, null, 1000
                 );
 
@@ -473,49 +472,6 @@ public class FileHashStoreProtectedTest {
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             fileHashStore.putObject(dataStream, pid, "   ", null, null, -1);
-        });
-    }
-
-    /**
-     * Verify putObject throws exception when pid is empty
-     */
-    @Test
-    public void putObject_emptyPid() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            // Get test file to "upload"
-            String pidEmpty = "";
-            String pid = "jtao.1700.1";
-            Path testDataFile = testData.getTestFile(pid);
-
-            InputStream dataStream = Files.newInputStream(testDataFile);
-            fileHashStore.putObject(dataStream, pidEmpty, null, null, null, -1);
-        });
-    }
-
-    /**
-     * Verify putObject throws exception when pid is null
-     */
-    @Test
-    public void putObject_nullPid() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            // Get test file to "upload"
-            String pid = "jtao.1700.1";
-            Path testDataFile = testData.getTestFile(pid);
-
-            InputStream dataStream = Files.newInputStream(testDataFile);
-            fileHashStore.putObject(dataStream, null, "MD2", null, null, -1);
-        });
-    }
-
-    /**
-     * Verify putObject throws exception object is null
-     */
-    @Test
-    public void putObject_nullObject() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            // Get test file to "upload"
-            String pid = "jtao.1700.1";
-            fileHashStore.putObject(null, pid, "MD2", null, null, -1);
         });
     }
 
@@ -762,7 +718,7 @@ public class FileHashStoreProtectedTest {
             String metadataCid = fileHashStore.putMetadata(metadataStream, pid, null);
 
             // Get relative path
-            String metadataCidShardString = fileHashStore.getHierarchicalPathString(
+            String metadataCidShardString = FileHashStoreUtility.getHierarchicalPathString(
                 3, 2, metadataCid
             );
             // Get absolute path

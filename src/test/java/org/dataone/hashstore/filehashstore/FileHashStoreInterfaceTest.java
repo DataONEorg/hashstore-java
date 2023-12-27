@@ -29,7 +29,7 @@ import java.util.stream.Stream;
 
 import javax.xml.bind.DatatypeConverter;
 
-import org.dataone.hashstore.ObjectInfo;
+import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.exceptions.PidObjectExistsException;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.jupiter.api.BeforeEach;
@@ -81,23 +81,7 @@ public class FileHashStoreInterfaceTest {
     public Path tempFolder;
 
     /**
-     * Utility method to get absolute path of a given object
-     */
-    public Path getObjectAbsPath(String id) {
-        int shardDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
-        int shardWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
-        // Get relative path
-        String objCidShardString = fileHashStore.getHierarchicalPathString(
-            shardDepth, shardWidth, id
-        );
-        // Get absolute path
-        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
-
-        return storePath.resolve("objects/" + objCidShardString);
-    }
-
-    /**
-     * Check that store object returns the correct ObjectInfo id
+     * Check that store object returns the correct ObjectMetadata id
      */
     @Test
     public void storeObject() throws Exception {
@@ -106,16 +90,18 @@ public class FileHashStoreInterfaceTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectInfo objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStream, pid, null, null, null, -1
+            );
 
-            // Check id (sha-256 hex digest of the ab_id (pid))
-            String objectCid = testData.pidData.get(pid).get("object_cid");
+            // Check id (content identifier based on the store algorithm)
+            String objectCid = testData.pidData.get(pid).get("sha256");
             assertEquals(objectCid, objInfo.getId());
         }
     }
 
     /**
-     * Check that store object returns the correct ObjectInfo size
+     * Check that store object returns the correct ObjectMetadata size
      */
     @Test
     public void storeObject_objSize() throws Exception {
@@ -124,7 +110,9 @@ public class FileHashStoreInterfaceTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectInfo objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStream, pid, null, null, null, -1
+            );
 
             // Check the object size
             long objectSize = Long.parseLong(testData.pidData.get(pid).get("size"));
@@ -133,7 +121,7 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Check that store object returns the correct ObjectInfo hex digests
+     * Check that store object returns the correct ObjectMetadata hex digests
      */
     @Test
     public void storeObject_hexDigests() throws Exception {
@@ -142,7 +130,9 @@ public class FileHashStoreInterfaceTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectInfo objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStream, pid, null, null, null, -1
+            );
 
             Map<String, String> hexDigests = objInfo.getHexDigests();
 
@@ -229,7 +219,7 @@ public class FileHashStoreInterfaceTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectInfo objInfo = fileHashStore.storeObject(dataStream, pid, "MD2");
+            ObjectMetadata objInfo = fileHashStore.storeObject(dataStream, pid, "MD2");
 
             Map<String, String> hexDigests = objInfo.getHexDigests();
 
@@ -250,7 +240,7 @@ public class FileHashStoreInterfaceTest {
             String md2 = testData.pidData.get(pid).get("md2");
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectInfo objInfo = fileHashStore.storeObject(dataStream, pid, md2, "MD2");
+            ObjectMetadata objInfo = fileHashStore.storeObject(dataStream, pid, md2, "MD2");
 
             Map<String, String> hexDigests = objInfo.getHexDigests();
 
@@ -260,7 +250,7 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Check that store object returns the correct ObjectInfo size with overloaded method
+     * Check that store object returns the correct ObjectMetadata size with overloaded method
      */
     @Test
     public void storeObject_objSize_overload() throws Exception {
@@ -270,14 +260,42 @@ public class FileHashStoreInterfaceTest {
 
             long objectSize = Long.parseLong(testData.pidData.get(pid).get("size"));
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectInfo objInfo = fileHashStore.storeObject(dataStream, pid, objectSize);
+            ObjectMetadata objInfo = fileHashStore.storeObject(dataStream, pid, objectSize);
 
             assertEquals(objectSize, objInfo.getSize());
         }
     }
 
     /**
-     * Verify that storeObject stores an object with a good checksum value
+     * Check that store object executes as expected with only an InputStream (does not create
+     * any reference files)
+     */
+    @Test
+    public void storeObject_inputStream_overload() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(dataStream);
+
+            Map<String, String> hexDigests = objInfo.getHexDigests();
+            String defaultStoreAlgorithm = fhsProperties.getProperty("storeAlgorithm");
+            String cid = objInfo.getId();
+
+            assertEquals(hexDigests.get(defaultStoreAlgorithm), cid);
+
+            assertThrows(FileNotFoundException.class, () -> {
+                fileHashStore.findObject(pid);
+            });
+
+            Path cidRefsFilePath = fileHashStore.getRealPath(cid, "refs", "cid");
+            assertFalse(Files.exists(cidRefsFilePath));
+        }
+    }
+
+    /**
+     * Verify that storeObject returns the expected checksum value
      */
     @Test
     public void storeObject_validateChecksumValue() throws Exception {
@@ -288,12 +306,9 @@ public class FileHashStoreInterfaceTest {
         String checksumCorrect = "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
 
         InputStream dataStream = Files.newInputStream(testDataFile);
-        ObjectInfo address = fileHashStore.storeObject(
-            dataStream, pid, null, checksumCorrect, "SHA-256", -1
-        );
+        fileHashStore.storeObject(dataStream, pid, null, checksumCorrect, "SHA-256", -1);
 
-        String objCid = address.getId();
-        Path objCidAbsPath = getObjectAbsPath(objCid);
+        Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
         assertTrue(Files.exists(objCidAbsPath));
     }
 
@@ -376,7 +391,7 @@ public class FileHashStoreInterfaceTest {
             long objectSize = Long.parseLong(testData.pidData.get(pid).get("size"));
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectInfo objInfo = fileHashStore.storeObject(
+            ObjectMetadata objInfo = fileHashStore.storeObject(
                 dataStream, pid, null, null, null, objectSize
             );
 
@@ -396,7 +411,7 @@ public class FileHashStoreInterfaceTest {
                 Path testDataFile = testData.getTestFile(pidFormatted);
 
                 InputStream dataStream = Files.newInputStream(testDataFile);
-                ObjectInfo objInfo = fileHashStore.storeObject(
+                ObjectMetadata objInfo = fileHashStore.storeObject(
                     dataStream, pid, null, null, null, 1000
                 );
 
@@ -467,12 +482,9 @@ public class FileHashStoreInterfaceTest {
 
         InputStream dataStream = Files.newInputStream(testFilePath);
         String pid = "dou.sparsefile.1";
-        ObjectInfo sparseFileObjInfo = fileHashStore.storeObject(
-            dataStream, pid, null, null, null, -1
-        );
+        fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
 
-        String objCid = sparseFileObjInfo.getId();
-        Path objCidAbsPath = getObjectAbsPath(objCid);
+        Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
         assertTrue(Files.exists(objCidAbsPath));
 
     }
@@ -505,7 +517,7 @@ public class FileHashStoreInterfaceTest {
                 InputStream dataStream = Files.newInputStream(testFilePath);
                 String pid = "dou.sparsefile.1";
                 fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
-            } catch (IOException | NoSuchAlgorithmException ioe) {
+            } catch (IOException | NoSuchAlgorithmException | InterruptedException ioe) {
                 ioe.printStackTrace();
             }
         });
@@ -549,12 +561,12 @@ public class FileHashStoreInterfaceTest {
         Future<?> future1 = executorService.submit(() -> {
             try {
                 InputStream dataStream = Files.newInputStream(testDataFile);
-                ObjectInfo objInfo = fileHashStore.storeObject(
+                ObjectMetadata objInfo = fileHashStore.storeObject(
                     dataStream, pid, null, null, null, 0
                 );
                 if (objInfo != null) {
-                    String objId = objInfo.getId();
-                    Path objCidAbsPath = getObjectAbsPath(objId);
+                    String objCid = objInfo.getId();
+                    Path objCidAbsPath = fileHashStore.getRealPath(objCid, "object", null);
                     assertTrue(Files.exists(objCidAbsPath));
                 }
             } catch (Exception e) {
@@ -566,12 +578,12 @@ public class FileHashStoreInterfaceTest {
         Future<?> future2 = executorService.submit(() -> {
             try {
                 InputStream dataStream = Files.newInputStream(testDataFile);
-                ObjectInfo objInfo = fileHashStore.storeObject(
+                ObjectMetadata objInfo = fileHashStore.storeObject(
                     dataStream, pid, null, null, null, 0
                 );
                 if (objInfo != null) {
-                    String objId = objInfo.getId();
-                    Path objCidAbsPath = getObjectAbsPath(objId);
+                    String objCid = objInfo.getId();
+                    Path objCidAbsPath = fileHashStore.getRealPath(objCid, "object", null);
                     assertTrue(Files.exists(objCidAbsPath));
                 }
             } catch (Exception e) {
@@ -583,12 +595,12 @@ public class FileHashStoreInterfaceTest {
         Future<?> future3 = executorService.submit(() -> {
             try {
                 InputStream dataStream = Files.newInputStream(testDataFile);
-                ObjectInfo objInfo = fileHashStore.storeObject(
+                ObjectMetadata objInfo = fileHashStore.storeObject(
                     dataStream, pid, null, null, null, 0
                 );
                 if (objInfo != null) {
-                    String objId = objInfo.getId();
-                    Path objCidAbsPath = getObjectAbsPath(objId);
+                    String objCid = objInfo.getId();
+                    Path objCidAbsPath = fileHashStore.getRealPath(objCid, "object", null);
                     assertTrue(Files.exists(objCidAbsPath));
                 }
             } catch (Exception e) {
@@ -600,12 +612,12 @@ public class FileHashStoreInterfaceTest {
         Future<?> future4 = executorService.submit(() -> {
             try {
                 InputStream dataStream = Files.newInputStream(testDataFile);
-                ObjectInfo objInfo = fileHashStore.storeObject(
+                ObjectMetadata objInfo = fileHashStore.storeObject(
                     dataStream, pid, null, null, null, 0
                 );
                 if (objInfo != null) {
-                    String objId = objInfo.getId();
-                    Path objCidAbsPath = getObjectAbsPath(objId);
+                    String objCid = objInfo.getId();
+                    Path objCidAbsPath = fileHashStore.getRealPath(objCid, "object", null);
                     assertTrue(Files.exists(objCidAbsPath));
                 }
             } catch (Exception e) {
@@ -617,12 +629,12 @@ public class FileHashStoreInterfaceTest {
         Future<?> future5 = executorService.submit(() -> {
             try {
                 InputStream dataStream = Files.newInputStream(testDataFile);
-                ObjectInfo objInfo = fileHashStore.storeObject(
+                ObjectMetadata objInfo = fileHashStore.storeObject(
                     dataStream, pid, null, null, null, 0
                 );
                 if (objInfo != null) {
-                    String objId = objInfo.getId();
-                    Path objCidAbsPath = getObjectAbsPath(objId);
+                    String objCid = objInfo.getId();
+                    Path objCidAbsPath = fileHashStore.getRealPath(objCid, "object", null);
                     assertTrue(Files.exists(objCidAbsPath));
                 }
             } catch (Exception e) {
@@ -662,12 +674,12 @@ public class FileHashStoreInterfaceTest {
         Future<?> future1 = executorService.submit(() -> {
             try {
                 InputStream dataStream = Files.newInputStream(testDataFile);
-                ObjectInfo objInfo = fileHashStore.storeObject(
+                ObjectMetadata objInfo = fileHashStore.storeObject(
                     dataStream, pid, null, null, null, 0
                 );
                 if (objInfo != null) {
-                    String objId = objInfo.getId();
-                    Path objCidAbsPath = getObjectAbsPath(objId);
+                    String objCid = objInfo.getId();
+                    Path objCidAbsPath = fileHashStore.getRealPath(objCid, "object", null);
                     assertTrue(Files.exists(objCidAbsPath));
                 }
             } catch (Exception e) {
@@ -679,12 +691,12 @@ public class FileHashStoreInterfaceTest {
         Future<?> future2 = executorService.submit(() -> {
             try {
                 InputStream dataStream = Files.newInputStream(testDataFile);
-                ObjectInfo objInfo = fileHashStore.storeObject(
+                ObjectMetadata objInfo = fileHashStore.storeObject(
                     dataStream, pid, null, null, null, 0
                 );
                 if (objInfo != null) {
-                    String objId = objInfo.getId();
-                    Path objCidAbsPath = getObjectAbsPath(objId);
+                    String objCid = objInfo.getId();
+                    Path objCidAbsPath = fileHashStore.getRealPath(objCid, "object", null);
                     assertTrue(Files.exists(objCidAbsPath));
                 }
             } catch (Exception e) {
@@ -717,7 +729,7 @@ public class FileHashStoreInterfaceTest {
             String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, null);
 
             // Get relative path
-            String metadataCidShardString = fileHashStore.getHierarchicalPathString(
+            String metadataCidShardString = FileHashStoreUtility.getHierarchicalPathString(
                 3, 2, metadataCid
             );
             // Get absolute path
@@ -747,7 +759,7 @@ public class FileHashStoreInterfaceTest {
             String metadataCid = fileHashStore.storeMetadata(metadataStream, pid);
 
             // Get relative path
-            String metadataCidShardString = fileHashStore.getHierarchicalPathString(
+            String metadataCidShardString = FileHashStoreUtility.getHierarchicalPathString(
                 3, 2, metadataCid
             );
             // Get absolute path
@@ -777,7 +789,7 @@ public class FileHashStoreInterfaceTest {
             String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, null);
 
             // Get relative path
-            String metadataCidShardString = fileHashStore.getHierarchicalPathString(
+            String metadataCidShardString = FileHashStoreUtility.getHierarchicalPathString(
                 3, 2, metadataCid
             );
             // Get absolute path
@@ -1233,13 +1245,12 @@ public class FileHashStoreInterfaceTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectInfo objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
+            fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
 
+            Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
             fileHashStore.deleteObject(pid);
 
             // Check that file doesn't exist
-            String objId = objInfo.getId();
-            Path objCidAbsPath = getObjectAbsPath(objId);
             assertFalse(Files.exists(objCidAbsPath));
 
             // Check that parent directories are not deleted
@@ -1249,6 +1260,30 @@ public class FileHashStoreInterfaceTest {
             Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
             Path storeObjectPath = storePath.resolve("objects");
             assertTrue(Files.exists(storeObjectPath));
+        }
+    }
+
+    /**
+     * Confirm that deleteObject deletes reference files
+     */
+    @Test
+    public void deleteObject_referencesDeleted() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStream, pid, null, null, null, -1
+            );
+            String cid = objInfo.getId();
+
+            // Path objAbsPath = fileHashStore.getRealPath(pid, "object", null);
+            Path absPathPidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
+            Path absPathCidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
+            fileHashStore.deleteObject(pid);
+            assertFalse(Files.exists(absPathPidRefsPath));
+            assertFalse(Files.exists(absPathCidRefsPath));
         }
     }
 
@@ -1436,7 +1471,9 @@ public class FileHashStoreInterfaceTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectInfo objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStream, pid, null, null, null, -1
+            );
 
             // Then get the checksum
             String pidHexDigest = fileHashStore.getHexDigest(pid, "SHA-256");

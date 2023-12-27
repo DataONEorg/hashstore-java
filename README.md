@@ -15,6 +15,142 @@ DataONE in general, and HashStore in particular, are open source, community proj
 
 Documentation is a work in progress, and can be found on the [Metacat repository](https://github.com/NCEAS/metacat/blob/feature-1436-storage-and-indexing/docs/user/metacat/source/storage-subsystem.rst#physical-file-layout) as part of the storage redesign planning. Future updates will include documentation here as the package matures.
 
+## HashStore Overview
+
+HashStore is a content-addressable file management system that utilizes the content identifier of an object to address files. The system stores both objects, references (refs) and metadata in its respective directories and provides an API for interacting with the store. HashStore storage classes (like `FileHashStore`) must implement the HashStore interface to ensure the expected usage of HashStore.
+
+###### Public API Methods
+- storeObject
+- verifyObject
+- tagObject
+- findObject
+- storeMetadata
+- retrieveObject
+- retrieveMetadata
+- deleteObject
+- deleteMetadata
+- getHexDigest
+
+For details, please see the HashStore interface (HashStore.java)
+
+
+###### How do I create a HashStore?
+
+To create or interact with a HashStore, instantiate a HashStore object with the following set of properties:
+- storePath
+- storeDepth
+- storeWidth
+- storeAlgorithm
+- storeMetadataNamespace
+
+```java
+String classPackage = "org.dataone.hashstore.filehashstore.FileHashStore";
+Path rootDirectory = tempFolder.resolve("metacat");
+
+Properties storeProperties = new Properties();
+storeProperties.setProperty("storePath", rootDirectory.toString());
+storeProperties.setProperty("storeDepth", "3");
+storeProperties.setProperty("storeWidth", "2");
+storeProperties.setProperty("storeAlgorithm", "SHA-256");
+storeProperties.setProperty(
+    "storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0"
+);
+
+// Instantiate a HashStore
+HashStore hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
+
+// Store an object
+hashStore.storeObject(stream, pid)
+// ...
+```
+
+
+###### Working with objects (store, retrieve, delete)
+
+In HashStore, objects are first saved as temporary files while their content identifiers are calculated. Once the default hash algorithm list and their hashes are generated, objects are stored in their permanent location using the store's algorithm's corresponding hash value, the store depth and the store width. Lastly, reference files are created for the object so that they can be found and retrieved given an identifier (ex. persistent identifier (pid)). Note: Objects are also stored once and only once.
+
+By calling the various interface methods for  `storeObject`, the calling app/client can validate, store and tag an object simultaneously if the relevant data is available. In the absence of an identfiier (ex. persistent identifier (pid)), `storeObject` can be called to solely store an object. The client is then expected to call `verifyObject` when the relevant metadata is available to confirm that the object has been stored as expected. And to finalize the process (to make the object discoverable), the client calls `tagObject``. In summary, there are two expected paths to store an object:
+```java
+// All-in-one process which stores, validates and tags an object
+objectMetadata objInfo = storeObject(InputStream, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize)
+
+// Manual Process
+// Store object
+objectMetadata objInfo = storeObject(InputStream)
+// Validate object, throws exceptions if there is a mismatch and deletes the associated file
+verifyObject(objInfo, checksum, checksumAlgorithn, objSize)
+// Tag object, makes the object discoverable (find, retrieve, delete)
+tagObject(pid, cid)
+```
+
+**How do I retrieve an object if I have the pid?**
+- To retrieve an object, call the Public API method `retrieveObject` which opens a stream to the object if it exists.
+
+**How do I find an object or check that it exists if I have the pid?**
+- To find the location of the object, call the Public API method `findObject` which will return the content identifier (cid) of the object.
+- This cid can then be used to locate the object on disk by following HashStore's store configuration.
+
+**How do I delete an object if I have the pid?**
+- To delete an object, call the Public API method `deleteObject` which will delete the object and its associated references and reference files where relevant.
+- Note, `deleteObject` and `tagObject` calls are synchronized on their content identifier values so that the shared reference files are not unintentionally modified concurrently. An object that is in the process of being deleted should not be tagged, and vice versa. These calls have been implemented to occur sequentially to improve clarity in the event of an unexpected conflict or issue.
+
+
+###### Working with metadata (store, retrieve, delete)
+
+HashStore's '/metadata' directory holds all metadata for objects stored in HashStore. To differentiate between metadata documents for a given object, HashStore includes the 'formatId' (format or namespace of the metadata) when generating the address of the metadata document to store (the hash of the 'pid' + 'formatId'). By default, calling `storeMetadata` will use HashStore's default metadata namespace as the 'formatId' when storing metadata. Should the calling app wish to store multiple metadata files about an object, the client app is expected to provide a 'formatId' that represents an object format for the metadata type (ex. `storeMetadata(stream, pid, formatId)`). 
+
+**How do I retrieve a metadata file?**
+- To find a metadata object, call the Public API method `retrieveMetadata` which returns a stream to the metadata file that's been stored with the default metadata namespace if it exists.
+- If there are multiple metadata objects, a 'formatId' must be specified when calling `retrieveMetadata` (ex. `retrieveMetadata(pid, formatId)`)
+
+**How do I delete a metadata file?**
+- Like `retrieveMetadata`, call the Public API method `deleteMetadata` which will delete the metadata object associated with the given pid.
+- If there are multiple metadata objects, a 'formatId' must be specified when calling `deleteMetadata` to ensure the expected metadata object is deleted.
+
+
+###### What are HashStore reference files?
+
+HashStore assumes that every object to store has a respective identifier. This identifier is then used when storing, retrieving and deleting an object. In order to facilitate this process, we create two types of reference files:
+- pid (persistent identifier) reference files 
+- cid (content identifier) reference files
+
+These reference files are implemented in HashStore underneath the hood with no expectation for modification from the calling app/client. The one and only exception to this process when the calling client/app does not have an identifier, and solely stores an objects raw bytes in HashStore (calling `storeObject(InputStream)`).
+
+**'pid' Reference Files**
+- Pid (persistent identifier) reference files are created when storing an object with an identifier.
+- Pid reference files are located in HashStores '/refs/pid' directory
+- If an identifier is not available at the time of storing an object, the calling app/client must create this association between a pid and the object it represents by calling `tagObject` separately.
+- Each pid reference file contains a string that represents the content identifier of the object it references
+- Like how objects are stored once and only once, there is also only one pid reference file for each object.
+
+**'cid' Reference Files**
+- Cid (content identifier) reference files are created at the same time as pid reference files when storing an object with an identifier.
+- Cid reference files are located in HashStore's '/refs/cid' directory
+- A cid reference file is a list of all the pids that reference a cid, delimited by a new line ("\n") character
+
+
+###### What does HashStore look like?
+
+```
+# Example layout in HashStore with a single file stored along with its metadata and reference files.
+# This uses a store depth of 3, with a width of 2 and "SHA-256" as its default store algorithm
+## Notes:
+## - Objects are stored using their content identifier as the file address
+## - The reference file for each pid contains a single cid
+## - The reference file for each cid contains multiple pids each on its own line
+
+.../metacat/hashstore/
+└─ objects
+    └─ /d5/95/3b/d802fa74edea72eb941...00d154a727ed7c2
+└─ metadata
+    └─ /15/8d/7e/55c36a810d7c14479c9...b20d7df66768b04
+└─ refs
+    └─ pid/0d/55/5e/d77052d7e166017f779...7230bcf7abcef65e
+    └─ cid/d5/95/3b/d802fa74edea72eb941...00d154a727ed7c2
+hashstore.yaml
+```
+
+
 ## Development build
 
 HashStore is a Java package, and built using the [Maven](https://maven.apache.org/) build tool.

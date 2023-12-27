@@ -1,11 +1,15 @@
 package org.dataone.hashstore.filehashstore;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 import java.util.stream.Stream;
 
 import javax.xml.bind.DatatypeConverter;
@@ -122,4 +126,57 @@ public class FileHashStoreUtility {
         }
     }
 
+    /**
+     * Generates a hierarchical path by dividing a given digest into tokens of fixed width, and
+     * concatenating them with '/' as the delimiter.
+     *
+     * @param depth  integer to represent number of directories
+     * @param width  width of each directory
+     * @param digest value to shard
+     * @return String
+     */
+    public static String getHierarchicalPathString(int depth, int width, String digest) {
+        List<String> tokens = new ArrayList<>();
+        int digestLength = digest.length();
+        for (int i = 0; i < depth; i++) {
+            int start = i * width;
+            int end = Math.min((i + 1) * width, digestLength);
+            tokens.add(digest.substring(start, end));
+        }
+
+        if (depth * width < digestLength) {
+            tokens.add(digest.substring(depth * width));
+        }
+
+        List<String> stringArray = new ArrayList<>();
+        for (String str : tokens) {
+            if (!str.trim().isEmpty()) {
+                stringArray.add(str);
+            }
+        }
+        // stringShard
+        return String.join("/", stringArray);
+    }
+
+    /**
+     * Creates an empty/temporary file in a given location. If this file is not moved, it will
+     * be deleted upon JVM gracefully exiting or shutting down.
+     *
+     * @param prefix    string to prepend before tmp file
+     * @param directory location to create tmp file
+     * @return Temporary file ready to write into
+     * @throws IOException       Issues with generating tmpFile
+     * @throws SecurityException Insufficient permissions to create tmpFile
+     */
+    public static File generateTmpFile(String prefix, Path directory) throws IOException,
+        SecurityException {
+        Random rand = new Random();
+        int randomNumber = rand.nextInt(1000000);
+        String newPrefix = prefix + "-" + System.currentTimeMillis() + randomNumber;
+
+        Path newPath = Files.createTempFile(directory, newPrefix, null);
+        File newFile = newPath.toFile();
+        newFile.deleteOnExit();
+        return newFile;
+    }
 }
