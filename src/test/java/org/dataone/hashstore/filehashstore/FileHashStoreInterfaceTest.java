@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
@@ -1284,6 +1285,35 @@ public class FileHashStoreInterfaceTest {
             fileHashStore.deleteObject(pid);
             assertFalse(Files.exists(absPathPidRefsPath));
             assertFalse(Files.exists(absPathCidRefsPath));
+        }
+    }
+
+    /**
+     * Confirm that cid refs file and object still exists when an object has more than one reference
+     * and client calls 'deleteObject' on a pid that references an object that still has references.
+     */
+    @Test
+    public void deleteObject_objectExistsIfCidRefencesFileNotEmpty() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStream, pid, null, null, null, -1
+            );
+            String pidExtra = "dou.test" + pid;
+            String cid = objInfo.getId();
+            fileHashStore.tagObject(pidExtra, cid);
+
+            Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
+            Path absPathPidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
+            Path absPathCidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
+            fileHashStore.deleteObject(pid);
+
+            assertTrue(Files.exists(objCidAbsPath));
+            assertFalse(Files.exists(absPathPidRefsPath));
+            assertTrue(Files.exists(absPathCidRefsPath));
         }
     }
 

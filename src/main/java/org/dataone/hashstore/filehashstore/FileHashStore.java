@@ -1013,12 +1013,20 @@ public class FileHashStore implements HashStore {
                 throw new FileNotFoundException(errMsg);
             }
 
-            // Proceed to delete
-            Files.delete(objRealPath);
             // Remove pid from the cid refs file
+            // If there are no more reference, 'deleteCidRefsPid()' will also delete the cid reference file
             deleteCidRefsPid(pid, cid);
             // Delete pid reference file
             deletePidRefsFile(pid);
+            // Proceed to delete object only if cid refs file is no longer present
+            Path absCidRefsPath = getRealPath(cid, "refs", "cid");
+            if (!Files.exists(absCidRefsPath)) {
+                Files.delete(objRealPath);
+            } else {
+                String warnMsg = "FileHashStore.deleteObject - cid referenced by pid: " + pid
+                    + " is not empty (references exist for the cid). Skipping object deletion. ";
+                logFileHashStore.warn(warnMsg);
+            }
 
             logFileHashStore.info(
                 "FileHashStore.deleteObject - File and references deleted for: " + pid
