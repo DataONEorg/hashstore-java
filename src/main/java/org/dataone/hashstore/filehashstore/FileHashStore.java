@@ -1229,10 +1229,9 @@ public class FileHashStore implements HashStore {
         // Confirm that the object does not yet exist, delete tmpFile if so
         if (Files.exists(objRealPath)) {
             String errMsg = "FileHashStore.putObject - File already exists for pid: " + pid
-                + ". Object address: " + objRealPath + ". Aborting request.";
+                + ". Object address: " + objRealPath + ". Deleting temporary file.";
             logFileHashStore.warn(errMsg);
             tmpFile.delete();
-            throw new PidObjectExistsException(errMsg);
         } else {
             // Move object
             File permFile = objRealPath.toFile();

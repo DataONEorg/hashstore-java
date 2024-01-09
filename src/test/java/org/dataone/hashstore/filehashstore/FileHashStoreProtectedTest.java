@@ -21,7 +21,6 @@ import java.util.Properties;
 import javax.xml.bind.DatatypeConverter;
 
 import org.dataone.hashstore.ObjectMetadata;
-import org.dataone.hashstore.exceptions.PidObjectExistsException;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -427,22 +426,27 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Verify putObject throws exception when storing a duplicate object
+     * Verify putObject deletes temporary file written if called to store an object
+     * that already exists (duplicate)
      */
     @Test
-    public void putObject_duplicateObject() {
-        assertThrows(PidObjectExistsException.class, () -> {
-            // Get test file to "upload"
-            String pid = "jtao.1700.1";
-            Path testDataFile = testData.getTestFile(pid);
+    public void putObject_duplicateObject() throws Exception {
+        // Get test file to "upload"
+        String pid = "jtao.1700.1";
+        Path testDataFile = testData.getTestFile(pid);
 
-            InputStream dataStream = Files.newInputStream(testDataFile);
-            fileHashStore.putObject(dataStream, pid, null, null, null, -1);
+        InputStream dataStream = Files.newInputStream(testDataFile);
+        fileHashStore.putObject(dataStream, pid, null, null, null, -1);
 
-            // Try duplicate upload
-            InputStream dataStreamTwo = Files.newInputStream(testDataFile);
-            fileHashStore.putObject(dataStreamTwo, pid, null, null, null, -1);
-        });
+        // Try duplicate upload
+        String pidTwo = pid + ".test";
+        InputStream dataStreamTwo = Files.newInputStream(testDataFile);
+        fileHashStore.putObject(dataStreamTwo, pidTwo, null, null, null, -1);
+
+        // Confirm there are no files in 'objects/tmp' directory
+        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+        File[] files = storePath.resolve("objects/tmp").toFile().listFiles();
+        assertEquals(0, files.length);
     }
 
     /**

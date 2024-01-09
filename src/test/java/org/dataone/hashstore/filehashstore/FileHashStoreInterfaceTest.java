@@ -19,7 +19,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
@@ -439,21 +438,27 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Check that store object throws FileAlreadyExists error when storing duplicate object
+     * Check that store object tags cid refs file as expected when called
+     * to store a duplicate object (two pids that reference the same cid)
      */
     @Test
-    public void storeObject_duplicate() {
+    public void storeObject_duplicate() throws Exception {
         for (String pid : testData.pidList) {
-            assertThrows(PidObjectExistsException.class, () -> {
-                String pidFormatted = pid.replace("/", "_");
-                Path testDataFile = testData.getTestFile(pidFormatted);
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
 
-                InputStream dataStream = Files.newInputStream(testDataFile);
-                fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
 
-                InputStream dataStreamDup = Files.newInputStream(testDataFile);
-                fileHashStore.storeObject(dataStreamDup, pid, null, null, null, -1);
-            });
+            String pidTwo = pid + ".test";
+            InputStream dataStreamDup = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStreamDup, pidTwo, null, null, null, -1
+            );
+
+            String cid = objInfo.getId();
+            Path absCidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
+            assertTrue(fileHashStore.isPidInCidRefsFile(pidTwo, absCidRefsPath));
         }
     }
 
