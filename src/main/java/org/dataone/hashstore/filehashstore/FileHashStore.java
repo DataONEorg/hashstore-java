@@ -1661,8 +1661,7 @@ public class FileHashStore implements HashStore {
                 Files.newOutputStream(cidRefsTmpFile.toPath()), StandardCharsets.UTF_8
             )
         )) {
-            String pidNewLine = pid + "\n";
-            writer.write(pidNewLine);
+            writer.write(pid);
             writer.close();
 
             logFileHashStore.debug(
@@ -1743,9 +1742,8 @@ public class FileHashStore implements HashStore {
             try (FileChannel channel = FileChannel.open(
                 absCidRefsPath, StandardOpenOption.READ, StandardOpenOption.WRITE
             ); FileLock ignored = channel.lock()) {
-                String newPidReference = pid + "\n";
                 List<String> lines = new ArrayList<>(Files.readAllLines(absCidRefsPath));
-                lines.add(newPidReference);
+                lines.add(pid);
                 // This update process is atomic, so we first write the updated content
                 // into a temporary file before overwriting it.
                 File tmpFile = FileHashStoreUtility.generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);

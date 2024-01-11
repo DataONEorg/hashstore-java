@@ -202,7 +202,7 @@ public class FileHashStoreReferencesTest {
         File cidRefsTmpFile = fileHashStore.writeCidRefsFile(pidToWrite);
 
         String pidRead = new String(Files.readAllBytes(cidRefsTmpFile.toPath()));
-        assertEquals(pidRead, pidToWrite + "\n");
+        assertEquals(pidRead, pidToWrite);
     }
 
     /**
