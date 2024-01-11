@@ -335,7 +335,6 @@ public class FileHashStore implements HashStore {
             new OutputStreamWriter(Files.newOutputStream(hashstoreYaml), StandardCharsets.UTF_8)
         )) {
             writer.write(yamlString);
-            writer.close();
 
         } catch (IOException ioe) {
             logFileHashStore.fatal(
@@ -1021,6 +1020,7 @@ public class FileHashStore implements HashStore {
             // Proceed to delete object only if cid refs file is no longer present
             Path absCidRefsPath = getRealPath(cid, "refs", "cid");
             if (!Files.exists(absCidRefsPath)) {
+                // Delete actual object
                 Files.delete(objRealPath);
             } else {
                 String warnMsg = "FileHashStore.deleteObject - cid referenced by pid: " + pid
