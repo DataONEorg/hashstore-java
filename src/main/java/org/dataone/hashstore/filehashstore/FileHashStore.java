@@ -37,7 +37,6 @@ import org.apache.commons.logging.LogFactory;
 import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.HashStore;
 import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
-import org.dataone.hashstore.exceptions.PidObjectExistsException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 
 /**
@@ -419,8 +418,8 @@ public class FileHashStore implements HashStore {
     public ObjectMetadata storeObject(
         InputStream object, String pid, String additionalAlgorithm, String checksum,
         String checksumAlgorithm, long objSize
-    ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException,
-        InterruptedException {
+    ) throws NoSuchAlgorithmException, IOException, RuntimeException, InterruptedException,
+        PidRefsFileExistsException {
         logFileHashStore.debug(
             "FileHashStore.storeObject - Called to store object for pid: " + pid
         );
@@ -457,7 +456,7 @@ public class FileHashStore implements HashStore {
     private ObjectMetadata syncPutObject(
         InputStream object, String pid, String additionalAlgorithm, String checksum,
         String checksumAlgorithm, long objSize
-    ) throws NoSuchAlgorithmException, PidObjectExistsException, IOException, RuntimeException,
+    ) throws NoSuchAlgorithmException, PidRefsFileExistsException, IOException, RuntimeException,
         InterruptedException {
         // Lock pid for thread safety, transaction control and atomic writing
         // A pid can only be stored once and only once, subsequent calls will
@@ -501,11 +500,11 @@ public class FileHashStore implements HashStore {
             logFileHashStore.error(errMsg);
             throw nsae;
 
-        } catch (PidObjectExistsException poee) {
+        } catch (PidRefsFileExistsException prfee) {
             String errMsg = "FileHashStore.syncPutObject - Unable to store object for pid: " + pid
-                + ". PidObjectExistsException: " + poee.getMessage();
+                + ". PidRefsFileExistsException: " + prfee.getMessage();
             logFileHashStore.error(errMsg);
-            throw poee;
+            throw prfee;
 
         } catch (IOException ioe) {
             // Covers AtomicMoveNotSupportedException, FileNotFoundException
@@ -538,7 +537,7 @@ public class FileHashStore implements HashStore {
      */
     @Override
     public ObjectMetadata storeObject(InputStream object) throws NoSuchAlgorithmException,
-        IOException, PidObjectExistsException, RuntimeException {
+        IOException, PidRefsFileExistsException, RuntimeException {
         // 'putObject' is called directly to bypass the pid synchronization implemented to
         // efficiently handle duplicate object store requests. Since there is no pid, calling
         // 'storeObject' would unintentionally create a bottleneck for all requests without a
@@ -557,7 +556,7 @@ public class FileHashStore implements HashStore {
      */
     @Override
     public ObjectMetadata storeObject(InputStream object, String pid, String additionalAlgorithm)
-        throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException,
+        throws NoSuchAlgorithmException, IOException, PidRefsFileExistsException, RuntimeException,
         InterruptedException {
         FileHashStoreUtility.ensureNotNull(
             additionalAlgorithm, "additionalAlgorithm", "storeObject"
@@ -572,7 +571,7 @@ public class FileHashStore implements HashStore {
     @Override
     public ObjectMetadata storeObject(
         InputStream object, String pid, String checksum, String checksumAlgorithm
-    ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException,
+    ) throws NoSuchAlgorithmException, IOException, PidRefsFileExistsException, RuntimeException,
         InterruptedException {
         FileHashStoreUtility.ensureNotNull(checksum, "checksum", "storeObject");
         FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm", "storeObject");
@@ -585,7 +584,7 @@ public class FileHashStore implements HashStore {
      */
     @Override
     public ObjectMetadata storeObject(InputStream object, String pid, long objSize)
-        throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException,
+        throws NoSuchAlgorithmException, IOException, PidRefsFileExistsException, RuntimeException,
         InterruptedException {
         FileHashStoreUtility.checkNotNegativeOrZero(objSize, "storeObject");
 
@@ -971,7 +970,8 @@ public class FileHashStore implements HashStore {
 
     @Override
     public void deleteObject(String pid) throws IllegalArgumentException, FileNotFoundException,
-        IOException, NoSuchAlgorithmException, InterruptedException {
+        IOException, NoSuchAlgorithmException, InterruptedException,
+        PidNotFoundInCidRefsFileException {
         logFileHashStore.debug(
             "FileHashStore.deleteObject - Called to delete object for pid: " + pid
         );
@@ -1171,7 +1171,7 @@ public class FileHashStore implements HashStore {
      * @throws SecurityException               Insufficient permissions to read/access files or when
      *                                         generating/writing to a file
      * @throws FileNotFoundException           tmpFile not found during store
-     * @throws PidObjectExistsException        Duplicate object in store exists
+     * @throws PidRefsFileExistsException      If the given pid already references an object
      * @throws IllegalArgumentException        When signature values are empty (checksum, pid,
      *                                         etc.)
      * @throws NullPointerException            Arguments are null for pid or object
@@ -1181,7 +1181,7 @@ public class FileHashStore implements HashStore {
         InputStream object, String pid, String additionalAlgorithm, String checksum,
         String checksumAlgorithm, long objSize
     ) throws IOException, NoSuchAlgorithmException, SecurityException, FileNotFoundException,
-        PidObjectExistsException, IllegalArgumentException, NullPointerException,
+        PidRefsFileExistsException, IllegalArgumentException, NullPointerException,
         AtomicMoveNotSupportedException {
         logFileHashStore.debug("FileHashStore.putObject - Called to put object for pid: " + pid);
 
@@ -1820,8 +1820,7 @@ public class FileHashStore implements HashStore {
      * @param absCidRefsPath Path to the cid refs file to remove the pid from
      * @throws IOException Unable to access cid refs file
      */
-    protected void deleteCidRefsPid(String pid, Path absCidRefsPath)
-        throws NoSuchAlgorithmException, IOException {
+    protected void deleteCidRefsPid(String pid, Path absCidRefsPath) throws IOException {
         FileHashStoreUtility.ensureNotNull(pid, "pid", "deleteCidRefsPid");
         FileHashStoreUtility.ensureNotNull(absCidRefsPath, "absCidRefsPath", "deleteCidRefsPid");
 

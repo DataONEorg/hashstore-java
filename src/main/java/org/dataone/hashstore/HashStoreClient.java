@@ -29,7 +29,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.dataone.hashstore.exceptions.HashStoreFactoryException;
-import org.dataone.hashstore.exceptions.PidObjectExistsException;
+import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -558,10 +558,12 @@ public class HashStoreClient {
                 System.out.println("Storing object for guid: " + guid);
                 hashStore.storeObject(objStream, guid, checksum, algorithm);
 
-            } catch (PidObjectExistsException poee) {
+            } catch (PidRefsFileExistsException poee) {
                 String errMsg = "Unexpected Error: " + poee.fillInStackTrace();
                 try {
-                    logExceptionToFile(guid, errMsg, "java/store_obj_errors/pidobjectexists");
+                    logExceptionToFile(
+                        guid, errMsg, "java/store_obj_errors/PidRefsFileExistsException"
+                    );
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

@@ -4,8 +4,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
-
-import org.dataone.hashstore.exceptions.PidObjectExistsException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 
 /**
@@ -55,46 +53,48 @@ public interface HashStore {
          * @param checksumAlgorithm   Algorithm of checksum submitted
          * @param objSize             Expected size of object to validate after storing
          * @return ObjectMetadata object encapsulating file information
-         * @throws NoSuchAlgorithmException When additionalAlgorithm or checksumAlgorithm is invalid
-         * @throws IOException              I/O Error when writing file, generating checksums and/or
-         *                                  moving file
-         * @throws PidObjectExistsException When duplicate pid object is found
-         * @throws RuntimeException         Thrown when there is an issue with permissions, illegal
-         *                                  arguments (ex. empty pid) or null pointers
-         * @throws InterruptedException     When tagging pid and cid process is interrupted
+         * @throws NoSuchAlgorithmException   When additionalAlgorithm or checksumAlgorithm is
+         *                                    invalid
+         * @throws IOException                I/O Error when writing file, generating checksums
+         *                                    and/or moving file
+         * @throws PidRefsFileExistsException If a pid refs file already exists, meaning the pid is
+         *                                    already referencing a file.
+         * @throws RuntimeException           Thrown when there is an issue with permissions,
+         *                                    illegal arguments (ex. empty pid) or null pointers
+         * @throws InterruptedException       When tagging pid and cid process is interrupted
          */
         ObjectMetadata storeObject(
                 InputStream object, String pid, String additionalAlgorithm, String checksum,
                 String checksumAlgorithm, long objSize
-        ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException,
-                InterruptedException;
+        ) throws NoSuchAlgorithmException, IOException, PidRefsFileExistsException,
+                RuntimeException, InterruptedException;
 
         /**
          * @see #storeObject(InputStream, String, String, String, String, long)
          */
         ObjectMetadata storeObject(InputStream object) throws NoSuchAlgorithmException, IOException,
-                PidObjectExistsException, RuntimeException, InterruptedException;
+                PidRefsFileExistsException, RuntimeException, InterruptedException;
 
         /**
          * @see #storeObject(InputStream, String, String, String, String, long)
          */
         ObjectMetadata storeObject(
                 InputStream object, String pid, String checksum, String checksumAlgorithm
-        ) throws NoSuchAlgorithmException, IOException, PidObjectExistsException, RuntimeException,
-                InterruptedException;
+        ) throws NoSuchAlgorithmException, IOException, PidRefsFileExistsException,
+                RuntimeException, InterruptedException;
 
         /**
          * @see #storeObject(InputStream, String, String, String, String, long)
          */
         ObjectMetadata storeObject(InputStream object, String pid, String additionalAlgorithm)
-                throws NoSuchAlgorithmException, IOException, PidObjectExistsException,
+                throws NoSuchAlgorithmException, IOException, PidRefsFileExistsException,
                 RuntimeException, InterruptedException;
 
         /**
          * @see #storeObject(InputStream, String, String, String, String, long)
          */
         ObjectMetadata storeObject(InputStream object, String pid, long objSize)
-                throws NoSuchAlgorithmException, IOException, PidObjectExistsException,
+                throws NoSuchAlgorithmException, IOException, PidRefsFileExistsException,
                 RuntimeException, InterruptedException;
 
         /**
@@ -104,13 +104,13 @@ public interface HashStore {
          * 
          * @param pid Authority-based identifier
          * @param cid Content-identifier (hash identifier)
-         * @throws IOException                     Failure to create tmp file
-         * @throws PidRefsFileExistsException      When pid refs file already exists
-         * @throws NoSuchAlgorithmException        When algorithm used to calculate pid refs address
-         *                                         does not exist
-         * @throws FileNotFoundException           If refs file is missing during verification
-         * @throws InterruptedException            When tagObject is waiting to execute but is
-         *                                         interrupted
+         * @throws IOException                Failure to create tmp file
+         * @throws PidRefsFileExistsException When pid refs file already exists
+         * @throws NoSuchAlgorithmException   When algorithm used to calculate pid refs address
+         *                                    does not exist
+         * @throws FileNotFoundException      If refs file is missing during verification
+         * @throws InterruptedException       When tagObject is waiting to execute but is
+         *                                    interrupted
          */
         void tagObject(String pid, String cid) throws IOException, PidRefsFileExistsException,
                 NoSuchAlgorithmException, FileNotFoundException, InterruptedException;

@@ -31,7 +31,7 @@ import javax.xml.bind.DatatypeConverter;
 
 import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
-import org.dataone.hashstore.exceptions.PidObjectExistsException;
+import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -579,7 +579,9 @@ public class FileHashStoreInterfaceTest {
             } catch (Exception e) {
                 System.out.println(e.getClass());
                 e.printStackTrace();
-                assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
+                assertTrue(
+                    e instanceof RuntimeException || e instanceof PidRefsFileExistsException
+                );
             }
         });
         Future<?> future2 = executorService.submit(() -> {
@@ -596,7 +598,9 @@ public class FileHashStoreInterfaceTest {
             } catch (Exception e) {
                 System.out.println(e.getClass());
                 e.printStackTrace();
-                assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
+                assertTrue(
+                    e instanceof RuntimeException || e instanceof PidRefsFileExistsException
+                );
             }
         });
         Future<?> future3 = executorService.submit(() -> {
@@ -613,7 +617,9 @@ public class FileHashStoreInterfaceTest {
             } catch (Exception e) {
                 System.out.println(e.getClass());
                 e.printStackTrace();
-                assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
+                assertTrue(
+                    e instanceof RuntimeException || e instanceof PidRefsFileExistsException
+                );
             }
         });
         Future<?> future4 = executorService.submit(() -> {
@@ -630,7 +636,9 @@ public class FileHashStoreInterfaceTest {
             } catch (Exception e) {
                 System.out.println(e.getClass());
                 e.printStackTrace();
-                assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
+                assertTrue(
+                    e instanceof RuntimeException || e instanceof PidRefsFileExistsException
+                );
             }
         });
         Future<?> future5 = executorService.submit(() -> {
@@ -647,7 +655,9 @@ public class FileHashStoreInterfaceTest {
             } catch (Exception e) {
                 System.out.println(e.getClass());
                 e.printStackTrace();
-                assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
+                assertTrue(
+                    e instanceof RuntimeException || e instanceof PidRefsFileExistsException
+                );
             }
         });
 
@@ -692,7 +702,9 @@ public class FileHashStoreInterfaceTest {
             } catch (Exception e) {
                 System.out.println(e.getClass());
                 e.printStackTrace();
-                assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
+                assertTrue(
+                    e instanceof RuntimeException || e instanceof PidRefsFileExistsException
+                );
             }
         });
         Future<?> future2 = executorService.submit(() -> {
@@ -709,7 +721,9 @@ public class FileHashStoreInterfaceTest {
             } catch (Exception e) {
                 System.out.println(e.getClass());
                 e.printStackTrace();
-                assertTrue(e instanceof RuntimeException || e instanceof PidObjectExistsException);
+                assertTrue(
+                    e instanceof RuntimeException || e instanceof PidRefsFileExistsException
+                );
             }
         });
 
