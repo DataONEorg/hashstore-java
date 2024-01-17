@@ -180,6 +180,9 @@ $ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.HashStoreCl
 # Get the checksum of a data object
 $ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.HashStoreClient -store /path/to/store -getchecksum -pid testpid1 -algo SHA-256
 
+# Find an object in HashStore (returns its content identifer if it exists)
+$ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.HashStoreClient -store /path/to/store -findobject -pid testpid1
+
 # Store a data object
 $ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.HashStoreClient -store /path/to/store -storeobject -path /path/to/data.ext -pid testpid1
 
