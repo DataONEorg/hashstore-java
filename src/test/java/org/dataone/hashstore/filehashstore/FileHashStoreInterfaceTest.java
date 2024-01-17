@@ -30,6 +30,7 @@ import java.util.stream.Stream;
 import javax.xml.bind.DatatypeConverter;
 
 import org.dataone.hashstore.ObjectMetadata;
+import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
 import org.dataone.hashstore.exceptions.PidObjectExistsException;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.jupiter.api.BeforeEach;
@@ -1319,6 +1320,36 @@ public class FileHashStoreInterfaceTest {
             assertTrue(Files.exists(objCidAbsPath));
             assertFalse(Files.exists(absPathPidRefsPath));
             assertTrue(Files.exists(absPathCidRefsPath));
+        }
+    }
+
+    /**
+     * Confirm that an exception is thrown when called to delete an object that exists
+     * and has a cid refs file, but does not have the expected pid to delete.
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void deleteObject_pidNotFoundInCidRefsFile() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStream, pid, null, null, null, -1
+            );
+            String pidExtra = "dou.test" + pid;
+            String cid = objInfo.getId();
+            fileHashStore.tagObject(pidExtra, cid);
+
+            // Manually remove the pid
+            Path absPathCidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
+            fileHashStore.deleteCidRefsPid(pidExtra, absPathCidRefsPath);
+
+            assertThrows(
+                PidNotFoundInCidRefsFileException.class, () -> fileHashStore.deleteObject(pidExtra)
+            );
         }
     }
 
