@@ -1020,7 +1020,7 @@ public class FileHashStore implements HashStore {
                 // Throw exception if the cid refs file doesn't exist
                 String errMsg =
                     "FileHashStore.deleteObject - Cid refs file does not exist for cid: " + cid
-                        + " with address" + absCidRefsPath;
+                        + " with address: " + absCidRefsPath;
                 logFileHashStore.error(errMsg);
                 throw new FileNotFoundException(errMsg);
 
@@ -1043,7 +1043,7 @@ public class FileHashStore implements HashStore {
                     Files.delete(objRealPath);
                 } else {
                     String warnMsg = "FileHashStore.deleteObject - cid referenced by pid: " + pid
-                        + " is not empty (references exist for the cid). Skipping object deletion. ";
+                        + " is not empty (references exist for the cid). Skipping object deletion.";
                     logFileHashStore.warn(warnMsg);
                 }
                 logFileHashStore.info(
@@ -1289,7 +1289,7 @@ public class FileHashStore implements HashStore {
                 } catch (Exception ge) {
                     String errMsg =
                         "FileHashStore.validateTmpObject - objSize given is not equal to the"
-                            + " stored object size. ObjSize: " + objSize + ". storedObjFileSize:"
+                            + " stored object size. ObjSize: " + objSize + ". storedObjFileSize: "
                             + storedObjFileSize + ". Failed to delete tmpFile: " + tmpFile;
                     logFileHashStore.error(errMsg);
                     throw new IOException(errMsg);
@@ -1297,7 +1297,7 @@ public class FileHashStore implements HashStore {
 
                 String errMsg =
                     "FileHashStore.validateTmpObject - objSize given is not equal to the"
-                        + " stored object size. ObjSize: " + objSize + ". storedObjFileSize:"
+                        + " stored object size. ObjSize: " + objSize + ". storedObjFileSize: "
                         + storedObjFileSize + ". Deleting tmpFile: " + tmpFile;
                 logFileHashStore.error(errMsg);
                 throw new IllegalArgumentException(errMsg);
@@ -1798,7 +1798,7 @@ public class FileHashStore implements HashStore {
         if (!Files.exists(absPidRefsPath)) {
             String errMsg =
                 "FileHashStore.deletePidRefsFile - File refs file does not exist for pid: " + pid
-                    + " with address" + absPidRefsPath;
+                    + " with address: " + absPidRefsPath;
             logFileHashStore.error(errMsg);
             throw new FileNotFoundException(errMsg);
 
@@ -1843,7 +1843,7 @@ public class FileHashStore implements HashStore {
 
         } catch (IOException ioe) {
             String errMsg = "FileHashStore.deleteCidRefsPid - Unable to remove pid: " + pid
-                + "from cid refs file: " + absCidRefsPath + ". Additional Info: " + ioe
+                + " from cid refs file: " + absCidRefsPath + ". Additional Info: " + ioe
                     .getMessage();
             logFileHashStore.error(errMsg);
             throw new IOException(errMsg);
@@ -1870,7 +1870,7 @@ public class FileHashStore implements HashStore {
         if (!Files.exists(absCidRefsPath)) {
             String errMsg =
                 "FileHashStore.deleteCidRefsFile - Cid refs file does not exist for cid: " + cid
-                    + " with address" + absCidRefsPath;
+                    + " with address: " + absCidRefsPath;
             logFileHashStore.error(errMsg);
             throw new FileNotFoundException(errMsg);
 
