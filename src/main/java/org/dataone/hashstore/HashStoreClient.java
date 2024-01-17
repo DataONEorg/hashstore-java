@@ -141,6 +141,13 @@ public class HashStoreClient {
                     String hexDigest = hashStore.getHexDigest(pid, algo);
                     System.out.println(hexDigest);
 
+                } else if (cmd.hasOption("findobject")) {
+                    String pid = cmd.getOptionValue("pid");
+                    FileHashStoreUtility.ensureNotNull(pid, "-pid", "HashStoreClient");
+
+                    String cid = hashStore.findObject(pid);
+                    System.out.println(cid);
+
                 } else if (cmd.hasOption("storeobject")) {
                     System.out.println("Storing object");
                     String pid = cmd.getOptionValue("pid");
@@ -272,6 +279,10 @@ public class HashStoreClient {
         // Public API options
         options.addOption(
             "getchecksum", "client_getchecksum", false,
+            "Flag to get the hex digest of a data object in a HashStore."
+        );
+        options.addOption(
+            "findobject", "client_findobject", false,
             "Flag to get the hex digest of a data object in a HashStore."
         );
         options.addOption(
