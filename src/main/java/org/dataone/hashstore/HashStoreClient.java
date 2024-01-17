@@ -523,9 +523,7 @@ public class HashStoreClient {
                     }
                 }
 
-                if (skipFile) {
-                    continue;
-                } else {
+                if (!skipFile) {
                     Path setItemFilePath = Paths.get(originDir + "/" + docid + "." + rev);
                     if (Files.exists(setItemFilePath)) {
                         System.out.println(
