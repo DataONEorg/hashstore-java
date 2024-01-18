@@ -1363,8 +1363,10 @@ public class FileHashStore implements HashStore {
 
         boolean algorithmSupported = Arrays.asList(SUPPORTED_HASH_ALGORITHMS).contains(algorithm);
         if (!algorithmSupported) {
-            String errMsg = "Algorithm not supported: " + algorithm + ". Supported algorithms: "
-                + Arrays.toString(SUPPORTED_HASH_ALGORITHMS);
+            String errMsg = "FileHashStore - validateAlgorithm: Algorithm not supported: "
+                + algorithm + ". Supported algorithms: " + Arrays.toString(
+                    SUPPORTED_HASH_ALGORITHMS
+                );
             logFileHashStore.error(errMsg);
             throw new NoSuchAlgorithmException(errMsg);
         }
@@ -1406,30 +1408,6 @@ public class FileHashStore implements HashStore {
             }
         }
         return requestValidation;
-    }
-
-    /**
-     * Given a string and supported algorithm returns the hex digest
-     *
-     * @param pid       authority based identifier or persistent identifier
-     * @param algorithm string value (ex. SHA-256)
-     * @return Hex digest of the given string in lower-case
-     * @throws IllegalArgumentException String or algorithm cannot be null or empty
-     * @throws NoSuchAlgorithmException Algorithm not supported
-     */
-    protected String getPidHexDigest(String pid, String algorithm) throws NoSuchAlgorithmException,
-        IllegalArgumentException {
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "getPidHexDigest");
-        FileHashStoreUtility.checkForEmptyString(pid, "pid", "getPidHexDigest");
-        FileHashStoreUtility.ensureNotNull(algorithm, "algorithm", "getPidHexDigest");
-        FileHashStoreUtility.checkForEmptyString(algorithm, "algorithm", "getPidHexDigest");
-        validateAlgorithm(algorithm);
-
-        MessageDigest stringMessageDigest = MessageDigest.getInstance(algorithm);
-        byte[] bytes = pid.getBytes(StandardCharsets.UTF_8);
-        stringMessageDigest.update(bytes);
-        // stringDigest
-        return DatatypeConverter.printHexBinary(stringMessageDigest.digest()).toLowerCase();
     }
 
     /**
@@ -1888,7 +1866,9 @@ public class FileHashStore implements HashStore {
         }
 
         // Get permanent address for the given metadata document
-        String metadataCid = getPidHexDigest(pid + checkedFormatId, OBJECT_STORE_ALGORITHM);
+        String metadataCid = FileHashStoreUtility.getPidHexDigest(
+            pid + checkedFormatId, OBJECT_STORE_ALGORITHM
+        );
         Path metadataCidPath = getRealPath(pid, "metadata", checkedFormatId);
 
         // Store metadata to tmpMetadataFile
@@ -1969,7 +1949,9 @@ public class FileHashStore implements HashStore {
             realPath = OBJECT_STORE_DIRECTORY.resolve(objShardString);
 
         } else if (entity.equalsIgnoreCase("metadata")) {
-            String objectCid = getPidHexDigest(abId + formatId, OBJECT_STORE_ALGORITHM);
+            String objectCid = FileHashStoreUtility.getPidHexDigest(
+                abId + formatId, OBJECT_STORE_ALGORITHM
+            );
             String objShardString = FileHashStoreUtility.getHierarchicalPathString(
                 DIRECTORY_DEPTH, DIRECTORY_WIDTH, objectCid
             );
@@ -1977,7 +1959,9 @@ public class FileHashStore implements HashStore {
 
         } else if (entity.equalsIgnoreCase("refs")) {
             if (formatId.equalsIgnoreCase("pid")) {
-                String pidRefId = getPidHexDigest(abId, OBJECT_STORE_ALGORITHM);
+                String pidRefId = FileHashStoreUtility.getPidHexDigest(
+                    abId, OBJECT_STORE_ALGORITHM
+                );
                 String pidShardString = FileHashStoreUtility.getHierarchicalPathString(
                     DIRECTORY_DEPTH, DIRECTORY_WIDTH, pidRefId
                 );

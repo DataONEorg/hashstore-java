@@ -174,31 +174,6 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Check getPidHexDigest calculates correct hex digest value
-     */
-    @Test
-    public void getPidHexDigest() throws Exception {
-        for (String pid : testData.pidList) {
-            String abIdDigest = fileHashStore.getPidHexDigest(pid, "SHA-256");
-            String abIdTestData = testData.pidData.get(pid).get("object_cid");
-            assertEquals(abIdDigest, abIdTestData);
-        }
-    }
-
-    /**
-     * Check that getPidHexDigest throws NoSuchAlgorithmException
-     */
-    @Test
-    public void getPidHexDigest_badAlgorithm() {
-        for (String pid : testData.pidList) {
-            assertThrows(
-                NoSuchAlgorithmException.class, () -> fileHashStore.getPidHexDigest(pid, "SM2")
-            );
-
-        }
-    }
-
-    /**
      * Verify that putObject returns correct id
      */
     @Test

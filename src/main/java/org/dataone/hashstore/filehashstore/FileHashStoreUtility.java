@@ -3,6 +3,7 @@ package org.dataone.hashstore.filehashstore;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -69,6 +70,29 @@ public class FileHashStoreUtility {
         }
         // mdObjectHexDigest
         return DatatypeConverter.printHexBinary(mdObject.digest()).toLowerCase();
+    }
+
+    /**
+     * Given a string and supported algorithm returns the hex digest
+     *
+     * @param pid       authority based identifier or persistent identifier
+     * @param algorithm string value (ex. SHA-256)
+     * @return Hex digest of the given string in lower-case
+     * @throws IllegalArgumentException String or algorithm cannot be null or empty
+     * @throws NoSuchAlgorithmException Algorithm not supported
+     */
+    public static String getPidHexDigest(String pid, String algorithm)
+        throws NoSuchAlgorithmException, IllegalArgumentException {
+        FileHashStoreUtility.ensureNotNull(pid, "pid", "getPidHexDigest");
+        FileHashStoreUtility.checkForEmptyString(pid, "pid", "getPidHexDigest");
+        FileHashStoreUtility.ensureNotNull(algorithm, "algorithm", "getPidHexDigest");
+        FileHashStoreUtility.checkForEmptyString(algorithm, "algorithm", "getPidHexDigest");
+
+        MessageDigest stringMessageDigest = MessageDigest.getInstance(algorithm);
+        byte[] bytes = pid.getBytes(StandardCharsets.UTF_8);
+        stringMessageDigest.update(bytes);
+        // stringDigest
+        return DatatypeConverter.printHexBinary(stringMessageDigest.digest()).toLowerCase();
     }
 
     /**
