@@ -516,7 +516,7 @@ public class HashStoreClient {
                 boolean skipFile = false;
                 if (sizeOfFilesToSkip != null) {
                     // Calculate the size of requested gb to skip in bytes
-                    long gbFilesToSkip = Integer.getInteger(sizeOfFilesToSkip) * (1024L * 1024
+                    long gbFilesToSkip = Integer.parseInt(sizeOfFilesToSkip) * (1024L * 1024
                         * 1024);
                     if (setItemSize > gbFilesToSkip) {
                         skipFile = true;
