@@ -720,11 +720,21 @@ public class FileHashStore implements HashStore {
         Path absPidRefsPath = getRealPath(pid, "refs", "pid");
 
         if (Files.exists(absPidRefsPath)) {
-            String cidFromPidRefsFile = new String(Files.readAllBytes(absPidRefsPath));
+            String cid = new String(Files.readAllBytes(absPidRefsPath));
             logFileHashStore.info(
-                "FileHashStore.findObject - Cid (" + cidFromPidRefsFile + ") found for pid:" + pid
+                "FileHashStore.findObject - Cid (" + cid + ") found for pid:" + pid
             );
-            return cidFromPidRefsFile;
+            Path absCidRefsPath = getRealPath(cid, "refs", "cid");
+            if (!Files.exists(absCidRefsPath)) {
+                // Throw exception if the cid refs file doesn't exist
+                String errMsg =
+                    "FileHashStore.deleteObject - Cid refs file does not exist for cid: " + cid
+                        + " with address: " + absCidRefsPath + ", but pid refs file exists.";
+                logFileHashStore.error(errMsg);
+                throw new FileNotFoundException(errMsg);
+            } else {
+                return cid;
+            }
 
         } else {
             String errMsg = "FileHashStore.findObject - Unable to find cid for pid: " + pid
@@ -1013,14 +1023,6 @@ public class FileHashStore implements HashStore {
                 // Throw exception if object doesn't exist
                 String errMsg = "FileHashStore.deleteObject - File does not exist for pid: " + pid
                     + " with object address: " + objRealPath;
-                logFileHashStore.error(errMsg);
-                throw new FileNotFoundException(errMsg);
-
-            } else if (!Files.exists(absCidRefsPath)) {
-                // Throw exception if the cid refs file doesn't exist
-                String errMsg =
-                    "FileHashStore.deleteObject - Cid refs file does not exist for cid: " + cid
-                        + " with address: " + absCidRefsPath;
                 logFileHashStore.error(errMsg);
                 throw new FileNotFoundException(errMsg);
 
@@ -1494,6 +1496,7 @@ public class FileHashStore implements HashStore {
             throw ioe;
 
         } finally {
+            dataStream.close();
             os.flush();
             os.close();
         }
