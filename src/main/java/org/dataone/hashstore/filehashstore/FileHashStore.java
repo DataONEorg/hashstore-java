@@ -545,9 +545,9 @@ public class FileHashStore implements HashStore {
         // the object (ex. form data including the pid, checksum, checksum algorithm, etc.) is
         // unavailable.
         //
-        // Note: This method does not tag the object to make it discoverable, so the client must
-        // call 'verifyObject' and 'tagObject' separately to ensure that the object stored
-        // is what is expected and is discoverable.
+        // Note: This method does not tag the object to make it discoverable, so the client can
+        // call 'verifyObject' (optional) to check that the object is valid, and 'tagObject'
+        // (required) to create the reference files needed to associate the respective pids/cids.
         return putObject(object, "HashStoreNoPid", null, null, null, -1);
     }
 
