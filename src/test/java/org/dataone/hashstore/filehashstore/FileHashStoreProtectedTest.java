@@ -874,4 +874,66 @@ public class FileHashStoreProtectedTest {
             metadataStoredStream.close();
         }
     }
+
+    /**
+     * Confirm that isPidInCidRefsFile returns true when pid is found
+     */
+    @Test
+    public void isPidInCidRefsFile_pidFound() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
+
+            String pidTwo = pid + ".test";
+            InputStream dataStreamDup = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStreamDup, pidTwo, null, null, null, -1
+            );
+
+            String cid = objInfo.getId();
+            Path absCidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
+            assertTrue(fileHashStore.isPidInCidRefsFile(pidTwo, absCidRefsPath));
+        }
+    }
+
+    /**
+     * Confirm that isPidInCidRefsFile returns false when pid is found
+     */
+    @Test
+    public void isPidInCidRefsFile_pidNotFound() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStream, pid, null, null, null, -1
+            );
+
+            String cid = objInfo.getId();
+            Path absCidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
+            assertFalse(fileHashStore.isPidInCidRefsFile("pid.not.found", absCidRefsPath));
+        }
+    }
+
+    @Test
+    public void getRealPath() throws Exception {
+        // Get single test file to "upload"
+        String pid = "jtao.1700.1";
+        Path testDataFile = testData.getTestFile(pid);
+
+        InputStream dataStream = Files.newInputStream(testDataFile);
+        ObjectMetadata objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
+        String cid = objInfo.getId();
+
+        Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
+        Path pidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
+        Path cidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
+        assertTrue(Files.exists(objCidAbsPath));
+        assertTrue(Files.exists(pidRefsPath));
+        assertTrue(Files.exists(cidRefsPath));
+    }
 }

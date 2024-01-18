@@ -31,7 +31,6 @@ import javax.xml.bind.DatatypeConverter;
 
 import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
-import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,7 +38,9 @@ import org.junit.jupiter.api.io.TempDir;
 
 
 /**
- * Test class for FileHashStore HashStoreInterface override methods
+ * Test class for FileHashStore HashStore Interface methods.
+ * 
+ * Note: `tagObject` & `verifyObject` tests can be found in the `FileHashStoreReferences` class
  */
 public class FileHashStoreInterfaceTest {
     private FileHashStore fileHashStore;
@@ -459,6 +460,7 @@ public class FileHashStoreInterfaceTest {
 
             String cid = objInfo.getId();
             Path absCidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
+            assertTrue(fileHashStore.isPidInCidRefsFile(pid, absCidRefsPath));
             assertTrue(fileHashStore.isPidInCidRefsFile(pidTwo, absCidRefsPath));
         }
     }
@@ -466,7 +468,8 @@ public class FileHashStoreInterfaceTest {
     /**
      * Test that storeObject successfully stores a 1GB file
      * 
-     * Note, a 4GB successfully stored in approximately 1m30s
+     * Note 1: a 4GB successfully stored in approximately 1m30s
+     * Note 2: Successfully stores 250GB file confirmed from knbvm
      */
     @Test
     public void storeObject_largeSparseFile() throws Exception {
@@ -546,14 +549,9 @@ public class FileHashStoreInterfaceTest {
      * will encounter an `ExecutionException`. The thread that does not encounter an exception will
      * store the given object, and verifies that the object is stored successfully.
      * 
-     * The threads that run into exceptions will encounter a `RunTimeException` or a
-     * `PidObjectExistsException`. If a call is made to 'storeObject' for a pid that is already in
-     * progress of being stored, a `RunTimeException` will be thrown.
-     * 
-     * If a call is made to 'storeObject' for a pid that has been stored, the thread will encounter
-     * a `PidObjectExistsException` - since `putObject` checks for the existence of a given data
-     * object before it attempts to generate a temp file (write to it, generate checksums, etc.).
-     * 
+     * The threads that run into exceptions will encounter a `RunTimeException` since the expected
+     * object to store is already in progress (thrown by `syncPutObject` which coordinates
+     * `store_object` requests with a pid).
      */
     @Test
     public void storeObject_objectLockedIds_FiveThreads() throws Exception {
@@ -562,102 +560,106 @@ public class FileHashStoreInterfaceTest {
         Path testDataFile = testData.getTestFile(pid);
 
         // Create a thread pool with 3 threads
-        ExecutorService executorService = Executors.newFixedThreadPool(3);
+        ExecutorService executorService = Executors.newFixedThreadPool(5);
 
-        // Submit 3 threads, each calling storeObject
+        // Submit 5 futures to the thread pool, each calling storeObject
         Future<?> future1 = executorService.submit(() -> {
             try {
                 InputStream dataStream = Files.newInputStream(testDataFile);
                 ObjectMetadata objInfo = fileHashStore.storeObject(
-                    dataStream, pid, null, null, null, 0
+                    dataStream, pid, null, null, null, -1
                 );
                 if (objInfo != null) {
-                    String objCid = objInfo.getId();
-                    Path objCidAbsPath = fileHashStore.getRealPath(objCid, "object", null);
+                    String cid = objInfo.getId();
+                    Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
+                    Path pidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
+                    Path cidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
                     assertTrue(Files.exists(objCidAbsPath));
+                    assertTrue(Files.exists(pidRefsPath));
+                    assertTrue(Files.exists(cidRefsPath));
                 }
             } catch (Exception e) {
+                System.out.println("Start Thread 1 Exception:");
                 System.out.println(e.getClass());
                 e.printStackTrace();
-                assertTrue(
-                    e instanceof RuntimeException || e instanceof PidRefsFileExistsException
-                );
+                System.out.println("End Thread 1 Exception\n");
+                assertTrue(e instanceof RuntimeException);
             }
         });
         Future<?> future2 = executorService.submit(() -> {
             try {
                 InputStream dataStream = Files.newInputStream(testDataFile);
                 ObjectMetadata objInfo = fileHashStore.storeObject(
-                    dataStream, pid, null, null, null, 0
+                    dataStream, pid, null, null, null, -1
                 );
                 if (objInfo != null) {
-                    String objCid = objInfo.getId();
-                    Path objCidAbsPath = fileHashStore.getRealPath(objCid, "object", null);
+                    String cid = objInfo.getId();
+                    Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
+                    Path pidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
+                    Path cidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
                     assertTrue(Files.exists(objCidAbsPath));
+                    assertTrue(Files.exists(pidRefsPath));
+                    assertTrue(Files.exists(cidRefsPath));
                 }
             } catch (Exception e) {
-                System.out.println(e.getClass());
-                e.printStackTrace();
-                assertTrue(
-                    e instanceof RuntimeException || e instanceof PidRefsFileExistsException
-                );
+                assertTrue(e instanceof RuntimeException);
             }
         });
         Future<?> future3 = executorService.submit(() -> {
             try {
                 InputStream dataStream = Files.newInputStream(testDataFile);
                 ObjectMetadata objInfo = fileHashStore.storeObject(
-                    dataStream, pid, null, null, null, 0
+                    dataStream, pid, null, null, null, -1
                 );
                 if (objInfo != null) {
-                    String objCid = objInfo.getId();
-                    Path objCidAbsPath = fileHashStore.getRealPath(objCid, "object", null);
+                    String cid = objInfo.getId();
+                    Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
+                    Path pidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
+                    Path cidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
                     assertTrue(Files.exists(objCidAbsPath));
+                    assertTrue(Files.exists(pidRefsPath));
+                    assertTrue(Files.exists(cidRefsPath));
                 }
             } catch (Exception e) {
-                System.out.println(e.getClass());
-                e.printStackTrace();
-                assertTrue(
-                    e instanceof RuntimeException || e instanceof PidRefsFileExistsException
-                );
+                assertTrue(e instanceof RuntimeException);
             }
         });
         Future<?> future4 = executorService.submit(() -> {
             try {
                 InputStream dataStream = Files.newInputStream(testDataFile);
                 ObjectMetadata objInfo = fileHashStore.storeObject(
-                    dataStream, pid, null, null, null, 0
+                    dataStream, pid, null, null, null, -1
                 );
                 if (objInfo != null) {
-                    String objCid = objInfo.getId();
-                    Path objCidAbsPath = fileHashStore.getRealPath(objCid, "object", null);
+                    String cid = objInfo.getId();
+                    Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
+                    Path pidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
+                    Path cidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
                     assertTrue(Files.exists(objCidAbsPath));
+                    assertTrue(Files.exists(pidRefsPath));
+                    assertTrue(Files.exists(cidRefsPath));
                 }
             } catch (Exception e) {
-                System.out.println(e.getClass());
-                e.printStackTrace();
-                assertTrue(
-                    e instanceof RuntimeException || e instanceof PidRefsFileExistsException
-                );
+                assertTrue(e instanceof RuntimeException);
             }
         });
         Future<?> future5 = executorService.submit(() -> {
             try {
                 InputStream dataStream = Files.newInputStream(testDataFile);
                 ObjectMetadata objInfo = fileHashStore.storeObject(
-                    dataStream, pid, null, null, null, 0
+                    dataStream, pid, null, null, null, -1
                 );
                 if (objInfo != null) {
-                    String objCid = objInfo.getId();
-                    Path objCidAbsPath = fileHashStore.getRealPath(objCid, "object", null);
+                    String cid = objInfo.getId();
+                    Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
+                    Path pidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
+                    Path cidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
                     assertTrue(Files.exists(objCidAbsPath));
+                    assertTrue(Files.exists(pidRefsPath));
+                    assertTrue(Files.exists(cidRefsPath));
                 }
             } catch (Exception e) {
-                System.out.println(e.getClass());
-                e.printStackTrace();
-                assertTrue(
-                    e instanceof RuntimeException || e instanceof PidRefsFileExistsException
-                );
+                assertTrue(e instanceof RuntimeException);
             }
         });
 
@@ -668,69 +670,6 @@ public class FileHashStoreInterfaceTest {
         future3.get();
         future4.get();
         future5.get();
-        executorService.shutdown();
-        executorService.awaitTermination(1, TimeUnit.MINUTES);
-    }
-
-    /**
-     * Tests that the `storeObject` method can store an object successfully with two threads. This
-     * test uses two futures (threads) that run concurrently, one of which will encounter an
-     * `ExecutionException`. The thread that does not encounter an exception will store the given
-     * object, and verifies that the object is stored successfully.
-     */
-    @Test
-    public void storeObject_objectLockedIds_TwoThreads() throws Exception {
-        // Get single test file to "upload"
-        String pid = "jtao.1700.1";
-        Path testDataFile = testData.getTestFile(pid);
-
-        // Create a thread pool with 3 threads
-        ExecutorService executorService = Executors.newFixedThreadPool(3);
-
-        // Submit 3 threads, each calling storeObject
-        Future<?> future1 = executorService.submit(() -> {
-            try {
-                InputStream dataStream = Files.newInputStream(testDataFile);
-                ObjectMetadata objInfo = fileHashStore.storeObject(
-                    dataStream, pid, null, null, null, 0
-                );
-                if (objInfo != null) {
-                    String objCid = objInfo.getId();
-                    Path objCidAbsPath = fileHashStore.getRealPath(objCid, "object", null);
-                    assertTrue(Files.exists(objCidAbsPath));
-                }
-            } catch (Exception e) {
-                System.out.println(e.getClass());
-                e.printStackTrace();
-                assertTrue(
-                    e instanceof RuntimeException || e instanceof PidRefsFileExistsException
-                );
-            }
-        });
-        Future<?> future2 = executorService.submit(() -> {
-            try {
-                InputStream dataStream = Files.newInputStream(testDataFile);
-                ObjectMetadata objInfo = fileHashStore.storeObject(
-                    dataStream, pid, null, null, null, 0
-                );
-                if (objInfo != null) {
-                    String objCid = objInfo.getId();
-                    Path objCidAbsPath = fileHashStore.getRealPath(objCid, "object", null);
-                    assertTrue(Files.exists(objCidAbsPath));
-                }
-            } catch (Exception e) {
-                System.out.println(e.getClass());
-                e.printStackTrace();
-                assertTrue(
-                    e instanceof RuntimeException || e instanceof PidRefsFileExistsException
-                );
-            }
-        });
-
-        // Wait for all tasks to complete and check results
-        // .get() on the future ensures that all tasks complete before the test ends
-        future1.get();
-        future2.get();
         executorService.shutdown();
         executorService.awaitTermination(1, TimeUnit.MINUTES);
     }
@@ -894,9 +833,10 @@ public class FileHashStoreInterfaceTest {
 
     /**
      * Tests that the `storeMetadata()` method can store metadata successfully with multiple threads
-     * (3). This test uses three futures (threads) that run concurrently, each of which will have to
-     * wait for the given `pid` to be released from metadataLockedIds before proceeding to store the
-     * given metadata content from its `storeMetadata()` request.
+     * (3) and does not throw any exceptions. This test uses three futures (threads) that run
+     * concurrently, each of which will have to wait for the given `pid` to be released from
+     * metadataLockedIds before proceeding to store the given metadata content from its
+     * `storeMetadata()` request.
      * 
      * All requests to store the same metadata will be executed, and the existing metadata file will
      * be overwritten by each thread. No exceptions should be encountered during these tests.
@@ -983,7 +923,19 @@ public class FileHashStoreInterfaceTest {
             // Retrieve object
             InputStream objectCidInputStream = fileHashStore.retrieveObject(pid);
             assertNotNull(objectCidInputStream);
+            objectCidInputStream.close();
         }
+    }
+
+    /**
+     * Check that retrieveObject throws exception when there is no object
+     * associated with a given pid
+     */
+    @Test
+    public void retrieveObject_pidDoesNotExist() {
+        assertThrows(FileNotFoundException.class, () -> {
+            fileHashStore.retrieveObject("pid.whose.object.does.not.exist");
+        });
     }
 
     /**
@@ -992,8 +944,7 @@ public class FileHashStoreInterfaceTest {
     @Test
     public void retrieveObject_pidNull() {
         assertThrows(IllegalArgumentException.class, () -> {
-            InputStream pidInputStream = fileHashStore.retrieveObject(null);
-            pidInputStream.close();
+            fileHashStore.retrieveObject(null);
         });
     }
 
@@ -1003,8 +954,7 @@ public class FileHashStoreInterfaceTest {
     @Test
     public void retrieveObject_pidEmpty() {
         assertThrows(IllegalArgumentException.class, () -> {
-            InputStream pidInputStream = fileHashStore.retrieveObject("");
-            pidInputStream.close();
+            fileHashStore.retrieveObject("");
         });
     }
 
@@ -1014,8 +964,7 @@ public class FileHashStoreInterfaceTest {
     @Test
     public void retrieveObject_pidEmptySpaces() {
         assertThrows(IllegalArgumentException.class, () -> {
-            InputStream pidInputStream = fileHashStore.retrieveObject("      ");
-            pidInputStream.close();
+            fileHashStore.retrieveObject("      ");
         });
     }
 
@@ -1025,8 +974,7 @@ public class FileHashStoreInterfaceTest {
     @Test
     public void retrieveObject_pidNotFound() {
         assertThrows(FileNotFoundException.class, () -> {
-            InputStream pidInputStream = fileHashStore.retrieveObject("dou.2023.hs.1");
-            pidInputStream.close();
+            fileHashStore.retrieveObject("dou.2023.hs.1");
         });
     }
 
@@ -1066,15 +1014,15 @@ public class FileHashStoreInterfaceTest {
                 ioe.printStackTrace();
                 throw ioe;
 
+            } finally {
+                // Close stream
+                objectCidInputStream.close();
             }
 
             // Get hex digest
             String sha256Digest = DatatypeConverter.printHexBinary(sha256.digest()).toLowerCase();
             String sha256DigestFromTestData = testData.pidData.get(pid).get("sha256");
             assertEquals(sha256Digest, sha256DigestFromTestData);
-
-            // Close stream
-            objectCidInputStream.close();
         }
     }
 
@@ -1241,6 +1189,9 @@ public class FileHashStoreInterfaceTest {
                 ioe.printStackTrace();
                 throw ioe;
 
+            } finally {
+                // Close stream
+                metadataCidInputStream.close();
             }
 
             // Get hex digest
@@ -1250,17 +1201,14 @@ public class FileHashStoreInterfaceTest {
                 "metadata_sha256"
             );
             assertEquals(sha256MetadataDigest, sha256MetadataDigestFromTestData);
-
-            // Close stream
-            metadataCidInputStream.close();
         }
     }
 
     /**
-     * Confirm that deleteObject deletes object and empty subdirectories
+     * Confirm that deleteObject deletes object
      */
     @Test
-    public void deleteObject() throws Exception {
+    public void deleteObject_objectDeleted() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -1309,8 +1257,9 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Confirm that cid refs file and object still exists when an object has more than one reference
-     * and client calls 'deleteObject' on a pid that references an object that still has references.
+     * Confirm that cid refs file and object do not get deleted when an object has more than one
+     * reference (when the client calls 'deleteObject' on a pid that references an object that still
+     * has references).
      */
     @Test
     public void deleteObject_objectExistsIfCidRefencesFileNotEmpty() throws Exception {
@@ -1331,8 +1280,8 @@ public class FileHashStoreInterfaceTest {
             Path absPathCidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
             fileHashStore.deleteObject(pid);
 
-            assertTrue(Files.exists(objCidAbsPath));
             assertFalse(Files.exists(absPathPidRefsPath));
+            assertTrue(Files.exists(objCidAbsPath));
             assertTrue(Files.exists(absPathCidRefsPath));
         }
     }
@@ -1625,4 +1574,48 @@ public class FileHashStoreInterfaceTest {
             });
         }
     }
+
+    /**
+     * Confirm expected cid is returned
+     */
+    @Test
+    public void findObject_cid() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        String cidRetrieved = fileHashStore.findObject(pid);
+
+        assertEquals(cid, cidRetrieved);
+    }
+
+    /**
+     * Confirm that findObject throws an exception when pid refs file found
+     * but cid refs file is missing.
+     */
+    @Test
+    public void findObject_cidRefsFileMissing() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        Path cidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
+        Files.delete(cidRefsPath);
+
+        assertThrows(FileNotFoundException.class, () -> {
+            fileHashStore.findObject(pid);
+        });
+    }
+
+    /**
+     * Check that exception is thrown when pid refs file doesn't exist
+     */
+    @Test
+    public void findObject_pidNotFound() {
+        String pid = "dou.test.1";
+        assertThrows(FileNotFoundException.class, () -> {
+            fileHashStore.findObject(pid);
+        });
+    }
+
 }

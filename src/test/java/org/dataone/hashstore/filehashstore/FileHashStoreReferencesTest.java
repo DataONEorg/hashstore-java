@@ -157,31 +157,6 @@ public class FileHashStoreReferencesTest {
     }
 
     /**
-     * Confirm expected cid is returned
-     */
-    @Test
-    public void findObject_content() throws Exception {
-        String pid = "dou.test.1";
-        String cid = "abcdef123456789";
-        fileHashStore.tagObject(pid, cid);
-
-        String cidRetrieved = fileHashStore.findObject(pid);
-
-        assertEquals(cid, cidRetrieved);
-    }
-
-    /**
-     * Check that exception is thrown when pid refs file doesn't exist
-     */
-    @Test
-    public void findObject_pidNotFound() {
-        String pid = "dou.test.1";
-        assertThrows(FileNotFoundException.class, () -> {
-            fileHashStore.findObject(pid);
-        });
-    }
-
-    /**
      * Check that the cid supplied is written into the file given
      */
     @Test
