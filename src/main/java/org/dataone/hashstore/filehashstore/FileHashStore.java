@@ -1033,12 +1033,14 @@ public class FileHashStore implements HashStore {
 
             } else {
                 // Proceed to delete the reference files and object
-                // If there are no more reference, 'deleteCidRefsPid()' will also delete the cid reference file
+                // Remove pid from cid refs file
                 deleteCidRefsPid(pid, absCidRefsPath);
                 // Delete pid reference file
                 deletePidRefsFile(pid);
-                // Proceed to delete object only if cid refs file is no longer present
-                if (!Files.exists(absCidRefsPath)) {
+                // Delete obj and cid refs file only if the cid refs file is empty
+                if (Files.size(absCidRefsPath) == 0) {
+                    // Delete empty cid refs file
+                    Files.delete(absCidRefsPath);
                     // Delete actual object
                     Files.delete(objRealPath);
                 } else {
@@ -1847,47 +1849,6 @@ public class FileHashStore implements HashStore {
                     .getMessage();
             logFileHashStore.error(errMsg);
             throw new IOException(errMsg);
-        }
-        // Perform clean up on cid refs file - if it is empty, delete it
-        if (Files.size(absCidRefsPath) == 0) {
-            Files.delete(absCidRefsPath);
-        }
-    }
-
-
-    /**
-     * Deletes a cid refs file only if it is empty.
-     * 
-     * @param cid Content identifier
-     * @throws IOException Unable to delete object cid refs file
-     */
-    protected void deleteCidRefsFile(String cid) throws NoSuchAlgorithmException, IOException {
-        FileHashStoreUtility.ensureNotNull(cid, "pid", "deleteCidRefsFile");
-        FileHashStoreUtility.checkForEmptyString(cid, "pid", "deleteCidRefsFile");
-
-        Path absCidRefsPath = getRealPath(cid, "refs", "cid");
-        // Check to see if cid refs file exists
-        if (!Files.exists(absCidRefsPath)) {
-            String errMsg =
-                "FileHashStore.deleteCidRefsFile - Cid refs file does not exist for cid: " + cid
-                    + " with address: " + absCidRefsPath;
-            logFileHashStore.error(errMsg);
-            throw new FileNotFoundException(errMsg);
-
-        } else {
-            // A cid refs file is only deleted if it is empty. Client must remove pid(s) first
-            if (Files.size(absCidRefsPath) == 0) {
-                Files.delete(absCidRefsPath);
-                logFileHashStore.debug(
-                    "FileHashStore.deleteCidRefsFile - Deleted cid refs file: " + absCidRefsPath
-                );
-
-            } else {
-                String errMsg =
-                    "FileHashStore.deleteCidRefsFile - Unable to delete cid refs file, it is not empty: "
-                        + absCidRefsPath;
-                logFileHashStore.warn(errMsg);
-            }
         }
     }
 

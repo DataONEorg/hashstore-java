@@ -324,10 +324,11 @@ public class FileHashStoreReferencesTest {
     }
 
     /**
-     * Check that deleteCidRefsFile still exists if called and cid refs file is not empty
+     * Check that deleteCidRefsPid removes all pids as expected and leaves an
+     * empty file.
      */
     @Test
-    public void deleteCidRefsFile_cidRefsFileNotEmpty() throws Exception {
+    public void deleteCidRefsPid_allPidsRemoved() throws Exception {
         String pid = "dou.test.1";
         String cid = "abcdef123456789";
         fileHashStore.tagObject(pid, cid);
@@ -336,9 +337,10 @@ public class FileHashStoreReferencesTest {
         Path cidRefsFilePath = fileHashStore.getRealPath(cid, "refs", "cid");
 
         fileHashStore.deleteCidRefsPid(pid, cidRefsFilePath);
-        fileHashStore.deleteCidRefsFile(cid);
+        fileHashStore.deleteCidRefsPid(pidAdditional, cidRefsFilePath);
 
         assertTrue(Files.exists(cidRefsFilePath));
+        assertTrue(Files.size(cidRefsFilePath) == 0);
     }
 
     /**
