@@ -580,7 +580,7 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Overload method for storeObject with size of object to validate
+     * Overload method for storeObject with just the size of object to validate
      */
     @Override
     public ObjectMetadata storeObject(InputStream object, String pid, long objSize)
@@ -592,7 +592,7 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public void verifyObject(
+    public boolean verifyObject(
         ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize
     ) throws IOException, NoSuchAlgorithmException, IllegalArgumentException {
         logFileHashStore.debug(
@@ -611,12 +611,15 @@ public class FileHashStore implements HashStore {
         );
         Path objAbsPath = OBJECT_STORE_DIRECTORY.resolve(cidShardString);
 
+        // TODO: ValidateTmpObject should not delete the object, just return a boolean
+        // - Revise this, and also ensure other methods that call it are reviewed.
         validateTmpObject(
             true, checksum, checksumAlgorithm, objAbsPath, hexDigests, objSize, objInfoRetrievedSize
         );
         logFileHashStore.info(
             "FileHashStore.verifyObject - Object with id: " + objId + " has been verified."
         );
+        return true;
     }
 
     @Override
@@ -725,13 +728,16 @@ public class FileHashStore implements HashStore {
                 "FileHashStore.findObject - Cid (" + cid + ") found for pid:" + pid
             );
             Path absCidRefsPath = getRealPath(cid, "refs", "cid");
+            // TODO: Check that pid is also found in the cid reference file
             if (!Files.exists(absCidRefsPath)) {
                 // Throw exception if the cid refs file doesn't exist
                 String errMsg =
                     "FileHashStore.deleteObject - Cid refs file does not exist for cid: " + cid
                         + " with address: " + absCidRefsPath + ", but pid refs file exists.";
                 logFileHashStore.error(errMsg);
+                // Create custom exception to handle it properly
                 throw new FileNotFoundException(errMsg);
+
             } else {
                 return cid;
             }
@@ -740,6 +746,7 @@ public class FileHashStore implements HashStore {
             String errMsg = "FileHashStore.findObject - Unable to find cid for pid: " + pid
                 + ". Pid refs file does not exist at: " + absPidRefsPath;
             logFileHashStore.error(errMsg);
+            // Create custom exception class
             throw new FileNotFoundException(errMsg);
         }
     }
@@ -989,6 +996,13 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(pid, "pid", "deleteObject");
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "deleteObject");
 
+        // TODO: First, determine that the pid, object and the related HashStore refs files exists
+        // - If the pid reference exists, but cid doesn't, just delete the reference file
+        // - Then log warning, be sure to catch the specific type of exception to handle and
+        //   add clarity to this process (ex. in Line 734)
+        // - If the pid reference file exists, but it's not found in the cid reference file,
+        //   check the cid reference file for the pid and remove it, then delete the orphaned file
+
         String cid = findObject(pid);
 
         synchronized (referenceLockedCids) {
@@ -1031,14 +1045,16 @@ public class FileHashStore implements HashStore {
                 String errMsg = "FileHashStore.deleteObject - pid: " + pid
                     + " is not found in cid refs file: " + absCidRefsPath;
                 logFileHashStore.error(errMsg);
+                // TODO: Just delete the pid reference file in this scenario
+                // - Swallow exception and log warning, then return;
                 throw new PidNotFoundInCidRefsFileException(errMsg);
 
             } else {
                 // Proceed to delete the reference files and object
-                // Remove pid from cid refs file
-                deleteCidRefsPid(pid, absCidRefsPath);
                 // Delete pid reference file
                 deletePidRefsFile(pid);
+                // Remove pid from cid refs file
+                deleteCidRefsPid(pid, absCidRefsPath);
                 // Delete obj and cid refs file only if the cid refs file is empty
                 if (Files.size(absCidRefsPath) == 0) {
                     // Delete empty cid refs file
@@ -1054,6 +1070,7 @@ public class FileHashStore implements HashStore {
                     "FileHashStore.deleteObject - File and references deleted for: " + pid
                         + " with object address: " + objRealPath
                 );
+                // TODO: Discuss where deleteObject should also remove all default system metadata
             }
         } finally {
             // Release lock
@@ -1738,6 +1755,10 @@ public class FileHashStore implements HashStore {
      * @throws IOException Issue with updating a cid refs file
      */
     protected void updateCidRefsFiles(String pid, Path absCidRefsPath) throws IOException {
+        // This update process is atomic, so we first write the updated content
+        // into a temporary file before overwriting it.
+        File tmpFile = FileHashStoreUtility.generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
+        Path tmpFilePath = tmpFile.toPath();
         try {
             // Obtain a lock on the file before updating it
             try (FileChannel channel = FileChannel.open(
@@ -1745,10 +1766,7 @@ public class FileHashStore implements HashStore {
             ); FileLock ignored = channel.lock()) {
                 List<String> lines = new ArrayList<>(Files.readAllLines(absCidRefsPath));
                 lines.add(pid);
-                // This update process is atomic, so we first write the updated content
-                // into a temporary file before overwriting it.
-                File tmpFile = FileHashStoreUtility.generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
-                Path tmpFilePath = tmpFile.toPath();
+
                 Files.write(tmpFilePath, lines, StandardOpenOption.WRITE);
                 move(tmpFile, absCidRefsPath.toFile(), "refs");
                 logFileHashStore.debug(
@@ -1757,7 +1775,6 @@ public class FileHashStore implements HashStore {
                 );
             }
             // The lock is automatically released when the try block exits
-
         } catch (IOException ioe) {
             String errMsg = "FileHashStore.updateCidRefsFiles - " + ioe.getMessage();
             logFileHashStore.error(errMsg);
@@ -1806,24 +1823,23 @@ public class FileHashStore implements HashStore {
     protected void deleteCidRefsPid(String pid, Path absCidRefsPath) throws IOException {
         FileHashStoreUtility.ensureNotNull(pid, "pid", "deleteCidRefsPid");
         FileHashStoreUtility.ensureNotNull(absCidRefsPath, "absCidRefsPath", "deleteCidRefsPid");
-
+        // This deletes process is atomic, so we first write the updated content
+        // into a temporary file before overwriting it.
+        File tmpFile = FileHashStoreUtility.generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
+        Path tmpFilePath = tmpFile.toPath();
         try (FileChannel channel = FileChannel.open(
             absCidRefsPath, StandardOpenOption.READ, StandardOpenOption.WRITE
         ); FileLock ignored = channel.lock()) {
             // Read all lines into a List
             List<String> lines = new ArrayList<>(Files.readAllLines(absCidRefsPath));
             lines.remove(pid);
-            // This deletes process is atomic, so we first write the updated content
-            // into a temporary file before overwriting it.
-            File tmpFile = FileHashStoreUtility.generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
-            Path tmpFilePath = tmpFile.toPath();
             Files.write(tmpFilePath, lines, StandardOpenOption.WRITE);
             move(tmpFile, absCidRefsPath.toFile(), "refs");
             logFileHashStore.debug(
                 "FileHashStore.deleteCidRefsPid - Pid: " + pid + " removed from cid refs file: "
                     + absCidRefsPath
             );
-
+            // The lock is automatically released when the try block exits
         } catch (IOException ioe) {
             String errMsg = "FileHashStore.deleteCidRefsPid - Unable to remove pid: " + pid
                 + " from cid refs file: " + absCidRefsPath + ". Additional Info: " + ioe
