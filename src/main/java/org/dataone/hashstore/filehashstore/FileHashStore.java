@@ -486,7 +486,7 @@ public class FileHashStore implements HashStore {
                 object, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize
             );
             // Tag object
-            String cid = objInfo.getId();
+            String cid = objInfo.getCid();
             tagObject(pid, cid);
             logFileHashStore.info(
                 "FileHashStore.syncPutObject - Object stored for pid: " + pid
@@ -596,7 +596,7 @@ public class FileHashStore implements HashStore {
         ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize
     ) throws IOException, NoSuchAlgorithmException, IllegalArgumentException {
         logFileHashStore.debug(
-            "FileHashStore.verifyObject - Called to verify object with id: " + objectInfo.getId()
+            "FileHashStore.verifyObject - Called to verify object with id: " + objectInfo.getCid()
         );
         FileHashStoreUtility.ensureNotNull(objectInfo, "objectInfo", "verifyObject");
         FileHashStoreUtility.ensureNotNull(checksum, "checksum", "verifyObject");
@@ -604,7 +604,7 @@ public class FileHashStore implements HashStore {
 
         Map<String, String> hexDigests = objectInfo.getHexDigests();
         long objInfoRetrievedSize = objectInfo.getSize();
-        String objId = objectInfo.getId();
+        String objId = objectInfo.getCid();
         // Object is not tagged at this stage, so we must manually form the permanent address of the file
         String cidShardString = FileHashStoreUtility.getHierarchicalPathString(
             DIRECTORY_DEPTH, DIRECTORY_WIDTH, objId

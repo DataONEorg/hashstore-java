@@ -55,7 +55,7 @@ public class ObjectMetadataTest {
     @Test
     public void testObjectMetadataGetId() {
         ObjectMetadata objInfo = new ObjectMetadata(id, size, hexDigests);
-        String objId = objInfo.getId();
+        String objId = objInfo.getCid();
         assertEquals(objId, id);
     }
 

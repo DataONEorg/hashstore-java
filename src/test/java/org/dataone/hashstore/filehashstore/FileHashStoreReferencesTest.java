@@ -394,7 +394,7 @@ public class FileHashStoreReferencesTest {
 
             int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
             int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
-            String actualCid = objInfo.getId();
+            String actualCid = objInfo.getCid();
             String cidShardString = FileHashStoreUtility.getHierarchicalPathString(
                 storeDepth, storeWidth, actualCid
             );

@@ -98,7 +98,7 @@ public class FileHashStoreInterfaceTest {
 
             // Check id (content identifier based on the store algorithm)
             String objectCid = testData.pidData.get(pid).get("sha256");
-            assertEquals(objectCid, objInfo.getId());
+            assertEquals(objectCid, objInfo.getCid());
         }
     }
 
@@ -283,7 +283,7 @@ public class FileHashStoreInterfaceTest {
 
             Map<String, String> hexDigests = objInfo.getHexDigests();
             String defaultStoreAlgorithm = fhsProperties.getProperty("storeAlgorithm");
-            String cid = objInfo.getId();
+            String cid = objInfo.getCid();
 
             assertEquals(hexDigests.get(defaultStoreAlgorithm), cid);
 
@@ -458,7 +458,7 @@ public class FileHashStoreInterfaceTest {
                 dataStreamDup, pidTwo, null, null, null, -1
             );
 
-            String cid = objInfo.getId();
+            String cid = objInfo.getCid();
             Path absCidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
             assertTrue(fileHashStore.isPidInCidRefsFile(pid, absCidRefsPath));
             assertTrue(fileHashStore.isPidInCidRefsFile(pidTwo, absCidRefsPath));
@@ -570,7 +570,7 @@ public class FileHashStoreInterfaceTest {
                     dataStream, pid, null, null, null, -1
                 );
                 if (objInfo != null) {
-                    String cid = objInfo.getId();
+                    String cid = objInfo.getCid();
                     Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
                     Path pidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
                     Path cidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
@@ -593,7 +593,7 @@ public class FileHashStoreInterfaceTest {
                     dataStream, pid, null, null, null, -1
                 );
                 if (objInfo != null) {
-                    String cid = objInfo.getId();
+                    String cid = objInfo.getCid();
                     Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
                     Path pidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
                     Path cidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
@@ -612,7 +612,7 @@ public class FileHashStoreInterfaceTest {
                     dataStream, pid, null, null, null, -1
                 );
                 if (objInfo != null) {
-                    String cid = objInfo.getId();
+                    String cid = objInfo.getCid();
                     Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
                     Path pidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
                     Path cidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
@@ -631,7 +631,7 @@ public class FileHashStoreInterfaceTest {
                     dataStream, pid, null, null, null, -1
                 );
                 if (objInfo != null) {
-                    String cid = objInfo.getId();
+                    String cid = objInfo.getCid();
                     Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
                     Path pidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
                     Path cidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
@@ -650,7 +650,7 @@ public class FileHashStoreInterfaceTest {
                     dataStream, pid, null, null, null, -1
                 );
                 if (objInfo != null) {
-                    String cid = objInfo.getId();
+                    String cid = objInfo.getCid();
                     Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
                     Path pidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
                     Path cidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
@@ -1245,7 +1245,7 @@ public class FileHashStoreInterfaceTest {
             ObjectMetadata objInfo = fileHashStore.storeObject(
                 dataStream, pid, null, null, null, -1
             );
-            String cid = objInfo.getId();
+            String cid = objInfo.getCid();
 
             // Path objAbsPath = fileHashStore.getRealPath(pid, "object", null);
             Path absPathPidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
@@ -1272,7 +1272,7 @@ public class FileHashStoreInterfaceTest {
                 dataStream, pid, null, null, null, -1
             );
             String pidExtra = "dou.test" + pid;
-            String cid = objInfo.getId();
+            String cid = objInfo.getCid();
             fileHashStore.tagObject(pidExtra, cid);
 
             Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
@@ -1303,7 +1303,7 @@ public class FileHashStoreInterfaceTest {
                 dataStream, pid, null, null, null, -1
             );
             String pidExtra = "dou.test" + pid;
-            String cid = objInfo.getId();
+            String cid = objInfo.getCid();
             fileHashStore.tagObject(pidExtra, cid);
 
             // Manually remove the pid

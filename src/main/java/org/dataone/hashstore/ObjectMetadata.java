@@ -9,7 +9,7 @@ import java.util.Map;
  * without needing to know the underlying file system details.
  */
 public class ObjectMetadata {
-    private final String id;
+    private final String cid;
     private final long size;
     private final Map<String, String> hexDigests;
 
@@ -21,8 +21,8 @@ public class ObjectMetadata {
      * @param hexDigests A map of hash algorithm names to their hex-encoded digest values for the
      *                   file
      */
-    public ObjectMetadata(String id, long size, Map<String, String> hexDigests) {
-        this.id = id;
+    public ObjectMetadata(String cid, long size, Map<String, String> hexDigests) {
+        this.cid = cid;
         this.size = size;
         this.hexDigests = hexDigests;
     }
@@ -32,8 +32,8 @@ public class ObjectMetadata {
      * 
      * @return id
      */
-    public String getId() {
-        return id;
+    public String getCid() {
+        return cid;
     }
 
     /**

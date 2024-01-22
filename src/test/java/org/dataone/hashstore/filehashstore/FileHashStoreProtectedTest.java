@@ -187,7 +187,7 @@ public class FileHashStoreProtectedTest {
 
             // Check id (sha-256 hex digest of the ab_id, aka object_cid)
             String objContentId = testData.pidData.get(pid).get("sha256");
-            assertEquals(objContentId, address.getId());
+            assertEquals(objContentId, address.getCid());
         }
     }
 
@@ -253,7 +253,7 @@ public class FileHashStoreProtectedTest {
             dataStream, pid, null, checksumCorrect, "MD2", -1
         );
 
-        String objCid = address.getId();
+        String objCid = address.getCid();
         // Get relative path
         String objCidShardString = FileHashStoreUtility.getHierarchicalPathString(3, 2, objCid);
         // Get absolute path
@@ -893,7 +893,7 @@ public class FileHashStoreProtectedTest {
                 dataStreamDup, pidTwo, null, null, null, -1
             );
 
-            String cid = objInfo.getId();
+            String cid = objInfo.getCid();
             Path absCidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
             assertTrue(fileHashStore.isPidInCidRefsFile(pidTwo, absCidRefsPath));
         }
@@ -913,7 +913,7 @@ public class FileHashStoreProtectedTest {
                 dataStream, pid, null, null, null, -1
             );
 
-            String cid = objInfo.getId();
+            String cid = objInfo.getCid();
             Path absCidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
             assertFalse(fileHashStore.isPidInCidRefsFile("pid.not.found", absCidRefsPath));
         }
@@ -927,7 +927,7 @@ public class FileHashStoreProtectedTest {
 
         InputStream dataStream = Files.newInputStream(testDataFile);
         ObjectMetadata objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
-        String cid = objInfo.getId();
+        String cid = objInfo.getCid();
 
         Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
         Path pidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
