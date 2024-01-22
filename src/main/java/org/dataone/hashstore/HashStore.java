@@ -63,7 +63,7 @@ public interface HashStore {
          *                                    illegal arguments (ex. empty pid) or null pointers
          * @throws InterruptedException       When tagging pid and cid process is interrupted
          */
-        ObjectMetadata storeObject(
+        public ObjectMetadata storeObject(
                 InputStream object, String pid, String additionalAlgorithm, String checksum,
                 String checksumAlgorithm, long objSize
         ) throws NoSuchAlgorithmException, IOException, PidRefsFileExistsException,
@@ -72,13 +72,14 @@ public interface HashStore {
         /**
          * @see #storeObject(InputStream, String, String, String, String, long)
          */
-        ObjectMetadata storeObject(InputStream object) throws NoSuchAlgorithmException, IOException,
-                PidRefsFileExistsException, RuntimeException, InterruptedException;
+        public ObjectMetadata storeObject(InputStream object) throws NoSuchAlgorithmException,
+                IOException, PidRefsFileExistsException, RuntimeException, InterruptedException;
 
+        // TODO: Revise this overload method to take size, this is likely the default storeObject
         /**
          * @see #storeObject(InputStream, String, String, String, String, long)
          */
-        ObjectMetadata storeObject(
+        public ObjectMetadata storeObject(
                 InputStream object, String pid, String checksum, String checksumAlgorithm
         ) throws NoSuchAlgorithmException, IOException, PidRefsFileExistsException,
                 RuntimeException, InterruptedException;
@@ -86,14 +87,15 @@ public interface HashStore {
         /**
          * @see #storeObject(InputStream, String, String, String, String, long)
          */
-        ObjectMetadata storeObject(InputStream object, String pid, String additionalAlgorithm)
-                throws NoSuchAlgorithmException, IOException, PidRefsFileExistsException,
+        public ObjectMetadata storeObject(
+                InputStream object, String pid, String additionalAlgorithm
+        ) throws NoSuchAlgorithmException, IOException, PidRefsFileExistsException,
                 RuntimeException, InterruptedException;
 
         /**
          * @see #storeObject(InputStream, String, String, String, String, long)
          */
-        ObjectMetadata storeObject(InputStream object, String pid, long objSize)
+        public ObjectMetadata storeObject(InputStream object, String pid, long objSize)
                 throws NoSuchAlgorithmException, IOException, PidRefsFileExistsException,
                 RuntimeException, InterruptedException;
 
@@ -112,13 +114,13 @@ public interface HashStore {
          * @throws InterruptedException       When tagObject is waiting to execute but is
          *                                    interrupted
          */
-        void tagObject(String pid, String cid) throws IOException, PidRefsFileExistsException,
-                NoSuchAlgorithmException, FileNotFoundException, InterruptedException;
+        public void tagObject(String pid, String cid) throws IOException,
+                PidRefsFileExistsException, NoSuchAlgorithmException, FileNotFoundException,
+                InterruptedException;
 
         /**
          * Confirms that an ObjectMetadata's content is equal to the given values. If it is not
-         * equal,
-         * it will delete the object referenced by the ObjectMetadata object.
+         * equal, it will return False - otherwise True.
          * 
          * @param objectInfo        ObjectMetadata object with values
          * @param checksum          Value of checksum to validate against
@@ -130,7 +132,7 @@ public interface HashStore {
          *                                  not in objectInfo
          * @throws IllegalArgumentException An expected value does not match
          */
-        void verifyObject(
+        public boolean verifyObject(
                 ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize
         ) throws IOException, NoSuchAlgorithmException, IllegalArgumentException;
 
@@ -138,13 +140,13 @@ public interface HashStore {
          * Checks whether an object referenced by a pid exists and returns the content identifier.
          * 
          * @param pid Authority-based identifier
-         * @return Content identifier
+         * @return Content identifier (cid)
          * @throws NoSuchAlgorithmException When algorithm used to calculate pid refs file's
          *                                  absolute address is not valid
          * @throws IOException              Unable to read from a pid refs file or pid refs file
          *                                  does not exist
          */
-        String findObject(String pid) throws NoSuchAlgorithmException, IOException;
+        public String findObject(String pid) throws NoSuchAlgorithmException, IOException;
 
         /**
          * Adds/updates metadata (ex. `sysmeta`) to the HashStore by using a given InputStream, a
@@ -167,14 +169,14 @@ public interface HashStore {
          * @throws NoSuchAlgorithmException Algorithm used to calculate permanent address is not
          *                                  supported
          */
-        String storeMetadata(InputStream metadata, String pid, String formatId) throws IOException,
-                IllegalArgumentException, FileNotFoundException, InterruptedException,
-                NoSuchAlgorithmException;
+        public String storeMetadata(InputStream metadata, String pid, String formatId)
+                throws IOException, IllegalArgumentException, FileNotFoundException,
+                InterruptedException, NoSuchAlgorithmException;
 
         /**
          * @see #storeMetadata(InputStream, String, String)
          */
-        String storeMetadata(InputStream metadata, String pid) throws IOException,
+        public String storeMetadata(InputStream metadata, String pid) throws IOException,
                 IllegalArgumentException, FileNotFoundException, InterruptedException,
                 NoSuchAlgorithmException;
 
@@ -189,7 +191,7 @@ public interface HashStore {
          * @throws NoSuchAlgorithmException When algorithm used to calculate object address is not
          *                                  supported
          */
-        InputStream retrieveObject(String pid) throws IllegalArgumentException,
+        public InputStream retrieveObject(String pid) throws IllegalArgumentException,
                 FileNotFoundException, IOException, NoSuchAlgorithmException;
 
         /**
@@ -205,13 +207,14 @@ public interface HashStore {
          * @throws NoSuchAlgorithmException When algorithm used to calculate metadata address is not
          *                                  supported
          */
-        InputStream retrieveMetadata(String pid, String formatId) throws IllegalArgumentException,
-                FileNotFoundException, IOException, NoSuchAlgorithmException;
+        public InputStream retrieveMetadata(String pid, String formatId)
+                throws IllegalArgumentException, FileNotFoundException, IOException,
+                NoSuchAlgorithmException;
 
         /**
          * @see #retrieveMetadata(String, String)
          */
-        InputStream retrieveMetadata(String pid) throws IllegalArgumentException,
+        public InputStream retrieveMetadata(String pid) throws IllegalArgumentException,
                 FileNotFoundException, IOException, NoSuchAlgorithmException;
 
         /**
@@ -227,8 +230,10 @@ public interface HashStore {
          *                                  supported
          * @throws InterruptedException     When deletion synchronization is interrupted
          */
-        void deleteObject(String pid) throws IllegalArgumentException, FileNotFoundException,
+        public void deleteObject(String pid) throws IllegalArgumentException, FileNotFoundException,
                 IOException, NoSuchAlgorithmException, InterruptedException;
+
+        // TODO: Determine path to directly delete a cid that exists by itself (store data only)
 
         /**
          * Deletes a metadata document (ex. `sysmeta`) permanently from HashStore using a given
@@ -242,14 +247,14 @@ public interface HashStore {
          * @throws NoSuchAlgorithmException When algorithm used to calculate object address is not
          *                                  supported
          */
-        void deleteMetadata(String pid, String formatId) throws IllegalArgumentException,
+        public void deleteMetadata(String pid, String formatId) throws IllegalArgumentException,
                 FileNotFoundException, IOException, NoSuchAlgorithmException;
 
         /**
          * @see #deleteMetadata(String, String)
          */
-        void deleteMetadata(String pid) throws IllegalArgumentException, FileNotFoundException,
-                IOException, NoSuchAlgorithmException;
+        public void deleteMetadata(String pid) throws IllegalArgumentException,
+                FileNotFoundException, IOException, NoSuchAlgorithmException;
 
         /**
          * Calculates the hex digest of an object that exists in HashStore using a given persistent
@@ -264,6 +269,6 @@ public interface HashStore {
          * @throws NoSuchAlgorithmException When algorithm used to calculate object address is not
          *                                  supported
          */
-        String getHexDigest(String pid, String algorithm) throws IllegalArgumentException,
+        public String getHexDigest(String pid, String algorithm) throws IllegalArgumentException,
                 FileNotFoundException, IOException, NoSuchAlgorithmException;
 }
