@@ -249,7 +249,18 @@ public interface HashStore {
         public void deleteObject(String pid) throws IllegalArgumentException, FileNotFoundException,
                 IOException, NoSuchAlgorithmException, InterruptedException;
 
-        // TODO: Determine path to directly delete a cid that exists by itself (store data only)
+        /**
+         * Delete an object based on its content identifier, with a flag to confirm intention.
+         * 
+         * Note: This overload method should only be called when an issue arises during the storage
+         * of an object without a pid, and after verifying (via `verifyObject`) that the object is
+         * not what is expected.
+         * 
+         * @param cid       Content identifier
+         * @param deleteCid Boolean to confirm
+         */
+        public void deleteObject(String cid, boolean deleteCid) throws IllegalArgumentException,
+                FileNotFoundException, IOException, NoSuchAlgorithmException;
 
         /**
          * Deletes a metadata document (ex. `sysmeta`) permanently from HashStore using a given

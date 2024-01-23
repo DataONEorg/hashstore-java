@@ -46,6 +46,7 @@ import org.junit.jupiter.api.io.TempDir;
 public class FileHashStoreInterfaceTest {
     private FileHashStore fileHashStore;
     private Properties fhsProperties;
+    private Path rootDirectory;
     private static final TestDataHarness testData = new TestDataHarness();
 
     /**
@@ -53,7 +54,7 @@ public class FileHashStoreInterfaceTest {
      */
     @BeforeEach
     public void initializeFileHashStore() {
-        Path rootDirectory = tempFolder.resolve("metacat");
+        rootDirectory = tempFolder.resolve("metacat");
 
         Properties storeProperties = new Properties();
         storeProperties.setProperty("storePath", rootDirectory.toString());
@@ -1383,6 +1384,87 @@ public class FileHashStoreInterfaceTest {
     @Test
     public void deleteObject_pidEmptySpaces() {
         assertThrows(IllegalArgumentException.class, () -> fileHashStore.deleteObject("      "));
+    }
+
+    /**
+     * Confirm deleteObject overload method to delete a cid deletes cid with a true bool
+     */
+    @Test
+    public void deleteObject_overloadCidDeleteTrue() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(dataStream);
+            String cid = objInfo.getCid();
+
+            // Set flag to true
+            fileHashStore.deleteObject(cid, true);
+
+            // Get permanent address of the actual cid
+            int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
+            int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
+            String actualCid = objInfo.getCid();
+            String cidShardString = FileHashStoreUtility.getHierarchicalPathString(
+                storeDepth, storeWidth, actualCid
+            );
+            Path objectStoreDirectory = rootDirectory.resolve("objects").resolve(cidShardString);
+            assertFalse(Files.exists(objectStoreDirectory));
+        }
+    }
+
+    /**
+     * Confirm deleteObject overload method does not delete an object with a true bool
+     * because a cid refs file exists
+     */
+    @Test
+    public void deleteObject_overloadCidDeleteTrueButCidRefsExists() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStream, pid, null, null, null, -1
+            );
+            String cid = objInfo.getCid();
+
+            // Set flag to true
+            fileHashStore.deleteObject(cid, true);
+
+            // Get permanent address of the actual cid
+            Path objRealPath = fileHashStore.getRealPath(pid, "object", null);
+            assertTrue(Files.exists(objRealPath));
+        }
+    }
+
+    /**
+     * Confirm deleteObject overload method does not delete an object with a false bool
+     */
+    @Test
+    public void deleteObject_overloadCidDeleteFalse() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(dataStream);
+            String cid = objInfo.getCid();
+
+            // Set flag to true
+            fileHashStore.deleteObject(cid, false);
+
+            // Get permanent address of the actual cid
+            int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
+            int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
+            String actualCid = objInfo.getCid();
+            String cidShardString = FileHashStoreUtility.getHierarchicalPathString(
+                storeDepth, storeWidth, actualCid
+            );
+            Path objectStoreDirectory = rootDirectory.resolve("objects").resolve(cidShardString);
+            assertTrue(Files.exists(objectStoreDirectory));
+        }
     }
 
     /**

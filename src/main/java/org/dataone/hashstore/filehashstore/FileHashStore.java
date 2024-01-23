@@ -1016,6 +1016,38 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
+    public void deleteObject(String cid, boolean deleteCid) throws IllegalArgumentException,
+        FileNotFoundException, IOException, NoSuchAlgorithmException {
+        logFileHashStore.debug(
+            "FileHashStore.deleteObject - Called to delete object with content identifeir: " + cid
+        );
+        if (deleteCid) {
+            // Validate input parameters
+            FileHashStoreUtility.ensureNotNull(cid, "cid", "deleteObject");
+            FileHashStoreUtility.checkForEmptyString(cid, "cid", "deleteObject");
+
+            // Confirm that the object called to delete does not have a cid reference file
+            Path absCidRefsPath = getRealPath(cid, "refs", "cid");
+            if (Files.exists(absCidRefsPath)) {
+                // The cid is referenced by pids, do not delete.
+                return;
+
+            } else {
+                // Get permanent address of the actual cid
+                String objShardString = FileHashStoreUtility.getHierarchicalPathString(
+                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, cid
+                );
+                Path expectedRealPath = OBJECT_STORE_DIRECTORY.resolve(objShardString);
+
+                // If file exists, delete it.
+                if (Files.exists(expectedRealPath)) {
+                    Files.delete(expectedRealPath);
+                }
+            }
+        }
+    }
+
+    @Override
     public void deleteObject(String pid) throws IllegalArgumentException, FileNotFoundException,
         IOException, NoSuchAlgorithmException, InterruptedException,
         PidNotFoundInCidRefsFileException {
@@ -1035,6 +1067,7 @@ public class FileHashStore implements HashStore {
             // Delete the pid refs file and return, nothing else to delete.
             Path absPidRefsPath = getRealPath(pid, "refs", "pid");
             Files.delete(absPidRefsPath);
+
             String warnMsg = "FileHashStore.deleteObject - Cid refs file does not exist for pid: "
                 + pid + ". Deleted orphan pid refs file.";
             logFileHashStore.warn(warnMsg);
@@ -1044,6 +1077,7 @@ public class FileHashStore implements HashStore {
             // Delete pid refs file and return, nothing else to delete
             Path absPidRefsPath = getRealPath(pid, "refs", "pid");
             Files.delete(absPidRefsPath);
+
             String warnMsg =
                 "FileHashStore.deleteObject - Pid not found in expected cid refs file for pid: "
                     + pid + ". Deleted orphan pid refs file.";
