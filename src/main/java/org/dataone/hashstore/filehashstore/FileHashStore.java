@@ -552,18 +552,20 @@ public class FileHashStore implements HashStore {
         return putObject(object, "HashStoreNoPid", null, null, null, -1);
     }
 
+
     /**
-     * Overload method for storeObject with an additionalAlgorithm
+     * Overload method for storeObject with size and a checksum & checksumAlgorithm.
      */
     @Override
-    public ObjectMetadata storeObject(InputStream object, String pid, String additionalAlgorithm)
-        throws NoSuchAlgorithmException, IOException, PidRefsFileExistsException, RuntimeException,
+    public ObjectMetadata storeObject(
+        InputStream object, String pid, String checksum, String checksumAlgorithm, long objSize
+    ) throws NoSuchAlgorithmException, IOException, PidRefsFileExistsException, RuntimeException,
         InterruptedException {
-        FileHashStoreUtility.ensureNotNull(
-            additionalAlgorithm, "additionalAlgorithm", "storeObject"
-        );
+        FileHashStoreUtility.ensureNotNull(checksum, "checksum", "storeObject");
+        FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm", "storeObject");
+        FileHashStoreUtility.checkNotNegativeOrZero(objSize, "storeObject");
 
-        return storeObject(object, pid, additionalAlgorithm, null, null, -1);
+        return storeObject(object, pid, null, checksum, checksumAlgorithm, objSize);
     }
 
     /**
@@ -590,6 +592,20 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkNotNegativeOrZero(objSize, "storeObject");
 
         return storeObject(object, pid, null, null, null, objSize);
+    }
+
+    /**
+     * Overload method for storeObject with an additionalAlgorithm
+     */
+    @Override
+    public ObjectMetadata storeObject(InputStream object, String pid, String additionalAlgorithm)
+        throws NoSuchAlgorithmException, IOException, PidRefsFileExistsException, RuntimeException,
+        InterruptedException {
+        FileHashStoreUtility.ensureNotNull(
+            additionalAlgorithm, "additionalAlgorithm", "storeObject"
+        );
+
+        return storeObject(object, pid, additionalAlgorithm, null, null, -1);
     }
 
     @Override

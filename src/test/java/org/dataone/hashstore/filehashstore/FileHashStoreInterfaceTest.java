@@ -213,30 +213,34 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Verify that storeObject generates an additional checksum with overloaded method
+     * Verify that storeObject stores and validates a given checksum and its expected size
+     * with overloaded method
      */
     @Test
-    public void storeObject_additionalAlgorithm_overload() throws Exception {
+    public void storeObject_overloadChecksumCsAlgoAndSize() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
+            String md2 = testData.pidData.get(pid).get("md2");
+            long objectSize = Long.parseLong(testData.pidData.get(pid).get("size"));
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectMetadata objInfo = fileHashStore.storeObject(dataStream, pid, "MD2");
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStream, pid, md2, "MD2", objectSize
+            );
 
             Map<String, String> hexDigests = objInfo.getHexDigests();
 
             // Validate checksum values
-            String md2 = testData.pidData.get(pid).get("md2");
             assertEquals(md2, hexDigests.get("MD2"));
         }
     }
 
     /**
-     * Verify that storeObject validates checksum with overloaded method
+     * Verify that storeObject stores and validates a given checksum with overloaded method
      */
     @Test
-    public void storeObject_validateChecksum_overload() throws Exception {
+    public void storeObject_overloadChecksumAndChecksumAlgo() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -256,7 +260,7 @@ public class FileHashStoreInterfaceTest {
      * Check that store object returns the correct ObjectMetadata size with overloaded method
      */
     @Test
-    public void storeObject_objSize_overload() throws Exception {
+    public void storeObject_overloadObjSize() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -274,7 +278,7 @@ public class FileHashStoreInterfaceTest {
      * any reference files)
      */
     @Test
-    public void storeObject_inputStream_overload() throws Exception {
+    public void storeObject_overloadInputStreamOnly() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -294,6 +298,26 @@ public class FileHashStoreInterfaceTest {
 
             Path cidRefsFilePath = fileHashStore.getRealPath(cid, "refs", "cid");
             assertFalse(Files.exists(cidRefsFilePath));
+        }
+    }
+
+    /**
+     * Verify that storeObject generates an additional checksum with overloaded method
+     */
+    @Test
+    public void storeObject_overloadAdditionalAlgo() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(dataStream, pid, "MD2");
+
+            Map<String, String> hexDigests = objInfo.getHexDigests();
+
+            // Validate checksum values
+            String md2 = testData.pidData.get(pid).get("md2");
+            assertEquals(md2, hexDigests.get("MD2"));
         }
     }
 

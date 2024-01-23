@@ -78,7 +78,15 @@ public interface HashStore {
         public ObjectMetadata storeObject(InputStream object) throws NoSuchAlgorithmException,
                 IOException, PidRefsFileExistsException, RuntimeException, InterruptedException;
 
-        // TODO: Revise this overload method to take size, this is likely the default storeObject
+        /**
+         * @see #storeObject(InputStream, String, String, String, String, long)
+         */
+        public ObjectMetadata storeObject(
+                InputStream object, String pid, String checksum, String checksumAlgorithm,
+                long objSize
+        ) throws NoSuchAlgorithmException, IOException, PidRefsFileExistsException,
+                RuntimeException, InterruptedException;
+
         /**
          * @see #storeObject(InputStream, String, String, String, String, long)
          */
