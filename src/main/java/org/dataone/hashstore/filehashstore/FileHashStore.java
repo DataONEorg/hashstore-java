@@ -1480,6 +1480,23 @@ public class FileHashStore implements HashStore {
     }
 
     /**
+     * Checks whether the algorithm supplied is included in the DefaultHashAlgorithms
+     * 
+     * @param algorithm Algorithm to check
+     * @return True if it's included
+     */
+    private boolean isDefaultAlgorithm(String algorithm) {
+        boolean isDefaultAlgorithm = false;
+        for (DefaultHashAlgorithms defAlgo : DefaultHashAlgorithms.values()) {
+            if (algorithm.equals(defAlgo.getName())) {
+                isDefaultAlgorithm = true;
+                break;
+            }
+        }
+        return isDefaultAlgorithm;
+    }
+
+    /**
      * Determines whether an object will be verified with a given checksum and checksumAlgorithm
      *
      * @param checksum          Value of checksum
@@ -1536,17 +1553,22 @@ public class FileHashStore implements HashStore {
     protected Map<String, String> writeToTmpFileAndGenerateChecksums(
         File tmpFile, InputStream dataStream, String additionalAlgorithm, String checksumAlgorithm
     ) throws NoSuchAlgorithmException, IOException, FileNotFoundException, SecurityException {
+        // Determine whether to calculate additional or checksum algorithms
+        boolean generateAddAlgo = false;
         if (additionalAlgorithm != null) {
             FileHashStoreUtility.checkForEmptyString(
                 additionalAlgorithm, "additionalAlgorithm", "writeToTmpFileAndGenerateChecksums"
             );
             validateAlgorithm(additionalAlgorithm);
+            generateAddAlgo = !isDefaultAlgorithm(additionalAlgorithm);
         }
-        if (checksumAlgorithm != null) {
+        boolean generateCsAlgo = false;
+        if (checksumAlgorithm != null && !checksumAlgorithm.equals(additionalAlgorithm)) {
             FileHashStoreUtility.checkForEmptyString(
                 checksumAlgorithm, "checksumAlgorithm", "writeToTmpFileAndGenerateChecksums"
             );
             validateAlgorithm(checksumAlgorithm);
+            generateCsAlgo = !isDefaultAlgorithm(checksumAlgorithm);
         }
 
         FileOutputStream os = new FileOutputStream(tmpFile);
@@ -1557,14 +1579,14 @@ public class FileHashStore implements HashStore {
         MessageDigest sha512 = MessageDigest.getInstance(DefaultHashAlgorithms.SHA_512.getName());
         MessageDigest additionalAlgo = null;
         MessageDigest checksumAlgo = null;
-        if (additionalAlgorithm != null) {
+        if (generateAddAlgo) {
             logFileHashStore.debug(
                 "FileHashStore.writeToTmpFileAndGenerateChecksums - Adding additional algorithm"
                     + " to hex digest map, algorithm: " + additionalAlgorithm
             );
             additionalAlgo = MessageDigest.getInstance(additionalAlgorithm);
         }
-        if (checksumAlgorithm != null && !checksumAlgorithm.equals(additionalAlgorithm)) {
+        if (generateCsAlgo) {
             logFileHashStore.debug(
                 "FileHashStore.writeToTmpFileAndGenerateChecksums - Adding checksum algorithm"
                     + " to hex digest map, algorithm: " + checksumAlgorithm
@@ -1583,10 +1605,10 @@ public class FileHashStore implements HashStore {
                 sha256.update(buffer, 0, bytesRead);
                 sha384.update(buffer, 0, bytesRead);
                 sha512.update(buffer, 0, bytesRead);
-                if (additionalAlgorithm != null) {
+                if (generateAddAlgo) {
                     additionalAlgo.update(buffer, 0, bytesRead);
                 }
-                if (checksumAlgorithm != null && !checksumAlgorithm.equals(additionalAlgorithm)) {
+                if (generateCsAlgo) {
                     checksumAlgo.update(buffer, 0, bytesRead);
                 }
             }
@@ -1616,12 +1638,12 @@ public class FileHashStore implements HashStore {
         hexDigests.put(DefaultHashAlgorithms.SHA_256.getName(), sha256Digest);
         hexDigests.put(DefaultHashAlgorithms.SHA_384.getName(), sha384Digest);
         hexDigests.put(DefaultHashAlgorithms.SHA_512.getName(), sha512Digest);
-        if (additionalAlgorithm != null) {
+        if (generateAddAlgo) {
             String extraAlgoDigest = DatatypeConverter.printHexBinary(additionalAlgo.digest())
                 .toLowerCase();
             hexDigests.put(additionalAlgorithm, extraAlgoDigest);
         }
-        if (checksumAlgorithm != null && !checksumAlgorithm.equals(additionalAlgorithm)) {
+        if (generateCsAlgo) {
             String extraChecksumDigest = DatatypeConverter.printHexBinary(checksumAlgo.digest())
                 .toLowerCase();
             hexDigests.put(checksumAlgorithm, extraChecksumDigest);
