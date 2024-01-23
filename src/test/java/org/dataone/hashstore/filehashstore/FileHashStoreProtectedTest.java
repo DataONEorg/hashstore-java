@@ -9,7 +9,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -628,19 +627,17 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Confirm that FileAlreadyExistsException is thrown when target already exists
+     * Confirm that exceptions are not thrown when move is called on an object that already exists
      */
     @Test
-    public void testMove_targetExists() {
-        assertThrows(FileAlreadyExistsException.class, () -> {
-            File newTmpFile = generateTemporaryFile();
-            String targetString = tempFolder.toString() + "/testmove/test_tmp_object.tmp";
-            File targetFile = new File(targetString);
-            fileHashStore.move(newTmpFile, targetFile, "object");
+    public void testMove_targetExists() throws Exception {
+        File newTmpFile = generateTemporaryFile();
+        String targetString = tempFolder.toString() + "/testmove/test_tmp_object.tmp";
+        File targetFile = new File(targetString);
+        fileHashStore.move(newTmpFile, targetFile, "object");
 
-            File newTmpFileTwo = generateTemporaryFile();
-            fileHashStore.move(newTmpFileTwo, targetFile, "object");
-        });
+        File newTmpFileTwo = generateTemporaryFile();
+        fileHashStore.move(newTmpFileTwo, targetFile, "object");
     }
 
     /**

@@ -1424,14 +1424,13 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Confirm that deleteMetadata throws exception when associated pid obj not found
+     * Confirm that no exceptions are thrown when called to delete metadata
+     * that does not exist.
      */
     @Test
-    public void deleteMetadata_pidNotFound() {
-        assertThrows(FileNotFoundException.class, () -> {
-            String formatId = "http://hashstore.tests/types/v1.0";
-            fileHashStore.deleteMetadata("dou.2023.hashstore.1", formatId);
-        });
+    public void deleteMetadata_pidNotFound() throws Exception {
+        String formatId = "http://hashstore.tests/types/v1.0";
+        fileHashStore.deleteMetadata("dou.2023.hashstore.1", formatId);
     }
 
     /**
@@ -1449,7 +1448,7 @@ public class FileHashStoreInterfaceTest {
      * Confirm that deleteMetadata throws exception when pid is empty
      */
     @Test
-    public void deleteMetadata_pidEmpty() {
+    public void deleteMetadata_pidEmpty() throws Exception {
         assertThrows(IllegalArgumentException.class, () -> {
             String formatId = "http://hashstore.tests/types/v1.0";
             fileHashStore.deleteMetadata("", formatId);

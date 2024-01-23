@@ -1101,7 +1101,7 @@ public class FileHashStore implements HashStore {
 
     @Override
     public void deleteMetadata(String pid, String formatId) throws IllegalArgumentException,
-        FileNotFoundException, IOException, NoSuchAlgorithmException {
+        IOException, NoSuchAlgorithmException {
         logFileHashStore.debug(
             "FileHashStore.deleteMetadata - Called to delete metadata for pid: " + pid
         );
@@ -1114,20 +1114,20 @@ public class FileHashStore implements HashStore {
         // Get permanent address of the pid by calculating its sha-256 hex digest
         Path metadataCidPath = getRealPath(pid, "metadata", formatId);
 
-        // Check to see if object exists
         if (!Files.exists(metadataCidPath)) {
             String errMsg = "FileHashStore.deleteMetadata - File does not exist for pid: " + pid
                 + " with metadata address: " + metadataCidPath;
             logFileHashStore.warn(errMsg);
-            throw new FileNotFoundException(errMsg);
-        }
+            return;
 
-        // Proceed to delete
-        Files.delete(metadataCidPath);
-        logFileHashStore.info(
-            "FileHashStore.deleteMetadata - File deleted for: " + pid + " with metadata address: "
-                + metadataCidPath
-        );
+        } else {
+            // Proceed to delete
+            Files.delete(metadataCidPath);
+            logFileHashStore.info(
+                "FileHashStore.deleteMetadata - File deleted for: " + pid
+                    + " with metadata address: " + metadataCidPath
+            );
+        }
     }
 
     /**
@@ -1232,6 +1232,9 @@ public class FileHashStore implements HashStore {
                 checksumAlgorithm, "checksumAlgorithm", "putObject"
             );
             validateAlgorithm(checksumAlgorithm);
+        }
+        if (checksum != null) {
+            FileHashStoreUtility.checkForEmptyString(checksum, "checksum", "putObject");
         }
         if (objSize != -1) {
             FileHashStoreUtility.checkNotNegativeOrZero(objSize, "putObject");
@@ -1588,8 +1591,8 @@ public class FileHashStore implements HashStore {
         // Entity is only used when checking for an existence of an object
         if (entity.equals("object") && target.exists()) {
             String errMsg = "FileHashStore.move - File already exists for target: " + target;
-            logFileHashStore.debug(errMsg);
-            throw new FileAlreadyExistsException(errMsg);
+            logFileHashStore.warn(errMsg);
+            return;
         }
 
         File destinationDirectory = new File(target.getParent());

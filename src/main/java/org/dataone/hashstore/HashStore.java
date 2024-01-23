@@ -250,7 +250,6 @@ public interface HashStore {
          * @param pid      Authority-based identifier
          * @param formatId Metadata namespace/format
          * @throws IllegalArgumentException When pid or formatId is null or empty
-         * @throws FileNotFoundException    When requested pid has no metadata
          * @throws IOException              I/O error when deleting empty directories
          * @throws NoSuchAlgorithmException When algorithm used to calculate object address is not
          *                                  supported
