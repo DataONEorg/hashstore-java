@@ -30,6 +30,7 @@ import java.util.stream.Stream;
 import javax.xml.bind.DatatypeConverter;
 
 import org.dataone.hashstore.ObjectMetadata;
+import org.dataone.hashstore.exceptions.OrphanPidRefsFileException;
 import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.jupiter.api.BeforeEach;
@@ -1590,11 +1591,11 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Confirm that findObject throws an exception when pid refs file found
-     * but cid refs file is missing.
+     * Confirm that findObject throws OrphanPidRefsFileException exception when
+     * pid refs file found but cid refs file is missing.
      */
     @Test
-    public void findObject_cidRefsFileMissing() throws Exception {
+    public void findObject_cidRefsFileNotFound() throws Exception {
         String pid = "dou.test.1";
         String cid = "abcdef123456789";
         fileHashStore.tagObject(pid, cid);
@@ -1602,7 +1603,26 @@ public class FileHashStoreInterfaceTest {
         Path cidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
         Files.delete(cidRefsPath);
 
-        assertThrows(FileNotFoundException.class, () -> {
+        assertThrows(OrphanPidRefsFileException.class, () -> {
+            fileHashStore.findObject(pid);
+        });
+    }
+
+
+    /**
+     * Confirm that findObject throws PidNotFoundInCidRefsFileException exception when
+     * pid refs file found but cid refs file is missing.
+     */
+    @Test
+    public void findObject_cidRefsFileMissingPid() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        Path cidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
+        fileHashStore.deleteCidRefsPid(pid, cidRefsPath);
+
+        assertThrows(PidNotFoundInCidRefsFileException.class, () -> {
             fileHashStore.findObject(pid);
         });
     }

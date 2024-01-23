@@ -36,6 +36,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.HashStore;
+import org.dataone.hashstore.exceptions.OrphanPidRefsFileException;
 import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 
@@ -728,17 +729,24 @@ public class FileHashStore implements HashStore {
                 "FileHashStore.findObject - Cid (" + cid + ") found for pid:" + pid
             );
             Path absCidRefsPath = getRealPath(cid, "refs", "cid");
-            // TODO: Check that pid is also found in the cid reference file
             if (!Files.exists(absCidRefsPath)) {
                 // Throw exception if the cid refs file doesn't exist
                 String errMsg =
                     "FileHashStore.deleteObject - Cid refs file does not exist for cid: " + cid
                         + " with address: " + absCidRefsPath + ", but pid refs file exists.";
                 logFileHashStore.error(errMsg);
-                // Create custom exception to handle it properly
-                throw new FileNotFoundException(errMsg);
+                throw new OrphanPidRefsFileException(errMsg);
+
+            } else if (!isPidInCidRefsFile(pid, absCidRefsPath)) {
+                // If pid is not in cid refs file, throw custom exception
+                String errMsg =
+                    "FileHashStore.deleteObject - Pid not found in cid refs file for cid: " + cid
+                        + " with address: " + absCidRefsPath;
+                logFileHashStore.error(errMsg);
+                throw new PidNotFoundInCidRefsFileException(errMsg);
 
             } else {
+                // The pid is found in its expected cid refs file, return the cid
                 return cid;
             }
 

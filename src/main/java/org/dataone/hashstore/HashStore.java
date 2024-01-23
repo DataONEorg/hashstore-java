@@ -4,6 +4,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
+
+import org.dataone.hashstore.exceptions.OrphanPidRefsFileException;
+import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 
 /**
@@ -141,12 +144,17 @@ public interface HashStore {
          * 
          * @param pid Authority-based identifier
          * @return Content identifier (cid)
-         * @throws NoSuchAlgorithmException When algorithm used to calculate pid refs file's
-         *                                  absolute address is not valid
-         * @throws IOException              Unable to read from a pid refs file or pid refs file
-         *                                  does not exist
+         * @throws NoSuchAlgorithmException          When algorithm used to calculate pid refs
+         *                                           file's absolute address is not valid
+         * @throws IOException                       Unable to read from a pid refs file or pid refs
+         *                                           file does not exist
+         * @throws OrphanPidRefsFileException        When pid refs file exists and the cid found
+         *                                           inside does not exist.
+         * @throws PidNotFoundInCidRefsFileException When pid and cid ref files exists but the
+         *                                           expected pid is not found in the cid refs file.
          */
-        public String findObject(String pid) throws NoSuchAlgorithmException, IOException;
+        public String findObject(String pid) throws NoSuchAlgorithmException, IOException,
+                OrphanPidRefsFileException, PidNotFoundInCidRefsFileException;
 
         /**
          * Adds/updates metadata (ex. `sysmeta`) to the HashStore by using a given InputStream, a
