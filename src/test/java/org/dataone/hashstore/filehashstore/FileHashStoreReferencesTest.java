@@ -319,7 +319,7 @@ public class FileHashStoreReferencesTest {
     }
 
     /**
-     * Check that verifyObject verifies with good values
+     * Check that verifyObject returns true with good values
      */
     @Test
     public void verifyObject_correctValues() throws Exception {
@@ -336,14 +336,15 @@ public class FileHashStoreReferencesTest {
             String expectedChecksum = testData.pidData.get(pid).get("sha256");
             long expectedSize = Long.parseLong(testData.pidData.get(pid).get("size"));
 
-            fileHashStore.verifyObject(
+            boolean isObjectValid = fileHashStore.verifyObject(
                 objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize
             );
+            assertTrue(isObjectValid);
         }
     }
 
     /**
-     * Check that verifyObject verifies with good values
+     * Check that verifyObject returns false with mismatched size value
      */
     @Test
     public void verifyObject_mismatchedValuesBadSize() throws Exception {
@@ -360,16 +361,16 @@ public class FileHashStoreReferencesTest {
             String expectedChecksum = testData.pidData.get(pid).get("sha256");
             long expectedSize = 123456789;
 
-            assertThrows(IllegalArgumentException.class, () -> {
-                fileHashStore.verifyObject(
-                    objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize
-                );
-            });
+            boolean isObjectValid = fileHashStore.verifyObject(
+                objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize
+            );
+            assertFalse(isObjectValid);
         }
     }
 
     /**
-     * Check that verifyObject deletes file when there is a mismatch
+     * Check that verifyObject returns false and does not delete the file when
+     * there is a mismatch
      */
     @Test
     public void verifyObject_mismatchedValuesObjectDeleted() throws Exception {
@@ -386,11 +387,10 @@ public class FileHashStoreReferencesTest {
             String expectedChecksum = "intentionallyWrongValue";
             long expectedSize = Long.parseLong(testData.pidData.get(pid).get("size"));
 
-            assertThrows(IllegalArgumentException.class, () -> {
-                fileHashStore.verifyObject(
-                    objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize
-                );
-            });
+            boolean isObjectValid = fileHashStore.verifyObject(
+                objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize
+            );
+            assertFalse(isObjectValid);
 
             int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
             int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
@@ -399,7 +399,7 @@ public class FileHashStoreReferencesTest {
                 storeDepth, storeWidth, actualCid
             );
             Path objectStoreDirectory = rootDirectory.resolve("objects").resolve(cidShardString);
-            assertFalse(Files.exists(objectStoreDirectory));
+            assertTrue(Files.exists(objectStoreDirectory));
 
         }
     }

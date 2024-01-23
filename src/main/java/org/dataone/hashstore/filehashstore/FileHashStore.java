@@ -612,15 +612,21 @@ public class FileHashStore implements HashStore {
         );
         Path objAbsPath = OBJECT_STORE_DIRECTORY.resolve(cidShardString);
 
-        // TODO: ValidateTmpObject should not delete the object, just return a boolean
-        // - Revise this, and also ensure other methods that call it are reviewed.
-        validateTmpObject(
-            true, checksum, checksumAlgorithm, objAbsPath, hexDigests, objSize, objInfoRetrievedSize
-        );
-        logFileHashStore.info(
-            "FileHashStore.verifyObject - Object with id: " + objId + " has been verified."
-        );
-        return true;
+        try {
+            validateTmpObject(
+                true, checksum, checksumAlgorithm, objAbsPath, hexDigests, objSize,
+                objInfoRetrievedSize, false
+            );
+            logFileHashStore.info(
+                "FileHashStore.verifyObject - Object with id: " + objId + " has been verified."
+            );
+            return true;
+
+        } catch (IOException | IllegalArgumentException | NoSuchAlgorithmException e) {
+            String errMsg = "FileHashStore.verifyObject - " + e.getMessage();
+            logFileHashStore.warn(errMsg);
+            return false;
+        }
     }
 
     @Override
@@ -1272,7 +1278,7 @@ public class FileHashStore implements HashStore {
         // Validate object if checksum and checksum algorithm is passed
         validateTmpObject(
             requestValidation, checksum, checksumAlgorithm, tmpFilePath, hexDigests, objSize,
-            storedObjFileSize
+            storedObjFileSize, true
         );
 
         // Gather the elements to form the permanent address
@@ -1311,26 +1317,35 @@ public class FileHashStore implements HashStore {
      * @param checksumAlgorithm Hash algorithm of checksum value
      * @param tmpFile           tmpFile that has been written
      * @param hexDigests        Map of the hex digests available to check with
-     * @throws NoSuchAlgorithmException When algorithm supplied is not supported
-     * @throws IOException              When tmpFile fails to be deleted
+     * @param tmpFile           Path to the file that is being evaluated
+     * @param hexDigests        Map of the hex digests to parse data from
+     * @param objSize           Expected size of object
+     * @param storedObjFileSize Actual size of object stored
+     * @param deleteTmpFile     Confirm whether to delete file being evaluated if invalid
+     * @return
+     * @throws NoSuchAlgorithmException
+     * @throws IOException
      */
-    private void validateTmpObject(
+    private boolean validateTmpObject(
         boolean requestValidation, String checksum, String checksumAlgorithm, Path tmpFile,
-        Map<String, String> hexDigests, long objSize, long storedObjFileSize
+        Map<String, String> hexDigests, long objSize, long storedObjFileSize, boolean deleteTmpFile
     ) throws NoSuchAlgorithmException, IOException {
         if (objSize > 0) {
             if (objSize != storedObjFileSize) {
-                // Delete tmp File
-                try {
-                    Files.delete(tmpFile);
+                if (deleteTmpFile) {
+                    // Delete tmp File
+                    try {
+                        Files.delete(tmpFile);
 
-                } catch (Exception ge) {
-                    String errMsg =
-                        "FileHashStore.validateTmpObject - objSize given is not equal to the"
-                            + " stored object size. ObjSize: " + objSize + ". storedObjFileSize: "
-                            + storedObjFileSize + ". Failed to delete tmpFile: " + tmpFile;
-                    logFileHashStore.error(errMsg);
-                    throw new IOException(errMsg);
+                    } catch (Exception ge) {
+                        String errMsg =
+                            "FileHashStore.validateTmpObject - objSize given is not equal to the"
+                                + " stored object size. ObjSize: " + objSize
+                                + ". storedObjFileSize: " + storedObjFileSize
+                                + ". Failed to delete tmpFile: " + tmpFile;
+                        logFileHashStore.error(errMsg);
+                        throw new IOException(errMsg);
+                    }
                 }
 
                 String errMsg =
@@ -1358,18 +1373,20 @@ public class FileHashStore implements HashStore {
             }
 
             if (!checksum.equalsIgnoreCase(digestFromHexDigests)) {
-                // Delete tmp File
-                try {
-                    Files.delete(tmpFile);
+                if (deleteTmpFile) {
+                    // Delete tmp File
+                    try {
+                        Files.delete(tmpFile);
 
-                } catch (Exception ge) {
-                    String errMsg =
-                        "FileHashStore.validateTmpObject - Object cannot be validated. Checksum given"
-                            + " is not equal to the calculated hex digest: " + digestFromHexDigests
-                            + ". Checksum" + " provided: " + checksum
-                            + ". Failed to delete tmpFile: " + tmpFile;
-                    logFileHashStore.error(errMsg);
-                    throw new IOException(errMsg);
+                    } catch (Exception ge) {
+                        String errMsg =
+                            "FileHashStore.validateTmpObject - Object cannot be validated. Checksum given"
+                                + " is not equal to the calculated hex digest: "
+                                + digestFromHexDigests + ". Checksum" + " provided: " + checksum
+                                + ". Failed to delete tmpFile: " + tmpFile;
+                        logFileHashStore.error(errMsg);
+                        throw new IOException(errMsg);
+                    }
                 }
 
                 String errMsg =
@@ -1380,6 +1397,8 @@ public class FileHashStore implements HashStore {
                 throw new IllegalArgumentException(errMsg);
             }
         }
+
+        return true;
     }
 
     /**
