@@ -1288,13 +1288,13 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Confirm that an exception is thrown when called to delete an object that exists
-     * and has a cid refs file, but does not have the expected pid to delete.
+     * Confirm that deleteObject removes an orphan pid reference file when the associated cid refs
+     * file does not contain the expected pid.
      * 
      * @throws Exception
      */
     @Test
-    public void deleteObject_pidNotFoundInCidRefsFile() throws Exception {
+    public void deleteObject_pidOrphan() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -1303,17 +1303,27 @@ public class FileHashStoreInterfaceTest {
             ObjectMetadata objInfo = fileHashStore.storeObject(
                 dataStream, pid, null, null, null, -1
             );
-            String pidExtra = "dou.test" + pid;
             String cid = objInfo.getCid();
-            fileHashStore.tagObject(pidExtra, cid);
+            String pidExtra = "dou.test" + pid;
+            Path objRealPath = fileHashStore.getRealPath(pid, "object", null);
 
-            // Manually remove the pid
+            // Manually change the pid found in the cid refs file
             Path absPathCidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
-            fileHashStore.deleteCidRefsPid(pidExtra, absPathCidRefsPath);
+            fileHashStore.updateCidRefsFiles(pidExtra, absPathCidRefsPath);
+            // Create an orphaned pid refs file
+            fileHashStore.deleteCidRefsPid(pid, absPathCidRefsPath);
 
-            assertThrows(
-                PidNotFoundInCidRefsFileException.class, () -> fileHashStore.deleteObject(pidExtra)
-            );
+            fileHashStore.deleteObject(pid);
+
+            // Confirm cid refs file still exists
+            assertTrue(Files.exists(absPathCidRefsPath));
+            // Confirm the original (and now orphaned) pid refs file is deleted
+            Path absPathPidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
+            assertFalse(Files.exists(absPathPidRefsPath));
+            // Confirm the object has not been deleted
+            assertTrue(Files.exists(objRealPath));
+            // Confirm the cid refs file still exists
+            assertTrue(Files.exists(absPathCidRefsPath));
         }
     }
 
