@@ -618,30 +618,35 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(objectInfo, "objectInfo", "verifyObject");
         FileHashStoreUtility.ensureNotNull(checksum, "checksum", "verifyObject");
         FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm", "verifyObject");
+        FileHashStoreUtility.checkNotNegativeOrZero(objSize, "verifyObject");
 
         Map<String, String> hexDigests = objectInfo.getHexDigests();
+        String digestFromHexDigests = hexDigests.get(checksumAlgorithm);
         long objInfoRetrievedSize = objectInfo.getSize();
-        String objId = objectInfo.getCid();
-        // Object is not tagged at this stage, so we must manually form the permanent address of the file
-        String cidShardString = FileHashStoreUtility.getHierarchicalPathString(
-            DIRECTORY_DEPTH, DIRECTORY_WIDTH, objId
-        );
-        Path objAbsPath = OBJECT_STORE_DIRECTORY.resolve(cidShardString);
+        String objCid = objectInfo.getCid();
 
-        try {
-            validateTmpObject(
-                true, checksum, checksumAlgorithm, objAbsPath, hexDigests, objSize,
-                objInfoRetrievedSize, false
-            );
+        if (objInfoRetrievedSize != objSize) {
             logFileHashStore.info(
-                "FileHashStore.verifyObject - Object with id: " + objId + " has been verified."
+                "FileHashStore.verifyObject - Object size invalid for cid: " + objCid
+                    + ". Expected size: " + objSize + ". Actual size: " + objInfoRetrievedSize
+            );
+            return false;
+
+        } else if (!digestFromHexDigests.equals(checksum)) {
+            logFileHashStore.info(
+                "FileHashStore.verifyObject - Object content invalid for cid: " + objCid
+                    + ". Expected checksum: " + checksum + ". Actual checksum calculated: "
+                    + digestFromHexDigests + " (algorithm: " + checksumAlgorithm + ")"
+            );
+            return false;
+
+        } else {
+            logFileHashStore.info(
+                "FileHashStore.verifyObject - Object has been validated for cid: " + objCid
+                    + ". Expected checksum: " + checksum + ". Actual checksum calculated: "
+                    + digestFromHexDigests + " (algorithm: " + checksumAlgorithm + ")"
             );
             return true;
-
-        } catch (IOException | IllegalArgumentException | NoSuchAlgorithmException e) {
-            String errMsg = "FileHashStore.verifyObject - " + e.getMessage();
-            logFileHashStore.warn(errMsg);
-            return false;
         }
     }
 
@@ -1328,7 +1333,7 @@ public class FileHashStore implements HashStore {
         // Validate object if checksum and checksum algorithm is passed
         validateTmpObject(
             requestValidation, checksum, checksumAlgorithm, tmpFilePath, hexDigests, objSize,
-            storedObjFileSize, true
+            storedObjFileSize
         );
 
         // Gather the elements to form the permanent address
@@ -1371,31 +1376,28 @@ public class FileHashStore implements HashStore {
      * @param hexDigests        Map of the hex digests to parse data from
      * @param objSize           Expected size of object
      * @param storedObjFileSize Actual size of object stored
-     * @param deleteTmpFile     Confirm whether to delete file being evaluated if invalid
      * @return
      * @throws NoSuchAlgorithmException
      * @throws IOException
      */
     private boolean validateTmpObject(
         boolean requestValidation, String checksum, String checksumAlgorithm, Path tmpFile,
-        Map<String, String> hexDigests, long objSize, long storedObjFileSize, boolean deleteTmpFile
+        Map<String, String> hexDigests, long objSize, long storedObjFileSize
     ) throws NoSuchAlgorithmException, IOException {
         if (objSize > 0) {
             if (objSize != storedObjFileSize) {
-                if (deleteTmpFile) {
-                    // Delete tmp File
-                    try {
-                        Files.delete(tmpFile);
+                // Delete tmp File
+                try {
+                    Files.delete(tmpFile);
 
-                    } catch (Exception ge) {
-                        String errMsg =
-                            "FileHashStore.validateTmpObject - objSize given is not equal to the"
-                                + " stored object size. ObjSize: " + objSize
-                                + ". storedObjFileSize: " + storedObjFileSize
-                                + ". Failed to delete tmpFile: " + tmpFile;
-                        logFileHashStore.error(errMsg);
-                        throw new IOException(errMsg);
-                    }
+                } catch (Exception ge) {
+                    String errMsg =
+                        "FileHashStore.validateTmpObject - objSize given is not equal to the"
+                            + " stored object size. ObjSize: " + objSize + ". storedObjFileSize: "
+                            + storedObjFileSize + ". Failed to delete tmpFile: " + tmpFile + ". "
+                            + ge.getMessage();
+                    logFileHashStore.error(errMsg);
+                    throw new IOException(errMsg);
                 }
 
                 String errMsg =
@@ -1423,20 +1425,19 @@ public class FileHashStore implements HashStore {
             }
 
             if (!checksum.equalsIgnoreCase(digestFromHexDigests)) {
-                if (deleteTmpFile) {
-                    // Delete tmp File
-                    try {
-                        Files.delete(tmpFile);
+                // Delete tmp File
+                try {
+                    Files.delete(tmpFile);
 
-                    } catch (Exception ge) {
-                        String errMsg =
-                            "FileHashStore.validateTmpObject - Object cannot be validated. Checksum given"
-                                + " is not equal to the calculated hex digest: "
-                                + digestFromHexDigests + ". Checksum" + " provided: " + checksum
-                                + ". Failed to delete tmpFile: " + tmpFile;
-                        logFileHashStore.error(errMsg);
-                        throw new IOException(errMsg);
-                    }
+                } catch (Exception ge) {
+                    String errMsg =
+                        "FileHashStore.validateTmpObject - Object cannot be validated. Checksum given"
+                            + " is not equal to the calculated hex digest: " + digestFromHexDigests
+                            + ". Checksum" + " provided: " + checksum
+                            + ". Failed to delete tmpFile: " + tmpFile + ". " + ge.getMessage();
+                    ;
+                    logFileHashStore.error(errMsg);
+                    throw new IOException(errMsg);
                 }
 
                 String errMsg =
