@@ -916,6 +916,62 @@ public class FileHashStoreProtectedTest {
         }
     }
 
+    /**
+     * Confirm tryDeleteCidObject overload method does not delete an object if pid and cid
+     * refs files exist.
+     */
+    @Test
+    public void tryDeleteCidObject_pidRefsExists() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            // Store object only
+            ObjectMetadata objInfo = fileHashStore.storeObject(dataStream);
+            String cid = objInfo.getCid();
+
+            // Set flag to true
+            fileHashStore.tryDeleteCidObject(cid);
+
+            // Get permanent address of the actual cid
+            Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+            int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
+            int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
+            String objShardString = FileHashStoreUtility.getHierarchicalPathString(
+                storeDepth, storeWidth, cid
+            );
+
+            Path objRealPath = storePath.resolve("objects").resolve(objShardString);
+            assertFalse(Files.exists(objRealPath));
+        }
+    }
+
+    /**
+     * Confirm tryDeleteCidObject overload method does not delete an object if a cid refs file
+     * exists (pids still referencing it).
+     */
+    @Test
+    public void tryDeleteCidObject_cidRefsFileContainsPids() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStream, pid, null, null, null, -1
+            );
+            String cid = objInfo.getCid();
+
+            // Set flag to true
+            fileHashStore.tryDeleteCidObject(cid);
+
+            // Get permanent address of the actual cid
+            Path objRealPath = fileHashStore.getRealPath(pid, "object", null);
+            assertTrue(Files.exists(objRealPath));
+        }
+    }
+
     @Test
     public void getRealPath() throws Exception {
         // Get single test file to "upload"

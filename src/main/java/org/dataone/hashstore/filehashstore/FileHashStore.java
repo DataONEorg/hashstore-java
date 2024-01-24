@@ -70,6 +70,21 @@ public class FileHashStore implements HashStore {
     public static final String[] SUPPORTED_HASH_ALGORITHMS = {"MD2", "MD5", "SHA-1", "SHA-256",
         "SHA-384", "SHA-512", "SHA-512/224", "SHA-512/256"};
 
+    public enum HashStoreIdTypes {
+
+        cid("cid"), pid("pid");
+
+        final String identifierType;
+
+        HashStoreIdTypes(String idType) {
+            identifierType = idType;
+        }
+
+        public String getName(String string) {
+            return identifierType;
+        }
+    }
+
     enum DefaultHashAlgorithms {
         MD5("MD5"), SHA_1("SHA-1"), SHA_256("SHA-256"), SHA_384("SHA-384"), SHA_512("SHA-512");
 
@@ -1021,143 +1036,136 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public void deleteObject(String cid, boolean deleteCid) throws IllegalArgumentException,
-        FileNotFoundException, IOException, NoSuchAlgorithmException {
+    public void deleteObject(String idType, String id) throws IllegalArgumentException,
+        FileNotFoundException, IOException, NoSuchAlgorithmException, InterruptedException,
+        PidNotFoundInCidRefsFileException {
         logFileHashStore.debug(
-            "FileHashStore.deleteObject - Called to delete object with content identifeir: " + cid
+            "FileHashStore.deleteObject - Called to delete object for id: " + id + "(" + idType
+                + ")"
         );
-        if (deleteCid) {
-            // Validate input parameters
-            FileHashStoreUtility.ensureNotNull(cid, "cid", "deleteObject");
-            FileHashStoreUtility.checkForEmptyString(cid, "cid", "deleteObject");
+        // Validate input parameters
+        FileHashStoreUtility.ensureNotNull(id, "id", "deleteObject");
+        FileHashStoreUtility.checkForEmptyString(id, "id", "deleteObject");
+        if (!idType.equals(HashStoreIdTypes.pid.getName("pid")) && !idType.equals(
+            HashStoreIdTypes.cid.getName("cid")
 
-            // Confirm that the object called to delete does not have a cid reference file
-            Path absCidRefsPath = getRealPath(cid, "refs", "cid");
-            if (Files.exists(absCidRefsPath)) {
-                // The cid is referenced by pids, do not delete.
+        )) {
+            String errMsg = "FileHashStore.deleteObject - 'idType' must be 'pid' or 'cid'";
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
+        }
+
+        // If 'idType' is cid, attempt to delete the object
+        if (idType.equals(HashStoreIdTypes.cid.getName("cid"))) {
+            tryDeleteCidObject(id);
+
+        } else {
+            // Else 'idType' is pid
+            String cid;
+            String pid = id;
+            try {
+                // Begin by looking for the cid and confirming state
+                cid = findObject(id);
+
+            } catch (OrphanPidRefsFileException oprfe) {
+                // Delete the pid refs file and return, nothing else to delete.
+                Path absPidRefsPath = getRealPath(id, "refs", "pid");
+                Files.delete(absPidRefsPath);
+
+                String warnMsg =
+                    "FileHashStore.deleteObject - Cid refs file does not exist for pid: " + id
+                        + ". Deleted orphan pid refs file.";
+                logFileHashStore.warn(warnMsg);
                 return;
 
-            } else {
-                // Get permanent address of the actual cid
-                String objShardString = FileHashStoreUtility.getHierarchicalPathString(
-                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, cid
-                );
-                Path expectedRealPath = OBJECT_STORE_DIRECTORY.resolve(objShardString);
+            } catch (PidNotFoundInCidRefsFileException pnficrfe) {
+                // Delete pid refs file and return, nothing else to delete
+                Path absPidRefsPath = getRealPath(pid, "refs", "pid");
+                Files.delete(absPidRefsPath);
 
-                // If file exists, delete it.
-                if (Files.exists(expectedRealPath)) {
-                    Files.delete(expectedRealPath);
+                String warnMsg =
+                    "FileHashStore.deleteObject - Pid not found in expected cid refs file for pid: "
+                        + pid + ". Deleted orphan pid refs file.";
+                logFileHashStore.warn(warnMsg);
+                return;
+            }
+
+            // Proceed with next steps - cid has been retrieved without any errors
+            synchronized (referenceLockedCids) {
+                while (referenceLockedCids.contains(cid)) {
+                    try {
+                        referenceLockedCids.wait(TIME_OUT_MILLISEC);
+
+                    } catch (InterruptedException ie) {
+                        String errMsg =
+                            "FileHashStore.deleteObject - referenceLockedCids lock was interrupted while"
+                                + " waiting to delete object with cid: " + cid
+                                + ". InterruptedException: " + ie.getMessage();
+                        logFileHashStore.error(errMsg);
+                        throw new InterruptedException(errMsg);
+                    }
+                }
+                logFileHashStore.debug(
+                    "FileHashStore.deleteObject - Synchronizing referenceLockedCids for cid: " + cid
+                );
+                referenceLockedCids.add(cid);
+            }
+
+            try {
+                // Get permanent address of the pid by calculating its sha-256 hex digest
+                Path objRealPath = getRealPath(pid, "object", null);
+                // Get the path to the cid refs file to work with
+                Path absCidRefsPath = getRealPath(cid, "refs", "cid");
+
+                if (!Files.exists(objRealPath)) {
+                    // Throw exception if object doesn't exist
+                    String errMsg = "FileHashStore.deleteObject - File does not exist for pid: "
+                        + pid + " with object address: " + objRealPath;
+                    logFileHashStore.error(errMsg);
+                    throw new FileNotFoundException(errMsg);
+
+                } else {
+                    // Proceed to delete the reference files and object
+                    // Delete pid reference file
+                    deletePidRefsFile(pid);
+                    // Remove pid from cid refs file
+                    deleteCidRefsPid(pid, absCidRefsPath);
+                    // Delete obj and cid refs file only if the cid refs file is empty
+                    if (Files.size(absCidRefsPath) == 0) {
+                        // Delete empty cid refs file
+                        Files.delete(absCidRefsPath);
+                        // Delete actual object
+                        Files.delete(objRealPath);
+                    } else {
+                        String warnMsg = "FileHashStore.deleteObject - cid referenced by pid: "
+                            + pid
+                            + " is not empty (references exist for the cid). Skipping object deletion.";
+                        logFileHashStore.warn(warnMsg);
+                    }
+                    logFileHashStore.info(
+                        "FileHashStore.deleteObject - File and references deleted for: " + pid
+                            + " with object address: " + objRealPath
+                    );
+                }
+            } finally {
+                // Release lock
+                synchronized (referenceLockedCids) {
+                    logFileHashStore.debug(
+                        "FileHashStore.deleteObject - Releasing referenceLockedCids for cid: " + cid
+                    );
+                    referenceLockedCids.remove(cid);
+                    referenceLockedCids.notifyAll();
                 }
             }
         }
     }
 
     @Override
-    public void deleteObject(String pid) throws IllegalArgumentException, FileNotFoundException,
+    public void deleteObjectAll(String pid) throws IllegalArgumentException, FileNotFoundException,
         IOException, NoSuchAlgorithmException, InterruptedException,
         PidNotFoundInCidRefsFileException {
-        logFileHashStore.debug(
-            "FileHashStore.deleteObject - Called to delete object for pid: " + pid
-        );
-        // Validate input parameters
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "deleteObject");
-        FileHashStoreUtility.checkForEmptyString(pid, "pid", "deleteObject");
-
-        // First, find the object and evaluate its state
-        String cid;
-        try {
-            cid = findObject(pid);
-
-        } catch (OrphanPidRefsFileException oprfe) {
-            // Delete the pid refs file and return, nothing else to delete.
-            Path absPidRefsPath = getRealPath(pid, "refs", "pid");
-            Files.delete(absPidRefsPath);
-
-            String warnMsg = "FileHashStore.deleteObject - Cid refs file does not exist for pid: "
-                + pid + ". Deleted orphan pid refs file.";
-            logFileHashStore.warn(warnMsg);
-            return;
-
-        } catch (PidNotFoundInCidRefsFileException pnficrfe) {
-            // Delete pid refs file and return, nothing else to delete
-            Path absPidRefsPath = getRealPath(pid, "refs", "pid");
-            Files.delete(absPidRefsPath);
-
-            String warnMsg =
-                "FileHashStore.deleteObject - Pid not found in expected cid refs file for pid: "
-                    + pid + ". Deleted orphan pid refs file.";
-            logFileHashStore.warn(warnMsg);
-            return;
-        }
-
-        // If cid has been retrieved without any errors, proceed with second stage of deletion.
-        synchronized (referenceLockedCids) {
-            while (referenceLockedCids.contains(cid)) {
-                try {
-                    referenceLockedCids.wait(TIME_OUT_MILLISEC);
-
-                } catch (InterruptedException ie) {
-                    String errMsg =
-                        "FileHashStore.deleteObject - referenceLockedCids lock was interrupted while"
-                            + " waiting to delete object with cid: " + cid
-                            + ". InterruptedException: " + ie.getMessage();
-                    logFileHashStore.error(errMsg);
-                    throw new InterruptedException(errMsg);
-                }
-            }
-            logFileHashStore.debug(
-                "FileHashStore.deleteObject - Synchronizing referenceLockedCids for cid: " + cid
-            );
-            referenceLockedCids.add(cid);
-        }
-
-        try {
-            // Get permanent address of the pid by calculating its sha-256 hex digest
-            Path objRealPath = getRealPath(pid, "object", null);
-            // Get the path to the cid refs file to work with
-            Path absCidRefsPath = getRealPath(cid, "refs", "cid");
-
-            if (!Files.exists(objRealPath)) {
-                // Throw exception if object doesn't exist
-                String errMsg = "FileHashStore.deleteObject - File does not exist for pid: " + pid
-                    + " with object address: " + objRealPath;
-                logFileHashStore.error(errMsg);
-                throw new FileNotFoundException(errMsg);
-
-            } else {
-                // Proceed to delete the reference files and object
-                // Delete pid reference file
-                deletePidRefsFile(pid);
-                // Remove pid from cid refs file
-                deleteCidRefsPid(pid, absCidRefsPath);
-                // Delete obj and cid refs file only if the cid refs file is empty
-                if (Files.size(absCidRefsPath) == 0) {
-                    // Delete empty cid refs file
-                    Files.delete(absCidRefsPath);
-                    // Delete actual object
-                    Files.delete(objRealPath);
-                } else {
-                    String warnMsg = "FileHashStore.deleteObject - cid referenced by pid: " + pid
-                        + " is not empty (references exist for the cid). Skipping object deletion.";
-                    logFileHashStore.warn(warnMsg);
-                }
-                logFileHashStore.info(
-                    "FileHashStore.deleteObject - File and references deleted for: " + pid
-                        + " with object address: " + objRealPath
-                );
-                // TODO: Discuss where deleteObject should also remove all default system metadata
-            }
-        } finally {
-            // Release lock
-            synchronized (referenceLockedCids) {
-                logFileHashStore.debug(
-                    "FileHashStore.deleteObject - Releasing referenceLockedCids for cid: " + cid
-                );
-                referenceLockedCids.remove(cid);
-                referenceLockedCids.notifyAll();
-            }
-        }
-
+        // TODO
+        return;
     }
 
     @Override
@@ -1719,6 +1727,35 @@ public class FileHashStore implements HashStore {
             );
             throw ioe;
 
+        }
+    }
+
+    /**
+     * Attempt to delete an object based on the given content identifier (cid). If the object
+     * has pids that references it and/or a cid refs file exists, the object will not be deleted.
+     * 
+     * @param cid Content identifier
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     */
+    protected void tryDeleteCidObject(String cid) throws IOException, NoSuchAlgorithmException {
+        Path absCidRefsPath = getRealPath(cid, "refs", "cid");
+        if (Files.exists(absCidRefsPath)) {
+            // The cid is referenced by pids, do not delete.
+            return;
+
+        } else {
+            // Get permanent address of the actual cid
+            String objShardString = FileHashStoreUtility.getHierarchicalPathString(
+                DIRECTORY_DEPTH, DIRECTORY_WIDTH, cid
+            );
+            Path expectedRealPath = OBJECT_STORE_DIRECTORY.resolve(objShardString);
+
+            // If file exists, delete it.
+            if (Files.exists(expectedRealPath)) {
+                Files.delete(expectedRealPath);
+            }
+            return;
         }
     }
 

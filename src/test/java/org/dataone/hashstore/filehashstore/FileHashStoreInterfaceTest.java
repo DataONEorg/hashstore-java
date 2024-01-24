@@ -32,6 +32,7 @@ import javax.xml.bind.DatatypeConverter;
 import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.exceptions.OrphanPidRefsFileException;
 import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
+import org.dataone.hashstore.filehashstore.FileHashStore.HashStoreIdTypes;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,6 +49,8 @@ public class FileHashStoreInterfaceTest {
     private Properties fhsProperties;
     private Path rootDirectory;
     private static final TestDataHarness testData = new TestDataHarness();
+    private String fhsDeleteTypePid;
+    private String fhsDeleteTypeCid;
 
     /**
      * Initialize FileHashStore before each test to creates tmp directories
@@ -55,6 +58,8 @@ public class FileHashStoreInterfaceTest {
     @BeforeEach
     public void initializeFileHashStore() {
         rootDirectory = tempFolder.resolve("metacat");
+        fhsDeleteTypePid = HashStoreIdTypes.pid.getName("pid");
+        fhsDeleteTypeCid = HashStoreIdTypes.cid.getName("cid");
 
         Properties storeProperties = new Properties();
         storeProperties.setProperty("storePath", rootDirectory.toString());
@@ -1231,10 +1236,32 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
+     * Confirm that deleteObject throws exceptions when not using HashStoreIdTypes
+     */
+    @Test
+    public void deleteObject_invalidIdTypes() {
+        assertThrows(
+            IllegalArgumentException.class, () -> fileHashStore.deleteObject(
+                "PID", "dou.2023.hashstore.1"
+            )
+        );
+        assertThrows(
+            IllegalArgumentException.class, () -> fileHashStore.deleteObject(
+                "CID", "dou.2023.hashstore.1"
+            )
+        );
+        assertThrows(
+            IllegalArgumentException.class, () -> fileHashStore.deleteObject(
+                "bad.value", "dou.2023.hashstore.1"
+            )
+        );
+    }
+
+    /**
      * Confirm that deleteObject deletes object
      */
     @Test
-    public void deleteObject_objectDeleted() throws Exception {
+    public void deleteObject_Pid_objectDeleted() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -1243,7 +1270,7 @@ public class FileHashStoreInterfaceTest {
             fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
 
             Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
-            fileHashStore.deleteObject(pid);
+            fileHashStore.deleteObject(fhsDeleteTypePid, pid);
 
             // Check that file doesn't exist
             assertFalse(Files.exists(objCidAbsPath));
@@ -1262,7 +1289,7 @@ public class FileHashStoreInterfaceTest {
      * Confirm that deleteObject deletes reference files
      */
     @Test
-    public void deleteObject_referencesDeleted() throws Exception {
+    public void deleteObject_Pid_referencesDeleted() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -1276,7 +1303,7 @@ public class FileHashStoreInterfaceTest {
             // Path objAbsPath = fileHashStore.getRealPath(pid, "object", null);
             Path absPathPidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
             Path absPathCidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
-            fileHashStore.deleteObject(pid);
+            fileHashStore.deleteObject(fhsDeleteTypePid, pid);
             assertFalse(Files.exists(absPathPidRefsPath));
             assertFalse(Files.exists(absPathCidRefsPath));
         }
@@ -1288,7 +1315,7 @@ public class FileHashStoreInterfaceTest {
      * has references).
      */
     @Test
-    public void deleteObject_objectExistsIfCidRefencesFileNotEmpty() throws Exception {
+    public void deleteObject_Pid_CidRefsFileNotEmptyObjectExistsStill() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -1304,7 +1331,7 @@ public class FileHashStoreInterfaceTest {
             Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
             Path absPathPidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
             Path absPathCidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
-            fileHashStore.deleteObject(pid);
+            fileHashStore.deleteObject(fhsDeleteTypePid, pid);
 
             assertFalse(Files.exists(absPathPidRefsPath));
             assertTrue(Files.exists(objCidAbsPath));
@@ -1319,7 +1346,7 @@ public class FileHashStoreInterfaceTest {
      * @throws Exception
      */
     @Test
-    public void deleteObject_pidOrphan() throws Exception {
+    public void deleteObject_Pid_pidOrphan() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -1338,7 +1365,7 @@ public class FileHashStoreInterfaceTest {
             // Create an orphaned pid refs file
             fileHashStore.deleteCidRefsPid(pid, absPathCidRefsPath);
 
-            fileHashStore.deleteObject(pid);
+            fileHashStore.deleteObject(fhsDeleteTypePid, pid);
 
             // Confirm cid refs file still exists
             assertTrue(Files.exists(absPathCidRefsPath));
@@ -1356,9 +1383,11 @@ public class FileHashStoreInterfaceTest {
      * Confirm that deleteObject throws exception when associated pid obj not found
      */
     @Test
-    public void deleteObject_pidNotFound() {
+    public void deleteObject_Pid_NotFoundPid() {
         assertThrows(
-            FileNotFoundException.class, () -> fileHashStore.deleteObject("dou.2023.hashstore.1")
+            FileNotFoundException.class, () -> fileHashStore.deleteObject(
+                fhsDeleteTypePid, "dou.2023.hashstore.1"
+            )
         );
     }
 
@@ -1366,31 +1395,39 @@ public class FileHashStoreInterfaceTest {
      * Confirm that deleteObject throws exception when pid is null
      */
     @Test
-    public void deleteObject_pidNull() {
-        assertThrows(IllegalArgumentException.class, () -> fileHashStore.deleteObject(null));
+    public void deleteObject_idNull() {
+        assertThrows(
+            IllegalArgumentException.class, () -> fileHashStore.deleteObject(fhsDeleteTypePid, null)
+        );
     }
 
     /**
      * Confirm that deleteObject throws exception when pid is empty
      */
     @Test
-    public void deleteObject_pidEmpty() {
-        assertThrows(IllegalArgumentException.class, () -> fileHashStore.deleteObject(""));
+    public void deleteObject_idEmpty() {
+        assertThrows(
+            IllegalArgumentException.class, () -> fileHashStore.deleteObject(fhsDeleteTypePid, "")
+        );
     }
 
     /**
      * Confirm that deleteObject throws exception when pid is empty spaces
      */
     @Test
-    public void deleteObject_pidEmptySpaces() {
-        assertThrows(IllegalArgumentException.class, () -> fileHashStore.deleteObject("      "));
+    public void deleteObject_idEmptySpaces() {
+        assertThrows(
+            IllegalArgumentException.class, () -> fileHashStore.deleteObject(
+                fhsDeleteTypePid, "      "
+            )
+        );
     }
 
     /**
-     * Confirm deleteObject overload method to delete a cid deletes cid with a true bool
+     * Confirm deleteObject with idType 'cid' deletes cid object
      */
     @Test
-    public void deleteObject_overloadCidDeleteTrue() throws Exception {
+    public void deleteObject_Cid_idType() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -1400,7 +1437,7 @@ public class FileHashStoreInterfaceTest {
             String cid = objInfo.getCid();
 
             // Set flag to true
-            fileHashStore.deleteObject(cid, true);
+            fileHashStore.deleteObject(fhsDeleteTypeCid, cid);
 
             // Get permanent address of the actual cid
             int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
@@ -1415,11 +1452,11 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Confirm deleteObject overload method does not delete an object with a true bool
-     * because a cid refs file exists
+     * Confirm deleteObject with idType 'cid' does not delete an object because a cid refs file
+     * exists (there are still pids referencing the object)
      */
     @Test
-    public void deleteObject_overloadCidDeleteTrueButCidRefsExists() throws Exception {
+    public void deleteObject_Cid_AndCidRefsExists() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -1431,39 +1468,11 @@ public class FileHashStoreInterfaceTest {
             String cid = objInfo.getCid();
 
             // Set flag to true
-            fileHashStore.deleteObject(cid, true);
+            fileHashStore.deleteObject(fhsDeleteTypeCid, cid);
 
             // Get permanent address of the actual cid
             Path objRealPath = fileHashStore.getRealPath(pid, "object", null);
             assertTrue(Files.exists(objRealPath));
-        }
-    }
-
-    /**
-     * Confirm deleteObject overload method does not delete an object with a false bool
-     */
-    @Test
-    public void deleteObject_overloadCidDeleteFalse() throws Exception {
-        for (String pid : testData.pidList) {
-            String pidFormatted = pid.replace("/", "_");
-            Path testDataFile = testData.getTestFile(pidFormatted);
-
-            InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectMetadata objInfo = fileHashStore.storeObject(dataStream);
-            String cid = objInfo.getCid();
-
-            // Set flag to true
-            fileHashStore.deleteObject(cid, false);
-
-            // Get permanent address of the actual cid
-            int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
-            int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
-            String actualCid = objInfo.getCid();
-            String cidShardString = FileHashStoreUtility.getHierarchicalPathString(
-                storeDepth, storeWidth, actualCid
-            );
-            Path objectStoreDirectory = rootDirectory.resolve("objects").resolve(cidShardString);
-            assertTrue(Files.exists(objectStoreDirectory));
         }
     }
 
