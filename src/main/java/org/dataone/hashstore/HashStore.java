@@ -235,7 +235,28 @@ public interface HashStore {
 
         /**
          * Deletes an object (and its empty subdirectories) permanently from HashStore using a given
-         * persistent identifier.
+         * persistent identifier. If the `idType` is 'pid', the object associated with the pid will
+         * be deleted if it is not referenced by any other pids, along with its reference files.
+         * If the `idType` is 'cid', only the object will be deleted if it is not referenced by
+         * other pids.
+         * 
+         * @param idType 'pid' or 'cid'
+         * @param id     Authority-based identifier or content identifier
+         * @throws IllegalArgumentException When pid is null or empty
+         * @throws FileNotFoundException    When requested pid has no associated object
+         * @throws IOException              I/O error when deleting empty directories,
+         *                                  modifying/deleting reference files
+         * @throws NoSuchAlgorithmException When algorithm used to calculate object address is not
+         *                                  supported
+         * @throws InterruptedException     When deletion synchronization is interrupted
+         */
+        public void deleteObject(String idType, String id) throws IllegalArgumentException,
+                FileNotFoundException, IOException, NoSuchAlgorithmException, InterruptedException;
+
+        /**
+         * Deletes an object and all relevant associated files (ex. system metadata, reference
+         * files, etc.) based on a given pid. If other pids still reference the object, the object
+         * will not be deleted.
          * 
          * @param pid Authority-based identifier
          * @throws IllegalArgumentException When pid is null or empty
@@ -246,21 +267,8 @@ public interface HashStore {
          *                                  supported
          * @throws InterruptedException     When deletion synchronization is interrupted
          */
-        public void deleteObject(String pid) throws IllegalArgumentException, FileNotFoundException,
-                IOException, NoSuchAlgorithmException, InterruptedException;
-
-        /**
-         * Delete an object based on its content identifier, with a flag to confirm intention.
-         * 
-         * Note: This overload method should only be called when an issue arises during the storage
-         * of an object without a pid, and after verifying (via `verifyObject`) that the object is
-         * not what is expected.
-         * 
-         * @param cid       Content identifier
-         * @param deleteCid Boolean to confirm
-         */
-        public void deleteObject(String cid, boolean deleteCid) throws IllegalArgumentException,
-                FileNotFoundException, IOException, NoSuchAlgorithmException;
+        public void deleteObjectAll(String pid) throws IllegalArgumentException,
+                FileNotFoundException, IOException, NoSuchAlgorithmException, InterruptedException;
 
         /**
          * Deletes a metadata document (ex. `sysmeta`) permanently from HashStore using a given

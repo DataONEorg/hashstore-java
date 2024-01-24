@@ -28,6 +28,7 @@ HashStore is a content-addressable file management system that utilizes the cont
 - retrieveObject
 - retrieveMetadata
 - deleteObject
+- deleteObjectAll
 - deleteMetadata
 - getHexDigest
 
@@ -92,6 +93,7 @@ tagObject(pid, cid)
 
 **How do I delete an object if I have the pid?**
 - To delete an object, call the Public API method `deleteObject` which will delete the object and its associated references and reference files where relevant.
+- To delete an object and all its related data (reference files and system metadata), call the Public API method `deleteObjectAll`
 - Note, `deleteObject` and `tagObject` calls are synchronized on their content identifier values so that the shared reference files are not unintentionally modified concurrently. An object that is in the process of being deleted should not be tagged, and vice versa. These calls have been implemented to occur sequentially to improve clarity in the event of an unexpected conflict or issue.
 
 

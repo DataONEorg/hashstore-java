@@ -230,6 +230,7 @@ public class HashStoreClient {
                 } else if (cmd.hasOption("deleteobject")) {
                     String pid = cmd.getOptionValue("pid");
                     FileHashStoreUtility.ensureNotNull(pid, "-pid", "HashStoreClient");
+                    // TODO: Use correct overload method when ready
                     hashStore.deleteObject(pid);
                     System.out.println("Object for pid (" + pid + ") has been deleted.");
 
@@ -701,6 +702,7 @@ public class HashStoreClient {
 
                 // Delete object
                 System.out.println("Deleting object for guid: " + guid);
+                // TODO: Use correct overload method when ready
                 hashStore.deleteObject(guid);
 
             } catch (FileNotFoundException fnfe) {
