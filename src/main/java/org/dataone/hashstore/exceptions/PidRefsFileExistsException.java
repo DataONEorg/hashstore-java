@@ -5,8 +5,8 @@ import java.io.IOException;
 /**
  * Custom exception class for FileHashStore pidObjects
  */
-public class PidObjectExistsException extends IOException {
-    public PidObjectExistsException(String message) {
+public class PidRefsFileExistsException extends IOException {
+    public PidRefsFileExistsException(String message) {
         super(message);
     }
 

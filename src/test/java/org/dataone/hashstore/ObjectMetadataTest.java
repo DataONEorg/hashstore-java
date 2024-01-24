@@ -10,15 +10,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 
 /**
- * Test class for ObjectInfo
+ * Test class for ObjectMetadata
  */
-public class ObjectInfoTest {
+public class ObjectMetadataTest {
     private static String id = "";
     private static long size;
     private static Map<String, String> hexDigests;
 
     /**
-     * Initialize ObjectInfo variables for test efficiency purposes
+     * Initialize ObjectMetadata variables for test efficiency purposes
      */
     @BeforeEach
     public void initializeInstanceVariables() {
@@ -41,40 +41,40 @@ public class ObjectInfoTest {
     }
 
     /**
-     * Check ObjectInfo constructor
+     * Check ObjectMetadata constructor
      */
     @Test
-    public void testObjectInfo() {
-        ObjectInfo objInfo = new ObjectInfo(id, size, hexDigests);
+    public void testObjectMetadata() {
+        ObjectMetadata objInfo = new ObjectMetadata(id, size, hexDigests);
         assertNotNull(objInfo);
     }
 
     /**
-     * Check ObjectInfo get id
+     * Check ObjectMetadata get id
      */
     @Test
-    public void testObjectInfoGetId() {
-        ObjectInfo objInfo = new ObjectInfo(id, size, hexDigests);
-        String objId = objInfo.getId();
+    public void testObjectMetadataGetId() {
+        ObjectMetadata objInfo = new ObjectMetadata(id, size, hexDigests);
+        String objId = objInfo.getCid();
         assertEquals(objId, id);
     }
 
     /**
-     * Check ObjectInfo get size
+     * Check ObjectMetadata get size
      */
     @Test
     public void testHashAddressGetSize() {
-        ObjectInfo objInfo = new ObjectInfo(id, size, hexDigests);
+        ObjectMetadata objInfo = new ObjectMetadata(id, size, hexDigests);
         long objSize = objInfo.getSize();
         assertEquals(objSize, size);
     }
 
     /**
-     * Check ObjectInfo get hexDigests
+     * Check ObjectMetadata get hexDigests
      */
     @Test
-    public void testObjectInfoGetHexDigests() {
-        ObjectInfo objInfo = new ObjectInfo(id, size, hexDigests);
+    public void testObjectMetadataGetHexDigests() {
+        ObjectMetadata objInfo = new ObjectMetadata(id, size, hexDigests);
         Map<String, String> objInfoMap = objInfo.getHexDigests();
         assertEquals(objInfoMap, hexDigests);
     }

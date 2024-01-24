@@ -247,39 +247,40 @@ public class FileHashStorePublicTest {
     }
 
     /**
-     * Check object store directory is created after initialization
+     * Check object store and tmp directories are created after initialization
      */
     @Test
-    public void initObjDirectory() {
+    public void initObjDirectories() {
         Path checkObjectStorePath = objStringFull;
         assertTrue(Files.isDirectory(checkObjectStorePath));
-    }
-
-    /**
-     * Check object store tmp directory is created after initialization
-     */
-    @Test
-    public void initObjTmpDirectory() {
         Path checkTmpPath = objTmpStringFull;
         assertTrue(Files.isDirectory(checkTmpPath));
     }
 
     /**
-     * Check metadata store directory is created after initialization
+     * Check metadata store and tmp directories are created after initialization
      */
     @Test
-    public void initMetadataDirectory() {
+    public void initMetadataDirectories() {
         Path checkMetadataStorePath = metadataStringFull;
         assertTrue(Files.isDirectory(checkMetadataStorePath));
+        Path checkMetadataTmpPath = metadataTmpStringFull;
+        assertTrue(Files.isDirectory(checkMetadataTmpPath));
     }
 
     /**
-     * Check metadata store tmp directory is created after initialization
+     * Check refs tmp, pid and cid directories are created after initialization
      */
     @Test
-    public void initMetadataTmpDirectory() {
-        Path checkMetadataTmpPath = metadataTmpStringFull;
-        assertTrue(Files.isDirectory(checkMetadataTmpPath));
+    public void initRefsDirectories() {
+        Path refsPath = rootDirectory.resolve("refs");
+        assertTrue(Files.isDirectory(refsPath));
+        Path refsTmpPath = rootDirectory.resolve("refs/tmp");
+        assertTrue(Files.isDirectory(refsTmpPath));
+        Path refsPidPath = rootDirectory.resolve("refs/pid");
+        assertTrue(Files.isDirectory(refsPidPath));
+        Path refsCidPath = rootDirectory.resolve("refs/cid");
+        assertTrue(Files.isDirectory(refsCidPath));
     }
 
     /**

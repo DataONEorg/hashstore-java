@@ -168,7 +168,7 @@ public class HashStoreClientTest {
             HashStoreClient.main(args);
 
             // Confirm object was stored
-            Path absPath = getObjectAbsPath(testData.pidData.get(pid).get("object_cid"), "object");
+            Path absPath = getObjectAbsPath(testData.pidData.get(pid).get("sha256"), "object");
             assertTrue(Files.exists(absPath));
 
             // Put things back
@@ -387,7 +387,7 @@ public class HashStoreClientTest {
     }
 
     /**
-     * Test hashStore client returns hex digest of object.
+     * Test hashStore client calculates the hex digest of object.
      */
     @Test
     public void client_getHexDigest() throws Exception {
@@ -425,6 +425,44 @@ public class HashStoreClientTest {
             // Confirm hex digest matches
             String pidStdOut = outputStream.toString();
             assertEquals(testDataChecksum, pidStdOut.trim());
+        }
+    }
+
+    /**
+     * Test hashStore client returns the content identifier (cid) of an object
+     */
+    @Test
+    public void client_findObject() throws Exception {
+        for (String pid : testData.pidList) {
+            // Redirect stdout to capture output
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            PrintStream ps = new PrintStream(outputStream);
+            PrintStream old = System.out;
+            System.setOut(ps);
+
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            hashStore.storeObject(dataStream, pid, null, null, null, -1);
+
+            // Call client
+            String optFindObject = "-findobject";
+            String optStore = "-store";
+            String optStorePath = hsProperties.getProperty("storePath");
+            String optPid = "-pid";
+            String optPidValue = pid;
+            String[] args = {optFindObject, optStore, optStorePath, optPid, optPidValue};
+            HashStoreClient.main(args);
+
+            String contentIdentifier = testData.pidData.get(pid).get("sha256");
+
+            // Put things back
+            System.out.flush();
+            System.setOut(old);
+
+            // Confirm correct content identifier has been saved
+            String pidStdOut = outputStream.toString();
+            assertEquals(contentIdentifier, pidStdOut.trim());
         }
     }
 }

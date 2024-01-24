@@ -29,7 +29,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.dataone.hashstore.exceptions.HashStoreFactoryException;
-import org.dataone.hashstore.exceptions.PidObjectExistsException;
+import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -124,13 +124,14 @@ public class HashStoreClient {
                     String objType = cmd.getOptionValue("stype");
                     String originDirectory = cmd.getOptionValue("sdir");
                     String numObjects = cmd.getOptionValue("nobj");
+                    String sizeOfFilesToSkip = cmd.getOptionValue("gbskip");
                     FileHashStoreUtility.ensureNotNull(objType, "-stype", "HashStoreClient");
                     FileHashStoreUtility.ensureNotNull(originDirectory, "-sdir", "HashStoreClient");
                     FileHashStoreUtility.ensureNotNull(
                         action, "-sts, -rav, -dfs", "HashStoreClient"
                     );
 
-                    testWithKnbvm(action, objType, originDirectory, numObjects);
+                    testWithKnbvm(action, objType, originDirectory, numObjects, sizeOfFilesToSkip);
 
                 } else if (cmd.hasOption("getchecksum")) {
                     String pid = cmd.getOptionValue("pid");
@@ -140,6 +141,13 @@ public class HashStoreClient {
 
                     String hexDigest = hashStore.getHexDigest(pid, algo);
                     System.out.println(hexDigest);
+
+                } else if (cmd.hasOption("findobject")) {
+                    String pid = cmd.getOptionValue("pid");
+                    FileHashStoreUtility.ensureNotNull(pid, "-pid", "HashStoreClient");
+
+                    String cid = hashStore.findObject(pid);
+                    System.out.println(cid);
 
                 } else if (cmd.hasOption("storeobject")) {
                     System.out.println("Storing object");
@@ -160,7 +168,7 @@ public class HashStoreClient {
                     if (cmd.hasOption("checksum_algo")) {
                         checksum_algo = cmd.getOptionValue("checksum_algo");
                     }
-                    long size = 0;
+                    long size;
                     if (cmd.hasOption("size")) {
                         size = Long.parseLong(cmd.getOptionValue("size"));
                     } else {
@@ -168,7 +176,7 @@ public class HashStoreClient {
                     }
 
                     InputStream pidObjStream = Files.newInputStream(path);
-                    ObjectInfo objInfo = hashStore.storeObject(
+                    ObjectMetadata objInfo = hashStore.storeObject(
                         pidObjStream, pid, additional_algo, checksum, checksum_algo, size
                     );
                     pidObjStream.close();
@@ -275,6 +283,10 @@ public class HashStoreClient {
             "Flag to get the hex digest of a data object in a HashStore."
         );
         options.addOption(
+            "findobject", "client_findobject", false,
+            "Flag to get the hex digest of a data object in a HashStore."
+        );
+        options.addOption(
             "storeobject", "client_storeobject", false, "Flag to store objs to a HashStore."
         );
         options.addOption(
@@ -316,8 +328,11 @@ public class HashStoreClient {
             "knbvm", "knbvmtestadc", false, "(knbvm) Flag to specify testing with knbvm."
         );
         options.addOption(
-            "nobj", "numberofobj", false,
+            "nobj", "numberofobj", true,
             "(knbvm) Option to specify number of objects to retrieve from a Metacat db."
+        );
+        options.addOption(
+            "gbskip", "gbsizetoskip", true, "(knbvm) Option to specify the size of objects to skip."
         );
         options.addOption(
             "sdir", "storedirectory", true,
@@ -435,14 +450,17 @@ public class HashStoreClient {
     /**
      * Entry point for working with test data found in knbvm (test.arcticdata.io)
      * 
-     * @param actionFlag String representing a knbvm test-related method to call.
-     * @param objType    "data" (objects) or "documents" (metadata).
-     * @param numObjects Number of rows to retrieve from metacat db,
-     *                   if null, will retrieve all rows.
+     * @param actionFlag        String representing a knbvm test-related method to call.
+     * @param objType           "data" (objects) or "documents" (metadata).
+     * @param originDir         Directory path of given objType
+     * @param numObjects        Number of rows to retrieve from metacat db,
+     *                          if null, will retrieve all rows.
+     * @param sizeOfFilesToSkip Size of files in GB to skip
      * @throws IOException Related to accessing config files or objects
      */
     private static void testWithKnbvm(
-        String actionFlag, String objType, String originDir, String numObjects
+        String actionFlag, String objType, String originDir, String numObjects,
+        String sizeOfFilesToSkip
     ) throws IOException {
         // Load metacat db yaml
         // Note: In order to test with knbvm, you must manually create a `pgdb.yaml` file with the
@@ -464,15 +482,22 @@ public class HashStoreClient {
 
         try {
             System.out.println("Connecting to metacat db.");
+            if (!objType.equals("object")) {
+                if (!objType.equals("metadata")) {
+                    String errMsg = "HashStoreClient - objType must be 'object' or 'metadata'";
+                    throw new IllegalArgumentException(errMsg);
+                }
+            }
+
             // Setup metacat db access
             Class.forName("org.postgresql.Driver"); // Force driver to register itself
             Connection connection = DriverManager.getConnection(url, user, password);
             Statement statement = connection.createStatement();
             String sqlQuery = "SELECT identifier.guid, identifier.docid, identifier.rev,"
                 + " systemmetadata.object_format, systemmetadata.checksum,"
-                + " systemmetadata.checksum_algorithm FROM identifier INNER JOIN systemmetadata"
-                + " ON identifier.guid = systemmetadata.guid ORDER BY identifier.guid"
-                + sqlLimitQuery + ";";
+                + " systemmetadata.checksum_algorithm, systemmetadata.size FROM identifier"
+                + " INNER JOIN systemmetadata ON identifier.guid = systemmetadata.guid"
+                + " ORDER BY identifier.guid" + sqlLimitQuery + ";";
             ResultSet resultSet = statement.executeQuery(sqlQuery);
 
             // For each row, get guid, docid, rev, checksum and checksum_algorithm
@@ -486,26 +511,32 @@ public class HashStoreClient {
                 String checksumAlgorithm = resultSet.getString("checksum_algorithm");
                 String formattedChecksumAlgo = formatAlgo(checksumAlgorithm);
                 String formatId = resultSet.getString("object_format");
+                long setItemSize = resultSet.getLong("size");
 
-                if (!objType.equals("object")) {
-                    if (!objType.equals("metadata")) {
-                        String errMsg = "HashStoreClient - objType must be 'object' or 'metadata'";
-                        throw new IllegalArgumentException(errMsg);
+                boolean skipFile = false;
+                if (sizeOfFilesToSkip != null) {
+                    // Calculate the size of requested gb to skip in bytes
+                    long gbFilesToSkip = Integer.parseInt(sizeOfFilesToSkip) * (1024L * 1024
+                        * 1024);
+                    if (setItemSize > gbFilesToSkip) {
+                        skipFile = true;
                     }
                 }
-                Path setItemFilePath = Paths.get(originDir + "/" + docid + "." + rev);
 
-                if (Files.exists(setItemFilePath)) {
-                    System.out.println(
-                        "File exists (" + setItemFilePath + ")! Adding to resultObjList."
-                    );
-                    Map<String, String> resultObj = new HashMap<>();
-                    resultObj.put("pid", guid);
-                    resultObj.put("algorithm", formattedChecksumAlgo);
-                    resultObj.put("checksum", checksum);
-                    resultObj.put("path", setItemFilePath.toString());
-                    resultObj.put("namespace", formatId);
-                    resultObjList.add(resultObj);
+                if (!skipFile) {
+                    Path setItemFilePath = Paths.get(originDir + "/" + docid + "." + rev);
+                    if (Files.exists(setItemFilePath)) {
+                        System.out.println(
+                            "File exists (" + setItemFilePath + ")! Adding to resultObjList."
+                        );
+                        Map<String, String> resultObj = new HashMap<>();
+                        resultObj.put("pid", guid);
+                        resultObj.put("algorithm", formattedChecksumAlgo);
+                        resultObj.put("checksum", checksum);
+                        resultObj.put("path", setItemFilePath.toString());
+                        resultObj.put("namespace", formatId);
+                        resultObjList.add(resultObj);
+                    }
                 }
             }
 
@@ -558,10 +589,12 @@ public class HashStoreClient {
                 System.out.println("Storing object for guid: " + guid);
                 hashStore.storeObject(objStream, guid, checksum, algorithm);
 
-            } catch (PidObjectExistsException poee) {
+            } catch (PidRefsFileExistsException poee) {
                 String errMsg = "Unexpected Error: " + poee.fillInStackTrace();
                 try {
-                    logExceptionToFile(guid, errMsg, "java/store_obj_errors/pidobjectexists");
+                    logExceptionToFile(
+                        guid, errMsg, "java/store_obj_errors/PidRefsFileExistsException"
+                    );
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
