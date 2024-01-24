@@ -76,7 +76,7 @@ public class FileHashStoreReferencesTest {
         String cid = "abcdef123456789";
         fileHashStore.tagObject(pid, cid);
 
-        Path pidRefsFilePath = fileHashStore.getRealPath(pid, "refs", "pid");
+        Path pidRefsFilePath = fileHashStore.getExpectedPath(pid, "refs", "pid");
         assertTrue(Files.exists(pidRefsFilePath));
     }
 
@@ -89,7 +89,7 @@ public class FileHashStoreReferencesTest {
         String cid = "abcdef123456789";
         fileHashStore.tagObject(pid, cid);
 
-        Path cidRefsFilePath = fileHashStore.getRealPath(cid, "refs", "cid");
+        Path cidRefsFilePath = fileHashStore.getExpectedPath(cid, "refs", "cid");
         assertTrue(Files.exists(cidRefsFilePath));
     }
 
@@ -120,12 +120,12 @@ public class FileHashStoreReferencesTest {
         String pidAdditional = "another.pid.2";
         fileHashStore.tagObject(pidAdditional, cid);
 
-        Path pidRefsFilePath = fileHashStore.getRealPath(pid, "refs", "pid");
+        Path pidRefsFilePath = fileHashStore.getExpectedPath(pid, "refs", "pid");
         assertTrue(Files.exists(pidRefsFilePath));
 
 
         // Check cid refs file
-        Path cidRefsFilePath = fileHashStore.getRealPath(cid, "refs", "cid");
+        Path cidRefsFilePath = fileHashStore.getExpectedPath(cid, "refs", "cid");
         boolean pidFoundInCidRefFiles = fileHashStore.isPidInCidRefsFile(
             pidAdditional, cidRefsFilePath
         );
@@ -141,12 +141,12 @@ public class FileHashStoreReferencesTest {
         String cid = "abcdef123456789";
 
         File cidRefsTmpFile = fileHashStore.writeCidRefsFile(pid);
-        Path cidRefsFilePath = fileHashStore.getRealPath(cid, "refs", "cid");
+        Path cidRefsFilePath = fileHashStore.getExpectedPath(cid, "refs", "cid");
         fileHashStore.move(cidRefsTmpFile, cidRefsFilePath.toFile(), "refs");
 
         fileHashStore.tagObject(pid, cid);
 
-        Path pidRefsFilePath = fileHashStore.getRealPath(pid, "refs", "pid");
+        Path pidRefsFilePath = fileHashStore.getExpectedPath(pid, "refs", "pid");
         assertTrue(Files.exists(pidRefsFilePath));
 
         // Confirm that cid refs file only has 1 line
@@ -195,7 +195,7 @@ public class FileHashStoreReferencesTest {
         Path pidRefsTmpFilePath = pidRefsTmpFile.toPath();
 
         // Get path of the cid refs file
-        Path cidRefsFilePath = fileHashStore.getRealPath(cid, "refs", "cid");
+        Path cidRefsFilePath = fileHashStore.getExpectedPath(cid, "refs", "cid");
 
         assertThrows(IOException.class, () -> {
             fileHashStore.verifyHashStoreRefsFiles(pid, cid, pidRefsTmpFilePath, cidRefsFilePath);
@@ -217,7 +217,7 @@ public class FileHashStoreReferencesTest {
         Path cidRefsTmpFilePath = cidRefsTmpFile.toPath();
 
         // Get path of the pid refs file
-        Path pidRefsFilePath = fileHashStore.getRealPath(pid, "refs", "pid");
+        Path pidRefsFilePath = fileHashStore.getExpectedPath(pid, "refs", "pid");
 
         assertThrows(IOException.class, () -> {
             fileHashStore.verifyHashStoreRefsFiles(pid, cid, pidRefsFilePath, cidRefsTmpFilePath);
@@ -234,7 +234,7 @@ public class FileHashStoreReferencesTest {
         fileHashStore.tagObject(pid, cid);
 
         // Get path of the cid refs file
-        Path cidRefsFilePath = fileHashStore.getRealPath(cid, "refs", "cid");
+        Path cidRefsFilePath = fileHashStore.getExpectedPath(cid, "refs", "cid");
 
         String pidAdditional = "dou.test.2";
         fileHashStore.updateCidRefsFiles("dou.test.2", cidRefsFilePath);
@@ -265,7 +265,7 @@ public class FileHashStoreReferencesTest {
 
         fileHashStore.deletePidRefsFile(pid);
 
-        Path pidRefsFilePath = fileHashStore.getRealPath(pid, "refs", "pid");
+        Path pidRefsFilePath = fileHashStore.getExpectedPath(pid, "refs", "pid");
         assertFalse(Files.exists(pidRefsFilePath));
     }
 
@@ -292,7 +292,7 @@ public class FileHashStoreReferencesTest {
         String pidAdditional = "dou.test.2";
         fileHashStore.tagObject(pidAdditional, cid);
 
-        Path cidRefsFilePath = fileHashStore.getRealPath(cid, "refs", "cid");
+        Path cidRefsFilePath = fileHashStore.getExpectedPath(cid, "refs", "cid");
         fileHashStore.deleteCidRefsPid(pid, cidRefsFilePath);
 
         assertFalse(fileHashStore.isPidInCidRefsFile(pid, cidRefsFilePath));
@@ -309,7 +309,7 @@ public class FileHashStoreReferencesTest {
         fileHashStore.tagObject(pid, cid);
         String pidAdditional = "dou.test.2";
         fileHashStore.tagObject(pidAdditional, cid);
-        Path cidRefsFilePath = fileHashStore.getRealPath(cid, "refs", "cid");
+        Path cidRefsFilePath = fileHashStore.getExpectedPath(cid, "refs", "cid");
 
         fileHashStore.deleteCidRefsPid(pid, cidRefsFilePath);
         fileHashStore.deleteCidRefsPid(pidAdditional, cidRefsFilePath);

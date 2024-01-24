@@ -302,7 +302,7 @@ public class FileHashStoreInterfaceTest {
                 fileHashStore.findObject(pid);
             });
 
-            Path cidRefsFilePath = fileHashStore.getRealPath(cid, "refs", "cid");
+            Path cidRefsFilePath = fileHashStore.getExpectedPath(cid, "refs", "cid");
             assertFalse(Files.exists(cidRefsFilePath));
         }
     }
@@ -341,7 +341,7 @@ public class FileHashStoreInterfaceTest {
         InputStream dataStream = Files.newInputStream(testDataFile);
         fileHashStore.storeObject(dataStream, pid, null, checksumCorrect, "SHA-256", -1);
 
-        Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
+        Path objCidAbsPath = fileHashStore.getExpectedPath(pid, "object", null);
         assertTrue(Files.exists(objCidAbsPath));
     }
 
@@ -490,7 +490,7 @@ public class FileHashStoreInterfaceTest {
             );
 
             String cid = objInfo.getCid();
-            Path absCidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
+            Path absCidRefsPath = fileHashStore.getExpectedPath(cid, "refs", "cid");
             assertTrue(fileHashStore.isPidInCidRefsFile(pid, absCidRefsPath));
             assertTrue(fileHashStore.isPidInCidRefsFile(pidTwo, absCidRefsPath));
         }
@@ -525,7 +525,7 @@ public class FileHashStoreInterfaceTest {
         String pid = "dou.sparsefile.1";
         fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
 
-        Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
+        Path objCidAbsPath = fileHashStore.getExpectedPath(pid, "object", null);
         assertTrue(Files.exists(objCidAbsPath));
 
     }
@@ -577,10 +577,10 @@ public class FileHashStoreInterfaceTest {
     /**
      * Tests that the `storeObject` method can store an object successfully with multiple threads
      * (5). This test uses five futures (threads) that run concurrently, all except one of which
-     * will encounter an `ExecutionException`. The thread that does not encounter an exception will
+     * will encounter an `RunTimeException`. The thread that does not encounter an exception will
      * store the given object, and verifies that the object is stored successfully.
      * 
-     * The threads that run into exceptions will encounter a `RunTimeException` since the expected
+     * The threads are expected to encounter a `RunTimeException` since the expected
      * object to store is already in progress (thrown by `syncPutObject` which coordinates
      * `store_object` requests with a pid).
      */
@@ -602,9 +602,9 @@ public class FileHashStoreInterfaceTest {
                 );
                 if (objInfo != null) {
                     String cid = objInfo.getCid();
-                    Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
-                    Path pidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
-                    Path cidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
+                    Path objCidAbsPath = fileHashStore.getExpectedPath(pid, "object", null);
+                    Path pidRefsPath = fileHashStore.getExpectedPath(pid, "refs", "pid");
+                    Path cidRefsPath = fileHashStore.getExpectedPath(cid, "refs", "cid");
                     assertTrue(Files.exists(objCidAbsPath));
                     assertTrue(Files.exists(pidRefsPath));
                     assertTrue(Files.exists(cidRefsPath));
@@ -625,9 +625,9 @@ public class FileHashStoreInterfaceTest {
                 );
                 if (objInfo != null) {
                     String cid = objInfo.getCid();
-                    Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
-                    Path pidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
-                    Path cidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
+                    Path objCidAbsPath = fileHashStore.getExpectedPath(pid, "object", null);
+                    Path pidRefsPath = fileHashStore.getExpectedPath(pid, "refs", "pid");
+                    Path cidRefsPath = fileHashStore.getExpectedPath(cid, "refs", "cid");
                     assertTrue(Files.exists(objCidAbsPath));
                     assertTrue(Files.exists(pidRefsPath));
                     assertTrue(Files.exists(cidRefsPath));
@@ -644,9 +644,9 @@ public class FileHashStoreInterfaceTest {
                 );
                 if (objInfo != null) {
                     String cid = objInfo.getCid();
-                    Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
-                    Path pidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
-                    Path cidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
+                    Path objCidAbsPath = fileHashStore.getExpectedPath(pid, "object", null);
+                    Path pidRefsPath = fileHashStore.getExpectedPath(pid, "refs", "pid");
+                    Path cidRefsPath = fileHashStore.getExpectedPath(cid, "refs", "cid");
                     assertTrue(Files.exists(objCidAbsPath));
                     assertTrue(Files.exists(pidRefsPath));
                     assertTrue(Files.exists(cidRefsPath));
@@ -663,9 +663,9 @@ public class FileHashStoreInterfaceTest {
                 );
                 if (objInfo != null) {
                     String cid = objInfo.getCid();
-                    Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
-                    Path pidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
-                    Path cidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
+                    Path objCidAbsPath = fileHashStore.getExpectedPath(pid, "object", null);
+                    Path pidRefsPath = fileHashStore.getExpectedPath(pid, "refs", "pid");
+                    Path cidRefsPath = fileHashStore.getExpectedPath(cid, "refs", "cid");
                     assertTrue(Files.exists(objCidAbsPath));
                     assertTrue(Files.exists(pidRefsPath));
                     assertTrue(Files.exists(cidRefsPath));
@@ -682,9 +682,9 @@ public class FileHashStoreInterfaceTest {
                 );
                 if (objInfo != null) {
                     String cid = objInfo.getCid();
-                    Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
-                    Path pidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
-                    Path cidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
+                    Path objCidAbsPath = fileHashStore.getExpectedPath(pid, "object", null);
+                    Path pidRefsPath = fileHashStore.getExpectedPath(pid, "refs", "pid");
+                    Path cidRefsPath = fileHashStore.getExpectedPath(cid, "refs", "cid");
                     assertTrue(Files.exists(objCidAbsPath));
                     assertTrue(Files.exists(pidRefsPath));
                     assertTrue(Files.exists(cidRefsPath));
@@ -928,7 +928,7 @@ public class FileHashStoreInterfaceTest {
         // Confirm metadata file is written
         Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
         String formatId = fhsProperties.getProperty("storeMetadataNamespace");
-        Path metadataCidAbsPath = fileHashStore.getRealPath(pid, "metadata", formatId);
+        Path metadataCidAbsPath = fileHashStore.getExpectedPath(pid, "metadata", formatId);
         assertTrue(Files.exists(metadataCidAbsPath));
 
         // Confirm there are only two files in HashStore - 'hashstore.yaml' and the
@@ -1269,7 +1269,7 @@ public class FileHashStoreInterfaceTest {
             InputStream dataStream = Files.newInputStream(testDataFile);
             fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
 
-            Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
+            Path objCidAbsPath = fileHashStore.getExpectedPath(pid, "object", null);
             fileHashStore.deleteObject(fhsDeleteTypePid, pid);
 
             // Check that file doesn't exist
@@ -1300,9 +1300,9 @@ public class FileHashStoreInterfaceTest {
             );
             String cid = objInfo.getCid();
 
-            // Path objAbsPath = fileHashStore.getRealPath(pid, "object", null);
-            Path absPathPidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
-            Path absPathCidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
+            // Path objAbsPath = fileHashStore.getExpectedPath(pid, "object", null);
+            Path absPathPidRefsPath = fileHashStore.getExpectedPath(pid, "refs", "pid");
+            Path absPathCidRefsPath = fileHashStore.getExpectedPath(cid, "refs", "cid");
             fileHashStore.deleteObject(fhsDeleteTypePid, pid);
             assertFalse(Files.exists(absPathPidRefsPath));
             assertFalse(Files.exists(absPathCidRefsPath));
@@ -1328,9 +1328,9 @@ public class FileHashStoreInterfaceTest {
             String cid = objInfo.getCid();
             fileHashStore.tagObject(pidExtra, cid);
 
-            Path objCidAbsPath = fileHashStore.getRealPath(pid, "object", null);
-            Path absPathPidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
-            Path absPathCidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
+            Path objCidAbsPath = fileHashStore.getExpectedPath(pid, "object", null);
+            Path absPathPidRefsPath = fileHashStore.getExpectedPath(pid, "refs", "pid");
+            Path absPathCidRefsPath = fileHashStore.getExpectedPath(cid, "refs", "cid");
             fileHashStore.deleteObject(fhsDeleteTypePid, pid);
 
             assertFalse(Files.exists(absPathPidRefsPath));
@@ -1357,10 +1357,10 @@ public class FileHashStoreInterfaceTest {
             );
             String cid = objInfo.getCid();
             String pidExtra = "dou.test" + pid;
-            Path objRealPath = fileHashStore.getRealPath(pid, "object", null);
+            Path objRealPath = fileHashStore.getExpectedPath(pid, "object", null);
 
             // Manually change the pid found in the cid refs file
-            Path absPathCidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
+            Path absPathCidRefsPath = fileHashStore.getExpectedPath(cid, "refs", "cid");
             fileHashStore.updateCidRefsFiles(pidExtra, absPathCidRefsPath);
             // Create an orphaned pid refs file
             fileHashStore.deleteCidRefsPid(pid, absPathCidRefsPath);
@@ -1370,7 +1370,7 @@ public class FileHashStoreInterfaceTest {
             // Confirm cid refs file still exists
             assertTrue(Files.exists(absPathCidRefsPath));
             // Confirm the original (and now orphaned) pid refs file is deleted
-            Path absPathPidRefsPath = fileHashStore.getRealPath(pid, "refs", "pid");
+            Path absPathPidRefsPath = fileHashStore.getExpectedPath(pid, "refs", "pid");
             assertFalse(Files.exists(absPathPidRefsPath));
             // Confirm the object has not been deleted
             assertTrue(Files.exists(objRealPath));
@@ -1471,7 +1471,7 @@ public class FileHashStoreInterfaceTest {
             fileHashStore.deleteObject(fhsDeleteTypeCid, cid);
 
             // Get permanent address of the actual cid
-            Path objRealPath = fileHashStore.getRealPath(pid, "object", null);
+            Path objRealPath = fileHashStore.getExpectedPath(pid, "object", null);
             assertTrue(Files.exists(objRealPath));
         }
     }
@@ -1494,7 +1494,7 @@ public class FileHashStoreInterfaceTest {
             fileHashStore.deleteMetadata(pid, storeFormatId);
 
             // Check that file doesn't exist
-            Path metadataCidPath = fileHashStore.getRealPath(pid, "metadata", storeFormatId);
+            Path metadataCidPath = fileHashStore.getExpectedPath(pid, "metadata", storeFormatId);
             assertFalse(Files.exists(metadataCidPath));
 
             // Check that parent directories are not deleted
@@ -1525,7 +1525,7 @@ public class FileHashStoreInterfaceTest {
 
             // Check that file doesn't exist
             String storeFormatId = (String) fhsProperties.get("storeMetadataNamespace");
-            Path metadataCidPath = fileHashStore.getRealPath(pid, "metadata", storeFormatId);
+            Path metadataCidPath = fileHashStore.getExpectedPath(pid, "metadata", storeFormatId);
             assertFalse(Files.exists(metadataCidPath));
 
             // Check that parent directories are not deleted
@@ -1724,7 +1724,7 @@ public class FileHashStoreInterfaceTest {
         String cid = "abcdef123456789";
         fileHashStore.tagObject(pid, cid);
 
-        Path cidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
+        Path cidRefsPath = fileHashStore.getExpectedPath(cid, "refs", "cid");
         Files.delete(cidRefsPath);
 
         assertThrows(OrphanPidRefsFileException.class, () -> {
@@ -1743,7 +1743,7 @@ public class FileHashStoreInterfaceTest {
         String cid = "abcdef123456789";
         fileHashStore.tagObject(pid, cid);
 
-        Path cidRefsPath = fileHashStore.getRealPath(cid, "refs", "cid");
+        Path cidRefsPath = fileHashStore.getExpectedPath(cid, "refs", "cid");
         fileHashStore.deleteCidRefsPid(pid, cidRefsPath);
 
         assertThrows(PidNotFoundInCidRefsFileException.class, () -> {

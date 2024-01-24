@@ -506,7 +506,7 @@ public class FileHashStore implements HashStore {
             tagObject(pid, cid);
             logFileHashStore.info(
                 "FileHashStore.syncPutObject - Object stored for pid: " + pid
-                    + ". Permanent address: " + getRealPath(pid, "object", null)
+                    + ". Permanent address: " + getExpectedPath(pid, "object", null)
             );
             return objInfo;
 
@@ -698,8 +698,8 @@ public class FileHashStore implements HashStore {
         }
 
         try {
-            Path absPidRefsPath = getRealPath(pid, "refs", "pid");
-            Path absCidRefsPath = getRealPath(cid, "refs", "cid");
+            Path absPidRefsPath = getExpectedPath(pid, "refs", "pid");
+            Path absCidRefsPath = getExpectedPath(cid, "refs", "cid");
 
             // Check that pid refs file doesn't exist yet
             if (Files.exists(absPidRefsPath)) {
@@ -763,11 +763,11 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "findObject");
 
         // Get path of the pid references file
-        Path absPidRefsPath = getRealPath(pid, "refs", "pid");
+        Path absPidRefsPath = getExpectedPath(pid, "refs", "pid");
 
         if (Files.exists(absPidRefsPath)) {
             String cid = new String(Files.readAllBytes(absPidRefsPath));
-            Path absCidRefsPath = getRealPath(cid, "refs", "cid");
+            Path absCidRefsPath = getExpectedPath(cid, "refs", "cid");
 
             // Throw exception if the cid refs file doesn't exist
             if (!Files.exists(absCidRefsPath)) {
@@ -917,7 +917,7 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "retrieveObject");
 
         // Get permanent address of the pid by calculating its sha-256 hex digest
-        Path objRealPath = getRealPath(pid, "object", null);
+        Path objRealPath = getExpectedPath(pid, "object", null);
 
         // Check to see if object exists
         if (!Files.exists(objRealPath)) {
@@ -960,7 +960,7 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(formatId, "formatId", "retrieveMetadata");
 
         // Get permanent address of the pid by calculating its sha-256 hex digest
-        Path metadataCidPath = getRealPath(pid, "metadata", formatId);
+        Path metadataCidPath = getExpectedPath(pid, "metadata", formatId);
 
         // Check to see if metadata exists
         if (!Files.exists(metadataCidPath)) {
@@ -1004,7 +1004,7 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "retrieveMetadata");
 
         // Get permanent address of the pid by calculating its sha-256 hex digest
-        Path metadataCidPath = getRealPath(pid, "metadata", DEFAULT_METADATA_NAMESPACE);
+        Path metadataCidPath = getExpectedPath(pid, "metadata", DEFAULT_METADATA_NAMESPACE);
 
         // Check to see if metadata exists
         if (!Files.exists(metadataCidPath)) {
@@ -1069,7 +1069,7 @@ public class FileHashStore implements HashStore {
 
             } catch (OrphanPidRefsFileException oprfe) {
                 // Delete the pid refs file and return, nothing else to delete.
-                Path absPidRefsPath = getRealPath(id, "refs", "pid");
+                Path absPidRefsPath = getExpectedPath(id, "refs", "pid");
                 Files.delete(absPidRefsPath);
 
                 String warnMsg =
@@ -1080,7 +1080,7 @@ public class FileHashStore implements HashStore {
 
             } catch (PidNotFoundInCidRefsFileException pnficrfe) {
                 // Delete pid refs file and return, nothing else to delete
-                Path absPidRefsPath = getRealPath(pid, "refs", "pid");
+                Path absPidRefsPath = getExpectedPath(pid, "refs", "pid");
                 Files.delete(absPidRefsPath);
 
                 String warnMsg =
@@ -1113,9 +1113,9 @@ public class FileHashStore implements HashStore {
 
             try {
                 // Get permanent address of the pid by calculating its sha-256 hex digest
-                Path objRealPath = getRealPath(pid, "object", null);
+                Path objRealPath = getExpectedPath(pid, "object", null);
                 // Get the path to the cid refs file to work with
-                Path absCidRefsPath = getRealPath(cid, "refs", "cid");
+                Path absCidRefsPath = getExpectedPath(cid, "refs", "cid");
 
                 if (!Files.exists(objRealPath)) {
                     // Throw exception if object doesn't exist
@@ -1181,7 +1181,7 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(formatId, "formatId", "deleteMetadata");
 
         // Get permanent address of the pid by calculating its sha-256 hex digest
-        Path metadataCidPath = getRealPath(pid, "metadata", formatId);
+        Path metadataCidPath = getExpectedPath(pid, "metadata", formatId);
 
         if (!Files.exists(metadataCidPath)) {
             String errMsg = "FileHashStore.deleteMetadata - File does not exist for pid: " + pid
@@ -1226,7 +1226,7 @@ public class FileHashStore implements HashStore {
 
         } else {
             // Get permanent address of the pid
-            Path objRealPath = getRealPath(pid, "object", null);
+            Path objRealPath = getExpectedPath(pid, "object", null);
 
             // Check to see if object exists
             if (!Files.exists(objRealPath)) {
@@ -1739,7 +1739,7 @@ public class FileHashStore implements HashStore {
      * @throws NoSuchAlgorithmException
      */
     protected void tryDeleteCidObject(String cid) throws IOException, NoSuchAlgorithmException {
-        Path absCidRefsPath = getRealPath(cid, "refs", "cid");
+        Path absCidRefsPath = getExpectedPath(cid, "refs", "cid");
         if (Files.exists(absCidRefsPath)) {
             // The cid is referenced by pids, do not delete.
             return;
@@ -1939,7 +1939,7 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(pid, "pid", "deletePidRefsFile");
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "deletePidRefsFile");
 
-        Path absPidRefsPath = getRealPath(pid, "refs", "pid");
+        Path absPidRefsPath = getExpectedPath(pid, "refs", "pid");
         // Check to see if pid refs file exists
         if (!Files.exists(absPidRefsPath)) {
             String errMsg =
@@ -2034,7 +2034,7 @@ public class FileHashStore implements HashStore {
         String metadataCid = FileHashStoreUtility.getPidHexDigest(
             pid + checkedFormatId, OBJECT_STORE_ALGORITHM
         );
-        Path metadataCidPath = getRealPath(pid, "metadata", checkedFormatId);
+        Path metadataCidPath = getExpectedPath(pid, "metadata", checkedFormatId);
 
         // Store metadata to tmpMetadataFile
         File tmpMetadataFile = FileHashStoreUtility.generateTmpFile(
@@ -2102,7 +2102,7 @@ public class FileHashStore implements HashStore {
      * @throws NoSuchAlgorithmException If store algorithm is not supported
      * @throws IOException              If unable to retrieve cid
      */
-    protected Path getRealPath(String abId, String entity, String formatId)
+    protected Path getExpectedPath(String abId, String entity, String formatId)
         throws IllegalArgumentException, NoSuchAlgorithmException, IOException {
         Path realPath;
         if (entity.equalsIgnoreCase("object")) {
@@ -2138,14 +2138,14 @@ public class FileHashStore implements HashStore {
                 realPath = REFS_CID_FILE_DIRECTORY.resolve(cidShardString);
             } else {
                 String errMsg =
-                    "FileHashStore.getRealPath - formatId must be 'pid' or 'cid' when entity is 'refs'";
+                    "FileHashStore.getExpectedPath - formatId must be 'pid' or 'cid' when entity is 'refs'";
                 logFileHashStore.error(errMsg);
                 throw new IllegalArgumentException(errMsg);
             }
 
         } else {
             throw new IllegalArgumentException(
-                "FileHashStore.getRealPath - entity must be 'object' or 'metadata'"
+                "FileHashStore.getExpectedPath - entity must be 'object' or 'metadata'"
             );
         }
         return realPath;
