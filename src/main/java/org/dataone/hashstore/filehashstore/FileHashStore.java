@@ -1884,7 +1884,7 @@ public class FileHashStore implements HashStore {
      * @param ref         Authority-based or persistent identifier
      * @param absRefsPath Path to the refs file to update
      * @param updateType  "add" or "remove"
-     * @throws IOException Issue with updating a cid refs file
+     * @throws IOException Issue with updating or accessing a refs file
      */
     protected void updateRefsFile(String ref, Path absRefsPath, String updateType)
         throws IOException {
@@ -1902,7 +1902,6 @@ public class FileHashStore implements HashStore {
 
                 if (updateType.equals("add")) {
                     lines.add(ref);
-
                     Files.write(tmpFilePath, lines, StandardOpenOption.WRITE);
                     move(tmpFile, absRefsPath.toFile(), "refs");
                     logFileHashStore.debug(
@@ -1930,13 +1929,12 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Deletes a references file
+     * Deletes a references file at the given path
      * 
      * @param absRefsPath Path to the refs file to delete
-     * @throws NoSuchAlgorithmException Incompatible algorithm used to find pid refs file
-     * @throws IOException              Unable to delete object or open pid refs file
+     * @throws IOException Unable to delete object or open pid refs file
      */
-    protected void deleteRefsFile(Path absRefsPath) throws NoSuchAlgorithmException, IOException {
+    protected void deleteRefsFile(Path absRefsPath) throws IOException {
         // Check to see if pid refs file exists
         if (!Files.exists(absRefsPath)) {
             String errMsg = "FileHashStore.deleteRefsFile - Refs file does not exist at: "
