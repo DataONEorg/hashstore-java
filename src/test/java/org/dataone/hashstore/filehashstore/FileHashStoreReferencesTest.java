@@ -140,7 +140,7 @@ public class FileHashStoreReferencesTest {
         String pid = "dou.test.1";
         String cid = "abcdef123456789";
 
-        File cidRefsTmpFile = fileHashStore.writeCidRefsFile(pid);
+        File cidRefsTmpFile = fileHashStore.writeRefsFile(pid, "cid");
         Path cidRefsFilePath = fileHashStore.getExpectedPath(cid, "refs", "cid");
         fileHashStore.move(cidRefsTmpFile, cidRefsFilePath.toFile(), "refs");
 
@@ -160,24 +160,12 @@ public class FileHashStoreReferencesTest {
      * Check that the cid supplied is written into the file given
      */
     @Test
-    public void writePidRefsFile_content() throws Exception {
+    public void writeRefsFile_content() throws Exception {
         String cidToWrite = "test_cid_123";
-        File pidRefsTmpFile = fileHashStore.writePidRefsFile(cidToWrite);
+        File pidRefsTmpFile = fileHashStore.writeRefsFile(cidToWrite, "pid");
 
         String cidRead = new String(Files.readAllBytes(pidRefsTmpFile.toPath()));
         assertEquals(cidRead, cidToWrite);
-    }
-
-    /**
-     * Check that the pid supplied is written into the file given with a new line
-     */
-    @Test
-    public void writeCidRefsFile_content() throws Exception {
-        String pidToWrite = "dou.test.123";
-        File cidRefsTmpFile = fileHashStore.writeCidRefsFile(pidToWrite);
-
-        String pidRead = new String(Files.readAllBytes(cidRefsTmpFile.toPath()));
-        assertEquals(pidRead, pidToWrite);
     }
 
     /**
@@ -191,7 +179,7 @@ public class FileHashStoreReferencesTest {
 
         // Create a pid refs file with the incorrect cid
         String cidToWrite = "123456789abcdef";
-        File pidRefsTmpFile = fileHashStore.writePidRefsFile(cidToWrite);
+        File pidRefsTmpFile = fileHashStore.writeRefsFile(cidToWrite, "pid");
         Path pidRefsTmpFilePath = pidRefsTmpFile.toPath();
 
         // Get path of the cid refs file
@@ -212,8 +200,8 @@ public class FileHashStoreReferencesTest {
         fileHashStore.tagObject(pid, cid);
 
         // Create a cid refs file with a different pid from the one that is expected
-        String cidToWrite = "dou.test.2";
-        File cidRefsTmpFile = fileHashStore.writeCidRefsFile(cidToWrite);
+        String pidToWrite = "dou.test.2";
+        File cidRefsTmpFile = fileHashStore.writeRefsFile(pidToWrite, "cid");
         Path cidRefsTmpFilePath = cidRefsTmpFile.toPath();
 
         // Get path of the pid refs file

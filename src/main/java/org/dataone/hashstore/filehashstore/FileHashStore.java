@@ -174,6 +174,7 @@ public class FileHashStore implements HashStore {
             Files.createDirectories(REFS_TMP_FILE_DIRECTORY);
             Files.createDirectories(REFS_PID_FILE_DIRECTORY);
             Files.createDirectories(REFS_CID_FILE_DIRECTORY);
+            // TODO: Create formatId-namespace tracking document
             logFileHashStore.debug("FileHashStore - Created store and store tmp directories.");
 
         } catch (IOException ioe) {
@@ -715,7 +716,7 @@ public class FileHashStore implements HashStore {
                     updateCidRefsFiles(pid, absCidRefsPath);
                 }
                 // Get the pid refs file
-                File pidRefsTmpFile = writePidRefsFile(cid);
+                File pidRefsTmpFile = writeRefsFile(cid, "pid");
                 File absPathPidRefsFile = absPidRefsPath.toFile();
                 move(pidRefsTmpFile, absPathPidRefsFile, "refs");
                 // Verify tagging process, this throws exceptions if there's an issue
@@ -728,8 +729,8 @@ public class FileHashStore implements HashStore {
 
             } else {
                 // Get pid and cid refs files 
-                File pidRefsTmpFile = writePidRefsFile(cid);
-                File cidRefsTmpFile = writeCidRefsFile(pid);
+                File pidRefsTmpFile = writeRefsFile(cid, "pid");
+                File cidRefsTmpFile = writeRefsFile(pid, "cid");
                 // Move refs files to permanent location
                 File absPathPidRefsFile = absPidRefsPath.toFile();
                 File absPathCidRefsFile = absCidRefsPath.toFile();
@@ -868,6 +869,7 @@ public class FileHashStore implements HashStore {
                 "FileHashStore.storeMetadata - Metadata stored for pid: " + pid
                     + ". Metadata Content Identifier (metadataCid): " + metadataCid
             );
+            // TODO: Save formatId if it doesn't already exist
             return metadataCid;
 
         } catch (IOException ioe) {
@@ -1164,7 +1166,12 @@ public class FileHashStore implements HashStore {
     public void deleteObjectAll(String pid) throws IllegalArgumentException, FileNotFoundException,
         IOException, NoSuchAlgorithmException, InterruptedException,
         PidNotFoundInCidRefsFileException {
-        // TODO
+        // First, delete object as expected normally
+        deleteObject("pid", pid);
+        // TODO:
+        // Then look for and remove all related sysmeta
+        // Open metadata reference file, read all the format types
+        // Call 'delete_metadata(pid, formatId)' for all types
         return;
     }
 
@@ -1811,63 +1818,34 @@ public class FileHashStore implements HashStore {
         }
     }
 
+
     /**
-     * Writes the given 'pid' into a file in the 'cid' refs file format, which consists of
-     * multiple pids that references a 'cid' each on its own line (delimited by "\n").
+     * Writes the given string into a temporary file. The client must explicitly move this file to
+     * where belongs otherwise it will be removed during garbage collection.
      *
-     * @param pid Authority-based or persistent identifier to write
-     * @throws IOException Failure to write pid refs file
+     * @param ref     Authority-based or persistent identifier to write
+     * @param refType Type of reference 'pid', 'cid' or 'sysmeta'
+     * @throws IOException Failure to write refs file
+     * @return File object with single reference
      */
-    protected File writeCidRefsFile(String pid) throws IOException {
+    protected File writeRefsFile(String ref, String refType) throws IOException {
         File cidRefsTmpFile = FileHashStoreUtility.generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
         try (BufferedWriter writer = new BufferedWriter(
             new OutputStreamWriter(
                 Files.newOutputStream(cidRefsTmpFile.toPath()), StandardCharsets.UTF_8
             )
         )) {
-            writer.write(pid);
+            writer.write(ref);
             writer.close();
 
             logFileHashStore.debug(
-                "FileHashStore.writeCidRefsFile - cid refs file written for: " + pid
+                "FileHashStore.writeRefsFile - " + refType + " refs file written for: " + ref
             );
             return cidRefsTmpFile;
 
         } catch (IOException ioe) {
-            logFileHashStore.error(
-                "FileHashStore.writeCidRefsFile - Unable to write cid refs file for pid: " + pid
-                    + " IOException: " + ioe.getMessage()
-            );
-            throw ioe;
-        }
-    }
-
-    /**
-     * Writes the given 'cid' into a file in the 'pid' refs file format. A pid refs file
-     * contains a single 'cid'. Note, a 'pid' can only ever reference one 'cid'.
-     * 
-     * @param cid Content identifier to write
-     * @throws IOException Failure to write pid refs file
-     */
-    protected File writePidRefsFile(String cid) throws IOException {
-        File pidRefsTmpFile = FileHashStoreUtility.generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
-        try (BufferedWriter writer = new BufferedWriter(
-            new OutputStreamWriter(
-                Files.newOutputStream(pidRefsTmpFile.toPath()), StandardCharsets.UTF_8
-            )
-        )) {
-            writer.write(cid);
-            writer.close();
-
-            logFileHashStore.debug(
-                "FileHashStore.writePidRefsFile - pid refs file written for: " + cid
-            );
-            return pidRefsTmpFile;
-
-        } catch (IOException ioe) {
-            String errMsg =
-                "FileHashStore.writePidRefsFile - Unable to write pid refs file for cid: " + cid
-                    + " IOException: " + ioe.getMessage();
+            String errMsg = "FileHashStore.writeRefsFile - Unable to write refs file for ref: "
+                + refType + " IOException: " + ioe.getMessage();
             logFileHashStore.error(errMsg);
             throw new IOException(errMsg);
         }
