@@ -225,7 +225,7 @@ public class FileHashStoreReferencesTest {
         Path cidRefsFilePath = fileHashStore.getExpectedPath(cid, "refs", "cid");
 
         String pidAdditional = "dou.test.2";
-        fileHashStore.updateRefsFile("dou.test.2", cidRefsFilePath);
+        fileHashStore.updateRefsFile("dou.test.2", cidRefsFilePath, "add");
 
         List<String> lines = Files.readAllLines(cidRefsFilePath);
         boolean pidOriginal_foundInCidRefFiles = false;
@@ -281,7 +281,7 @@ public class FileHashStoreReferencesTest {
         fileHashStore.tagObject(pidAdditional, cid);
 
         Path cidRefsFilePath = fileHashStore.getExpectedPath(cid, "refs", "cid");
-        fileHashStore.deleteCidRefsPid(pid, cidRefsFilePath);
+        fileHashStore.updateRefsFile(pid, cidRefsFilePath, "remove");
 
         assertFalse(fileHashStore.isStringInRefsFile(pid, cidRefsFilePath));
     }
@@ -299,8 +299,8 @@ public class FileHashStoreReferencesTest {
         fileHashStore.tagObject(pidAdditional, cid);
         Path cidRefsFilePath = fileHashStore.getExpectedPath(cid, "refs", "cid");
 
-        fileHashStore.deleteCidRefsPid(pid, cidRefsFilePath);
-        fileHashStore.deleteCidRefsPid(pidAdditional, cidRefsFilePath);
+        fileHashStore.updateRefsFile(pid, cidRefsFilePath, "remove");
+        fileHashStore.updateRefsFile(pidAdditional, cidRefsFilePath, "remove");
 
         assertTrue(Files.exists(cidRefsFilePath));
         assertTrue(Files.size(cidRefsFilePath) == 0);

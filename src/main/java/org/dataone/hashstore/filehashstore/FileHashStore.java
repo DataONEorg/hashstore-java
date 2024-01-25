@@ -713,7 +713,7 @@ public class FileHashStore implements HashStore {
                 // Only update cid refs file if pid is not in the file
                 boolean pidFoundInCidRefFiles = isStringInRefsFile(pid, absCidRefsPath);
                 if (!pidFoundInCidRefFiles) {
-                    updateRefsFile(pid, absCidRefsPath);
+                    updateRefsFile(pid, absCidRefsPath, "add");
                 }
                 // Get the pid refs file
                 File pidRefsTmpFile = writeRefsFile(cid, "pid");
@@ -1131,7 +1131,7 @@ public class FileHashStore implements HashStore {
                     // Delete pid reference file
                     deletePidRefsFile(pid);
                     // Remove pid from cid refs file
-                    deleteCidRefsPid(pid, absCidRefsPath);
+                    updateRefsFile(pid, absCidRefsPath, "remove");
                     // Delete obj and cid refs file only if the cid refs file is empty
                     if (Files.size(absCidRefsPath) == 0) {
                         // Delete empty cid refs file
@@ -1878,25 +1878,40 @@ public class FileHashStore implements HashStore {
      * @param absCidRefsPath Path to the refs file to update
      * @throws IOException Issue with updating a cid refs file
      */
-    protected void updateRefsFile(String ref, Path absRefsPath) throws IOException {
+    protected void updateRefsFile(String ref, Path absRefsPath, String updateType)
+        throws IOException {
         // This update process is atomic, so we first write the updated content
         // into a temporary file before overwriting it.
         File tmpFile = FileHashStoreUtility.generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
         Path tmpFilePath = tmpFile.toPath();
+
         try {
             // Obtain a lock on the file before updating it
             try (FileChannel channel = FileChannel.open(
                 absRefsPath, StandardOpenOption.READ, StandardOpenOption.WRITE
             ); FileLock ignored = channel.lock()) {
                 List<String> lines = new ArrayList<>(Files.readAllLines(absRefsPath));
-                lines.add(ref);
 
-                Files.write(tmpFilePath, lines, StandardOpenOption.WRITE);
-                move(tmpFile, absRefsPath.toFile(), "refs");
-                logFileHashStore.debug(
-                    "FileHashStore.updateRefsFile - Pid: " + ref
-                        + " has been added to cid refs file: " + absRefsPath
-                );
+                if (updateType.equals("add")) {
+                    lines.add(ref);
+
+                    Files.write(tmpFilePath, lines, StandardOpenOption.WRITE);
+                    move(tmpFile, absRefsPath.toFile(), "refs");
+                    logFileHashStore.debug(
+                        "FileHashStore.updateRefsFile - Ref: " + ref
+                            + " has been added to refs file: " + absRefsPath
+                    );
+                }
+
+                if (updateType.equals("remove")) {
+                    lines.remove(ref);
+                    Files.write(tmpFilePath, lines, StandardOpenOption.WRITE);
+                    move(tmpFile, absRefsPath.toFile(), "refs");
+                    logFileHashStore.debug(
+                        "FileHashStore.updateRefsFile - Ref: " + ref
+                            + " has been removed from refs file: " + absRefsPath
+                    );
+                }
             }
             // The lock is automatically released when the try block exits
         } catch (IOException ioe) {
@@ -1933,43 +1948,6 @@ public class FileHashStore implements HashStore {
                 "FileHashStore.deletePidRefsFile - Pid refs file deleted for: " + pid
                     + " with address: " + absPidRefsPath
             );
-        }
-    }
-
-
-    /**
-     * Removes a pid from a cid refs file.
-     * 
-     * @param pid            Authority-based or persistent identifier.
-     * @param absCidRefsPath Path to the cid refs file to remove the pid from
-     * @throws IOException Unable to access cid refs file
-     */
-    protected void deleteCidRefsPid(String pid, Path absCidRefsPath) throws IOException {
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "deleteCidRefsPid");
-        FileHashStoreUtility.ensureNotNull(absCidRefsPath, "absCidRefsPath", "deleteCidRefsPid");
-        // This deletes process is atomic, so we first write the updated content
-        // into a temporary file before overwriting it.
-        File tmpFile = FileHashStoreUtility.generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
-        Path tmpFilePath = tmpFile.toPath();
-        try (FileChannel channel = FileChannel.open(
-            absCidRefsPath, StandardOpenOption.READ, StandardOpenOption.WRITE
-        ); FileLock ignored = channel.lock()) {
-            // Read all lines into a List
-            List<String> lines = new ArrayList<>(Files.readAllLines(absCidRefsPath));
-            lines.remove(pid);
-            Files.write(tmpFilePath, lines, StandardOpenOption.WRITE);
-            move(tmpFile, absCidRefsPath.toFile(), "refs");
-            logFileHashStore.debug(
-                "FileHashStore.deleteCidRefsPid - Pid: " + pid + " removed from cid refs file: "
-                    + absCidRefsPath
-            );
-            // The lock is automatically released when the try block exits
-        } catch (IOException ioe) {
-            String errMsg = "FileHashStore.deleteCidRefsPid - Unable to remove pid: " + pid
-                + " from cid refs file: " + absCidRefsPath + ". Additional Info: " + ioe
-                    .getMessage();
-            logFileHashStore.error(errMsg);
-            throw new IOException(errMsg);
         }
     }
 

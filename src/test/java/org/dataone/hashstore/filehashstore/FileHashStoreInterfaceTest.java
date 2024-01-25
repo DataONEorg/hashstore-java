@@ -1361,9 +1361,9 @@ public class FileHashStoreInterfaceTest {
 
             // Manually change the pid found in the cid refs file
             Path absPathCidRefsPath = fileHashStore.getExpectedPath(cid, "refs", "cid");
-            fileHashStore.updateRefsFile(pidExtra, absPathCidRefsPath);
+            fileHashStore.updateRefsFile(pidExtra, absPathCidRefsPath, "add");
             // Create an orphaned pid refs file
-            fileHashStore.deleteCidRefsPid(pid, absPathCidRefsPath);
+            fileHashStore.updateRefsFile(pid, absPathCidRefsPath, "remove");
 
             fileHashStore.deleteObject(fhsDeleteTypePid, pid);
 
@@ -1744,7 +1744,7 @@ public class FileHashStoreInterfaceTest {
         fileHashStore.tagObject(pid, cid);
 
         Path cidRefsPath = fileHashStore.getExpectedPath(cid, "refs", "cid");
-        fileHashStore.deleteCidRefsPid(pid, cidRefsPath);
+        fileHashStore.updateRefsFile(pid, cidRefsPath, "remove");
 
         assertThrows(PidNotFoundInCidRefsFileException.class, () -> {
             fileHashStore.findObject(pid);
