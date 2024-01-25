@@ -931,11 +931,11 @@ public class FileHashStoreInterfaceTest {
         Path metadataCidAbsPath = fileHashStore.getExpectedPath(pid, "metadata", formatId);
         assertTrue(Files.exists(metadataCidAbsPath));
 
-        // Confirm there are only two files in HashStore - 'hashstore.yaml' and the
-        // metadata file written
+        // Confirm there are only three files in HashStore - 'hashstore.yaml', the metadata file written
+        // and the metadata refs file that contains namespaces used
         try (Stream<Path> walk = Files.walk(storePath)) {
             long fileCount = walk.filter(Files::isRegularFile).count();
-            assertEquals(fileCount, 2);
+            assertEquals(fileCount, 3);
         }
     }
 

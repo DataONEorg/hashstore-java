@@ -284,6 +284,22 @@ public class FileHashStorePublicTest {
     }
 
     /**
+     * Check metadata namespace refs file has been created and contains expected default namespace
+     */
+    @Test
+    public void initMetadataRefsFile() throws Exception {
+        Path metadataRefsPath = rootDirectory.resolve("refs").resolve(
+            "metadata/formatid_namespaces"
+        );
+        assertTrue(Files.exists(metadataRefsPath));
+
+        HashMap<String, Object> hsProperties = fileHashStore.loadHashStoreYaml(rootDirectory);
+        String defaultMetadataNamespace = (String) hsProperties.get("storeMetadataNamespace");
+        assertTrue(fileHashStore.isStringInRefsFile(defaultMetadataNamespace, metadataRefsPath));
+
+    }
+
+    /**
      * Check that a HashStore configuration file is written and exists
      */
     @Test

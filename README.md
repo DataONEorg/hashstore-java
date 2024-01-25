@@ -88,8 +88,8 @@ tagObject(pid, cid)
 - To retrieve an object, call the Public API method `retrieveObject` which opens a stream to the object if it exists.
 
 **How do I find an object or check that it exists if I have the pid?**
-- To find the location of the object, call the Public API method `findObject` which will return the content identifier (cid) of the object.
-- This cid can then be used to locate the object on disk by following HashStore's store configuration.
+- To check if an object exists, call the Public API method `findObject` which will return the content identifier (cid) of the object if it exists.
+- If desired, this cid can then be used to locate the object on disk by following HashStore's store configuration.
 
 **How do I delete an object if I have the pid?**
 - To delete an object, call the Public API method `deleteObject` which will delete the object and its associated references and reference files where relevant.
@@ -133,7 +133,7 @@ These reference files are implemented in HashStore underneath the hood with no e
 
 ###### What does HashStore look like?
 
-```
+```sh
 # Example layout in HashStore with a single file stored along with its metadata and reference files.
 # This uses a store depth of 3, with a width of 2 and "SHA-256" as its default store algorithm
 ## Notes:
