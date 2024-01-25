@@ -243,17 +243,17 @@ public class FileHashStoreReferencesTest {
     }
 
     /**
-     * Check that deletePidRefsFile deletes file
+     * Check that deleteRefsFile deletes file
      */
     @Test
-    public void deletePidRefsFile_fileDeleted() throws Exception {
+    public void deleteRefsFile_fileDeleted() throws Exception {
         String pid = "dou.test.1";
         String cid = "abcdef123456789";
         fileHashStore.tagObject(pid, cid);
 
-        fileHashStore.deletePidRefsFile(pid);
-
         Path pidRefsFilePath = fileHashStore.getExpectedPath(pid, "refs", "pid");
+        fileHashStore.deleteRefsFile(pidRefsFilePath);
+
         assertFalse(Files.exists(pidRefsFilePath));
     }
 
@@ -265,7 +265,8 @@ public class FileHashStoreReferencesTest {
         String pid = "dou.test.1";
 
         assertThrows(FileNotFoundException.class, () -> {
-            fileHashStore.deletePidRefsFile(pid);
+            Path pidRefsFilePath = fileHashStore.getExpectedPath(pid, "refs", "pid");
+            fileHashStore.deleteRefsFile(pidRefsFilePath);
         });
     }
 

@@ -1129,7 +1129,8 @@ public class FileHashStore implements HashStore {
                 } else {
                     // Proceed to delete the reference files and object
                     // Delete pid reference file
-                    deletePidRefsFile(pid);
+                    Path absPidRefsPath = getExpectedPath(pid, "refs", "pid");
+                    deleteRefsFile(absPidRefsPath);
                     // Remove pid from cid refs file
                     updateRefsFile(pid, absCidRefsPath, "remove");
                     // Delete obj and cid refs file only if the cid refs file is empty
@@ -1820,8 +1821,8 @@ public class FileHashStore implements HashStore {
 
 
     /**
-     * Writes the given string into a temporary file. The client must explicitly move this file to
-     * where belongs otherwise it will be removed during garbage collection.
+     * Writes the given ref into a temporary file. The client must explicitly move this file to
+     * where it belongs otherwise it will be removed during garbage collection.
      *
      * @param ref     Authority-based or persistent identifier to write
      * @param refType Type of reference 'pid', 'cid' or 'sysmeta'
@@ -1872,10 +1873,11 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Updates a refs file with a pid that references the cid
+     * Adds or removes a ref value from a refs file given an 'updateType'
      * 
-     * @param ref            Authority-based or persistent identifier
-     * @param absCidRefsPath Path to the refs file to update
+     * @param ref         Authority-based or persistent identifier
+     * @param absRefsPath Path to the refs file to update
+     * @param updateType  "add" or "remove"
      * @throws IOException Issue with updating a cid refs file
      */
     protected void updateRefsFile(String ref, Path absRefsPath, String updateType)
@@ -1922,31 +1924,25 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Deletes a pid references file
+     * Deletes a references file
      * 
-     * @param pid Authority-based or persistent identifier
+     * @param absRefsPath Path to the refs file to delete
      * @throws NoSuchAlgorithmException Incompatible algorithm used to find pid refs file
      * @throws IOException              Unable to delete object or open pid refs file
      */
-    protected void deletePidRefsFile(String pid) throws NoSuchAlgorithmException, IOException {
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "deletePidRefsFile");
-        FileHashStoreUtility.checkForEmptyString(pid, "pid", "deletePidRefsFile");
-
-        Path absPidRefsPath = getExpectedPath(pid, "refs", "pid");
+    protected void deleteRefsFile(Path absRefsPath) throws NoSuchAlgorithmException, IOException {
         // Check to see if pid refs file exists
-        if (!Files.exists(absPidRefsPath)) {
-            String errMsg =
-                "FileHashStore.deletePidRefsFile - File refs file does not exist for pid: " + pid
-                    + " with address: " + absPidRefsPath;
+        if (!Files.exists(absRefsPath)) {
+            String errMsg = "FileHashStore.deleteRefsFile - Refs file does not exist at: "
+                + absRefsPath;
             logFileHashStore.error(errMsg);
             throw new FileNotFoundException(errMsg);
 
         } else {
             // Proceed to delete
-            Files.delete(absPidRefsPath);
+            Files.delete(absRefsPath);
             logFileHashStore.debug(
-                "FileHashStore.deletePidRefsFile - Pid refs file deleted for: " + pid
-                    + " with address: " + absPidRefsPath
+                "FileHashStore.deleteRefsFile - Refs file deleted at: " + absRefsPath
             );
         }
     }
