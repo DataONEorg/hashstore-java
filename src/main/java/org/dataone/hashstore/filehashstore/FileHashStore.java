@@ -1059,7 +1059,7 @@ public class FileHashStore implements HashStore {
 
         // If 'idType' is cid, attempt to delete the object
         if (idType.equals(HashStoreIdTypes.cid.getName("cid"))) {
-            tryDeleteCidObject(id);
+            deleteObjectByCid(id);
 
         } else {
             // Else 'idType' is pid
@@ -1746,9 +1746,12 @@ public class FileHashStore implements HashStore {
      * @throws IOException
      * @throws NoSuchAlgorithmException
      */
-    protected void tryDeleteCidObject(String cid) throws IOException, NoSuchAlgorithmException {
+    protected void deleteObjectByCid(String cid) throws IOException, NoSuchAlgorithmException {
         Path absCidRefsPath = getExpectedPath(cid, "refs", "cid");
         if (Files.exists(absCidRefsPath)) {
+            String warnMsg = "FileHashStore - deleteObjectByCid: cid refs file still contains"
+                + " references, skipping deletion.";
+            logFileHashStore.warn(warnMsg);
             // The cid is referenced by pids, do not delete.
             return;
 
@@ -1763,6 +1766,9 @@ public class FileHashStore implements HashStore {
             if (Files.exists(expectedRealPath)) {
                 Files.delete(expectedRealPath);
             }
+            String debugMsg = "FileHashStore - deleteObjectByCid: object deleted at"
+                + expectedRealPath;
+            logFileHashStore.debug(debugMsg);
             return;
         }
     }

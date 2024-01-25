@@ -917,11 +917,10 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Confirm tryDeleteCidObject overload method does not delete an object if pid and cid
-     * refs files exist.
+     * Confirm deleteObjectByCid method deletes object when there are no references.
      */
     @Test
-    public void tryDeleteCidObject_pidRefsExists() throws Exception {
+    public void deleteObjectByCid() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -931,8 +930,8 @@ public class FileHashStoreProtectedTest {
             ObjectMetadata objInfo = fileHashStore.storeObject(dataStream);
             String cid = objInfo.getCid();
 
-            // Set flag to true
-            fileHashStore.tryDeleteCidObject(cid);
+            // Try deleting the object
+            fileHashStore.deleteObjectByCid(cid);
 
             // Get permanent address of the actual cid
             Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
@@ -948,11 +947,11 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Confirm tryDeleteCidObject overload method does not delete an object if a cid refs file
-     * exists (pids still referencing it).
+     * Confirm deleteObjectByCid method does not delete an object if a cid refs file
+     * exists (pids still referencing the cid).
      */
     @Test
-    public void tryDeleteCidObject_cidRefsFileContainsPids() throws Exception {
+    public void tryDeleteObjectByCid_cidRefsFileContainsPids() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -963,8 +962,8 @@ public class FileHashStoreProtectedTest {
             );
             String cid = objInfo.getCid();
 
-            // Set flag to true
-            fileHashStore.tryDeleteCidObject(cid);
+            // Try deleting the object
+            fileHashStore.deleteObjectByCid(cid);
 
             // Get permanent address of the actual cid
             Path objRealPath = fileHashStore.getExpectedPath(pid, "object", null);
