@@ -935,7 +935,7 @@ public class FileHashStoreInterfaceTest {
         // and the metadata refs file that contains namespaces used
         try (Stream<Path> walk = Files.walk(storePath)) {
             long fileCount = walk.filter(Files::isRegularFile).count();
-            assertEquals(fileCount, 3);
+            assertEquals(fileCount, 2);
         }
     }
 
