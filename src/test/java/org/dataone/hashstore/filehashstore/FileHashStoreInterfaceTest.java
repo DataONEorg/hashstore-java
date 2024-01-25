@@ -1361,7 +1361,7 @@ public class FileHashStoreInterfaceTest {
 
             // Manually change the pid found in the cid refs file
             Path absPathCidRefsPath = fileHashStore.getExpectedPath(cid, "refs", "cid");
-            fileHashStore.updateCidRefsFiles(pidExtra, absPathCidRefsPath);
+            fileHashStore.updateRefsFile(pidExtra, absPathCidRefsPath);
             // Create an orphaned pid refs file
             fileHashStore.deleteCidRefsPid(pid, absPathCidRefsPath);
 

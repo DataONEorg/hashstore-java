@@ -713,7 +713,7 @@ public class FileHashStore implements HashStore {
                 // Only update cid refs file if pid is not in the file
                 boolean pidFoundInCidRefFiles = isStringInRefsFile(pid, absCidRefsPath);
                 if (!pidFoundInCidRefFiles) {
-                    updateCidRefsFiles(pid, absCidRefsPath);
+                    updateRefsFile(pid, absCidRefsPath);
                 }
                 // Get the pid refs file
                 File pidRefsTmpFile = writeRefsFile(cid, "pid");
@@ -1852,7 +1852,7 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Checks a given cid refs file for a pid. This is case-sensitive.
+     * Checks a given refs file for a ref. This is case-sensitive.
      * 
      * @param ref         Authority-based or persistent identifier to search
      * @param absRefsPath Path to the refs file to check
@@ -1872,13 +1872,13 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Updates a cid refs file with a pid that references the cid
+     * Updates a refs file with a pid that references the cid
      * 
-     * @param pid            Authority-based or persistent identifier
-     * @param absCidRefsPath Path to the cid refs file to update
+     * @param ref            Authority-based or persistent identifier
+     * @param absCidRefsPath Path to the refs file to update
      * @throws IOException Issue with updating a cid refs file
      */
-    protected void updateCidRefsFiles(String pid, Path absCidRefsPath) throws IOException {
+    protected void updateRefsFile(String ref, Path absRefsPath) throws IOException {
         // This update process is atomic, so we first write the updated content
         // into a temporary file before overwriting it.
         File tmpFile = FileHashStoreUtility.generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
@@ -1886,21 +1886,21 @@ public class FileHashStore implements HashStore {
         try {
             // Obtain a lock on the file before updating it
             try (FileChannel channel = FileChannel.open(
-                absCidRefsPath, StandardOpenOption.READ, StandardOpenOption.WRITE
+                absRefsPath, StandardOpenOption.READ, StandardOpenOption.WRITE
             ); FileLock ignored = channel.lock()) {
-                List<String> lines = new ArrayList<>(Files.readAllLines(absCidRefsPath));
-                lines.add(pid);
+                List<String> lines = new ArrayList<>(Files.readAllLines(absRefsPath));
+                lines.add(ref);
 
                 Files.write(tmpFilePath, lines, StandardOpenOption.WRITE);
-                move(tmpFile, absCidRefsPath.toFile(), "refs");
+                move(tmpFile, absRefsPath.toFile(), "refs");
                 logFileHashStore.debug(
-                    "FileHashStore.updateCidRefsFiles - Pid: " + pid
-                        + " has been added to cid refs file: " + absCidRefsPath
+                    "FileHashStore.updateRefsFile - Pid: " + ref
+                        + " has been added to cid refs file: " + absRefsPath
                 );
             }
             // The lock is automatically released when the try block exits
         } catch (IOException ioe) {
-            String errMsg = "FileHashStore.updateCidRefsFiles - " + ioe.getMessage();
+            String errMsg = "FileHashStore.updateRefsFile - " + ioe.getMessage();
             logFileHashStore.error(errMsg);
             throw new IOException(errMsg);
         }

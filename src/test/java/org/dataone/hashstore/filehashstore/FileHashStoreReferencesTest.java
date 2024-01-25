@@ -216,7 +216,7 @@ public class FileHashStoreReferencesTest {
      * Confirm that cid refs file has been updated successfully
      */
     @Test
-    public void updateCidRefsFiles_content() throws Exception {
+    public void updateRefsFile_content() throws Exception {
         String pid = "dou.test.1";
         String cid = "abcdef123456789";
         fileHashStore.tagObject(pid, cid);
@@ -225,7 +225,7 @@ public class FileHashStoreReferencesTest {
         Path cidRefsFilePath = fileHashStore.getExpectedPath(cid, "refs", "cid");
 
         String pidAdditional = "dou.test.2";
-        fileHashStore.updateCidRefsFiles("dou.test.2", cidRefsFilePath);
+        fileHashStore.updateRefsFile("dou.test.2", cidRefsFilePath);
 
         List<String> lines = Files.readAllLines(cidRefsFilePath);
         boolean pidOriginal_foundInCidRefFiles = false;
