@@ -126,7 +126,7 @@ public class FileHashStoreReferencesTest {
 
         // Check cid refs file
         Path cidRefsFilePath = fileHashStore.getExpectedPath(cid, "refs", "cid");
-        boolean pidFoundInCidRefFiles = fileHashStore.isPidInCidRefsFile(
+        boolean pidFoundInCidRefFiles = fileHashStore.isStringInRefsFile(
             pidAdditional, cidRefsFilePath
         );
         assertTrue(pidFoundInCidRefFiles);
@@ -283,7 +283,7 @@ public class FileHashStoreReferencesTest {
         Path cidRefsFilePath = fileHashStore.getExpectedPath(cid, "refs", "cid");
         fileHashStore.deleteCidRefsPid(pid, cidRefsFilePath);
 
-        assertFalse(fileHashStore.isPidInCidRefsFile(pid, cidRefsFilePath));
+        assertFalse(fileHashStore.isStringInRefsFile(pid, cidRefsFilePath));
     }
 
     /**

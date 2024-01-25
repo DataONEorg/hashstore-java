@@ -711,7 +711,7 @@ public class FileHashStore implements HashStore {
 
             } else if (Files.exists(absCidRefsPath)) {
                 // Only update cid refs file if pid is not in the file
-                boolean pidFoundInCidRefFiles = isPidInCidRefsFile(pid, absCidRefsPath);
+                boolean pidFoundInCidRefFiles = isStringInRefsFile(pid, absCidRefsPath);
                 if (!pidFoundInCidRefFiles) {
                     updateCidRefsFiles(pid, absCidRefsPath);
                 }
@@ -779,7 +779,7 @@ public class FileHashStore implements HashStore {
                 throw new OrphanPidRefsFileException(errMsg);
             }
             // If the pid is found in the expected cid refs file, return it
-            if (isPidInCidRefsFile(pid, absCidRefsPath)) {
+            if (isStringInRefsFile(pid, absCidRefsPath)) {
                 logFileHashStore.info(
                     "FileHashStore.findObject - Cid (" + cid + ") found for pid:" + pid
                 );
@@ -1804,7 +1804,7 @@ public class FileHashStore implements HashStore {
                 logFileHashStore.error(errMsg);
                 throw new IOException(errMsg);
             }
-            boolean pidFoundInCidRefFiles = isPidInCidRefsFile(pid, absCidRefsPath);
+            boolean pidFoundInCidRefFiles = isStringInRefsFile(pid, absCidRefsPath);
             if (!pidFoundInCidRefFiles) {
                 String errMsg = "FileHashStore.verifyHashStoreRefsFiles - Missing expected pid: "
                     + pid + " in cid refs file: " + absCidRefsPath;
@@ -1854,21 +1854,21 @@ public class FileHashStore implements HashStore {
     /**
      * Checks a given cid refs file for a pid. This is case-sensitive.
      * 
-     * @param pid            Authority-based or persistent identifier to search
-     * @param absCidRefsPath Path to the cid refs file to check
+     * @param ref         Authority-based or persistent identifier to search
+     * @param absRefsPath Path to the refs file to check
      * @return True if cid is found, false otherwise
      * @throws IOException If unable to read the cid refs file.
      */
-    protected boolean isPidInCidRefsFile(String pid, Path absCidRefsPath) throws IOException {
-        List<String> lines = Files.readAllLines(absCidRefsPath);
-        boolean pidFoundInCidRefFiles = false;
+    protected boolean isStringInRefsFile(String ref, Path absRefsPath) throws IOException {
+        List<String> lines = Files.readAllLines(absRefsPath);
+        boolean refFoundInCidRefFiles = false;
         for (String line : lines) {
-            if (line.equals(pid)) {
-                pidFoundInCidRefFiles = true;
+            if (line.equals(ref)) {
+                refFoundInCidRefFiles = true;
                 break;
             }
         }
-        return pidFoundInCidRefFiles;
+        return refFoundInCidRefFiles;
     }
 
     /**

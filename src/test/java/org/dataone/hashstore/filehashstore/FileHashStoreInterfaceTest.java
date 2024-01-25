@@ -491,8 +491,8 @@ public class FileHashStoreInterfaceTest {
 
             String cid = objInfo.getCid();
             Path absCidRefsPath = fileHashStore.getExpectedPath(cid, "refs", "cid");
-            assertTrue(fileHashStore.isPidInCidRefsFile(pid, absCidRefsPath));
-            assertTrue(fileHashStore.isPidInCidRefsFile(pidTwo, absCidRefsPath));
+            assertTrue(fileHashStore.isStringInRefsFile(pid, absCidRefsPath));
+            assertTrue(fileHashStore.isStringInRefsFile(pidTwo, absCidRefsPath));
         }
     }
 

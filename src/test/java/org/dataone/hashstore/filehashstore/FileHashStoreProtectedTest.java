@@ -873,10 +873,10 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Confirm that isPidInCidRefsFile returns true when pid is found
+     * Confirm that isStringInRefsFile returns true when pid is found
      */
     @Test
-    public void isPidInCidRefsFile_pidFound() throws Exception {
+    public void isStringInRefsFile_pidFound() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -892,15 +892,15 @@ public class FileHashStoreProtectedTest {
 
             String cid = objInfo.getCid();
             Path absCidRefsPath = fileHashStore.getExpectedPath(cid, "refs", "cid");
-            assertTrue(fileHashStore.isPidInCidRefsFile(pidTwo, absCidRefsPath));
+            assertTrue(fileHashStore.isStringInRefsFile(pidTwo, absCidRefsPath));
         }
     }
 
     /**
-     * Confirm that isPidInCidRefsFile returns false when pid is found
+     * Confirm that isStringInRefsFile returns false when pid is found
      */
     @Test
-    public void isPidInCidRefsFile_pidNotFound() throws Exception {
+    public void isStringInRefsFile_pidNotFound() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -912,7 +912,7 @@ public class FileHashStoreProtectedTest {
 
             String cid = objInfo.getCid();
             Path absCidRefsPath = fileHashStore.getExpectedPath(cid, "refs", "cid");
-            assertFalse(fileHashStore.isPidInCidRefsFile("pid.not.found", absCidRefsPath));
+            assertFalse(fileHashStore.isStringInRefsFile("pid.not.found", absCidRefsPath));
         }
     }
 
