@@ -31,6 +31,7 @@ import javax.xml.bind.DatatypeConverter;
 
 import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.exceptions.OrphanPidRefsFileException;
+import org.dataone.hashstore.exceptions.OrphanRefsFilesException;
 import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
 import org.dataone.hashstore.filehashstore.FileHashStore.HashStoreIdTypes;
 import org.dataone.hashstore.testdata.TestDataHarness;
@@ -1380,6 +1381,23 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
+     * Confirm deleteObject removes pid and cid refs orphan files
+     */
+    @Test
+    public void deleteObject_orphanRefsFiles() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        Path absPathCidRefsPath = fileHashStore.getExpectedPath(pid, "refs", "pid");
+        Path absPathPidRefsPath = fileHashStore.getExpectedPath(cid, "refs", "cid");
+
+        fileHashStore.deleteObject("pid", pid);
+        assertFalse(Files.exists(absPathCidRefsPath));
+        assertFalse(Files.exists(absPathPidRefsPath));
+    }
+
+    /**
      * Confirm that deleteObject throws exception when associated pid obj not found
      */
     @Test
@@ -1701,17 +1719,37 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Confirm expected cid is returned
+     * Check that findObject returns cid as expected.
      */
     @Test
     public void findObject_cid() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStream, pid, null, null, null, -1
+            );
+
+            String cidRetrieved = fileHashStore.findObject(pid);
+            assertEquals(cidRetrieved, objInfo.getCid());
+        }
+    }
+
+    /**
+     * Confirm findObject throws exception when cid object does not exist but reference
+     * files exist.
+     */
+    @Test
+    public void findObject_refsFileExistButObjectDoesNot() throws Exception {
         String pid = "dou.test.1";
         String cid = "abcdef123456789";
         fileHashStore.tagObject(pid, cid);
 
-        String cidRetrieved = fileHashStore.findObject(pid);
-
-        assertEquals(cid, cidRetrieved);
+        assertThrows(OrphanRefsFilesException.class, () -> {
+            fileHashStore.findObject(pid);
+        });
     }
 
     /**

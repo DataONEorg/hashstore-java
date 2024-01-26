@@ -37,6 +37,7 @@ import org.apache.commons.logging.LogFactory;
 import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.HashStore;
 import org.dataone.hashstore.exceptions.OrphanPidRefsFileException;
+import org.dataone.hashstore.exceptions.OrphanRefsFilesException;
 import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 
@@ -778,12 +779,25 @@ public class FileHashStore implements HashStore {
                 logFileHashStore.error(errMsg);
                 throw new OrphanPidRefsFileException(errMsg);
             }
-            // If the pid is found in the expected cid refs file, return it
+            // If the pid is found in the expected cid refs file, and the object exists, return it
             if (isStringInRefsFile(pid, absCidRefsPath)) {
                 logFileHashStore.info(
                     "FileHashStore.findObject - Cid (" + cid + ") found for pid:" + pid
                 );
-                return cid;
+
+                String objShardString = FileHashStoreUtility.getHierarchicalPathString(
+                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, cid
+                );
+                Path realPath = OBJECT_STORE_DIRECTORY.resolve(objShardString);
+                if (Files.exists(realPath)) {
+                    return cid;
+
+                } else {
+                    String errMsg = "FileHashStore.findObject - Object with cid: " + cid
+                        + " does not exist, but pid and cid reference file found for pid: " + pid;
+                    logFileHashStore.error(errMsg);
+                    throw new OrphanRefsFilesException(errMsg);
+                }
 
             } else {
                 String errMsg = "FileHashStore.deleteObject - Pid refs file exists, but pid (" + pid
@@ -797,7 +811,6 @@ public class FileHashStore implements HashStore {
             String errMsg = "FileHashStore.findObject - Unable to find cid for pid: " + pid
                 + ". Pid refs file does not exist at: " + absPidRefsPath;
             logFileHashStore.error(errMsg);
-            // Create custom exception class
             throw new FileNotFoundException(errMsg);
         }
     }
@@ -1057,7 +1070,7 @@ public class FileHashStore implements HashStore {
             throw new IllegalArgumentException(errMsg);
         }
 
-        // If 'idType' is cid, attempt to delete the object
+        // If 'idType' is cid, attempt to delete the object directly
         if (idType.equals(HashStoreIdTypes.cid.getName("cid"))) {
             deleteObjectByCid(id);
 
@@ -1070,13 +1083,33 @@ public class FileHashStore implements HashStore {
                 cid = findObject(id);
 
             } catch (OrphanPidRefsFileException oprfe) {
-                // Delete the pid refs file and return, nothing else to delete.
+                // Delete the pid refs file and return, nothing else to delete
                 Path absPidRefsPath = getExpectedPath(id, "refs", "pid");
                 Files.delete(absPidRefsPath);
 
                 String warnMsg =
                     "FileHashStore.deleteObject - Cid refs file does not exist for pid: " + id
                         + ". Deleted orphan pid refs file.";
+                logFileHashStore.warn(warnMsg);
+                return;
+
+            } catch (OrphanRefsFilesException orfe) {
+                // Object does not exist, attempt to remove orphan files
+                // Remove pid refs file
+                Path absPidRefsPath = getExpectedPath(id, "refs", "pid");
+                String cidRead = new String(Files.readAllBytes(absPidRefsPath));
+                Files.delete(absPidRefsPath);
+
+                // Remove the pid from the cid refs file
+                Path absCidRefsPath = getExpectedPath(cidRead, "refs", "cid");
+                updateRefsFile(pid, absCidRefsPath, "remove");
+                // Delete the cid reference file if it's now empty
+                if (Files.size(absCidRefsPath) == 0) {
+                    Files.delete(absCidRefsPath);
+                }
+                String warnMsg = "FileHashStore.deleteObject - Object with cid: " + cidRead
+                    + " does not exist, but pid and cid reference file found for pid: " + pid
+                    + ". Deleted orphan files.";
                 logFileHashStore.warn(warnMsg);
                 return;
 
