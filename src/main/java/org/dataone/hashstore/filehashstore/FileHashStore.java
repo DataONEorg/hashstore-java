@@ -877,13 +877,12 @@ public class FileHashStore implements HashStore {
                     + ". formatId: " + checkedFormatId
             );
             // Store metadata
-            String metadataCid = putMetadata(metadata, pid, checkedFormatId);
+            String pathToStoredMetadata = putMetadata(metadata, pid, checkedFormatId);
             logFileHashStore.info(
-                "FileHashStore.storeMetadata - Metadata stored for pid: " + pid
-                    + ". Metadata Content Identifier (metadataCid): " + metadataCid
+                "FileHashStore.storeMetadata - Metadata stored for pid: " + pid + " at: "
+                    + pathToStoredMetadata
             );
-            // TODO: Save formatId if it doesn't already exist
-            return metadataCid;
+            return pathToStoredMetadata;
 
         } catch (IOException ioe) {
             // Covers FileNotFoundException
@@ -2020,10 +2019,9 @@ public class FileHashStore implements HashStore {
         }
 
         // Get permanent address for the given metadata document
-        String metadataCid = FileHashStoreUtility.getPidHexDigest(
-            pid + checkedFormatId, OBJECT_STORE_ALGORITHM
-        );
-        Path metadataCidPath = getExpectedPath(pid, "metadata", checkedFormatId);
+        // All metadata documents for a pid are stored in a directory that is formed
+        // by using the hash of the 'pid', with the file name being the hash of the 'formatId'
+        Path pathToStoredMetadata = getExpectedPath(pid, "metadata", checkedFormatId);
 
         // Store metadata to tmpMetadataFile
         File tmpMetadataFile = FileHashStoreUtility.generateTmpFile(
@@ -2033,16 +2031,16 @@ public class FileHashStore implements HashStore {
         if (tmpMetadataWritten) {
             logFileHashStore.debug(
                 "FileHashStore.putMetadata - tmp metadata file has been written, moving to"
-                    + " permanent location: " + metadataCidPath
+                    + " permanent location: " + pathToStoredMetadata
             );
-            File permMetadataFile = metadataCidPath.toFile();
+            File permMetadataFile = pathToStoredMetadata.toFile();
             move(tmpMetadataFile, permMetadataFile, "metadata");
         }
         logFileHashStore.debug(
             "FileHashStore.putMetadata - Move metadata success, permanent address: "
-                + metadataCidPath
+                + pathToStoredMetadata
         );
-        return metadataCid;
+        return pathToStoredMetadata.toString();
     }
 
     /**
@@ -2103,13 +2101,20 @@ public class FileHashStore implements HashStore {
             realPath = OBJECT_STORE_DIRECTORY.resolve(objShardString);
 
         } else if (entity.equalsIgnoreCase("metadata")) {
-            String objectCid = FileHashStoreUtility.getPidHexDigest(
-                abId + formatId, OBJECT_STORE_ALGORITHM
+            // Get the pid metadata directory
+            String metadataCidPartOne = FileHashStoreUtility.getPidHexDigest(
+                abId, OBJECT_STORE_ALGORITHM
             );
-            String objShardString = FileHashStoreUtility.getHierarchicalPathString(
-                DIRECTORY_DEPTH, DIRECTORY_WIDTH, objectCid
+            String pidMetadataDirectory = FileHashStoreUtility.getHierarchicalPathString(
+                DIRECTORY_DEPTH, DIRECTORY_WIDTH, metadataCidPartOne
             );
-            realPath = METADATA_STORE_DIRECTORY.resolve(objShardString);
+            // The file name for the metadata document is the hash of the supplied 'formatId'
+            String metadataCidPartTwo = FileHashStoreUtility.getPidHexDigest(
+                formatId, OBJECT_STORE_ALGORITHM
+            );
+            realPath = METADATA_STORE_DIRECTORY.resolve(pidMetadataDirectory).resolve(
+                metadataCidPartTwo
+            );
 
         } else if (entity.equalsIgnoreCase("refs")) {
             if (formatId.equalsIgnoreCase("pid")) {

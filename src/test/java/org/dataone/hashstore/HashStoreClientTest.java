@@ -15,6 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import org.dataone.hashstore.filehashstore.FileHashStore;
+import org.dataone.hashstore.filehashstore.FileHashStoreUtility;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -211,10 +213,25 @@ public class HashStoreClientTest {
             HashStoreClient.main(args);
 
             // Confirm metadata was stored
-            Path absPath = getObjectAbsPath(
-                testData.pidData.get(pid).get("metadata_cid"), "metadata"
+            // Calculate absolute path
+            String storeAlgorithm = hsProperties.getProperty("storeAlgorithm");
+            int storeDepth = Integer.parseInt(hsProperties.getProperty("storeDepth"));
+            int storeWidth = Integer.parseInt(hsProperties.getProperty("storeWidth"));
+            Path metadataDirectory = Paths.get(hsProperties.getProperty("storePath")).resolve(
+                "metadata"
             );
-            assertTrue(Files.exists(absPath));
+            String metadataCidPartOne = FileHashStoreUtility.getPidHexDigest(pid, storeAlgorithm);
+            String pidMetadataDirectory = FileHashStoreUtility.getHierarchicalPathString(
+                storeDepth, storeWidth, metadataCidPartOne
+            );
+            // The file name for the metadata document is the hash of the supplied 'formatId'
+            String metadataCidPartTwo = FileHashStoreUtility.getPidHexDigest(
+                optFormatIdValue, storeAlgorithm
+            );
+            Path expectedMetadataPath = metadataDirectory.resolve(pidMetadataDirectory).resolve(
+                metadataCidPartTwo
+            );
+            assertTrue(Files.exists(expectedMetadataPath));
 
             // Put things back
             System.out.flush();

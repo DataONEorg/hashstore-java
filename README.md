@@ -99,7 +99,7 @@ tagObject(pid, cid)
 
 ###### Working with metadata (store, retrieve, delete)
 
-HashStore's '/metadata' directory holds all metadata for objects stored in HashStore. To differentiate between metadata documents for a given object, HashStore includes the 'formatId' (format or namespace of the metadata) when generating the address of the metadata document to store (the hash of the 'pid' + 'formatId'). By default, calling `storeMetadata` will use HashStore's default metadata namespace as the 'formatId' when storing metadata. Should the calling app wish to store multiple metadata files about an object, the client app is expected to provide a 'formatId' that represents an object format for the metadata type (ex. `storeMetadata(stream, pid, formatId)`). 
+HashStore's '/metadata' directory holds all metadata for objects stored in HashStore. All metadata documents related to a 'pid' are stored in a directory determined by calculating the hash of the pid (based on the store's algorithm). Each specific metadata document is then stored by calculating the hash of its associated `formatId`. By default, calling `storeMetadata` will use HashStore's default metadata namespace as the 'formatId' when storing metadata. Should the calling app wish to store multiple metadata files about an object, the client app is expected to provide a 'formatId' that represents an object format for the metadata type (ex. `storeMetadata(stream, pid, formatId)`). 
 
 **How do I retrieve a metadata file?**
 - To find a metadata object, call the Public API method `retrieveMetadata` which returns a stream to the metadata file that's been stored with the default metadata namespace if it exists.
@@ -145,7 +145,7 @@ These reference files are implemented in HashStore underneath the hood with no e
 └─ objects
     └─ /d5/95/3b/d802fa74edea72eb941...00d154a727ed7c2
 └─ metadata
-    └─ /15/8d/7e/55c36a810d7c14479c9...b20d7df66768b04
+    └─ /d5/95/3b/d802fa74edea72eb941...00d154a727ed7c2/affe1b6dd20659c63e99e63a29c...579c2d688880adc
 └─ refs
     └─ pid/0d/55/5e/d77052d7e166017f779...7230bcf7abcef65e
     └─ cid/d5/95/3b/d802fa74edea72eb941...00d154a727ed7c2

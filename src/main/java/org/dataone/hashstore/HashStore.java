@@ -176,7 +176,7 @@ public interface HashStore {
          * @param metadata Input stream to metadata document
          * @param pid      Authority-based identifier
          * @param formatId Metadata namespace/format
-         * @return Metadata content identifier (string representing metadata address)
+         * @return Path to metadata content identifier (string representing metadata address)
          * @throws IOException              When there is an error writing the metadata document
          * @throws IllegalArgumentException Invalid values like null for metadata, or empty pids and
          *                                  formatIds

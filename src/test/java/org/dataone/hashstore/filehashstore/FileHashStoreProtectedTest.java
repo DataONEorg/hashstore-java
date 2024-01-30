@@ -691,17 +691,14 @@ public class FileHashStoreProtectedTest {
             Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
 
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
-            String metadataCid = fileHashStore.putMetadata(metadataStream, pid, null);
+            String metadataPath = fileHashStore.putMetadata(metadataStream, pid, null);
 
-            // Get relative path
-            String metadataCidShardString = FileHashStoreUtility.getHierarchicalPathString(
-                3, 2, metadataCid
+            // Calculate absolute path
+            String storeMetadataNamespace = fhsProperties.getProperty("storeMetadataNamespace");
+            Path metadataPidExpectedPath = fileHashStore.getExpectedPath(
+                pid, "metadata", storeMetadataNamespace
             );
-            // Get absolute path
-            Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
-            Path metadataCidAbsPath = storePath.resolve("metadata/" + metadataCidShardString);
-
-            assertTrue(Files.exists(metadataCidAbsPath));
+            assertEquals(metadataPath, metadataPidExpectedPath.toString());
         }
     }
 

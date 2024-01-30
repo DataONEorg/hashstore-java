@@ -718,20 +718,19 @@ public class FileHashStoreInterfaceTest {
             Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
 
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
-            String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, null);
+            String testFormatId = "https://test.arcticdata.io/ns";
+            String metadataPath = fileHashStore.storeMetadata(metadataStream, pid, testFormatId);
 
-            // Get relative path
-            String metadataCidShardString = FileHashStoreUtility.getHierarchicalPathString(
-                3, 2, metadataCid
+            // Calculate absolute path
+            Path metadataPidExpectedPath = fileHashStore.getExpectedPath(
+                pid, "metadata", testFormatId
             );
-            // Get absolute path
-            Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
-            Path metadataCidAbsPath = storePath.resolve("metadata/" + metadataCidShardString);
 
-            assertTrue(Files.exists(metadataCidAbsPath));
+            assertEquals(metadataPidExpectedPath.toString(), metadataPath);
+            assertTrue(Files.exists(metadataPidExpectedPath));
 
             long writtenMetadataFile = Files.size(testMetaDataFile);
-            long originalMetadataFie = Files.size(metadataCidAbsPath);
+            long originalMetadataFie = Files.size(metadataPidExpectedPath);
             assertEquals(writtenMetadataFile, originalMetadataFie);
         }
     }
@@ -748,20 +747,19 @@ public class FileHashStoreInterfaceTest {
             Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
 
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
-            String metadataCid = fileHashStore.storeMetadata(metadataStream, pid);
+            String metadataPath = fileHashStore.storeMetadata(metadataStream, pid);
 
-            // Get relative path
-            String metadataCidShardString = FileHashStoreUtility.getHierarchicalPathString(
-                3, 2, metadataCid
+            // Calculate absolute path
+            String storeMetadataNamespace = fhsProperties.getProperty("storeMetadataNamespace");
+            Path metadataPidExpectedPath = fileHashStore.getExpectedPath(
+                pid, "metadata", storeMetadataNamespace
             );
-            // Get absolute path
-            Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
-            Path metadataCidAbsPath = storePath.resolve("metadata/" + metadataCidShardString);
 
-            assertTrue(Files.exists(metadataCidAbsPath));
+            assertEquals(metadataPidExpectedPath.toString(), metadataPath);
+            assertTrue(Files.exists(metadataPidExpectedPath));
 
             long writtenMetadataFile = Files.size(testMetaDataFile);
-            long originalMetadataFie = Files.size(metadataCidAbsPath);
+            long originalMetadataFie = Files.size(metadataPidExpectedPath);
             assertEquals(writtenMetadataFile, originalMetadataFie);
         }
     }
@@ -778,18 +776,10 @@ public class FileHashStoreInterfaceTest {
             Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
 
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
-            String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, null);
-
-            // Get relative path
-            String metadataCidShardString = FileHashStoreUtility.getHierarchicalPathString(
-                3, 2, metadataCid
-            );
-            // Get absolute path
-            Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
-            Path metadataCidAbsPath = storePath.resolve("metadata/" + metadataCidShardString);
+            String metadataPath = fileHashStore.storeMetadata(metadataStream, pid, null);
 
             long writtenMetadataFile = Files.size(testMetaDataFile);
-            long originalMetadataFie = Files.size(metadataCidAbsPath);
+            long originalMetadataFie = Files.size(Paths.get(metadataPath));
             assertEquals(writtenMetadataFile, originalMetadataFie);
         }
     }
@@ -891,8 +881,13 @@ public class FileHashStoreInterfaceTest {
             try {
                 String formatId = "http://ns.dataone.org/service/types/v2.0";
                 InputStream metadataStream = Files.newInputStream(testMetaDataFile);
-                String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, formatId);
-                assertEquals(metadataCid, pidFormatHexDigest);
+                String metadataPath = fileHashStore.storeMetadata(metadataStream, pid, formatId);
+                // Calculate absolute path
+                String storeMetadataNamespace = fhsProperties.getProperty("storeMetadataNamespace");
+                Path metadataPidExpectedPath = fileHashStore.getExpectedPath(
+                    pid, "metadata", storeMetadataNamespace
+                );
+                assertEquals(metadataPath, metadataPidExpectedPath.toString());
             } catch (IOException | NoSuchAlgorithmException | InterruptedException e) {
                 e.printStackTrace();
             }
@@ -901,8 +896,13 @@ public class FileHashStoreInterfaceTest {
             try {
                 String formatId = "http://ns.dataone.org/service/types/v2.0";
                 InputStream metadataStream = Files.newInputStream(testMetaDataFile);
-                String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, formatId);
-                assertEquals(metadataCid, pidFormatHexDigest);
+                String metadataPath = fileHashStore.storeMetadata(metadataStream, pid, formatId);
+                // Calculate absolute path
+                String storeMetadataNamespace = fhsProperties.getProperty("storeMetadataNamespace");
+                Path metadataPidExpectedPath = fileHashStore.getExpectedPath(
+                    pid, "metadata", storeMetadataNamespace
+                );
+                assertEquals(metadataPath, metadataPidExpectedPath.toString());
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -911,8 +911,13 @@ public class FileHashStoreInterfaceTest {
             try {
                 String formatId = "http://ns.dataone.org/service/types/v2.0";
                 InputStream metadataStream = Files.newInputStream(testMetaDataFile);
-                String metadataCid = fileHashStore.storeMetadata(metadataStream, pid, formatId);
-                assertEquals(metadataCid, pidFormatHexDigest);
+                String metadataPath = fileHashStore.storeMetadata(metadataStream, pid, formatId);
+                // Calculate absolute path
+                String storeMetadataNamespace = fhsProperties.getProperty("storeMetadataNamespace");
+                Path metadataPidExpectedPath = fileHashStore.getExpectedPath(
+                    pid, "metadata", storeMetadataNamespace
+                );
+                assertEquals(metadataPath, metadataPidExpectedPath.toString());
             } catch (Exception e) {
                 e.printStackTrace();
             }
