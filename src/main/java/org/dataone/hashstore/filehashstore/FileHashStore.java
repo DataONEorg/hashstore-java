@@ -21,11 +21,13 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -1200,9 +1202,18 @@ public class FileHashStore implements HashStore {
         PidNotFoundInCidRefsFileException {
         // First, delete object as expected normally
         deleteObject("pid", pid);
-        // TODO:
-        // Calculate pid metadata directory
-        // Walk this folder, delete all files found
+
+        // Second, delete all metadata documents in the pid metadata directory
+        String pidHexDigest = FileHashStoreUtility.getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
+        String pidMetadataDirectory = FileHashStoreUtility.getHierarchicalPathString(
+            DIRECTORY_DEPTH, DIRECTORY_WIDTH, pidHexDigest
+        );
+        Path expectedPidMetadataDirectory = METADATA_STORE_DIRECTORY.resolve(pidMetadataDirectory);
+        Files.walk(expectedPidMetadataDirectory).sorted(Comparator.reverseOrder()).map(Path::toFile)
+            .forEach(File::delete);
+
+        // TODO: This process must be synchronized
+
         return;
     }
 

@@ -1314,11 +1314,48 @@ public class FileHashStoreInterfaceTest {
         );
     }
 
+
+    /**
+     * Confirm that deleteObject overload method with signature (String pid) deletes objects
+     * and all metadata documents.
+     */
+    @Test
+    public void deleteObject_stringPidAll() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
+
+            // Get metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            String testFormatId = "https://test.arcticdata.io/ns";
+            String metadataPath = fileHashStore.storeMetadata(metadataStream, pid, testFormatId);
+            String metadataDefaultPath = fileHashStore.storeMetadata(metadataStream, pid);
+            Path objCidAbsPath = fileHashStore.getExpectedPath(pid, "object", null);
+
+            // Confirm expected documents exist
+            assertTrue(Files.exists(Paths.get(metadataPath)));
+            assertTrue(Files.exists(Paths.get(metadataDefaultPath)));
+            assertTrue(Files.exists(objCidAbsPath));
+
+            fileHashStore.deleteObject(pid);
+
+            // Check documents have been deleted
+            assertFalse(Files.exists(Paths.get(metadataPath)));
+            assertFalse(Files.exists(Paths.get(metadataDefaultPath)));
+            assertFalse(Files.exists(objCidAbsPath));
+        }
+    }
+
+
     /**
      * Confirm that deleteObject deletes object
      */
     @Test
-    public void deleteObject_Pid_objectDeleted() throws Exception {
+    public void deleteObject_pidType_objectDeleted() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -1346,7 +1383,7 @@ public class FileHashStoreInterfaceTest {
      * Confirm that deleteObject deletes reference files
      */
     @Test
-    public void deleteObject_Pid_referencesDeleted() throws Exception {
+    public void deleteObject_pidType_referencesDeleted() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -1372,7 +1409,7 @@ public class FileHashStoreInterfaceTest {
      * has references).
      */
     @Test
-    public void deleteObject_Pid_CidRefsFileNotEmptyObjectExistsStill() throws Exception {
+    public void deleteObject_pidType_CidRefsFileNotEmptyObjectExistsStill() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -1403,7 +1440,7 @@ public class FileHashStoreInterfaceTest {
      * @throws Exception
      */
     @Test
-    public void deleteObject_Pid_pidOrphan() throws Exception {
+    public void deleteObject_pidType_pidOrphan() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
