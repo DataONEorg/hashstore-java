@@ -28,7 +28,6 @@ HashStore is a content-addressable file management system that utilizes the cont
 - retrieveObject
 - retrieveMetadata
 - deleteObject
-- deleteObjectAll
 - deleteMetadata
 - getHexDigest
 
@@ -92,8 +91,9 @@ tagObject(pid, cid)
 - If desired, this cid can then be used to locate the object on disk by following HashStore's store configuration.
 
 **How do I delete an object if I have the pid?**
-- To delete an object, call the Public API method `deleteObject` which will delete the object and its associated references and reference files where relevant.
-- To delete an object and all its related data (reference files and system metadata), call the Public API method `deleteObjectAll`
+- To delete an object and all its associated reference files, call the Public API method `deleteObject()` with `idType` 'pid'.
+- To delete only an object, call `deleteObject()` with `idType` 'cid' which will remove the object if it it is not referenced by any pids.
+- To delete an object and all its related data (reference files and system metadata), call the Public API method `deleteObject(String pid)`.
 - Note, `deleteObject` and `tagObject` calls are synchronized on their content identifier values so that the shared reference files are not unintentionally modified concurrently. An object that is in the process of being deleted should not be tagged, and vice versa. These calls have been implemented to occur sequentially to improve clarity in the event of an unexpected conflict or issue.
 
 
@@ -140,6 +140,7 @@ These reference files are implemented in HashStore underneath the hood with no e
 ## - Objects are stored using their content identifier as the file address
 ## - The reference file for each pid contains a single cid
 ## - The reference file for each cid contains multiple pids each on its own line
+## - There is one sysmeta document under the metadata directory for the pid hash
 
 .../metacat/hashstore/
 └─ objects
