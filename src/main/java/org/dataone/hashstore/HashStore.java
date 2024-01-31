@@ -243,11 +243,10 @@ public interface HashStore {
          * @param idType 'pid' or 'cid'
          * @param id     Authority-based identifier or content identifier
          * @throws IllegalArgumentException When pid is null or empty
-         * @throws FileNotFoundException    When requested pid has no associated object
          * @throws IOException              I/O error when deleting empty directories,
          *                                  modifying/deleting reference files
-         * @throws NoSuchAlgorithmException When algorithm used to calculate object address is not
-         *                                  supported
+         * @throws NoSuchAlgorithmException When algorithm used to calculate an object or metadata's
+         *                                  address is not supported
          * @throws InterruptedException     When deletion synchronization is interrupted
          */
         public void deleteObject(String idType, String id) throws IllegalArgumentException,

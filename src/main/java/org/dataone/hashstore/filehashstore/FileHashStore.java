@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -1051,9 +1050,8 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public void deleteObject(String idType, String id) throws IllegalArgumentException,
-        FileNotFoundException, IOException, NoSuchAlgorithmException, InterruptedException,
-        PidNotFoundInCidRefsFileException {
+    public void deleteObject(String idType, String id) throws IllegalArgumentException, IOException,
+        NoSuchAlgorithmException, InterruptedException, PidNotFoundInCidRefsFileException {
         logFileHashStore.debug(
             "FileHashStore.deleteObject - Called to delete object for id: " + id + "(" + idType
                 + ")"
@@ -1197,23 +1195,26 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public void deleteObject(String pid) throws IllegalArgumentException, FileNotFoundException,
-        IOException, NoSuchAlgorithmException, InterruptedException,
-        PidNotFoundInCidRefsFileException {
+    public void deleteObject(String pid) throws IllegalArgumentException, IOException,
+        NoSuchAlgorithmException, InterruptedException, PidNotFoundInCidRefsFileException {
         // First, delete object as expected normally
-        deleteObject("pid", pid);
+        // This is synchronized based on the 'cid' retrieved from the pid refs file
+        deleteObject(HashStoreIdTypes.pid.getName("pid"), pid);
 
-        // Second, delete all metadata documents in the pid metadata directory
+        // Second, delete all metadata documents in the associated pid metadata directory
         String pidHexDigest = FileHashStoreUtility.getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
         String pidMetadataDirectory = FileHashStoreUtility.getHierarchicalPathString(
             DIRECTORY_DEPTH, DIRECTORY_WIDTH, pidHexDigest
         );
         Path expectedPidMetadataDirectory = METADATA_STORE_DIRECTORY.resolve(pidMetadataDirectory);
-        Files.walk(expectedPidMetadataDirectory).sorted(Comparator.reverseOrder()).map(Path::toFile)
-            .forEach(File::delete);
 
-        // TODO: This process must be synchronized
-
+        // Check that directory exists and is not empty before attempting to delete metadata docs
+        if (Files.isDirectory(expectedPidMetadataDirectory) && !FileHashStoreUtility
+            .isDirectoryEmpty(expectedPidMetadataDirectory)) {
+            Files.walk(expectedPidMetadataDirectory).sorted(Comparator.reverseOrder()).map(
+                Path::toFile
+            ).forEach(File::delete);
+        }
         return;
     }
 

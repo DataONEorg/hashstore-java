@@ -1352,6 +1352,33 @@ public class FileHashStoreInterfaceTest {
 
 
     /**
+     * Confirm that deleteObject overload method with signature (String pid) deletes objects
+     * and does not throw exceptions if metadata documents do not exist.
+     */
+    @Test
+    public void deleteObject_stringPidNoMetadataDocs() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
+
+            // Get metadata file
+            Path objCidAbsPath = fileHashStore.getExpectedPath(pid, "object", null);
+
+            // Confirm expected documents exist
+            assertTrue(Files.exists(objCidAbsPath));
+
+            fileHashStore.deleteObject(pid);
+
+            // Check documents have been deleted
+            assertFalse(Files.exists(objCidAbsPath));
+        }
+    }
+
+
+    /**
      * Confirm that deleteObject deletes object
      */
     @Test
