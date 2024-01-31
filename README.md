@@ -77,7 +77,7 @@ objectMetadata objInfo = storeObject(InputStream, pid, additionalAlgorithm, chec
 // Manual Process
 // Store object
 objectMetadata objInfo = storeObject(InputStream)
-// Validate object, throws exceptions if there is a mismatch and deletes the associated file
+// Validate object, returns False if there is a mismatch and deletes the associated file
 verifyObject(objInfo, checksum, checksumAlgorithn, objSize)
 // Tag object, makes the object discoverable (find, retrieve, delete)
 tagObject(pid, cid)
@@ -116,7 +116,7 @@ HashStore assumes that every object to store has a respective identifier. This i
 - pid (persistent identifier) reference files 
 - cid (content identifier) reference files
 
-These reference files are implemented in HashStore underneath the hood with no expectation for modification from the calling app/client. The one and only exception to this process when the calling client/app does not have an identifier, and solely stores an objects raw bytes in HashStore (calling `storeObject(InputStream)`).
+These reference files are implemented in HashStore underneath the hood with no expectation for modification from the calling app/client. The one and only exception to this process is when the calling client/app does not have an identifier, and solely stores an objects raw bytes in HashStore (calling `storeObject(InputStream)`).
 
 **'pid' Reference Files**
 - Pid (persistent identifier) reference files are created when storing an object with an identifier.
