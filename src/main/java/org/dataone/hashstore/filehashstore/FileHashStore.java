@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -627,7 +628,7 @@ public class FileHashStore implements HashStore {
     @Override
     public boolean verifyObject(
         ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize
-    ) throws IOException, NoSuchAlgorithmException, IllegalArgumentException {
+    ) throws IllegalArgumentException {
         logFileHashStore.debug(
             "FileHashStore.verifyObject - Called to verify object with id: " + objectInfo.getCid()
         );
@@ -1050,7 +1051,7 @@ public class FileHashStore implements HashStore {
 
     @Override
     public void deleteObject(String idType, String id) throws IllegalArgumentException, IOException,
-        NoSuchAlgorithmException, InterruptedException, PidNotFoundInCidRefsFileException {
+        NoSuchAlgorithmException, InterruptedException {
         logFileHashStore.debug(
             "FileHashStore.deleteObject - Called to delete object for id: " + id + "(" + idType
                 + ")"
@@ -1077,15 +1078,15 @@ public class FileHashStore implements HashStore {
             String pid = id;
             try {
                 // Begin by looking for the cid and confirming state
-                cid = findObject(id);
+                cid = findObject(pid);
 
             } catch (OrphanPidRefsFileException oprfe) {
                 // Delete the pid refs file and return, nothing else to delete
-                Path absPidRefsPath = getExpectedPath(id, "refs", "pid");
+                Path absPidRefsPath = getExpectedPath(pid, "refs", "pid");
                 Files.delete(absPidRefsPath);
 
                 String warnMsg =
-                    "FileHashStore.deleteObject - Cid refs file does not exist for pid: " + id
+                    "FileHashStore.deleteObject - Cid refs file does not exist for pid: " + pid
                         + ". Deleted orphan pid refs file.";
                 logFileHashStore.warn(warnMsg);
                 return;
@@ -1195,7 +1196,10 @@ public class FileHashStore implements HashStore {
 
     @Override
     public void deleteObject(String pid) throws IllegalArgumentException, IOException,
-        NoSuchAlgorithmException, InterruptedException, PidNotFoundInCidRefsFileException {
+        NoSuchAlgorithmException, InterruptedException {
+        logFileHashStore.debug(
+            "FileHashStore.deleteObject - Called to delete all associated docs for pid: " + pid
+        );
         // First, delete object as expected normally
         // This is synchronized based on the 'cid' retrieved from the pid refs file
         deleteObject(HashStoreIdTypes.pid.getName("pid"), pid);
@@ -1210,9 +1214,18 @@ public class FileHashStore implements HashStore {
         // Check that directory exists and is not empty before attempting to delete metadata docs
         if (Files.isDirectory(expectedPidMetadataDirectory) && !FileHashStoreUtility
             .isDirectoryEmpty(expectedPidMetadataDirectory)) {
-            Files.walk(expectedPidMetadataDirectory).map(Path::toFile).forEach(File::delete);
+            try (Stream<Path> stream = Files.walk(expectedPidMetadataDirectory)) {
+                stream.map(Path::toFile).forEach(File::delete);
+
+            } catch (IOException ioe) {
+                logFileHashStore.warn(
+                    "FileHashStore.deleteObject - Unexpected IOException: " + ioe.getMessage()
+                );
+            }
         }
-        return;
+        logFileHashStore.info(
+            "FileHashStore.deleteObject - Object, references and metadata deleted for: " + pid
+        );
     }
 
     @Override
@@ -1234,7 +1247,6 @@ public class FileHashStore implements HashStore {
             String errMsg = "FileHashStore.deleteMetadata - File does not exist for pid: " + pid
                 + " with metadata address: " + metadataCidPath;
             logFileHashStore.warn(errMsg);
-            return;
 
         } else {
             // Proceed to delete
@@ -1250,8 +1262,8 @@ public class FileHashStore implements HashStore {
      * Overload method for deleteMetadata with default metadata namespace
      */
     @Override
-    public void deleteMetadata(String pid) throws IllegalArgumentException, FileNotFoundException,
-        IOException, NoSuchAlgorithmException {
+    public void deleteMetadata(String pid) throws IllegalArgumentException, IOException,
+        NoSuchAlgorithmException {
         deleteMetadata(pid, DEFAULT_METADATA_NAMESPACE);
     }
 
@@ -1425,15 +1437,13 @@ public class FileHashStore implements HashStore {
      * @param requestValidation Boolean to decide whether to proceed with validation
      * @param checksum          Expected checksum value of object
      * @param checksumAlgorithm Hash algorithm of checksum value
-     * @param tmpFile           tmpFile that has been written
-     * @param hexDigests        Map of the hex digests available to check with
      * @param tmpFile           Path to the file that is being evaluated
      * @param hexDigests        Map of the hex digests to parse data from
      * @param objSize           Expected size of object
      * @param storedObjFileSize Actual size of object stored
-     * @return
-     * @throws NoSuchAlgorithmException
-     * @throws IOException
+     * @return Boolean, true if valid
+     * @throws NoSuchAlgorithmException If algorithm requested to validate against is absent
+     * @throws IOException Issue with deleting tmpFile
      */
     private boolean validateTmpObject(
         boolean requestValidation, String checksum, String checksumAlgorithm, Path tmpFile,
@@ -1490,7 +1500,6 @@ public class FileHashStore implements HashStore {
                             + " is not equal to the calculated hex digest: " + digestFromHexDigests
                             + ". Checksum" + " provided: " + checksum
                             + ". Failed to delete tmpFile: " + tmpFile + ". " + ge.getMessage();
-                    ;
                     logFileHashStore.error(errMsg);
                     throw new IOException(errMsg);
                 }
@@ -1782,8 +1791,8 @@ public class FileHashStore implements HashStore {
      * has pids that references it and/or a cid refs file exists, the object will not be deleted.
      * 
      * @param cid Content identifier
-     * @throws IOException
-     * @throws NoSuchAlgorithmException
+     * @throws IOException If an issue arises during deletion of object
+     * @throws NoSuchAlgorithmException Incompatible algorithm used to find relative path to cid
      */
     protected void deleteObjectByCid(String cid) throws IOException, NoSuchAlgorithmException {
         Path absCidRefsPath = getExpectedPath(cid, "refs", "cid");
@@ -1792,7 +1801,6 @@ public class FileHashStore implements HashStore {
                 + " references, skipping deletion.";
             logFileHashStore.warn(warnMsg);
             // The cid is referenced by pids, do not delete.
-            return;
 
         } else {
             // Get permanent address of the actual cid
@@ -1808,7 +1816,6 @@ public class FileHashStore implements HashStore {
             String debugMsg = "FileHashStore - deleteObjectByCid: object deleted at"
                 + expectedRealPath;
             logFileHashStore.debug(debugMsg);
-            return;
         }
     }
 

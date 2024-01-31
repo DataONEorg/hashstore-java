@@ -1332,20 +1332,23 @@ public class FileHashStoreInterfaceTest {
             Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
             String testFormatId = "https://test.arcticdata.io/ns";
-            String metadataPath = fileHashStore.storeMetadata(metadataStream, pid, testFormatId);
-            String metadataDefaultPath = fileHashStore.storeMetadata(metadataStream, pid);
+            String metadataPathString = fileHashStore.storeMetadata(metadataStream, pid,
+                                                                  testFormatId);
+            String metadataDefaultPathString = fileHashStore.storeMetadata(metadataStream, pid);
             Path objCidAbsPath = fileHashStore.getExpectedPath(pid, "object", null);
+            Path metadataPath = Paths.get(metadataPathString);
+            Path metadataDefaultPath = Paths.get(metadataDefaultPathString);
 
             // Confirm expected documents exist
-            assertTrue(Files.exists(Paths.get(metadataPath)));
-            assertTrue(Files.exists(Paths.get(metadataDefaultPath)));
+            assertTrue(Files.exists(metadataPath));
+            assertTrue(Files.exists(metadataDefaultPath));
             assertTrue(Files.exists(objCidAbsPath));
 
             fileHashStore.deleteObject(pid);
 
             // Check documents have been deleted
-            assertFalse(Files.exists(Paths.get(metadataPath)));
-            assertFalse(Files.exists(Paths.get(metadataDefaultPath)));
+            assertFalse(Files.exists(metadataPath));
+            assertFalse(Files.exists(metadataDefaultPath));
             assertFalse(Files.exists(objCidAbsPath));
         }
     }
@@ -1463,8 +1466,6 @@ public class FileHashStoreInterfaceTest {
     /**
      * Confirm that deleteObject removes an orphan pid reference file when the associated cid refs
      * file does not contain the expected pid.
-     * 
-     * @throws Exception
      */
     @Test
     public void deleteObject_pidType_pidOrphan() throws Exception {

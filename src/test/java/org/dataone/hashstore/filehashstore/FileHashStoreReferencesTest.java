@@ -304,7 +304,7 @@ public class FileHashStoreReferencesTest {
         fileHashStore.updateRefsFile(pidAdditional, cidRefsFilePath, "remove");
 
         assertTrue(Files.exists(cidRefsFilePath));
-        assertTrue(Files.size(cidRefsFilePath) == 0);
+        assertEquals(0, Files.size(cidRefsFilePath));
     }
 
     /**
