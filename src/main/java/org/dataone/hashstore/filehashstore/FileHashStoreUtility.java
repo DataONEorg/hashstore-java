@@ -102,7 +102,7 @@ public class FileHashStoreUtility {
      * @return True if a file is found or the directory is empty, False otherwise
      * @throws IOException If I/O occurs when accessing directory
      */
-    public static boolean isDirectoryEmpty(Path directory) throws IOException {
+    public static boolean dirContainsFiles(Path directory) throws IOException {
         try (Stream<Path> stream = Files.list(directory)) {
             // The findFirst() method is called on the stream created from the given
             // directory to retrieve the first element. If the stream is empty (i.e., the
@@ -112,7 +112,7 @@ public class FileHashStoreUtility {
             // findFirst(). If the Optional contains a value (i.e., an element was found),
             // isPresent() returns true. If the Optional is empty (i.e., the stream is
             // empty), isPresent() returns false.
-            return !stream.findFirst().isPresent();
+            return stream.findFirst().isPresent();
         }
     }
 

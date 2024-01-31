@@ -282,7 +282,7 @@ public class FileHashStore implements HashStore {
             );
 
             if (Files.isDirectory(storePath)) {
-                if (!FileHashStoreUtility.isDirectoryEmpty(storePath)) {
+                if (FileHashStoreUtility.dirContainsFiles(storePath)) {
                     String errMsg = "FileHashStore - Missing 'hashstore.yaml' but directories"
                         + " and/or objects found.";
                     logFileHashStore.fatal(errMsg);
@@ -1212,8 +1212,8 @@ public class FileHashStore implements HashStore {
         Path expectedPidMetadataDirectory = METADATA_STORE_DIRECTORY.resolve(pidRelativePath);
 
         // Check that directory exists and is not empty before attempting to delete metadata docs
-        if (Files.isDirectory(expectedPidMetadataDirectory) && !FileHashStoreUtility
-            .isDirectoryEmpty(expectedPidMetadataDirectory)) {
+        if (Files.isDirectory(expectedPidMetadataDirectory) && FileHashStoreUtility.dirContainsFiles(
+            expectedPidMetadataDirectory)) {
             try (Stream<Path> stream = Files.walk(expectedPidMetadataDirectory)) {
                 stream.map(Path::toFile).forEach(File::delete);
 
