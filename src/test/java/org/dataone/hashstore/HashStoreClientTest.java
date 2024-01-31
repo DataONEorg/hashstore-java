@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-import org.dataone.hashstore.filehashstore.FileHashStore;
 import org.dataone.hashstore.filehashstore.FileHashStoreUtility;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.jupiter.api.BeforeEach;

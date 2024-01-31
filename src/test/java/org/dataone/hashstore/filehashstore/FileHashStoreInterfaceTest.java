@@ -923,8 +923,6 @@ public class FileHashStoreInterfaceTest {
         String pidFormatted = pid.replace("/", "_");
         // Get test metadata file
         Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
-        String pidFormatHexDigest =
-            "ddf07952ef28efc099d10d8b682480f7d2da60015f5d8873b6e1ea75b4baf689";
 
         // Create a thread pool with 3 threads
         ExecutorService executorService = Executors.newFixedThreadPool(3);

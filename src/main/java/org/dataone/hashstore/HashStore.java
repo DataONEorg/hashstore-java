@@ -259,16 +259,10 @@ public interface HashStore {
          * will not be deleted.
          * 
          * @param pid Authority-based identifier
-         * @throws IllegalArgumentException When pid is null or empty
-         * @throws FileNotFoundException    When requested pid has no associated object
-         * @throws IOException              I/O error when deleting empty directories,
-         *                                  modifying/deleting reference files
-         * @throws NoSuchAlgorithmException When algorithm used to calculate object address is not
-         *                                  supported
-         * @throws InterruptedException     When deletion synchronization is interrupted
+         * @see #deleteObject(String, String) for more details.
          */
-        public void deleteObjectAll(String pid) throws IllegalArgumentException,
-                FileNotFoundException, IOException, NoSuchAlgorithmException, InterruptedException;
+        public void deleteObject(String pid) throws IllegalArgumentException, FileNotFoundException,
+                IOException, NoSuchAlgorithmException, InterruptedException;
 
         /**
          * Deletes a metadata document (ex. `sysmeta`) permanently from HashStore using a given

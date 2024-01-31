@@ -175,7 +175,6 @@ public class FileHashStore implements HashStore {
             Files.createDirectories(REFS_TMP_FILE_DIRECTORY);
             Files.createDirectories(REFS_PID_FILE_DIRECTORY);
             Files.createDirectories(REFS_CID_FILE_DIRECTORY);
-            // TODO: Create formatId-namespace tracking document
             logFileHashStore.debug("FileHashStore - Created store and store tmp directories.");
 
         } catch (IOException ioe) {
@@ -1196,15 +1195,14 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public void deleteObjectAll(String pid) throws IllegalArgumentException, FileNotFoundException,
+    public void deleteObject(String pid) throws IllegalArgumentException, FileNotFoundException,
         IOException, NoSuchAlgorithmException, InterruptedException,
         PidNotFoundInCidRefsFileException {
         // First, delete object as expected normally
         deleteObject("pid", pid);
         // TODO:
-        // Then look for and remove all related sysmeta
-        // Open metadata reference file, read all the format types
-        // Call 'delete_metadata(pid, formatId)' for all types
+        // Calculate pid metadata directory
+        // Walk this folder, delete all files found
         return;
     }
 
