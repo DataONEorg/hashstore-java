@@ -785,10 +785,10 @@ public class FileHashStore implements HashStore {
                     "FileHashStore.findObject - Cid (" + cid + ") found for pid:" + pid
                 );
 
-                String objShardString = FileHashStoreUtility.getHierarchicalPathString(
+                String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
                     DIRECTORY_DEPTH, DIRECTORY_WIDTH, cid
                 );
-                Path realPath = OBJECT_STORE_DIRECTORY.resolve(objShardString);
+                Path realPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
                 if (Files.exists(realPath)) {
                     return cid;
 
@@ -1203,10 +1203,10 @@ public class FileHashStore implements HashStore {
 
         // Second, delete all metadata documents in the associated pid metadata directory
         String pidHexDigest = FileHashStoreUtility.getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
-        String pidMetadataDirectory = FileHashStoreUtility.getHierarchicalPathString(
+        String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
             DIRECTORY_DEPTH, DIRECTORY_WIDTH, pidHexDigest
         );
-        Path expectedPidMetadataDirectory = METADATA_STORE_DIRECTORY.resolve(pidMetadataDirectory);
+        Path expectedPidMetadataDirectory = METADATA_STORE_DIRECTORY.resolve(pidRelativePath);
 
         // Check that directory exists and is not empty before attempting to delete metadata docs
         if (Files.isDirectory(expectedPidMetadataDirectory) && !FileHashStoreUtility
@@ -1396,10 +1396,10 @@ public class FileHashStore implements HashStore {
 
         // Gather the elements to form the permanent address
         String objectCid = hexDigests.get(OBJECT_STORE_ALGORITHM);
-        String objShardString = FileHashStoreUtility.getHierarchicalPathString(
+        String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
             DIRECTORY_DEPTH, DIRECTORY_WIDTH, objectCid
         );
-        Path objRealPath = OBJECT_STORE_DIRECTORY.resolve(objShardString);
+        Path objRealPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
 
         // Confirm that the object does not yet exist, delete tmpFile if so
         if (Files.exists(objRealPath)) {
@@ -1799,10 +1799,10 @@ public class FileHashStore implements HashStore {
 
         } else {
             // Get permanent address of the actual cid
-            String objShardString = FileHashStoreUtility.getHierarchicalPathString(
+            String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
                 DIRECTORY_DEPTH, DIRECTORY_WIDTH, cid
             );
-            Path expectedRealPath = OBJECT_STORE_DIRECTORY.resolve(objShardString);
+            Path expectedRealPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
 
             // If file exists, delete it.
             if (Files.exists(expectedRealPath)) {
@@ -2105,24 +2105,24 @@ public class FileHashStore implements HashStore {
         if (entity.equalsIgnoreCase("object")) {
             // 'abId' is expected to be a pid
             String objectCid = findObject(abId);
-            String objShardString = FileHashStoreUtility.getHierarchicalPathString(
+            String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
                 DIRECTORY_DEPTH, DIRECTORY_WIDTH, objectCid
             );
-            realPath = OBJECT_STORE_DIRECTORY.resolve(objShardString);
+            realPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
 
         } else if (entity.equalsIgnoreCase("metadata")) {
             // Get the pid metadata directory
             String metadataCidPartOne = FileHashStoreUtility.getPidHexDigest(
                 abId, OBJECT_STORE_ALGORITHM
             );
-            String pidMetadataDirectory = FileHashStoreUtility.getHierarchicalPathString(
+            String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
                 DIRECTORY_DEPTH, DIRECTORY_WIDTH, metadataCidPartOne
             );
             // The file name for the metadata document is the hash of the supplied 'formatId'
             String metadataCidPartTwo = FileHashStoreUtility.getPidHexDigest(
                 formatId, OBJECT_STORE_ALGORITHM
             );
-            realPath = METADATA_STORE_DIRECTORY.resolve(pidMetadataDirectory).resolve(
+            realPath = METADATA_STORE_DIRECTORY.resolve(pidRelativePath).resolve(
                 metadataCidPartTwo
             );
 
@@ -2131,15 +2131,15 @@ public class FileHashStore implements HashStore {
                 String pidRefId = FileHashStoreUtility.getPidHexDigest(
                     abId, OBJECT_STORE_ALGORITHM
                 );
-                String pidShardString = FileHashStoreUtility.getHierarchicalPathString(
+                String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
                     DIRECTORY_DEPTH, DIRECTORY_WIDTH, pidRefId
                 );
-                realPath = REFS_PID_FILE_DIRECTORY.resolve(pidShardString);
+                realPath = REFS_PID_FILE_DIRECTORY.resolve(pidRelativePath);
             } else if (formatId.equalsIgnoreCase("cid")) {
-                String cidShardString = FileHashStoreUtility.getHierarchicalPathString(
+                String cidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
                     DIRECTORY_DEPTH, DIRECTORY_WIDTH, abId
                 );
-                realPath = REFS_CID_FILE_DIRECTORY.resolve(cidShardString);
+                realPath = REFS_CID_FILE_DIRECTORY.resolve(cidRelativePath);
             } else {
                 String errMsg =
                     "FileHashStore.getExpectedPath - formatId must be 'pid' or 'cid' when entity is 'refs'";
