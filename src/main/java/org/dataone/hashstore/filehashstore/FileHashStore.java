@@ -21,7 +21,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -1211,9 +1210,7 @@ public class FileHashStore implements HashStore {
         // Check that directory exists and is not empty before attempting to delete metadata docs
         if (Files.isDirectory(expectedPidMetadataDirectory) && !FileHashStoreUtility
             .isDirectoryEmpty(expectedPidMetadataDirectory)) {
-            Files.walk(expectedPidMetadataDirectory).sorted(Comparator.reverseOrder()).map(
-                Path::toFile
-            ).forEach(File::delete);
+            Files.walk(expectedPidMetadataDirectory).map(Path::toFile).forEach(File::delete);
         }
         return;
     }
