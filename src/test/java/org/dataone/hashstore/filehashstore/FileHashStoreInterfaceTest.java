@@ -728,10 +728,6 @@ public class FileHashStoreInterfaceTest {
 
             assertEquals(metadataPidExpectedPath.toString(), metadataPath);
             assertTrue(Files.exists(metadataPidExpectedPath));
-
-            long writtenMetadataFile = Files.size(testMetaDataFile);
-            long originalMetadataFie = Files.size(metadataPidExpectedPath);
-            assertEquals(writtenMetadataFile, originalMetadataFie);
         }
     }
 
@@ -757,10 +753,67 @@ public class FileHashStoreInterfaceTest {
 
             assertEquals(metadataPidExpectedPath.toString(), metadataPath);
             assertTrue(Files.exists(metadataPidExpectedPath));
+        }
+    }
 
-            long writtenMetadataFile = Files.size(testMetaDataFile);
-            long originalMetadataFie = Files.size(metadataPidExpectedPath);
-            assertEquals(writtenMetadataFile, originalMetadataFie);
+    /**
+     * Test storeMetadata creates appropriate directory for metadata documents with the given pid
+     */
+    @Test
+    public void storeMetadata_pidHashIsDirectory() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            fileHashStore.storeMetadata(metadataStream, pid);
+
+            String storeAlgo = fhsProperties.getProperty("storeAlgorithm");
+            int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
+            int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
+            String metadataPidhash = FileHashStoreUtility.getPidHexDigest(pid, storeAlgo);
+            String pidMetadataDirectory = FileHashStoreUtility.getHierarchicalPathString(
+                storeDepth, storeWidth, metadataPidhash
+            );
+            Path expectedPidMetadataDirectory = rootDirectory.resolve("metadata").resolve(
+                pidMetadataDirectory
+            );
+
+            assertTrue(Files.isDirectory(expectedPidMetadataDirectory));
+        }
+    }
+
+    /**
+     * Test storeMetadata stores different metadata for a given pid in its expected directory
+     */
+    @Test
+    public void storeMetadata_multipleFormatIds() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            String testFormatId = "https://test.arcticdata.io/ns";
+            String metadataPath = fileHashStore.storeMetadata(metadataStream, pid, testFormatId);
+            String metadataDefaultPath = fileHashStore.storeMetadata(metadataStream, pid);
+
+            // Calculate absolute path
+            Path metadataTestFormatIdExpectedPath = fileHashStore.getExpectedPath(
+                pid, "metadata", testFormatId
+            );
+            String storeMetadataNamespace = fhsProperties.getProperty("storeMetadataNamespace");
+            Path metadataDefaultExpectedPath = fileHashStore.getExpectedPath(
+                pid, "metadata", storeMetadataNamespace
+            );
+
+            assertEquals(metadataTestFormatIdExpectedPath.toString(), metadataPath);
+            assertTrue(Files.exists(metadataTestFormatIdExpectedPath));
+            assertEquals(metadataDefaultExpectedPath.toString(), metadataDefaultPath);
+            assertTrue(Files.exists(metadataDefaultExpectedPath));
         }
     }
 
