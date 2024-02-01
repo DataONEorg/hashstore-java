@@ -1362,31 +1362,18 @@ public class FileHashStore implements HashStore {
         PidRefsFileExistsException, IllegalArgumentException, NullPointerException,
         AtomicMoveNotSupportedException {
         logFileHashStore.debug("FileHashStore.putObject - Called to put object for pid: " + pid);
-
-        // Validate algorithms if not null or empty, throws exception if not supported
+        // If validation is desired, checksumAlgorithm and checksum must both be present
+        boolean requestValidation = verifyChecksumParameters(checksum, checksumAlgorithm);
+        // Validate additional algorithm if not null or empty, throws exception if not supported
         if (additionalAlgorithm != null) {
             FileHashStoreUtility.checkForEmptyString(
                 additionalAlgorithm, "additionalAlgorithm", "putObject"
             );
             validateAlgorithm(additionalAlgorithm);
         }
-        // checksumAlgorithm should be evaluated as a pair, catch it earlier
-        // The way this checks must be very clear or else it's difficult to understand
-        if (checksumAlgorithm != null) {
-            FileHashStoreUtility.checkForEmptyString(
-                checksumAlgorithm, "checksumAlgorithm", "putObject"
-            );
-            validateAlgorithm(checksumAlgorithm);
-        }
-        if (checksum != null) {
-            FileHashStoreUtility.checkForEmptyString(checksum, "checksum", "putObject");
-        }
         if (objSize != -1) {
             FileHashStoreUtility.checkNotNegativeOrZero(objSize, "putObject");
         }
-
-        // If validation is desired, checksumAlgorithm and checksum must both be present
-        boolean requestValidation = verifyChecksumParameters(checksum, checksumAlgorithm);
 
         // Generate tmp file and write to it
         logFileHashStore.debug("FileHashStore.putObject - Generating tmpFile");
@@ -1588,6 +1575,16 @@ public class FileHashStore implements HashStore {
      */
     protected boolean verifyChecksumParameters(String checksum, String checksumAlgorithm)
         throws NoSuchAlgorithmException {
+        // First ensure algorithm is compatible and values are valid if they aren't null
+        if (checksumAlgorithm != null) {
+            FileHashStoreUtility.checkForEmptyString(
+                checksumAlgorithm, "checksumAlgorithm", "putObject"
+            );
+            validateAlgorithm(checksumAlgorithm);
+        }
+        if (checksum != null) {
+            FileHashStoreUtility.checkForEmptyString(checksum, "checksum", "putObject");
+        }
         // If checksum is supplied, checksumAlgorithm cannot be empty
         if (checksum != null && !checksum.trim().isEmpty()) {
             FileHashStoreUtility.ensureNotNull(
