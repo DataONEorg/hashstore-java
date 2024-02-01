@@ -50,7 +50,30 @@ public class ObjectMetadataTest {
     }
 
     /**
-     * Check ObjectMetadata get id
+     * Check ObjectMetadata pid is null by default
+     */
+    @Test
+    public void testObjectMetadataGetPid() {
+        ObjectMetadata objInfo = new ObjectMetadata(id, size, hexDigests);
+        String pid = objInfo.getPid();
+        assertEquals(pid, null);
+    }
+
+    /**
+     * Check ObjectMetadata pid is null by default
+     */
+    @Test
+    public void testObjectMetadataSetPid() {
+        ObjectMetadata objInfo = new ObjectMetadata(id, size, hexDigests);
+        String pidToSet = "dou.test.1";
+        objInfo.setPid(pidToSet);
+
+        String pidFromObjectMetadata = objInfo.getPid();
+        assertEquals(pidFromObjectMetadata, pidToSet);
+    }
+
+    /**
+     * Check ObjectMetadata get cid
      */
     @Test
     public void testObjectMetadataGetId() {
