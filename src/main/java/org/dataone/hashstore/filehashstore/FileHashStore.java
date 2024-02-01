@@ -163,8 +163,8 @@ public class FileHashStore implements HashStore {
         OBJECT_TMP_FILE_DIRECTORY = OBJECT_STORE_DIRECTORY.resolve("tmp");
         METADATA_TMP_FILE_DIRECTORY = METADATA_STORE_DIRECTORY.resolve("tmp");
         REFS_TMP_FILE_DIRECTORY = REFS_STORE_DIRECTORY.resolve("tmp");
-        REFS_PID_FILE_DIRECTORY = REFS_STORE_DIRECTORY.resolve("pid");
-        REFS_CID_FILE_DIRECTORY = REFS_STORE_DIRECTORY.resolve("cid");
+        REFS_PID_FILE_DIRECTORY = REFS_STORE_DIRECTORY.resolve(HashStoreIdTypes.pid.getName("pid"));
+        REFS_CID_FILE_DIRECTORY = REFS_STORE_DIRECTORY.resolve(HashStoreIdTypes.cid.getName("cid"));
 
         try {
             // Physically create object & metadata store and tmp directories
@@ -700,8 +700,8 @@ public class FileHashStore implements HashStore {
         }
 
         try {
-            Path absPidRefsPath = getExpectedPath(pid, "refs", "pid");
-            Path absCidRefsPath = getExpectedPath(cid, "refs", "cid");
+            Path absPidRefsPath = getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName("pid"));
+            Path absCidRefsPath = getExpectedPath(cid, "refs", HashStoreIdTypes.cid.getName("cid"));
 
             // Check that pid refs file doesn't exist yet
             if (Files.exists(absPidRefsPath)) {
@@ -717,7 +717,7 @@ public class FileHashStore implements HashStore {
                     updateRefsFile(pid, absCidRefsPath, "add");
                 }
                 // Get the pid refs file
-                File pidRefsTmpFile = writeRefsFile(cid, "pid");
+                File pidRefsTmpFile = writeRefsFile(cid, HashStoreIdTypes.pid.getName("pid"));
                 File absPathPidRefsFile = absPidRefsPath.toFile();
                 move(pidRefsTmpFile, absPathPidRefsFile, "refs");
                 // Verify tagging process, this throws exceptions if there's an issue
@@ -730,8 +730,8 @@ public class FileHashStore implements HashStore {
 
             } else {
                 // Get pid and cid refs files 
-                File pidRefsTmpFile = writeRefsFile(cid, "pid");
-                File cidRefsTmpFile = writeRefsFile(pid, "cid");
+                File pidRefsTmpFile = writeRefsFile(cid, HashStoreIdTypes.pid.getName("pid"));
+                File cidRefsTmpFile = writeRefsFile(pid, HashStoreIdTypes.cid.getName("cid"));
                 // Move refs files to permanent location
                 File absPathPidRefsFile = absPidRefsPath.toFile();
                 File absPathCidRefsFile = absCidRefsPath.toFile();
@@ -765,11 +765,11 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "findObject");
 
         // Get path of the pid references file
-        Path absPidRefsPath = getExpectedPath(pid, "refs", "pid");
+        Path absPidRefsPath = getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName("pid"));
 
         if (Files.exists(absPidRefsPath)) {
             String cid = new String(Files.readAllBytes(absPidRefsPath));
-            Path absCidRefsPath = getExpectedPath(cid, "refs", "cid");
+            Path absCidRefsPath = getExpectedPath(cid, "refs", HashStoreIdTypes.cid.getName("cid"));
 
             // Throw exception if the cid refs file doesn't exist
             if (!Files.exists(absCidRefsPath)) {
@@ -1082,7 +1082,9 @@ public class FileHashStore implements HashStore {
 
             } catch (OrphanPidRefsFileException oprfe) {
                 // Delete the pid refs file and return, nothing else to delete
-                Path absPidRefsPath = getExpectedPath(pid, "refs", "pid");
+                Path absPidRefsPath = getExpectedPath(
+                    pid, "refs", HashStoreIdTypes.pid.getName("pid")
+                );
                 Files.delete(absPidRefsPath);
 
                 String warnMsg =
@@ -1094,12 +1096,16 @@ public class FileHashStore implements HashStore {
             } catch (OrphanRefsFilesException orfe) {
                 // Object does not exist, attempt to remove orphan files
                 // Remove pid refs file
-                Path absPidRefsPath = getExpectedPath(id, "refs", "pid");
+                Path absPidRefsPath = getExpectedPath(
+                    id, "refs", HashStoreIdTypes.pid.getName("pid")
+                );
                 String cidRead = new String(Files.readAllBytes(absPidRefsPath));
                 Files.delete(absPidRefsPath);
 
                 // Remove the pid from the cid refs file
-                Path absCidRefsPath = getExpectedPath(cidRead, "refs", "cid");
+                Path absCidRefsPath = getExpectedPath(
+                    cidRead, "refs", HashStoreIdTypes.cid.getName("cid")
+                );
                 updateRefsFile(pid, absCidRefsPath, "remove");
                 // Delete the cid reference file if it's now empty
                 if (Files.size(absCidRefsPath) == 0) {
@@ -1113,7 +1119,9 @@ public class FileHashStore implements HashStore {
 
             } catch (PidNotFoundInCidRefsFileException pnficrfe) {
                 // Delete pid refs file and return, nothing else to delete
-                Path absPidRefsPath = getExpectedPath(pid, "refs", "pid");
+                Path absPidRefsPath = getExpectedPath(
+                    pid, "refs", HashStoreIdTypes.pid.getName("pid")
+                );
                 Files.delete(absPidRefsPath);
 
                 String warnMsg =
@@ -1148,7 +1156,9 @@ public class FileHashStore implements HashStore {
                 // Get permanent address of the pid by calculating its sha-256 hex digest
                 Path objRealPath = getExpectedPath(pid, "object", null);
                 // Get the path to the cid refs file to work with
-                Path absCidRefsPath = getExpectedPath(cid, "refs", "cid");
+                Path absCidRefsPath = getExpectedPath(
+                    cid, "refs", HashStoreIdTypes.cid.getName("cid")
+                );
 
                 if (!Files.exists(objRealPath)) {
                     // Throw exception if object doesn't exist
@@ -1160,7 +1170,9 @@ public class FileHashStore implements HashStore {
                 } else {
                     // Proceed to delete the reference files and object
                     // Delete pid reference file
-                    Path absPidRefsPath = getExpectedPath(pid, "refs", "pid");
+                    Path absPidRefsPath = getExpectedPath(
+                        pid, "refs", HashStoreIdTypes.pid.getName("pid")
+                    );
                     deleteRefsFile(absPidRefsPath);
                     // Remove pid from cid refs file
                     updateRefsFile(pid, absCidRefsPath, "remove");
@@ -1803,7 +1815,7 @@ public class FileHashStore implements HashStore {
      * @throws NoSuchAlgorithmException Incompatible algorithm used to find relative path to cid
      */
     protected void deleteObjectByCid(String cid) throws IOException, NoSuchAlgorithmException {
-        Path absCidRefsPath = getExpectedPath(cid, "refs", "cid");
+        Path absCidRefsPath = getExpectedPath(cid, "refs", HashStoreIdTypes.cid.getName("cid"));
         if (Files.exists(absCidRefsPath)) {
             String warnMsg = "FileHashStore - deleteObjectByCid: cid refs file still contains"
                 + " references, skipping deletion.";
@@ -2152,13 +2164,13 @@ public class FileHashStore implements HashStore {
             );
 
         } else if (entity.equalsIgnoreCase("refs")) {
-            if (formatId.equalsIgnoreCase("pid")) {
+            if (formatId.equalsIgnoreCase(HashStoreIdTypes.pid.getName("pid"))) {
                 // hashId = pidRefId
                 String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
                     DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashId
                 );
                 realPath = REFS_PID_FILE_DIRECTORY.resolve(pidRelativePath);
-            } else if (formatId.equalsIgnoreCase("cid")) {
+            } else if (formatId.equalsIgnoreCase(HashStoreIdTypes.cid.getName("cid"))) {
                 // hashId = cid
                 String cidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
                     DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashId
