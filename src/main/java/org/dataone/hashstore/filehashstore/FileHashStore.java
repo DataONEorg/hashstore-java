@@ -1212,8 +1212,8 @@ public class FileHashStore implements HashStore {
         Path expectedPidMetadataDirectory = METADATA_STORE_DIRECTORY.resolve(pidRelativePath);
 
         // Check that directory exists and is not empty before attempting to delete metadata docs
-        if (Files.isDirectory(expectedPidMetadataDirectory) && FileHashStoreUtility.dirContainsFiles(
-            expectedPidMetadataDirectory)) {
+        if (Files.isDirectory(expectedPidMetadataDirectory) && FileHashStoreUtility
+            .dirContainsFiles(expectedPidMetadataDirectory)) {
             try (Stream<Path> stream = Files.walk(expectedPidMetadataDirectory)) {
                 stream.map(Path::toFile).forEach(File::delete);
 
@@ -1355,6 +1355,8 @@ public class FileHashStore implements HashStore {
             );
             validateAlgorithm(additionalAlgorithm);
         }
+        // checksumAlgorithm should be evaluated as a pair, catch it earlier
+        // The way this checks must be very clear or else it's difficult to understand
         if (checksumAlgorithm != null) {
             FileHashStoreUtility.checkForEmptyString(
                 checksumAlgorithm, "checksumAlgorithm", "putObject"
@@ -1443,7 +1445,7 @@ public class FileHashStore implements HashStore {
      * @param storedObjFileSize Actual size of object stored
      * @return Boolean, true if valid
      * @throws NoSuchAlgorithmException If algorithm requested to validate against is absent
-     * @throws IOException Issue with deleting tmpFile
+     * @throws IOException              Issue with deleting tmpFile
      */
     private boolean validateTmpObject(
         boolean requestValidation, String checksum, String checksumAlgorithm, Path tmpFile,
@@ -1768,6 +1770,12 @@ public class FileHashStore implements HashStore {
                     + targetFilePath
             );
 
+        } catch (FileAlreadyExistsException amnse) {
+            logFileHashStore.warn(
+                "FileHashStore.move - File already exists, skipping request to move object."
+                    + " Source: " + source + ". Target: " + target
+            );
+
         } catch (AtomicMoveNotSupportedException amnse) {
             logFileHashStore.error(
                 "FileHashStore.move - StandardCopyOption.ATOMIC_MOVE failed. AtomicMove is"
@@ -1791,7 +1799,7 @@ public class FileHashStore implements HashStore {
      * has pids that references it and/or a cid refs file exists, the object will not be deleted.
      * 
      * @param cid Content identifier
-     * @throws IOException If an issue arises during deletion of object
+     * @throws IOException              If an issue arises during deletion of object
      * @throws NoSuchAlgorithmException Incompatible algorithm used to find relative path to cid
      */
     protected void deleteObjectByCid(String cid) throws IOException, NoSuchAlgorithmException {
@@ -2106,6 +2114,7 @@ public class FileHashStore implements HashStore {
     protected Path getExpectedPath(String abId, String entity, String formatId)
         throws IllegalArgumentException, NoSuchAlgorithmException, IOException {
         Path realPath;
+        // TODO: Double check that an endless loop is not created and write junit test
         if (entity.equalsIgnoreCase("object")) {
             // 'abId' is expected to be a pid
             String objectCid = findObject(abId);
