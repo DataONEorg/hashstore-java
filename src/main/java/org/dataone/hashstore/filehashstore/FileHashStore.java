@@ -1154,6 +1154,31 @@ public class FileHashStore implements HashStore {
             }
 
             try {
+                // First, remove all metadata
+                String pidHexDigest = FileHashStoreUtility.getPidHexDigest(
+                    pid, OBJECT_STORE_ALGORITHM
+                );
+                String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, pidHexDigest
+                );
+                Path expectedPidMetadataDirectory = METADATA_STORE_DIRECTORY.resolve(
+                    pidRelativePath
+                );
+
+                // Check that directory exists and is not empty before attempting to delete metadata docs
+                if (Files.isDirectory(expectedPidMetadataDirectory) && FileHashStoreUtility
+                    .dirContainsFiles(expectedPidMetadataDirectory)) {
+                    try (Stream<Path> stream = Files.walk(expectedPidMetadataDirectory)) {
+                        stream.map(Path::toFile).forEach(File::delete);
+
+                    } catch (IOException ioe) {
+                        logFileHashStore.warn(
+                            "FileHashStore.deleteObject - Unexpected IOException: " + ioe
+                                .getMessage()
+                        );
+                    }
+                }
+
                 // Get permanent address of the pid by calculating its sha-256 hex digest
                 Path objRealPath = getExpectedPath(pid, "object", null);
                 // Get the path to the cid refs file to work with
@@ -1185,8 +1210,7 @@ public class FileHashStore implements HashStore {
                         Files.delete(objRealPath);
                     } else {
                         String warnMsg = "FileHashStore.deleteObject - cid referenced by pid: "
-                            + pid
-                            + " is not empty (references exist for the cid). Skipping object deletion.";
+                            + pid + " is not empty (refs exist for cid). Skipping object deletion.";
                         logFileHashStore.warn(warnMsg);
                     }
                     logFileHashStore.info(
@@ -1213,29 +1237,7 @@ public class FileHashStore implements HashStore {
         logFileHashStore.debug(
             "FileHashStore.deleteObject - Called to delete all associated docs for pid: " + pid
         );
-        // First, delete object as expected normally
-        // This is synchronized based on the 'cid' retrieved from the pid refs file
         deleteObject(HashStoreIdTypes.pid.getName("pid"), pid);
-
-        // Second, delete all metadata documents in the associated pid metadata directory
-        String pidHexDigest = FileHashStoreUtility.getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
-        String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
-            DIRECTORY_DEPTH, DIRECTORY_WIDTH, pidHexDigest
-        );
-        Path expectedPidMetadataDirectory = METADATA_STORE_DIRECTORY.resolve(pidRelativePath);
-
-        // Check that directory exists and is not empty before attempting to delete metadata docs
-        if (Files.isDirectory(expectedPidMetadataDirectory) && FileHashStoreUtility
-            .dirContainsFiles(expectedPidMetadataDirectory)) {
-            try (Stream<Path> stream = Files.walk(expectedPidMetadataDirectory)) {
-                stream.map(Path::toFile).forEach(File::delete);
-
-            } catch (IOException ioe) {
-                logFileHashStore.warn(
-                    "FileHashStore.deleteObject - Unexpected IOException: " + ioe.getMessage()
-                );
-            }
-        }
         logFileHashStore.info(
             "FileHashStore.deleteObject - Object, references and metadata deleted for: " + pid
         );
