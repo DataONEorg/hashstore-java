@@ -74,12 +74,16 @@ public interface HashStore {
 
         /**
          * @see #storeObject(InputStream, String, String, String, String, long)
+         * 
+         *      Store an object only without reference files.
          */
         public ObjectMetadata storeObject(InputStream object) throws NoSuchAlgorithmException,
                 IOException, PidRefsFileExistsException, RuntimeException, InterruptedException;
 
         /**
          * @see #storeObject(InputStream, String, String, String, String, long)
+         * 
+         *      Store an object and validate the given checksum & checksum algorithm and size.
          */
         public ObjectMetadata storeObject(
                 InputStream object, String pid, String checksum, String checksumAlgorithm,
@@ -89,6 +93,8 @@ public interface HashStore {
 
         /**
          * @see #storeObject(InputStream, String, String, String, String, long)
+         * 
+         *      Store an object and validate the given checksum & checksum algorithm.
          */
         public ObjectMetadata storeObject(
                 InputStream object, String pid, String checksum, String checksumAlgorithm
@@ -97,6 +103,8 @@ public interface HashStore {
 
         /**
          * @see #storeObject(InputStream, String, String, String, String, long)
+         * 
+         *      Store an object and generate an additional algorithm in hex digests.
          */
         public ObjectMetadata storeObject(
                 InputStream object, String pid, String additionalAlgorithm
@@ -105,6 +113,8 @@ public interface HashStore {
 
         /**
          * @see #storeObject(InputStream, String, String, String, String, long)
+         * 
+         *      Store an object and validate its size.
          */
         public ObjectMetadata storeObject(InputStream object, String pid, long objSize)
                 throws NoSuchAlgorithmException, IOException, PidRefsFileExistsException,
@@ -162,9 +172,10 @@ public interface HashStore {
 
         /**
          * Adds/updates metadata (ex. `sysmeta`) to the HashStore by using a given InputStream, a
-         * persistent identifier (`pid`) and metadata format (`formatId`). The permanent address of
-         * the stored metadata document is determined by calculating the SHA-256 hex digest of the
-         * provided `pid` + `formatId`.
+         * persistent identifier (`pid`) and metadata format (`formatId`). All metadata documents
+         * for a given pid will be stored in the a directory (under ../metadata) that is determined
+         * by calculating the hash of the given pid, with the document name being the hash of the
+         * metadata format (`formatId`).
          * 
          * Note, multiple calls to store the same metadata content will all be accepted, but is not
          * guaranteed to execute sequentially.
@@ -187,6 +198,9 @@ public interface HashStore {
 
         /**
          * @see #storeMetadata(InputStream, String, String)
+         * 
+         *      If the '(InputStream metadata, String pid)' signature is used, the metadata format
+         *      stored will default to `sysmeta`.
          */
         public String storeMetadata(InputStream metadata, String pid) throws IOException,
                 IllegalArgumentException, FileNotFoundException, InterruptedException,
@@ -225,16 +239,19 @@ public interface HashStore {
 
         /**
          * @see #retrieveMetadata(String, String)
+         * 
+         *      If `retrieveMetadata` is called with signature (String pid), the metadata
+         *      document retrieved will be the given pid's 'sysmeta'
          */
         public InputStream retrieveMetadata(String pid) throws IllegalArgumentException,
                 FileNotFoundException, IOException, NoSuchAlgorithmException;
 
         /**
-         * Deletes an object (and its empty subdirectories) permanently from HashStore using a given
+         * Deletes an object and its related data permanently from HashStore using a given
          * persistent identifier. If the `idType` is 'pid', the object associated with the pid will
-         * be deleted if it is not referenced by any other pids, along with its reference files.
-         * If the `idType` is 'cid', only the object will be deleted if it is not referenced by
-         * other pids.
+         * be deleted if it is not referenced by any other pids, along with its reference files and
+         * all metadata documents found in its respective metadata directory. If the `idType` is
+         * 'cid', only the object will be deleted if it is not referenced by other pids.
          * 
          * @param idType 'pid' or 'cid'
          * @param id     Authority-based identifier or content identifier
@@ -250,8 +267,8 @@ public interface HashStore {
 
         /**
          * Deletes an object and all relevant associated files (ex. system metadata, reference
-         * files, etc.) based on a given pid. If other pids still reference the object, the object
-         * will not be deleted.
+         * files, etc.) based on a given pid. If other pids still reference the pid's associated
+         * object, the object will not be deleted.
          * 
          * @param pid Authority-based identifier
          * @see #deleteObject(String, String) for more details.
@@ -275,6 +292,9 @@ public interface HashStore {
 
         /**
          * @see #deleteMetadata(String, String)
+         * 
+         *      If `deleteMetadata` is called with signature (String pid), the metadata
+         *      document deleted will be the given pid's 'sysmeta'
          */
         public void deleteMetadata(String pid) throws IllegalArgumentException,
                 FileNotFoundException, IOException, NoSuchAlgorithmException;
