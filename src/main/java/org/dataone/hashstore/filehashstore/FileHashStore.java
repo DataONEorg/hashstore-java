@@ -505,6 +505,7 @@ public class FileHashStore implements HashStore {
             );
             // Tag object
             String cid = objInfo.getCid();
+            objInfo.setPid(pid);
             tagObject(pid, cid);
             logFileHashStore.info(
                 "FileHashStore.syncPutObject - Object stored for pid: " + pid

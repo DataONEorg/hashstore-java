@@ -107,6 +107,7 @@ public class FileHashStoreInterfaceTest {
             // Check id (content identifier based on the store algorithm)
             String objectCid = testData.pidData.get(pid).get("sha256");
             assertEquals(objectCid, objInfo.getCid());
+            assertEquals(pid, objInfo.getPid());
         }
     }
 
@@ -1332,8 +1333,9 @@ public class FileHashStoreInterfaceTest {
             Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
             String testFormatId = "https://test.arcticdata.io/ns";
-            String metadataPathString = fileHashStore.storeMetadata(metadataStream, pid,
-                                                                  testFormatId);
+            String metadataPathString = fileHashStore.storeMetadata(
+                metadataStream, pid, testFormatId
+            );
             String metadataDefaultPathString = fileHashStore.storeMetadata(metadataStream, pid);
             Path objCidAbsPath = fileHashStore.getExpectedPath(pid, "object", null);
             Path metadataPath = Paths.get(metadataPathString);
