@@ -2114,43 +2114,54 @@ public class FileHashStore implements HashStore {
     protected Path getExpectedPath(String abId, String entity, String formatId)
         throws IllegalArgumentException, NoSuchAlgorithmException, IOException {
         Path realPath;
-        // TODO: Double check that an endless loop is not created and write junit test
+        String hashId = FileHashStoreUtility.getPidHexDigest(abId, OBJECT_STORE_ALGORITHM);
         if (entity.equalsIgnoreCase("object")) {
-            // 'abId' is expected to be a pid
-            String objectCid = findObject(abId);
+            // hashId = pidRefId
+            String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+                DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashId
+            );
+            Path pathToPidRefsFile = REFS_PID_FILE_DIRECTORY.resolve(pidRelativePath);
+            // Attempt to retrieve the cid
+            String objectCid;
+            if (!Files.exists(pathToPidRefsFile)) {
+                String errMsg =
+                    "FileHashStore.getExpectedPath - Pid Refs file does not exist for pid:" + abId
+                        + " with object address: " + pathToPidRefsFile + ". Cannot retrive cid.";
+                logFileHashStore.warn(errMsg);
+                throw new FileNotFoundException(errMsg);
+            } else {
+                objectCid = new String(Files.readAllBytes(pathToPidRefsFile));
+            }
+            // If cid is found, return the expected real path to object
             String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
                 DIRECTORY_DEPTH, DIRECTORY_WIDTH, objectCid
             );
             realPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
 
         } else if (entity.equalsIgnoreCase("metadata")) {
-            // Get the pid metadata directory
-            String metadataCidPartOne = FileHashStoreUtility.getPidHexDigest(
-                abId, OBJECT_STORE_ALGORITHM
-            );
-            String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
-                DIRECTORY_DEPTH, DIRECTORY_WIDTH, metadataCidPartOne
+            // Get the pid metadata directory (the relative path of the hashId)
+            String pidMetadataDirRelPath = FileHashStoreUtility.getHierarchicalPathString(
+                DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashId
             );
             // The file name for the metadata document is the hash of the supplied 'formatId'
-            String metadataCidPartTwo = FileHashStoreUtility.getPidHexDigest(
+            String metadataFormatIdHash = FileHashStoreUtility.getPidHexDigest(
                 formatId, OBJECT_STORE_ALGORITHM
             );
-            realPath = METADATA_STORE_DIRECTORY.resolve(pidRelativePath).resolve(
-                metadataCidPartTwo
+            realPath = METADATA_STORE_DIRECTORY.resolve(pidMetadataDirRelPath).resolve(
+                metadataFormatIdHash
             );
 
         } else if (entity.equalsIgnoreCase("refs")) {
             if (formatId.equalsIgnoreCase("pid")) {
-                String pidRefId = FileHashStoreUtility.getPidHexDigest(
-                    abId, OBJECT_STORE_ALGORITHM
-                );
+                // hashId = pidRefId
                 String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
-                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, pidRefId
+                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashId
                 );
                 realPath = REFS_PID_FILE_DIRECTORY.resolve(pidRelativePath);
             } else if (formatId.equalsIgnoreCase("cid")) {
+                // hashId = cid
                 String cidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
-                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, abId
+                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashId
                 );
                 realPath = REFS_CID_FILE_DIRECTORY.resolve(cidRelativePath);
             } else {
