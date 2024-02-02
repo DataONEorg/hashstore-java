@@ -1136,6 +1136,21 @@ public class FileHashStore implements HashStore {
             }
 
             // Proceed with comprehensive deletion - cid exists, nothing out of place
+            // Stage 1: Get all the required paths to streamline deletion process
+            // Permanent address of the object
+            Path objRealPath = getExpectedPath(pid, "object", null);
+            // Cid refs file
+            Path absCidRefsPath = getExpectedPath(cid, "refs", HashStoreIdTypes.cid.getName("cid"));
+            // Pid refs file
+            Path absPidRefsPath = getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName("pid"));
+            // Metadata directory
+            String pidHexDigest = FileHashStoreUtility.getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
+            String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+                DIRECTORY_DEPTH, DIRECTORY_WIDTH, pidHexDigest
+            );
+            Path expectedPidMetadataDirectory = METADATA_STORE_DIRECTORY.resolve(pidRelativePath);
+
+            // Stage 2: Remove documents
             synchronized (referenceLockedCids) {
                 while (referenceLockedCids.contains(cid)) {
                     try {
@@ -1157,18 +1172,7 @@ public class FileHashStore implements HashStore {
             }
 
             try {
-                // Get permanent address of the object
-                Path objRealPath = getExpectedPath(pid, "object", null);
-                // First, remove all metadata
-                String pidHexDigest = FileHashStoreUtility.getPidHexDigest(
-                    pid, OBJECT_STORE_ALGORITHM
-                );
-                String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
-                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, pidHexDigest
-                );
-                Path expectedPidMetadataDirectory = METADATA_STORE_DIRECTORY.resolve(
-                    pidRelativePath
-                );
+                // Begin with metadata documents
                 // Check that directory exists and is not empty before attempting to delete metadata docs
                 if (Files.isDirectory(expectedPidMetadataDirectory) && FileHashStoreUtility
                     .dirContainsFiles(expectedPidMetadataDirectory)) {
@@ -1182,15 +1186,7 @@ public class FileHashStore implements HashStore {
                         );
                     }
                 }
-                // Proceed to delete the reference files and object
-                // Get the path to the cid refs file to work with
-                Path absCidRefsPath = getExpectedPath(
-                    cid, "refs", HashStoreIdTypes.cid.getName("cid")
-                );
-                Path absPidRefsPath = getExpectedPath(
-                    pid, "refs", HashStoreIdTypes.pid.getName("pid")
-                );
-                // Delete pid reference file
+                // Then pid reference file
                 deleteRefsFile(absPidRefsPath);
                 // Remove pid from cid refs file
                 updateRefsFile(pid, absCidRefsPath, "remove");
