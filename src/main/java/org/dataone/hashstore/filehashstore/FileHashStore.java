@@ -626,47 +626,6 @@ public class FileHashStore implements HashStore {
         return storeObject(object, pid, additionalAlgorithm, null, null, -1);
     }
 
-    @Override
-    public boolean verifyObject(
-        ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize
-    ) throws IllegalArgumentException {
-        logFileHashStore.debug(
-            "FileHashStore.verifyObject - Called to verify object with id: " + objectInfo.getCid()
-        );
-        FileHashStoreUtility.ensureNotNull(objectInfo, "objectInfo", "verifyObject");
-        FileHashStoreUtility.ensureNotNull(checksum, "checksum", "verifyObject");
-        FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm", "verifyObject");
-        FileHashStoreUtility.checkNotNegativeOrZero(objSize, "verifyObject");
-
-        Map<String, String> hexDigests = objectInfo.getHexDigests();
-        String digestFromHexDigests = hexDigests.get(checksumAlgorithm);
-        long objInfoRetrievedSize = objectInfo.getSize();
-        String objCid = objectInfo.getCid();
-
-        if (objInfoRetrievedSize != objSize) {
-            logFileHashStore.info(
-                "FileHashStore.verifyObject - Object size invalid for cid: " + objCid
-                    + ". Expected size: " + objSize + ". Actual size: " + objInfoRetrievedSize
-            );
-            return false;
-
-        } else if (!digestFromHexDigests.equals(checksum)) {
-            logFileHashStore.info(
-                "FileHashStore.verifyObject - Object content invalid for cid: " + objCid
-                    + ". Expected checksum: " + checksum + ". Actual checksum calculated: "
-                    + digestFromHexDigests + " (algorithm: " + checksumAlgorithm + ")"
-            );
-            return false;
-
-        } else {
-            logFileHashStore.info(
-                "FileHashStore.verifyObject - Object has been validated for cid: " + objCid
-                    + ". Expected checksum: " + checksum + ". Actual checksum calculated: "
-                    + digestFromHexDigests + " (algorithm: " + checksumAlgorithm + ")"
-            );
-            return true;
-        }
-    }
 
     @Override
     public void tagObject(String pid, String cid) throws IOException, PidRefsFileExistsException,
@@ -760,7 +719,50 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public String findObject(String pid) throws NoSuchAlgorithmException, IOException {
+    public boolean verifyObject(
+        ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize
+    ) throws IllegalArgumentException {
+        logFileHashStore.debug(
+            "FileHashStore.verifyObject - Called to verify object with id: " + objectInfo.getCid()
+        );
+        FileHashStoreUtility.ensureNotNull(objectInfo, "objectInfo", "verifyObject");
+        FileHashStoreUtility.ensureNotNull(checksum, "checksum", "verifyObject");
+        FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm", "verifyObject");
+        FileHashStoreUtility.checkNotNegativeOrZero(objSize, "verifyObject");
+
+        Map<String, String> hexDigests = objectInfo.getHexDigests();
+        String digestFromHexDigests = hexDigests.get(checksumAlgorithm);
+        long objInfoRetrievedSize = objectInfo.getSize();
+        String objCid = objectInfo.getCid();
+
+        if (objInfoRetrievedSize != objSize) {
+            logFileHashStore.info(
+                "FileHashStore.verifyObject - Object size invalid for cid: " + objCid
+                    + ". Expected size: " + objSize + ". Actual size: " + objInfoRetrievedSize
+            );
+            return false;
+
+        } else if (!digestFromHexDigests.equals(checksum)) {
+            logFileHashStore.info(
+                "FileHashStore.verifyObject - Object content invalid for cid: " + objCid
+                    + ". Expected checksum: " + checksum + ". Actual checksum calculated: "
+                    + digestFromHexDigests + " (algorithm: " + checksumAlgorithm + ")"
+            );
+            return false;
+
+        } else {
+            logFileHashStore.info(
+                "FileHashStore.verifyObject - Object has been validated for cid: " + objCid
+                    + ". Expected checksum: " + checksum + ". Actual checksum calculated: "
+                    + digestFromHexDigests + " (algorithm: " + checksumAlgorithm + ")"
+            );
+            return true;
+        }
+    }
+
+    @Override
+    public String findObject(String pid) throws NoSuchAlgorithmException, IOException,
+        OrphanPidRefsFileException, PidNotFoundInCidRefsFileException, OrphanRefsFilesException {
         logFileHashStore.debug("FileHashStore.findObject - Called to find object for pid: " + pid);
         FileHashStoreUtility.ensureNotNull(pid, "pid", "findObject");
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "findObject");
@@ -818,7 +820,7 @@ public class FileHashStore implements HashStore {
 
     @Override
     public String storeMetadata(InputStream metadata, String pid, String formatId)
-        throws IOException, FileNotFoundException, IllegalArgumentException, InterruptedException,
+        throws IOException, IllegalArgumentException, FileNotFoundException, InterruptedException,
         NoSuchAlgorithmException {
         logFileHashStore.debug(
             "FileHashStore.storeMetadata - Called to store metadata for pid: " + pid
@@ -917,13 +919,14 @@ public class FileHashStore implements HashStore {
      */
     @Override
     public String storeMetadata(InputStream metadata, String pid) throws IOException,
-        IllegalArgumentException, InterruptedException, NoSuchAlgorithmException {
+        IllegalArgumentException, FileNotFoundException, InterruptedException,
+        NoSuchAlgorithmException {
         return storeMetadata(metadata, pid, DEFAULT_METADATA_NAMESPACE);
     }
 
     @Override
     public InputStream retrieveObject(String pid) throws IllegalArgumentException,
-        NoSuchAlgorithmException, FileNotFoundException, IOException {
+        FileNotFoundException, IOException, NoSuchAlgorithmException {
         logFileHashStore.debug(
             "FileHashStore.retrieveObject - Called to retrieve object for pid: " + pid
         );
@@ -1051,8 +1054,8 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public void deleteObject(String idType, String id) throws IllegalArgumentException, IOException,
-        NoSuchAlgorithmException, InterruptedException {
+    public void deleteObject(String idType, String id) throws IllegalArgumentException,
+        FileNotFoundException, IOException, NoSuchAlgorithmException, InterruptedException {
         logFileHashStore.debug(
             "FileHashStore.deleteObject - Called to delete object for id: " + id + "(" + idType
                 + ")"
@@ -1219,8 +1222,8 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public void deleteObject(String pid) throws IllegalArgumentException, IOException,
-        NoSuchAlgorithmException, InterruptedException {
+    public void deleteObject(String pid) throws IllegalArgumentException, FileNotFoundException,
+        IOException, NoSuchAlgorithmException, InterruptedException {
         logFileHashStore.debug(
             "FileHashStore.deleteObject - Called to delete all associated docs for pid: " + pid
         );
@@ -1232,7 +1235,7 @@ public class FileHashStore implements HashStore {
 
     @Override
     public void deleteMetadata(String pid, String formatId) throws IllegalArgumentException,
-        IOException, NoSuchAlgorithmException {
+        FileNotFoundException, IOException, NoSuchAlgorithmException {
         logFileHashStore.debug(
             "FileHashStore.deleteMetadata - Called to delete metadata for pid: " + pid
         );
@@ -1264,14 +1267,14 @@ public class FileHashStore implements HashStore {
      * Overload method for deleteMetadata with default metadata namespace
      */
     @Override
-    public void deleteMetadata(String pid) throws IllegalArgumentException, IOException,
-        NoSuchAlgorithmException {
+    public void deleteMetadata(String pid) throws IllegalArgumentException, FileNotFoundException,
+        IOException, NoSuchAlgorithmException {
         deleteMetadata(pid, DEFAULT_METADATA_NAMESPACE);
     }
 
     @Override
-    public String getHexDigest(String pid, String algorithm) throws NoSuchAlgorithmException,
-        FileNotFoundException, IOException {
+    public String getHexDigest(String pid, String algorithm) throws IllegalArgumentException,
+        FileNotFoundException, IOException, NoSuchAlgorithmException {
         logFileHashStore.debug(
             "FileHashStore.getHexDigest - Called to calculate hex digest for pid: " + pid
         );

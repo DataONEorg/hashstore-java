@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
 
 import org.dataone.hashstore.exceptions.OrphanPidRefsFileException;
+import org.dataone.hashstore.exceptions.OrphanRefsFilesException;
 import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 
@@ -162,6 +163,8 @@ public interface HashStore {
          *                                           file's absolute address is not valid
          * @throws IOException                       Unable to read from a pid refs file or pid refs
          *                                           file does not exist
+         * @throws OrphanRefsFilesException          pid and cid refs file found, but object does
+         *                                           not exist
          * @throws OrphanPidRefsFileException        When pid refs file exists and the cid found
          *                                           inside does not exist.
          * @throws PidNotFoundInCidRefsFileException When pid and cid ref files exists but the
