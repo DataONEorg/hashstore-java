@@ -1143,12 +1143,21 @@ public class FileHashStore implements HashStore {
             Path absCidRefsPath = getExpectedPath(cid, "refs", HashStoreIdTypes.cid.getName("cid"));
             // Pid refs file
             Path absPidRefsPath = getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName("pid"));
+            // Get list of metadata documents
             // Metadata directory
             String pidHexDigest = FileHashStoreUtility.getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
             String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
                 DIRECTORY_DEPTH, DIRECTORY_WIDTH, pidHexDigest
             );
             Path expectedPidMetadataDirectory = METADATA_STORE_DIRECTORY.resolve(pidRelativePath);
+            // Add all metadata doc paths to a List to iterate over below
+            List<Path> metadataDocPaths = new ArrayList<>();
+            if (Files.isDirectory(expectedPidMetadataDirectory) && FileHashStoreUtility
+                .dirContainsFiles(expectedPidMetadataDirectory)) {
+                try (Stream<Path> stream = Files.walk(expectedPidMetadataDirectory)) {
+                    stream.filter(Files::isRegularFile).forEach(metadataDocPaths::add);
+                }
+            }
 
             // Stage 2: Remove documents
             synchronized (referenceLockedCids) {
@@ -1173,21 +1182,11 @@ public class FileHashStore implements HashStore {
 
             try {
                 // Begin with metadata documents
-                // Check that directory exists and is not empty before attempting to delete metadata docs
-                if (Files.isDirectory(expectedPidMetadataDirectory) && FileHashStoreUtility
-                    .dirContainsFiles(expectedPidMetadataDirectory)) {
-                    try (Stream<Path> stream = Files.walk(expectedPidMetadataDirectory)) {
-                        stream.map(Path::toFile).forEach(File::delete);
-
-                    } catch (IOException ioe) {
-                        logFileHashStore.warn(
-                            "FileHashStore.deleteObject - Unexpected IOException: " + ioe
-                                .getMessage()
-                        );
-                    }
+                for (Path path : metadataDocPaths) {
+                    Files.delete(path);
                 }
                 // Then pid reference file
-                deleteRefsFile(absPidRefsPath);
+                Files.delete(absPidRefsPath);
                 // Remove pid from cid refs file
                 updateRefsFile(pid, absCidRefsPath, "remove");
                 // Delete obj and cid refs file only if the cid refs file is empty
