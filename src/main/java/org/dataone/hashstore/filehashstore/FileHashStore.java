@@ -1077,6 +1077,7 @@ public class FileHashStore implements HashStore {
             deleteObjectByCid(id);
 
         } else {
+            // TODO: How to coordinate deleting metadata documents here?
             // Else 'idType' is pid
             // Before we begin deleting files, we need to ensure that the object and
             // refs file are where they are expected to be
@@ -1154,13 +1155,9 @@ public class FileHashStore implements HashStore {
             );
             Path expectedPidMetadataDirectory = METADATA_STORE_DIRECTORY.resolve(pidRelativePath);
             // Add all metadata doc paths to a List to iterate over below
-            List<Path> metadataDocPaths = new ArrayList<>();
-            if (Files.isDirectory(expectedPidMetadataDirectory) && FileHashStoreUtility
-                .dirContainsFiles(expectedPidMetadataDirectory)) {
-                try (Stream<Path> stream = Files.walk(expectedPidMetadataDirectory)) {
-                    stream.filter(Files::isRegularFile).forEach(metadataDocPaths::add);
-                }
-            }
+            List<Path> metadataDocPaths = FileHashStoreUtility.getFilesFromDir(
+                expectedPidMetadataDirectory
+            );
 
             // Stage 2: Remove documents
             synchronized (referenceLockedCids) {

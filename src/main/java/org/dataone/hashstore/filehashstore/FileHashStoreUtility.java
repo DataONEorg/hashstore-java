@@ -117,6 +117,23 @@ public class FileHashStoreUtility {
     }
 
     /**
+     * Checks a directory for files and returns a list of paths
+     *
+     * @param directory Directory to check
+     * @return List<Path> of files
+     * @throws IOException If I/O occurs when accessing directory
+     */
+    public static List<Path> getFilesFromDir(Path directory) throws IOException {
+        List<Path> filePaths = new ArrayList<>();
+        if (Files.isDirectory(directory) && dirContainsFiles(directory)) {
+            try (Stream<Path> stream = Files.walk(directory)) {
+                stream.filter(Files::isRegularFile).forEach(filePaths::add);
+            }
+        }
+        return filePaths;
+    }
+
+    /**
      * Checks whether a given string is empty and throws an exception if so
      *
      * @param string   String to check
