@@ -33,6 +33,7 @@ import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.exceptions.OrphanPidRefsFileException;
 import org.dataone.hashstore.exceptions.OrphanRefsFilesException;
 import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
+import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 import org.dataone.hashstore.filehashstore.FileHashStore.HashStoreIdTypes;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.jupiter.api.BeforeEach;
@@ -579,12 +580,14 @@ public class FileHashStoreInterfaceTest {
     /**
      * Tests that the `storeObject` method can store an object successfully with multiple threads
      * (5). This test uses five futures (threads) that run concurrently, all except one of which
-     * will encounter an `RunTimeException`. The thread that does not encounter an exception will
+     * will encounter a `RunTimeException`. The thread that does not encounter an exception will
      * store the given object, and verifies that the object is stored successfully.
      * 
      * The threads are expected to encounter a `RunTimeException` since the expected
      * object to store is already in progress (thrown by `syncPutObject` which coordinates
-     * `store_object` requests with a pid).
+     * `store_object` requests with a pid). If both threads execute simultaneously and bypasses
+     * the store object synchronization flow, we may also run into a `PidRefsFileExistsException`
+     * - which prevents the cid from being tagged twice by the same pid.
      */
     @Test
     public void storeObject_objectLockedIds_FiveThreads() throws Exception {
@@ -592,7 +595,7 @@ public class FileHashStoreInterfaceTest {
         String pid = "jtao.1700.1";
         Path testDataFile = testData.getTestFile(pid);
 
-        // Create a thread pool with 3 threads
+        // Create a thread pool with 5 threads
         ExecutorService executorService = Executors.newFixedThreadPool(5);
 
         // Submit 5 futures to the thread pool, each calling storeObject
@@ -612,11 +615,8 @@ public class FileHashStoreInterfaceTest {
                     assertTrue(Files.exists(cidRefsPath));
                 }
             } catch (Exception e) {
-                System.out.println("Start Thread 1 Exception:");
-                System.out.println(e.getClass());
                 e.printStackTrace();
-                System.out.println("End Thread 1 Exception\n");
-                assertTrue(e instanceof RuntimeException);
+                assertTrue(e instanceof RuntimeException | e instanceof PidRefsFileExistsException);
             }
         });
         Future<?> future2 = executorService.submit(() -> {
@@ -635,7 +635,8 @@ public class FileHashStoreInterfaceTest {
                     assertTrue(Files.exists(cidRefsPath));
                 }
             } catch (Exception e) {
-                assertTrue(e instanceof RuntimeException);
+                e.printStackTrace();
+                assertTrue(e instanceof RuntimeException | e instanceof PidRefsFileExistsException);
             }
         });
         Future<?> future3 = executorService.submit(() -> {
@@ -654,7 +655,8 @@ public class FileHashStoreInterfaceTest {
                     assertTrue(Files.exists(cidRefsPath));
                 }
             } catch (Exception e) {
-                assertTrue(e instanceof RuntimeException);
+                e.printStackTrace();
+                assertTrue(e instanceof RuntimeException | e instanceof PidRefsFileExistsException);
             }
         });
         Future<?> future4 = executorService.submit(() -> {
@@ -673,7 +675,8 @@ public class FileHashStoreInterfaceTest {
                     assertTrue(Files.exists(cidRefsPath));
                 }
             } catch (Exception e) {
-                assertTrue(e instanceof RuntimeException);
+                e.printStackTrace();
+                assertTrue(e instanceof RuntimeException | e instanceof PidRefsFileExistsException);
             }
         });
         Future<?> future5 = executorService.submit(() -> {
@@ -692,7 +695,8 @@ public class FileHashStoreInterfaceTest {
                     assertTrue(Files.exists(cidRefsPath));
                 }
             } catch (Exception e) {
-                assertTrue(e instanceof RuntimeException);
+                e.printStackTrace();
+                assertTrue(e instanceof RuntimeException | e instanceof PidRefsFileExistsException);
             }
         });
 
