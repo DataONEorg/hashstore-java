@@ -231,7 +231,7 @@ public class HashStoreClient {
                     String pid = cmd.getOptionValue("pid");
                     FileHashStoreUtility.ensureNotNull(pid, "-pid", "HashStoreClient");
 
-                    String deleteIdType = HashStoreIdTypes.pid.getName("pid");
+                    String deleteIdType = HashStoreIdTypes.pid.getName();
                     hashStore.deleteObject(deleteIdType, pid);
                     System.out.println("Object for pid (" + pid + ") has been deleted.");
 
@@ -703,7 +703,7 @@ public class HashStoreClient {
 
                 // Delete object
                 System.out.println("Deleting object for guid: " + guid);
-                String deleteIdType = HashStoreIdTypes.pid.getName("pid");
+                String deleteIdType = HashStoreIdTypes.pid.getName();
                 hashStore.deleteObject(deleteIdType, guid);
 
             } catch (FileNotFoundException fnfe) {

@@ -256,6 +256,9 @@ public interface HashStore {
          * all metadata documents found in its respective metadata directory. If the `idType` is
          * 'cid', only the object will be deleted if it is not referenced by other pids.
          * 
+         * Notes: All objects are renamed at their existing path with a '_deleted' appended
+         * to their file name before they are deleted.
+         * 
          * @param idType 'pid' or 'cid'
          * @param id     Authority-based identifier or content identifier
          * @throws IllegalArgumentException When pid is null or empty
@@ -266,7 +269,7 @@ public interface HashStore {
          * @throws InterruptedException     When deletion synchronization is interrupted
          */
         public void deleteObject(String idType, String id) throws IllegalArgumentException,
-                FileNotFoundException, IOException, NoSuchAlgorithmException, InterruptedException;
+                IOException, NoSuchAlgorithmException, InterruptedException;
 
         /**
          * Deletes an object and all relevant associated files (ex. system metadata, reference
@@ -276,8 +279,8 @@ public interface HashStore {
          * @param pid Authority-based identifier
          * @see #deleteObject(String, String) for more details.
          */
-        public void deleteObject(String pid) throws IllegalArgumentException, FileNotFoundException,
-                IOException, NoSuchAlgorithmException, InterruptedException;
+        public void deleteObject(String pid) throws IllegalArgumentException, IOException,
+                NoSuchAlgorithmException, InterruptedException;
 
         /**
          * Deletes a metadata document (ex. `sysmeta`) permanently from HashStore using a given
@@ -291,7 +294,7 @@ public interface HashStore {
          *                                  supported
          */
         public void deleteMetadata(String pid, String formatId) throws IllegalArgumentException,
-                FileNotFoundException, IOException, NoSuchAlgorithmException;
+                IOException, NoSuchAlgorithmException;
 
         /**
          * @see #deleteMetadata(String, String)
@@ -299,8 +302,8 @@ public interface HashStore {
          *      If `deleteMetadata` is called with signature (String pid), the metadata
          *      document deleted will be the given pid's 'sysmeta'
          */
-        public void deleteMetadata(String pid) throws IllegalArgumentException,
-                FileNotFoundException, IOException, NoSuchAlgorithmException;
+        public void deleteMetadata(String pid) throws IllegalArgumentException, IOException,
+                NoSuchAlgorithmException;
 
         /**
          * Calculates the hex digest of an object that exists in HashStore using a given persistent
