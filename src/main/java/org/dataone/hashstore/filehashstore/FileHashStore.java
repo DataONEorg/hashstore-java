@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -785,7 +784,7 @@ public class FileHashStore implements HashStore {
             // If the pid is found in the expected cid refs file, and the object exists, return it
             if (isStringInRefsFile(pid, absCidRefsPath)) {
                 logFileHashStore.info(
-                    "FileHashStore.findObject - Cid (" + cid + ") found for pid:" + pid
+                    "FileHashStore.findObject - Cid (" + cid + ") found for pid: " + pid
                 );
 
                 String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
@@ -1054,8 +1053,8 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public void deleteObject(String idType, String id) throws IllegalArgumentException,
-        FileNotFoundException, IOException, NoSuchAlgorithmException, InterruptedException {
+    public void deleteObject(String idType, String id) throws IllegalArgumentException, IOException,
+        NoSuchAlgorithmException, InterruptedException {
         logFileHashStore.debug(
             "FileHashStore.deleteObject - Called to delete object for id: " + id + "(" + idType
                 + ")"
@@ -1219,8 +1218,8 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public void deleteObject(String pid) throws IllegalArgumentException, FileNotFoundException,
-        IOException, NoSuchAlgorithmException, InterruptedException {
+    public void deleteObject(String pid) throws IllegalArgumentException, IOException,
+        NoSuchAlgorithmException, InterruptedException {
         logFileHashStore.debug(
             "FileHashStore.deleteObject - Called to delete all associated docs for pid: " + pid
         );
@@ -1232,7 +1231,7 @@ public class FileHashStore implements HashStore {
 
     @Override
     public void deleteMetadata(String pid, String formatId) throws IllegalArgumentException,
-        FileNotFoundException, IOException, NoSuchAlgorithmException {
+        IOException, NoSuchAlgorithmException {
         logFileHashStore.debug(
             "FileHashStore.deleteMetadata - Called to delete metadata for pid: " + pid
         );
@@ -1264,8 +1263,8 @@ public class FileHashStore implements HashStore {
      * Overload method for deleteMetadata with default metadata namespace
      */
     @Override
-    public void deleteMetadata(String pid) throws IllegalArgumentException, FileNotFoundException,
-        IOException, NoSuchAlgorithmException {
+    public void deleteMetadata(String pid) throws IllegalArgumentException, IOException,
+        NoSuchAlgorithmException {
         deleteMetadata(pid, DEFAULT_METADATA_NAMESPACE);
     }
 
@@ -1432,11 +1431,10 @@ public class FileHashStore implements HashStore {
      * @param hexDigests        Map of the hex digests to parse data from
      * @param objSize           Expected size of object
      * @param storedObjFileSize Actual size of object stored
-     * @return Boolean, true if valid
      * @throws NoSuchAlgorithmException If algorithm requested to validate against is absent
      * @throws IOException              Issue with deleting tmpFile
      */
-    private boolean validateTmpObject(
+    private void validateTmpObject(
         boolean requestValidation, String checksum, String checksumAlgorithm, Path tmpFile,
         Map<String, String> hexDigests, long objSize, long storedObjFileSize
     ) throws NoSuchAlgorithmException, IOException {
@@ -1503,8 +1501,6 @@ public class FileHashStore implements HashStore {
                 throw new IllegalArgumentException(errMsg);
             }
         }
-
-        return true;
     }
 
     /**
@@ -2020,7 +2016,7 @@ public class FileHashStore implements HashStore {
     protected String putMetadata(InputStream metadata, String pid, String formatId)
         throws NoSuchAlgorithmException, IOException {
         logFileHashStore.debug(
-            "FileHashStore.putMetadata - Called to put metadata for pid:" + pid
+            "FileHashStore.putMetadata - Called to put metadata for pid: " + pid
                 + " , with metadata namespace: " + formatId
         );
 
@@ -2124,7 +2120,7 @@ public class FileHashStore implements HashStore {
             String objectCid;
             if (!Files.exists(pathToPidRefsFile)) {
                 String errMsg =
-                    "FileHashStore.getExpectedPath - Pid Refs file does not exist for pid:" + abId
+                    "FileHashStore.getExpectedPath - Pid Refs file does not exist for pid: " + abId
                         + " with object address: " + pathToPidRefsFile + ". Cannot retrive cid.";
                 logFileHashStore.warn(errMsg);
                 throw new FileNotFoundException(errMsg);
