@@ -2,6 +2,7 @@ package org.dataone.hashstore;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -45,7 +46,7 @@ public class ObjectMetadataTest {
      */
     @Test
     public void testObjectMetadata() {
-        ObjectMetadata objInfo = new ObjectMetadata(id, size, hexDigests);
+        ObjectMetadata objInfo = new ObjectMetadata(null, id, size, hexDigests);
         assertNotNull(objInfo);
     }
 
@@ -54,9 +55,9 @@ public class ObjectMetadataTest {
      */
     @Test
     public void testObjectMetadataGetPid() {
-        ObjectMetadata objInfo = new ObjectMetadata(id, size, hexDigests);
+        ObjectMetadata objInfo = new ObjectMetadata(null, id, size, hexDigests);
         String pid = objInfo.getPid();
-        assertEquals(pid, null);
+        assertNull(pid);
     }
 
     /**
@@ -64,7 +65,7 @@ public class ObjectMetadataTest {
      */
     @Test
     public void testObjectMetadataSetPid() {
-        ObjectMetadata objInfo = new ObjectMetadata(id, size, hexDigests);
+        ObjectMetadata objInfo = new ObjectMetadata(null, id, size, hexDigests);
         String pidToSet = "dou.test.1";
         objInfo.setPid(pidToSet);
 
@@ -77,7 +78,7 @@ public class ObjectMetadataTest {
      */
     @Test
     public void testObjectMetadataGetId() {
-        ObjectMetadata objInfo = new ObjectMetadata(id, size, hexDigests);
+        ObjectMetadata objInfo = new ObjectMetadata(null, id, size, hexDigests);
         String objId = objInfo.getCid();
         assertEquals(objId, id);
     }
@@ -87,7 +88,7 @@ public class ObjectMetadataTest {
      */
     @Test
     public void testHashAddressGetSize() {
-        ObjectMetadata objInfo = new ObjectMetadata(id, size, hexDigests);
+        ObjectMetadata objInfo = new ObjectMetadata(null, id, size, hexDigests);
         long objSize = objInfo.getSize();
         assertEquals(objSize, size);
     }
@@ -97,7 +98,7 @@ public class ObjectMetadataTest {
      */
     @Test
     public void testObjectMetadataGetHexDigests() {
-        ObjectMetadata objInfo = new ObjectMetadata(id, size, hexDigests);
+        ObjectMetadata objInfo = new ObjectMetadata(null, id, size, hexDigests);
         Map<String, String> objInfoMap = objInfo.getHexDigests();
         assertEquals(objInfoMap, hexDigests);
     }

@@ -24,7 +24,8 @@ public class ObjectMetadata {
      * @param hexDigests A map of hash algorithm names to their hex-encoded digest values for the
      *                   file
      */
-    public ObjectMetadata(String cid, long size, Map<String, String> hexDigests) {
+    public ObjectMetadata(String pid, String cid, long size, Map<String, String> hexDigests) {
+        this.pid = pid;
         this.cid = cid;
         this.size = size;
         this.hexDigests = hexDigests;

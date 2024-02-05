@@ -504,7 +504,6 @@ public class FileHashStore implements HashStore {
             );
             // Tag object
             String cid = objInfo.getCid();
-            objInfo.setPid(pid);
             tagObject(pid, cid);
             logFileHashStore.info(
                 "FileHashStore.syncPutObject - Object stored for pid: " + pid
@@ -1104,9 +1103,7 @@ public class FileHashStore implements HashStore {
 
             } catch (OrphanPidRefsFileException oprfe) {
                 // Delete the pid refs file and return, nothing else to delete
-                Path absPidRefsPath = getExpectedPath(
-                    pid, "refs", HashStoreIdTypes.pid.getName()
-                );
+                Path absPidRefsPath = getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName());
                 // Add the pid refs file to deleteList
                 deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
 
@@ -1119,9 +1116,7 @@ public class FileHashStore implements HashStore {
 
             } catch (OrphanRefsFilesException orfe) {
                 // Object does not exist, attempt to remove orphan files
-                Path absPidRefsPath = getExpectedPath(
-                    id, "refs", HashStoreIdTypes.pid.getName()
-                );
+                Path absPidRefsPath = getExpectedPath(id, "refs", HashStoreIdTypes.pid.getName());
                 String cidRead = new String(Files.readAllBytes(absPidRefsPath));
                 // Add the pid refs file to deleteList
                 deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
@@ -1145,9 +1140,7 @@ public class FileHashStore implements HashStore {
 
             } catch (PidNotFoundInCidRefsFileException pnficrfe) {
                 // Delete pid refs file and return, nothing else to delete
-                Path absPidRefsPath = getExpectedPath(
-                    pid, "refs", HashStoreIdTypes.pid.getName()
-                );
+                Path absPidRefsPath = getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName());
                 // Add the pid refs file to deleteList
                 deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
 
@@ -1424,7 +1417,7 @@ public class FileHashStore implements HashStore {
         }
 
         // Create ObjectMetadata to return with pertinent data
-        return new ObjectMetadata(objectCid, storedObjFileSize, hexDigests);
+        return new ObjectMetadata(pid, objectCid, storedObjFileSize, hexDigests);
     }
 
     /**

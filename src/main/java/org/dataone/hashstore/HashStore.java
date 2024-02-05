@@ -176,7 +176,7 @@ public interface HashStore {
         /**
          * Adds/updates metadata (ex. `sysmeta`) to the HashStore by using a given InputStream, a
          * persistent identifier (`pid`) and metadata format (`formatId`). All metadata documents
-         * for a given pid will be stored in the a directory (under ../metadata) that is determined
+         * for a given pid will be stored in the directory (under ../metadata) that is determined
          * by calculating the hash of the given pid, with the document name being the hash of the
          * metadata format (`formatId`).
          * 

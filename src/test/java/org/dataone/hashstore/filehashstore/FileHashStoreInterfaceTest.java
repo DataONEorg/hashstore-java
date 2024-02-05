@@ -1708,7 +1708,7 @@ public class FileHashStoreInterfaceTest {
      * Confirm that deleteMetadata throws exception when pid is empty
      */
     @Test
-    public void deleteMetadata_pidEmpty() throws Exception {
+    public void deleteMetadata_pidEmpty() {
         assertThrows(IllegalArgumentException.class, () -> {
             String formatId = "http://hashstore.tests/types/v1.0";
             fileHashStore.deleteMetadata("", formatId);
