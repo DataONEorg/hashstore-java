@@ -1,11 +1,13 @@
 package org.dataone.hashstore.filehashstore;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -131,6 +133,46 @@ public class FileHashStoreUtility {
             }
         }
         return filePaths;
+    }
+
+    /**
+     * Rename the given path to the 'file name' + '_delete'
+     * 
+     * @param path
+     * @return Path to the file with '_delete' appended
+     * @throws IOException Issue with renaming the given file path
+     */
+    public static Path renamePathForDeletion(Path pathToRename) throws IOException {
+        ensureNotNull(pathToRename, "pathToRename", "renamePathForDeletion");
+        if (!Files.exists(pathToRename)) {
+            String errMsg = "FileHashStoreUtility.renamePathForDeletion - Given path to file: "
+                + pathToRename + " does not exist.";
+            throw new FileNotFoundException(errMsg);
+        }
+        Path parentPath = pathToRename.getParent();
+        Path fileName = pathToRename.getFileName();
+        String newFileName = fileName.toString() + "_delete";
+
+        Path deletePath = parentPath.resolve(newFileName);
+        Files.move(pathToRename, deletePath, StandardCopyOption.ATOMIC_MOVE);
+        return deletePath;
+    }
+
+    /**
+     * Delete all paths found in the given List<Path> object.
+     *
+     * @param deleteList Directory to check
+     * @throws IOException Unexpected I/O error when deleting files
+     */
+    public static void deleteListItems(List<Path> deleteList) throws IOException {
+        ensureNotNull(deleteList, "deleteList", "deleteListItems");
+        if (deleteList.size() > 0) {
+            for (Path deleteItem : deleteList) {
+                if (Files.exists(deleteItem)) {
+                    Files.delete(deleteItem);
+                }
+            }
+        }
     }
 
     /**
