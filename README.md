@@ -91,9 +91,8 @@ tagObject(pid, cid)
 - If desired, this cid can then be used to locate the object on disk by following HashStore's store configuration.
 
 **How do I delete an object if I have the pid?**
-- To delete an object and all its associated reference files, call the Public API method `deleteObject()` with `idType` 'pid'.
+- To delete an object, all its associated reference files and its metadata, call the Public API method `deleteObject()` with `idType` 'pid'. If an `idType` is not given (ex. calling `deleteObject(String pid)`), the `idType` will be assumed to be a 'pid'
 - To delete only an object, call `deleteObject()` with `idType` 'cid' which will remove the object if it it is not referenced by any pids.
-- To delete an object and all its related data (reference files and system metadata), call the Public API method `deleteObject(String pid)`.
 - Note, `deleteObject` and `tagObject` calls are synchronized on their content identifier values so that the shared reference files are not unintentionally modified concurrently. An object that is in the process of being deleted should not be tagged, and vice versa. These calls have been implemented to occur sequentially to improve clarity in the event of an unexpected conflict or issue.
 
 
@@ -106,8 +105,8 @@ HashStore's '/metadata' directory holds all metadata for objects stored in HashS
 - If there are multiple metadata objects, a 'formatId' must be specified when calling `retrieveMetadata` (ex. `retrieveMetadata(pid, formatId)`)
 
 **How do I delete a metadata file?**
-- Like `retrieveMetadata`, call the Public API method `deleteMetadata` which will delete the metadata object associated with the given pid.
-- If there are multiple metadata objects, a 'formatId' must be specified when calling `deleteMetadata` to ensure the expected metadata object is deleted.
+- Like `retrieveMetadata`, call the Public API method `deleteMetadata(String pid, String formatId)` which will delete the metadata object associated with the given pid.
+- To delete all metadata objects related to a given 'pid', call `deleteMetadata(String pid)`
 
 
 ###### What are HashStore reference files?
@@ -158,7 +157,7 @@ hashstore.yaml
 
 HashStore is a Java package, and built using the [Maven](https://maven.apache.org/) build tool.
 
-To install `hashstore` locally, install Java and Maven on your local machine,
+To install `HashStore-java` locally, install Java and Maven on your local machine,
 and then install or build the package with `mvn install` or `mvn package`, respectively.
 
 We also maintain a parallel [Python-based version of HashStore](https://github.com/DataONEorg/hashstore).
