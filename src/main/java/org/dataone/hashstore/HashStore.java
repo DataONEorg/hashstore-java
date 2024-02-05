@@ -289,7 +289,7 @@ public interface HashStore {
          * @param pid      Authority-based identifier
          * @param formatId Metadata namespace/format
          * @throws IllegalArgumentException When pid or formatId is null or empty
-         * @throws IOException              I/O error when deleting empty directories
+         * @throws IOException              I/O error when deleting metadata or empty directories
          * @throws NoSuchAlgorithmException When algorithm used to calculate object address is not
          *                                  supported
          */
@@ -297,10 +297,13 @@ public interface HashStore {
                 IOException, NoSuchAlgorithmException;
 
         /**
-         * @see #deleteMetadata(String, String)
+         * Deletes all metadata related for the given 'pid' from HashStore
          * 
-         *      If `deleteMetadata` is called with signature (String pid), the metadata
-         *      document deleted will be the given pid's 'sysmeta'
+         * @param pid Authority-based identifier
+         * @throws IllegalArgumentException If pid is invalid
+         * @throws IOException              I/O error when deleting metadata or empty directories
+         * @throws NoSuchAlgorithmException When algorithm used to calculate object address is not
+         *                                  supported
          */
         public void deleteMetadata(String pid) throws IllegalArgumentException, IOException,
                 NoSuchAlgorithmException;

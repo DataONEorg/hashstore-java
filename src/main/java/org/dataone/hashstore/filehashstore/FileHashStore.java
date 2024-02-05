@@ -1267,7 +1267,31 @@ public class FileHashStore implements HashStore {
     @Override
     public void deleteMetadata(String pid) throws IllegalArgumentException, IOException,
         NoSuchAlgorithmException {
-        deleteMetadata(pid, DEFAULT_METADATA_NAMESPACE);
+        logFileHashStore.debug(
+            "FileHashStore.deleteMetadata - Called to delete all metadata for pid: " + pid
+        );
+        FileHashStoreUtility.ensureNotNull(pid, "pid", "deleteMetadata");
+        FileHashStoreUtility.checkForEmptyString(pid, "pid", "deleteMetadata");
+
+        List<Path> deleteList = new ArrayList<>();
+        // Metadata directory
+        String pidHexDigest = FileHashStoreUtility.getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
+        String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+            DIRECTORY_DEPTH, DIRECTORY_WIDTH, pidHexDigest
+        );
+        Path expectedPidMetadataDirectory = METADATA_STORE_DIRECTORY.resolve(pidRelativePath);
+        // Add all metadata doc paths to a List to iterate over below
+        List<Path> metadataDocPaths = FileHashStoreUtility.getFilesFromDir(
+            expectedPidMetadataDirectory
+        );
+        for (Path metadataDoc : metadataDocPaths) {
+            deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDoc));
+        }
+        // Delete all items in the list
+        FileHashStoreUtility.deleteListItems(deleteList);
+        logFileHashStore.info(
+            "FileHashStore.deleteMetadata - All related metadata deleted for: " + pid
+        );
     }
 
     @Override

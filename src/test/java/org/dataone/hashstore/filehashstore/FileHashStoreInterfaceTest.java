@@ -1653,7 +1653,7 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Confirm that deleteMetadata deletes object and empty subdirectories with overload method
+     * Confirm that deleteMetadata deletes all metadata stored for a given pid.
      */
     @Test
     public void deleteMetadata_overload() throws Exception {
@@ -1662,16 +1662,27 @@ public class FileHashStoreInterfaceTest {
 
             // Get test metadata file
             Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+            String formatIdTwo = "ns.type.2";
+            String formatIdThree = "ns.type.3";
 
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
             fileHashStore.storeMetadata(metadataStream, pid, null);
+            fileHashStore.storeMetadata(metadataStream, pid, formatIdTwo);
+            fileHashStore.storeMetadata(metadataStream, pid, formatIdThree);
 
             fileHashStore.deleteMetadata(pid);
 
             // Check that file doesn't exist
             String storeFormatId = (String) fhsProperties.get("storeMetadataNamespace");
             Path metadataCidPath = fileHashStore.getExpectedPath(pid, "metadata", storeFormatId);
+            Path metadataCidPathTwo = fileHashStore.getExpectedPath(pid, "metadata", formatIdTwo);
+            Path metadataCidPathThree = fileHashStore.getExpectedPath(
+                pid, "metadata", formatIdThree
+            );
+
             assertFalse(Files.exists(metadataCidPath));
+            assertFalse(Files.exists(metadataCidPathTwo));
+            assertFalse(Files.exists(metadataCidPathThree));
 
             // Check that parent directories are not deleted
             assertTrue(Files.exists(metadataCidPath.getParent()));
