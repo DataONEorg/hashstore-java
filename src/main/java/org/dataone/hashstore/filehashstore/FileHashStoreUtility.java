@@ -138,7 +138,7 @@ public class FileHashStoreUtility {
     /**
      * Rename the given path to the 'file name' + '_delete'
      * 
-     * @param pathToRename The path to the file to  be renamed with '_deleted'
+     * @param pathToRename The path to the file to be renamed with '_delete'
      * @return Path to the file with '_delete' appended
      * @throws IOException Issue with renaming the given file path
      */
