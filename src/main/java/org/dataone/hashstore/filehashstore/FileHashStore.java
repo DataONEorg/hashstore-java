@@ -660,15 +660,55 @@ public class FileHashStore implements HashStore {
         try {
             Path absPidRefsPath = getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName());
             Path absCidRefsPath = getExpectedPath(cid, "refs", HashStoreIdTypes.cid.getName());
+            boolean pidRefsFound = Files.exists(absPidRefsPath);
+            boolean cidRefsFound = Files.exists(absCidRefsPath);
 
-            // Check that pid refs file doesn't exist yet
-            if (Files.exists(absPidRefsPath)) {
-                String errMsg = "FileHashStore.tagObject - pid refs file already exists for pid: "
-                    + pid + ". A pid can only reference one cid.";
-                logFileHashStore.error(errMsg);
-                throw new PidRefsFileExistsException(errMsg);
-
-            } else if (Files.exists(absCidRefsPath)) {
+            // Both files found, confirm that reference files are where they are expected to be
+            if (pidRefsFound && cidRefsFound) {
+                verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
+                logFileHashStore.info(
+                    "FileHashStore.tagObject - Object with cid: " + cid
+                        + " already exists and is tagged with pid: " + pid
+                );
+            } else if (pidRefsFound && !cidRefsFound) {
+                // If pid refs exists, it can only contain and reference one cid
+                // First, compare the cid retrieved from the pid refs file from the supplid cid
+                String retrievedCid = new String(Files.readAllBytes(absPidRefsPath));
+                if (retrievedCid.equalsIgnoreCase(cid)) {
+                    // The pid correctly references the cid, but the cid refs file is missing
+                    File cidRefsTmpFile = writeRefsFile(pid, HashStoreIdTypes.cid.getName());
+                    File absPathCidRefsFile = absCidRefsPath.toFile();
+                    move(cidRefsTmpFile, absPathCidRefsFile, "refs");
+                    // Verify tagging process, this throws exceptions if there's an issue
+                    verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
+                    logFileHashStore.info(
+                        "FileHashStore.tagObject - Pid refs file exists for pid: " + pid
+                            + ", but cid refs file for: " + cid
+                            + " is missing. Missing cid refs file created and tagging completed."
+                    );
+                    return;
+                } else {
+                    // Check if the retrieved cid refs file exists and pid is referenced
+                    Path retrievedAbsCidRefsPath = getExpectedPath(
+                        retrievedCid, "refs", HashStoreIdTypes.cid.getName()
+                    );
+                    boolean retrievedAbsCidRefsPathExists = Files.exists(retrievedAbsCidRefsPath);
+                    if (retrievedAbsCidRefsPathExists && isStringInRefsFile(
+                        pid, retrievedAbsCidRefsPath
+                    )) {
+                        // This pid is accounted for and tagged as expected.
+                        String errMsg =
+                            "FileHashStore.tagObject - pid refs file already exists for pid: " + pid
+                                + ", and the associated cid refs file contains the pid."
+                                + " A pid can only reference one cid.";
+                        logFileHashStore.error(errMsg);
+                        throw new PidRefsFileExistsException(errMsg);
+                    }
+                    // Orphaned pid refs file found, the retrieved cid refs file exists
+                    // but doesn't contain the cid. Proceed to overwrite the pid refs file.
+                    // There is no return statement, so we move out of this if block.
+                }
+            } else if (!pidRefsFound && cidRefsFound) {
                 // Only update cid refs file if pid is not in the file
                 boolean pidFoundInCidRefFiles = isStringInRefsFile(pid, absCidRefsPath);
                 if (!pidFoundInCidRefFiles) {
@@ -680,29 +720,27 @@ public class FileHashStore implements HashStore {
                 move(pidRefsTmpFile, absPathPidRefsFile, "refs");
                 // Verify tagging process, this throws exceptions if there's an issue
                 verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
-
                 logFileHashStore.info(
                     "FileHashStore.tagObject - Object with cid: " + cid
                         + " has been updated and tagged successfully with pid: " + pid
                 );
-
-            } else {
-                // Get pid and cid refs files 
-                File pidRefsTmpFile = writeRefsFile(cid, HashStoreIdTypes.pid.getName());
-                File cidRefsTmpFile = writeRefsFile(pid, HashStoreIdTypes.cid.getName());
-                // Move refs files to permanent location
-                File absPathPidRefsFile = absPidRefsPath.toFile();
-                File absPathCidRefsFile = absCidRefsPath.toFile();
-                move(pidRefsTmpFile, absPathPidRefsFile, "refs");
-                move(cidRefsTmpFile, absPathCidRefsFile, "refs");
-                // Verify tagging process, this throws exceptions if there's an issue
-                verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
-
-                logFileHashStore.info(
-                    "FileHashStore.tagObject - Object with cid: " + cid
-                        + " has been tagged successfully with pid: " + pid
-                );
+                return;
             }
+
+            // Get pid and cid refs files 
+            File pidRefsTmpFile = writeRefsFile(cid, HashStoreIdTypes.pid.getName());
+            File cidRefsTmpFile = writeRefsFile(pid, HashStoreIdTypes.cid.getName());
+            // Move refs files to permanent location
+            File absPathPidRefsFile = absPidRefsPath.toFile();
+            File absPathCidRefsFile = absCidRefsPath.toFile();
+            move(pidRefsTmpFile, absPathPidRefsFile, "refs");
+            move(cidRefsTmpFile, absPathCidRefsFile, "refs");
+            // Verify tagging process, this throws exceptions if there's an issue
+            verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
+            logFileHashStore.info(
+                "FileHashStore.tagObject - Object with cid: " + cid
+                    + " has been tagged successfully with pid: " + pid
+            );
 
         } finally {
             // Release lock
