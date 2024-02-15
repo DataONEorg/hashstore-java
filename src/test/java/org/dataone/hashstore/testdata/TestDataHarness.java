@@ -47,6 +47,10 @@ public class TestDataHarness {
                         "sha512-224", "107f9facb268471de250625440b6c8b7ff8296fbe5d89bed4a61fd35"
                 );
                 values1.put(
+                        "metadata_cid",
+                        "323e0799524cec4c7e14d31289cefd884b563b5c052f154a066de5ec1e477da7"
+                );
+                values1.put(
                         "metadata_sha256",
                         "158d7e55c36a810d7c14479c952a4d0b370f2b844808f2ea2b20d7df66768b04"
                 );
@@ -76,6 +80,10 @@ public class TestDataHarness {
                         "sha512-224", "7a2b22e36ced9e91cf8cdf6971897ec4ae21780e11d1c3903011af33"
                 );
                 values2.put(
+                        "metadata_cid",
+                        "ddf07952ef28efc099d10d8b682480f7d2da60015f5d8873b6e1ea75b4baf689"
+                );
+                values2.put(
                         "metadata_sha256",
                         "d87c386943ceaeba5644c52b23111e4f47972e6530df0e6f0f41964b25855b08"
                 );
@@ -103,6 +111,10 @@ public class TestDataHarness {
                 );
                 values3.put(
                         "sha512-224", "e1789a91c9df334fdf6ee5d295932ad96028c426a18b17016a627099"
+                );
+                values3.put(
+                        "metadata_cid",
+                        "9a2e08c666b728e6cbd04d247b9e556df3de5b2ca49f7c5a24868eb27cddbff2"
                 );
                 values3.put(
                         "metadata_sha256",
