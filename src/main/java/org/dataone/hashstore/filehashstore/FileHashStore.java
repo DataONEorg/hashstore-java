@@ -41,6 +41,8 @@ import org.dataone.hashstore.exceptions.OrphanRefsFilesException;
 import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 
+// TODO REMINDER: Both deleteObject and deleteMetadata need to be thread safe, sync cid and pid
+
 /**
  * FileHashStore is a HashStore adapter class that manages the storage of objects and metadata to a
  * given store path on disk. To instantiate FileHashStore, the calling app must provide predefined
