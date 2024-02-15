@@ -37,6 +37,7 @@ import org.apache.commons.logging.LogFactory;
 import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.HashStore;
 import org.dataone.hashstore.exceptions.OrphanPidRefsFileException;
+import org.dataone.hashstore.exceptions.OrphanRefsFilesException;
 import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 
@@ -69,6 +70,21 @@ public class FileHashStore implements HashStore {
 
     public static final String[] SUPPORTED_HASH_ALGORITHMS = {"MD2", "MD5", "SHA-1", "SHA-256",
         "SHA-384", "SHA-512", "SHA-512/224", "SHA-512/256"};
+
+    public enum HashStoreIdTypes {
+
+        cid("cid"), pid("pid");
+
+        final String identifierType;
+
+        HashStoreIdTypes(String idType) {
+            identifierType = idType;
+        }
+
+        public String getName() {
+            return identifierType;
+        }
+    }
 
     enum DefaultHashAlgorithms {
         MD5("MD5"), SHA_1("SHA-1"), SHA_256("SHA-256"), SHA_384("SHA-384"), SHA_512("SHA-512");
@@ -146,8 +162,8 @@ public class FileHashStore implements HashStore {
         OBJECT_TMP_FILE_DIRECTORY = OBJECT_STORE_DIRECTORY.resolve("tmp");
         METADATA_TMP_FILE_DIRECTORY = METADATA_STORE_DIRECTORY.resolve("tmp");
         REFS_TMP_FILE_DIRECTORY = REFS_STORE_DIRECTORY.resolve("tmp");
-        REFS_PID_FILE_DIRECTORY = REFS_STORE_DIRECTORY.resolve("pid");
-        REFS_CID_FILE_DIRECTORY = REFS_STORE_DIRECTORY.resolve("cid");
+        REFS_PID_FILE_DIRECTORY = REFS_STORE_DIRECTORY.resolve(HashStoreIdTypes.pid.getName());
+        REFS_CID_FILE_DIRECTORY = REFS_STORE_DIRECTORY.resolve(HashStoreIdTypes.cid.getName());
 
         try {
             // Physically create object & metadata store and tmp directories
@@ -265,7 +281,7 @@ public class FileHashStore implements HashStore {
             );
 
             if (Files.isDirectory(storePath)) {
-                if (!FileHashStoreUtility.isDirectoryEmpty(storePath)) {
+                if (FileHashStoreUtility.dirContainsFiles(storePath)) {
                     String errMsg = "FileHashStore - Missing 'hashstore.yaml' but directories"
                         + " and/or objects found.";
                     logFileHashStore.fatal(errMsg);
@@ -491,7 +507,7 @@ public class FileHashStore implements HashStore {
             tagObject(pid, cid);
             logFileHashStore.info(
                 "FileHashStore.syncPutObject - Object stored for pid: " + pid
-                    + ". Permanent address: " + getRealPath(pid, "object", null)
+                    + ". Permanent address: " + getExpectedPath(pid, "object", null)
             );
             return objInfo;
 
@@ -608,10 +624,140 @@ public class FileHashStore implements HashStore {
         return storeObject(object, pid, additionalAlgorithm, null, null, -1);
     }
 
+
+    @Override
+    public void tagObject(String pid, String cid) throws IOException, PidRefsFileExistsException,
+        NoSuchAlgorithmException, FileNotFoundException, InterruptedException {
+        logFileHashStore.debug(
+            "FileHashStore.tagObject - Called to tag cid (" + cid + ") with pid: " + pid
+        );
+        // Validate input parameters
+        FileHashStoreUtility.ensureNotNull(pid, "pid", "tagObject");
+        FileHashStoreUtility.ensureNotNull(cid, "cid", "tagObject");
+        FileHashStoreUtility.checkForEmptyString(pid, "pid", "tagObject");
+        FileHashStoreUtility.checkForEmptyString(cid, "cid", "tagObject");
+
+        synchronized (referenceLockedCids) {
+            while (referenceLockedCids.contains(cid)) {
+                try {
+                    referenceLockedCids.wait(TIME_OUT_MILLISEC);
+
+                } catch (InterruptedException ie) {
+                    String errMsg =
+                        "FileHashStore.tagObject - referenceLockedCids lock was interrupted while"
+                            + " waiting to tag pid: " + pid + " and cid: " + cid
+                            + ". InterruptedException: " + ie.getMessage();
+                    logFileHashStore.error(errMsg);
+                    throw new InterruptedException(errMsg);
+                }
+            }
+            logFileHashStore.debug(
+                "FileHashStore.tagObject - Synchronizing referenceLockedCids for cid: " + cid
+            );
+            referenceLockedCids.add(cid);
+        }
+
+        try {
+            Path absPidRefsPath = getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName());
+            Path absCidRefsPath = getExpectedPath(cid, "refs", HashStoreIdTypes.cid.getName());
+            boolean pidRefsFound = Files.exists(absPidRefsPath);
+            boolean cidRefsFound = Files.exists(absCidRefsPath);
+
+            // Both files found, confirm that reference files are where they are expected to be
+            if (pidRefsFound && cidRefsFound) {
+                verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
+                logFileHashStore.info(
+                    "FileHashStore.tagObject - Object with cid: " + cid
+                        + " already exists and is tagged with pid: " + pid
+                );
+            } else if (pidRefsFound && !cidRefsFound) {
+                // If pid refs exists, it can only contain and reference one cid
+                // First, compare the cid retrieved from the pid refs file from the supplid cid
+                String retrievedCid = new String(Files.readAllBytes(absPidRefsPath));
+                if (retrievedCid.equalsIgnoreCase(cid)) {
+                    // The pid correctly references the cid, but the cid refs file is missing
+                    File cidRefsTmpFile = writeRefsFile(pid, HashStoreIdTypes.cid.getName());
+                    File absPathCidRefsFile = absCidRefsPath.toFile();
+                    move(cidRefsTmpFile, absPathCidRefsFile, "refs");
+                    // Verify tagging process, this throws exceptions if there's an issue
+                    verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
+                    logFileHashStore.info(
+                        "FileHashStore.tagObject - Pid refs file exists for pid: " + pid
+                            + ", but cid refs file for: " + cid
+                            + " is missing. Missing cid refs file created and tagging completed."
+                    );
+                    return;
+                } else {
+                    // Check if the retrieved cid refs file exists and pid is referenced
+                    Path retrievedAbsCidRefsPath = getExpectedPath(
+                        retrievedCid, "refs", HashStoreIdTypes.cid.getName()
+                    );
+                    boolean retrievedAbsCidRefsPathExists = Files.exists(retrievedAbsCidRefsPath);
+                    if (retrievedAbsCidRefsPathExists && isStringInRefsFile(
+                        pid, retrievedAbsCidRefsPath
+                    )) {
+                        // This pid is accounted for and tagged as expected.
+                        String errMsg =
+                            "FileHashStore.tagObject - pid refs file already exists for pid: " + pid
+                                + ", and the associated cid refs file contains the pid."
+                                + " A pid can only reference one cid.";
+                        logFileHashStore.error(errMsg);
+                        throw new PidRefsFileExistsException(errMsg);
+                    }
+                    // Orphaned pid refs file found, the retrieved cid refs file exists
+                    // but doesn't contain the cid. Proceed to overwrite the pid refs file.
+                    // There is no return statement, so we move out of this if block.
+                }
+            } else if (!pidRefsFound && cidRefsFound) {
+                // Only update cid refs file if pid is not in the file
+                boolean pidFoundInCidRefFiles = isStringInRefsFile(pid, absCidRefsPath);
+                if (!pidFoundInCidRefFiles) {
+                    updateRefsFile(pid, absCidRefsPath, "add");
+                }
+                // Get the pid refs file
+                File pidRefsTmpFile = writeRefsFile(cid, HashStoreIdTypes.pid.getName());
+                File absPathPidRefsFile = absPidRefsPath.toFile();
+                move(pidRefsTmpFile, absPathPidRefsFile, "refs");
+                // Verify tagging process, this throws exceptions if there's an issue
+                verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
+                logFileHashStore.info(
+                    "FileHashStore.tagObject - Object with cid: " + cid
+                        + " has been updated and tagged successfully with pid: " + pid
+                );
+                return;
+            }
+
+            // Get pid and cid refs files 
+            File pidRefsTmpFile = writeRefsFile(cid, HashStoreIdTypes.pid.getName());
+            File cidRefsTmpFile = writeRefsFile(pid, HashStoreIdTypes.cid.getName());
+            // Move refs files to permanent location
+            File absPathPidRefsFile = absPidRefsPath.toFile();
+            File absPathCidRefsFile = absCidRefsPath.toFile();
+            move(pidRefsTmpFile, absPathPidRefsFile, "refs");
+            move(cidRefsTmpFile, absPathCidRefsFile, "refs");
+            // Verify tagging process, this throws exceptions if there's an issue
+            verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
+            logFileHashStore.info(
+                "FileHashStore.tagObject - Object with cid: " + cid
+                    + " has been tagged successfully with pid: " + pid
+            );
+
+        } finally {
+            // Release lock
+            synchronized (referenceLockedCids) {
+                logFileHashStore.debug(
+                    "FileHashStore.tagObject - Releasing referenceLockedCids for cid: " + cid
+                );
+                referenceLockedCids.remove(cid);
+                referenceLockedCids.notifyAll();
+            }
+        }
+    }
+
     @Override
     public boolean verifyObject(
         ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize
-    ) throws IOException, NoSuchAlgorithmException, IllegalArgumentException {
+    ) throws IllegalArgumentException {
         logFileHashStore.debug(
             "FileHashStore.verifyObject - Called to verify object with id: " + objectInfo.getCid()
         );
@@ -651,108 +797,18 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public void tagObject(String pid, String cid) throws IOException, PidRefsFileExistsException,
-        NoSuchAlgorithmException, FileNotFoundException, InterruptedException {
-        logFileHashStore.debug(
-            "FileHashStore.tagObject - Called to tag cid (" + cid + ") with pid: " + pid
-        );
-        // Validate input parameters
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "tagObject");
-        FileHashStoreUtility.ensureNotNull(cid, "cid", "tagObject");
-        FileHashStoreUtility.checkForEmptyString(pid, "pid", "tagObject");
-        FileHashStoreUtility.checkForEmptyString(cid, "cid", "tagObject");
-
-        synchronized (referenceLockedCids) {
-            while (referenceLockedCids.contains(cid)) {
-                try {
-                    referenceLockedCids.wait(TIME_OUT_MILLISEC);
-
-                } catch (InterruptedException ie) {
-                    String errMsg =
-                        "FileHashStore.tagObject - referenceLockedCids lock was interrupted while"
-                            + " waiting to tag pid: " + pid + " and cid: " + cid
-                            + ". InterruptedException: " + ie.getMessage();
-                    logFileHashStore.error(errMsg);
-                    throw new InterruptedException(errMsg);
-                }
-            }
-            logFileHashStore.debug(
-                "FileHashStore.tagObject - Synchronizing referenceLockedCids for cid: " + cid
-            );
-            referenceLockedCids.add(cid);
-        }
-
-        try {
-            Path absPidRefsPath = getRealPath(pid, "refs", "pid");
-            Path absCidRefsPath = getRealPath(cid, "refs", "cid");
-
-            // Check that pid refs file doesn't exist yet
-            if (Files.exists(absPidRefsPath)) {
-                String errMsg = "FileHashStore.tagObject - pid refs file already exists for pid: "
-                    + pid + ". A pid can only reference one cid.";
-                logFileHashStore.error(errMsg);
-                throw new PidRefsFileExistsException(errMsg);
-
-            } else if (Files.exists(absCidRefsPath)) {
-                // Only update cid refs file if pid is not in the file
-                boolean pidFoundInCidRefFiles = isPidInCidRefsFile(pid, absCidRefsPath);
-                if (!pidFoundInCidRefFiles) {
-                    updateCidRefsFiles(pid, absCidRefsPath);
-                }
-                // Get the pid refs file
-                File pidRefsTmpFile = writePidRefsFile(cid);
-                File absPathPidRefsFile = absPidRefsPath.toFile();
-                move(pidRefsTmpFile, absPathPidRefsFile, "refs");
-                // Verify tagging process, this throws exceptions if there's an issue
-                verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
-
-                logFileHashStore.info(
-                    "FileHashStore.tagObject - Object with cid: " + cid
-                        + " has been updated and tagged successfully with pid: " + pid
-                );
-
-            } else {
-                // Get pid and cid refs files 
-                File pidRefsTmpFile = writePidRefsFile(cid);
-                File cidRefsTmpFile = writeCidRefsFile(pid);
-                // Move refs files to permanent location
-                File absPathPidRefsFile = absPidRefsPath.toFile();
-                File absPathCidRefsFile = absCidRefsPath.toFile();
-                move(pidRefsTmpFile, absPathPidRefsFile, "refs");
-                move(cidRefsTmpFile, absPathCidRefsFile, "refs");
-                // Verify tagging process, this throws exceptions if there's an issue
-                verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
-
-                logFileHashStore.info(
-                    "FileHashStore.tagObject - Object with cid: " + cid
-                        + " has been tagged successfully with pid: " + pid
-                );
-            }
-
-        } finally {
-            // Release lock
-            synchronized (referenceLockedCids) {
-                logFileHashStore.debug(
-                    "FileHashStore.tagObject - Releasing referenceLockedCids for cid: " + cid
-                );
-                referenceLockedCids.remove(cid);
-                referenceLockedCids.notifyAll();
-            }
-        }
-    }
-
-    @Override
-    public String findObject(String pid) throws NoSuchAlgorithmException, IOException {
+    public String findObject(String pid) throws NoSuchAlgorithmException, IOException,
+        OrphanPidRefsFileException, PidNotFoundInCidRefsFileException, OrphanRefsFilesException {
         logFileHashStore.debug("FileHashStore.findObject - Called to find object for pid: " + pid);
         FileHashStoreUtility.ensureNotNull(pid, "pid", "findObject");
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "findObject");
 
         // Get path of the pid references file
-        Path absPidRefsPath = getRealPath(pid, "refs", "pid");
+        Path absPidRefsPath = getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName());
 
         if (Files.exists(absPidRefsPath)) {
             String cid = new String(Files.readAllBytes(absPidRefsPath));
-            Path absCidRefsPath = getRealPath(cid, "refs", "cid");
+            Path absCidRefsPath = getExpectedPath(cid, "refs", HashStoreIdTypes.cid.getName());
 
             // Throw exception if the cid refs file doesn't exist
             if (!Files.exists(absCidRefsPath)) {
@@ -762,12 +818,25 @@ public class FileHashStore implements HashStore {
                 logFileHashStore.error(errMsg);
                 throw new OrphanPidRefsFileException(errMsg);
             }
-            // If the pid is found in the expected cid refs file, return it
-            if (isPidInCidRefsFile(pid, absCidRefsPath)) {
+            // If the pid is found in the expected cid refs file, and the object exists, return it
+            if (isStringInRefsFile(pid, absCidRefsPath)) {
                 logFileHashStore.info(
-                    "FileHashStore.findObject - Cid (" + cid + ") found for pid:" + pid
+                    "FileHashStore.findObject - Cid (" + cid + ") found for pid: " + pid
                 );
-                return cid;
+
+                String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, cid
+                );
+                Path realPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
+                if (Files.exists(realPath)) {
+                    return cid;
+
+                } else {
+                    String errMsg = "FileHashStore.findObject - Object with cid: " + cid
+                        + " does not exist, but pid and cid reference file found for pid: " + pid;
+                    logFileHashStore.error(errMsg);
+                    throw new OrphanRefsFilesException(errMsg);
+                }
 
             } else {
                 String errMsg = "FileHashStore.deleteObject - Pid refs file exists, but pid (" + pid
@@ -781,14 +850,13 @@ public class FileHashStore implements HashStore {
             String errMsg = "FileHashStore.findObject - Unable to find cid for pid: " + pid
                 + ". Pid refs file does not exist at: " + absPidRefsPath;
             logFileHashStore.error(errMsg);
-            // Create custom exception class
             throw new FileNotFoundException(errMsg);
         }
     }
 
     @Override
     public String storeMetadata(InputStream metadata, String pid, String formatId)
-        throws IOException, FileNotFoundException, IllegalArgumentException, InterruptedException,
+        throws IOException, IllegalArgumentException, FileNotFoundException, InterruptedException,
         NoSuchAlgorithmException {
         logFileHashStore.debug(
             "FileHashStore.storeMetadata - Called to store metadata for pid: " + pid
@@ -848,12 +916,12 @@ public class FileHashStore implements HashStore {
                     + ". formatId: " + checkedFormatId
             );
             // Store metadata
-            String metadataCid = putMetadata(metadata, pid, checkedFormatId);
+            String pathToStoredMetadata = putMetadata(metadata, pid, checkedFormatId);
             logFileHashStore.info(
-                "FileHashStore.storeMetadata - Metadata stored for pid: " + pid
-                    + ". Metadata Content Identifier (metadataCid): " + metadataCid
+                "FileHashStore.storeMetadata - Metadata stored for pid: " + pid + " at: "
+                    + pathToStoredMetadata
             );
-            return metadataCid;
+            return pathToStoredMetadata;
 
         } catch (IOException ioe) {
             // Covers FileNotFoundException
@@ -887,13 +955,14 @@ public class FileHashStore implements HashStore {
      */
     @Override
     public String storeMetadata(InputStream metadata, String pid) throws IOException,
-        IllegalArgumentException, InterruptedException, NoSuchAlgorithmException {
+        IllegalArgumentException, FileNotFoundException, InterruptedException,
+        NoSuchAlgorithmException {
         return storeMetadata(metadata, pid, DEFAULT_METADATA_NAMESPACE);
     }
 
     @Override
     public InputStream retrieveObject(String pid) throws IllegalArgumentException,
-        NoSuchAlgorithmException, FileNotFoundException, IOException {
+        FileNotFoundException, IOException, NoSuchAlgorithmException {
         logFileHashStore.debug(
             "FileHashStore.retrieveObject - Called to retrieve object for pid: " + pid
         );
@@ -902,7 +971,7 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "retrieveObject");
 
         // Get permanent address of the pid by calculating its sha-256 hex digest
-        Path objRealPath = getRealPath(pid, "object", null);
+        Path objRealPath = getExpectedPath(pid, "object", null);
 
         // Check to see if object exists
         if (!Files.exists(objRealPath)) {
@@ -945,7 +1014,7 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(formatId, "formatId", "retrieveMetadata");
 
         // Get permanent address of the pid by calculating its sha-256 hex digest
-        Path metadataCidPath = getRealPath(pid, "metadata", formatId);
+        Path metadataCidPath = getExpectedPath(pid, "metadata", formatId);
 
         // Check to see if metadata exists
         if (!Files.exists(metadataCidPath)) {
@@ -989,7 +1058,7 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "retrieveMetadata");
 
         // Get permanent address of the pid by calculating its sha-256 hex digest
-        Path metadataCidPath = getRealPath(pid, "metadata", DEFAULT_METADATA_NAMESPACE);
+        Path metadataCidPath = getExpectedPath(pid, "metadata", DEFAULT_METADATA_NAMESPACE);
 
         // Check to see if metadata exists
         if (!Files.exists(metadataCidPath)) {
@@ -1021,143 +1090,183 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public void deleteObject(String cid, boolean deleteCid) throws IllegalArgumentException,
-        FileNotFoundException, IOException, NoSuchAlgorithmException {
+    public void deleteObject(String idType, String id) throws IllegalArgumentException, IOException,
+        NoSuchAlgorithmException, InterruptedException {
         logFileHashStore.debug(
-            "FileHashStore.deleteObject - Called to delete object with content identifeir: " + cid
+            "FileHashStore.deleteObject - Called to delete object for id: " + id + "(" + idType
+                + ")"
         );
-        if (deleteCid) {
-            // Validate input parameters
-            FileHashStoreUtility.ensureNotNull(cid, "cid", "deleteObject");
-            FileHashStoreUtility.checkForEmptyString(cid, "cid", "deleteObject");
+        // Validate input parameters
+        FileHashStoreUtility.ensureNotNull(id, "id", "deleteObject");
+        FileHashStoreUtility.checkForEmptyString(id, "id", "deleteObject");
+        if (!idType.equals(HashStoreIdTypes.pid.getName()) && !idType.equals(
+            HashStoreIdTypes.cid.getName()
 
-            // Confirm that the object called to delete does not have a cid reference file
-            Path absCidRefsPath = getRealPath(cid, "refs", "cid");
-            if (Files.exists(absCidRefsPath)) {
-                // The cid is referenced by pids, do not delete.
+        )) {
+            String errMsg = "FileHashStore.deleteObject - 'idType' must be 'pid' or 'cid'";
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
+        }
+
+        // If 'idType' is cid, attempt to delete the object directly without checking refs files
+        if (idType.equals(HashStoreIdTypes.cid.getName())) {
+            deleteObjectByCid(id);
+
+        } else {
+            // Else 'idType' is pid
+            String cid;
+            String pid = id;
+            List<Path> deleteList = new ArrayList<>();
+
+            // Get list of metadata documents, these will always be deleted if they exist.
+            // Metadata directory
+            String pidHexDigest = FileHashStoreUtility.getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
+            String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+                DIRECTORY_DEPTH, DIRECTORY_WIDTH, pidHexDigest
+            );
+            Path expectedPidMetadataDirectory = METADATA_STORE_DIRECTORY.resolve(pidRelativePath);
+            // Add all metadata doc paths to a List to iterate over below
+            List<Path> metadataDocPaths = FileHashStoreUtility.getFilesFromDir(
+                expectedPidMetadataDirectory
+            );
+            for (Path metadataDoc : metadataDocPaths) {
+                deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDoc));
+            }
+
+            // Before we begin deleting files, we handle orphaned files scenarios
+            try {
+                // Begin by looking for the cid and confirming state
+                // If a custom exception is thrown, this try block will return;
+                cid = findObject(pid);
+
+            } catch (OrphanPidRefsFileException oprfe) {
+                // Delete the pid refs file and return, nothing else to delete
+                Path absPidRefsPath = getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName());
+                // Add the pid refs file to deleteList
+                deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
+
+                FileHashStoreUtility.deleteListItems(deleteList);
+                String warnMsg =
+                    "FileHashStore.deleteObject - Cid refs file does not exist for pid: " + pid
+                        + ". Deleted orphan pid refs file.";
+                logFileHashStore.warn(warnMsg);
                 return;
 
-            } else {
-                // Get permanent address of the actual cid
-                String objShardString = FileHashStoreUtility.getHierarchicalPathString(
-                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, cid
-                );
-                Path expectedRealPath = OBJECT_STORE_DIRECTORY.resolve(objShardString);
+            } catch (OrphanRefsFilesException orfe) {
+                // Object does not exist, attempt to remove orphan files
+                Path absPidRefsPath = getExpectedPath(id, "refs", HashStoreIdTypes.pid.getName());
+                String cidRead = new String(Files.readAllBytes(absPidRefsPath));
+                // Add the pid refs file to deleteList
+                deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
 
-                // If file exists, delete it.
-                if (Files.exists(expectedRealPath)) {
-                    Files.delete(expectedRealPath);
+                // Remove the pid from the cid refs file
+                Path absCidRefsPath = getExpectedPath(
+                    cidRead, "refs", HashStoreIdTypes.cid.getName()
+                );
+                updateRefsFile(pid, absCidRefsPath, "remove");
+                // Add the cid reference file to deleteList if it's now empty
+                if (Files.size(absCidRefsPath) == 0) {
+                    deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
+                }
+
+                FileHashStoreUtility.deleteListItems(deleteList);
+                String warnMsg = "FileHashStore.deleteObject - Object with cid: " + cidRead
+                    + " does not exist, but pid and cid reference file found for pid: " + pid
+                    + ". Deleted orphan files.";
+                logFileHashStore.warn(warnMsg);
+                return;
+
+            } catch (PidNotFoundInCidRefsFileException pnficrfe) {
+                // Delete pid refs file and return, nothing else to delete
+                Path absPidRefsPath = getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName());
+                // Add the pid refs file to deleteList
+                deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
+
+                // Delete items
+                FileHashStoreUtility.deleteListItems(deleteList);
+                String warnMsg =
+                    "FileHashStore.deleteObject - Pid not found in expected cid refs file for pid: "
+                        + pid + ". Deleted orphan pid refs file.";
+                logFileHashStore.warn(warnMsg);
+                return;
+            }
+
+            // Proceed with comprehensive deletion - cid exists, nothing out of place
+            // Get all the required paths to streamline deletion process
+            // Permanent address of the object
+            Path objRealPath = getExpectedPath(pid, "object", null);
+            // Cid refs file
+            Path absCidRefsPath = getExpectedPath(cid, "refs", HashStoreIdTypes.cid.getName());
+            // Pid refs file
+            Path absPidRefsPath = getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName());
+
+            synchronized (referenceLockedCids) {
+                while (referenceLockedCids.contains(cid)) {
+                    try {
+                        referenceLockedCids.wait(TIME_OUT_MILLISEC);
+
+                    } catch (InterruptedException ie) {
+                        String errMsg =
+                            "FileHashStore.deleteObject - referenceLockedCids lock was interrupted while"
+                                + " waiting to delete object with cid: " + cid
+                                + ". InterruptedException: " + ie.getMessage();
+                        logFileHashStore.error(errMsg);
+                        throw new InterruptedException(errMsg);
+                    }
+                }
+                logFileHashStore.debug(
+                    "FileHashStore.deleteObject - Synchronizing referenceLockedCids for cid: " + cid
+                );
+                referenceLockedCids.add(cid);
+            }
+
+            try {
+                // Then pid reference file
+                deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
+                // Remove pid from cid refs file
+                updateRefsFile(pid, absCidRefsPath, "remove");
+                // Delete obj and cid refs file only if the cid refs file is empty
+                if (Files.size(absCidRefsPath) == 0) {
+                    // Delete empty cid refs file
+                    deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
+                    // Delete actual object
+                    deleteList.add(FileHashStoreUtility.renamePathForDeletion(objRealPath));
+                } else {
+                    String warnMsg = "FileHashStore.deleteObject - cid referenced by pid: " + pid
+                        + " is not empty (refs exist for cid). Skipping object deletion.";
+                    logFileHashStore.warn(warnMsg);
+                }
+                // Delete all related items with the least amount of delay
+                FileHashStoreUtility.deleteListItems(deleteList);
+                logFileHashStore.info(
+                    "FileHashStore.deleteObject - File and references deleted for: " + pid
+                        + " with object address: " + objRealPath
+                );
+
+            } finally {
+                // Release lock
+                synchronized (referenceLockedCids) {
+                    logFileHashStore.debug(
+                        "FileHashStore.deleteObject - Releasing referenceLockedCids for cid: " + cid
+                    );
+                    referenceLockedCids.remove(cid);
+                    referenceLockedCids.notifyAll();
                 }
             }
         }
     }
 
+
     @Override
-    public void deleteObject(String pid) throws IllegalArgumentException, FileNotFoundException,
-        IOException, NoSuchAlgorithmException, InterruptedException,
-        PidNotFoundInCidRefsFileException {
+    public void deleteObject(String pid) throws IllegalArgumentException, IOException,
+        NoSuchAlgorithmException, InterruptedException {
         logFileHashStore.debug(
-            "FileHashStore.deleteObject - Called to delete object for pid: " + pid
+            "FileHashStore.deleteObject - Called to delete all associated docs for pid: " + pid
         );
-        // Validate input parameters
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "deleteObject");
-        FileHashStoreUtility.checkForEmptyString(pid, "pid", "deleteObject");
-
-        // First, find the object and evaluate its state
-        String cid;
-        try {
-            cid = findObject(pid);
-
-        } catch (OrphanPidRefsFileException oprfe) {
-            // Delete the pid refs file and return, nothing else to delete.
-            Path absPidRefsPath = getRealPath(pid, "refs", "pid");
-            Files.delete(absPidRefsPath);
-
-            String warnMsg = "FileHashStore.deleteObject - Cid refs file does not exist for pid: "
-                + pid + ". Deleted orphan pid refs file.";
-            logFileHashStore.warn(warnMsg);
-            return;
-
-        } catch (PidNotFoundInCidRefsFileException pnficrfe) {
-            // Delete pid refs file and return, nothing else to delete
-            Path absPidRefsPath = getRealPath(pid, "refs", "pid");
-            Files.delete(absPidRefsPath);
-
-            String warnMsg =
-                "FileHashStore.deleteObject - Pid not found in expected cid refs file for pid: "
-                    + pid + ". Deleted orphan pid refs file.";
-            logFileHashStore.warn(warnMsg);
-            return;
-        }
-
-        // If cid has been retrieved without any errors, proceed with second stage of deletion.
-        synchronized (referenceLockedCids) {
-            while (referenceLockedCids.contains(cid)) {
-                try {
-                    referenceLockedCids.wait(TIME_OUT_MILLISEC);
-
-                } catch (InterruptedException ie) {
-                    String errMsg =
-                        "FileHashStore.deleteObject - referenceLockedCids lock was interrupted while"
-                            + " waiting to delete object with cid: " + cid
-                            + ". InterruptedException: " + ie.getMessage();
-                    logFileHashStore.error(errMsg);
-                    throw new InterruptedException(errMsg);
-                }
-            }
-            logFileHashStore.debug(
-                "FileHashStore.deleteObject - Synchronizing referenceLockedCids for cid: " + cid
-            );
-            referenceLockedCids.add(cid);
-        }
-
-        try {
-            // Get permanent address of the pid by calculating its sha-256 hex digest
-            Path objRealPath = getRealPath(pid, "object", null);
-            // Get the path to the cid refs file to work with
-            Path absCidRefsPath = getRealPath(cid, "refs", "cid");
-
-            if (!Files.exists(objRealPath)) {
-                // Throw exception if object doesn't exist
-                String errMsg = "FileHashStore.deleteObject - File does not exist for pid: " + pid
-                    + " with object address: " + objRealPath;
-                logFileHashStore.error(errMsg);
-                throw new FileNotFoundException(errMsg);
-
-            } else {
-                // Proceed to delete the reference files and object
-                // Delete pid reference file
-                deletePidRefsFile(pid);
-                // Remove pid from cid refs file
-                deleteCidRefsPid(pid, absCidRefsPath);
-                // Delete obj and cid refs file only if the cid refs file is empty
-                if (Files.size(absCidRefsPath) == 0) {
-                    // Delete empty cid refs file
-                    Files.delete(absCidRefsPath);
-                    // Delete actual object
-                    Files.delete(objRealPath);
-                } else {
-                    String warnMsg = "FileHashStore.deleteObject - cid referenced by pid: " + pid
-                        + " is not empty (references exist for the cid). Skipping object deletion.";
-                    logFileHashStore.warn(warnMsg);
-                }
-                logFileHashStore.info(
-                    "FileHashStore.deleteObject - File and references deleted for: " + pid
-                        + " with object address: " + objRealPath
-                );
-                // TODO: Discuss where deleteObject should also remove all default system metadata
-            }
-        } finally {
-            // Release lock
-            synchronized (referenceLockedCids) {
-                logFileHashStore.debug(
-                    "FileHashStore.deleteObject - Releasing referenceLockedCids for cid: " + cid
-                );
-                referenceLockedCids.remove(cid);
-                referenceLockedCids.notifyAll();
-            }
-        }
-
+        deleteObject(HashStoreIdTypes.pid.getName(), pid);
+        logFileHashStore.info(
+            "FileHashStore.deleteObject - Object, references and metadata deleted for: " + pid
+        );
     }
 
     @Override
@@ -1173,13 +1282,12 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(formatId, "formatId", "deleteMetadata");
 
         // Get permanent address of the pid by calculating its sha-256 hex digest
-        Path metadataCidPath = getRealPath(pid, "metadata", formatId);
+        Path metadataCidPath = getExpectedPath(pid, "metadata", formatId);
 
         if (!Files.exists(metadataCidPath)) {
             String errMsg = "FileHashStore.deleteMetadata - File does not exist for pid: " + pid
                 + " with metadata address: " + metadataCidPath;
             logFileHashStore.warn(errMsg);
-            return;
 
         } else {
             // Proceed to delete
@@ -1195,14 +1303,38 @@ public class FileHashStore implements HashStore {
      * Overload method for deleteMetadata with default metadata namespace
      */
     @Override
-    public void deleteMetadata(String pid) throws IllegalArgumentException, FileNotFoundException,
-        IOException, NoSuchAlgorithmException {
-        deleteMetadata(pid, DEFAULT_METADATA_NAMESPACE);
+    public void deleteMetadata(String pid) throws IllegalArgumentException, IOException,
+        NoSuchAlgorithmException {
+        logFileHashStore.debug(
+            "FileHashStore.deleteMetadata - Called to delete all metadata for pid: " + pid
+        );
+        FileHashStoreUtility.ensureNotNull(pid, "pid", "deleteMetadata");
+        FileHashStoreUtility.checkForEmptyString(pid, "pid", "deleteMetadata");
+
+        List<Path> deleteList = new ArrayList<>();
+        // Metadata directory
+        String pidHexDigest = FileHashStoreUtility.getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
+        String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+            DIRECTORY_DEPTH, DIRECTORY_WIDTH, pidHexDigest
+        );
+        Path expectedPidMetadataDirectory = METADATA_STORE_DIRECTORY.resolve(pidRelativePath);
+        // Add all metadata doc paths to a List to iterate over below
+        List<Path> metadataDocPaths = FileHashStoreUtility.getFilesFromDir(
+            expectedPidMetadataDirectory
+        );
+        for (Path metadataDoc : metadataDocPaths) {
+            deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDoc));
+        }
+        // Delete all items in the list
+        FileHashStoreUtility.deleteListItems(deleteList);
+        logFileHashStore.info(
+            "FileHashStore.deleteMetadata - All related metadata deleted for: " + pid
+        );
     }
 
     @Override
-    public String getHexDigest(String pid, String algorithm) throws NoSuchAlgorithmException,
-        FileNotFoundException, IOException {
+    public String getHexDigest(String pid, String algorithm) throws IllegalArgumentException,
+        FileNotFoundException, IOException, NoSuchAlgorithmException {
         logFileHashStore.debug(
             "FileHashStore.getHexDigest - Called to calculate hex digest for pid: " + pid
         );
@@ -1213,12 +1345,11 @@ public class FileHashStore implements HashStore {
 
         // Find the content identifier
         if (algorithm.equals(OBJECT_STORE_ALGORITHM)) {
-            String cid = findObject(pid);
-            return cid;
+            return findObject(pid);
 
         } else {
             // Get permanent address of the pid
-            Path objRealPath = getRealPath(pid, "object", null);
+            Path objRealPath = getExpectedPath(pid, "object", null);
 
             // Check to see if object exists
             if (!Files.exists(objRealPath)) {
@@ -1280,29 +1411,18 @@ public class FileHashStore implements HashStore {
         PidRefsFileExistsException, IllegalArgumentException, NullPointerException,
         AtomicMoveNotSupportedException {
         logFileHashStore.debug("FileHashStore.putObject - Called to put object for pid: " + pid);
-
-        // Validate algorithms if not null or empty, throws exception if not supported
+        // If validation is desired, checksumAlgorithm and checksum must both be present
+        boolean requestValidation = verifyChecksumParameters(checksum, checksumAlgorithm);
+        // Validate additional algorithm if not null or empty, throws exception if not supported
         if (additionalAlgorithm != null) {
             FileHashStoreUtility.checkForEmptyString(
                 additionalAlgorithm, "additionalAlgorithm", "putObject"
             );
             validateAlgorithm(additionalAlgorithm);
         }
-        if (checksumAlgorithm != null) {
-            FileHashStoreUtility.checkForEmptyString(
-                checksumAlgorithm, "checksumAlgorithm", "putObject"
-            );
-            validateAlgorithm(checksumAlgorithm);
-        }
-        if (checksum != null) {
-            FileHashStoreUtility.checkForEmptyString(checksum, "checksum", "putObject");
-        }
         if (objSize != -1) {
             FileHashStoreUtility.checkNotNegativeOrZero(objSize, "putObject");
         }
-
-        // If validation is desired, checksumAlgorithm and checksum must both be present
-        boolean requestValidation = verifyChecksumParameters(checksum, checksumAlgorithm);
 
         // Generate tmp file and write to it
         logFileHashStore.debug("FileHashStore.putObject - Generating tmpFile");
@@ -1338,10 +1458,10 @@ public class FileHashStore implements HashStore {
 
         // Gather the elements to form the permanent address
         String objectCid = hexDigests.get(OBJECT_STORE_ALGORITHM);
-        String objShardString = FileHashStoreUtility.getHierarchicalPathString(
+        String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
             DIRECTORY_DEPTH, DIRECTORY_WIDTH, objectCid
         );
-        Path objRealPath = OBJECT_STORE_DIRECTORY.resolve(objShardString);
+        Path objRealPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
 
         // Confirm that the object does not yet exist, delete tmpFile if so
         if (Files.exists(objRealPath)) {
@@ -1359,7 +1479,7 @@ public class FileHashStore implements HashStore {
         }
 
         // Create ObjectMetadata to return with pertinent data
-        return new ObjectMetadata(objectCid, storedObjFileSize, hexDigests);
+        return new ObjectMetadata(pid, objectCid, storedObjFileSize, hexDigests);
     }
 
     /**
@@ -1370,17 +1490,14 @@ public class FileHashStore implements HashStore {
      * @param requestValidation Boolean to decide whether to proceed with validation
      * @param checksum          Expected checksum value of object
      * @param checksumAlgorithm Hash algorithm of checksum value
-     * @param tmpFile           tmpFile that has been written
-     * @param hexDigests        Map of the hex digests available to check with
      * @param tmpFile           Path to the file that is being evaluated
      * @param hexDigests        Map of the hex digests to parse data from
      * @param objSize           Expected size of object
      * @param storedObjFileSize Actual size of object stored
-     * @return
-     * @throws NoSuchAlgorithmException
-     * @throws IOException
+     * @throws NoSuchAlgorithmException If algorithm requested to validate against is absent
+     * @throws IOException              Issue with deleting tmpFile
      */
-    private boolean validateTmpObject(
+    private void validateTmpObject(
         boolean requestValidation, String checksum, String checksumAlgorithm, Path tmpFile,
         Map<String, String> hexDigests, long objSize, long storedObjFileSize
     ) throws NoSuchAlgorithmException, IOException {
@@ -1435,7 +1552,6 @@ public class FileHashStore implements HashStore {
                             + " is not equal to the calculated hex digest: " + digestFromHexDigests
                             + ". Checksum" + " provided: " + checksum
                             + ". Failed to delete tmpFile: " + tmpFile + ". " + ge.getMessage();
-                    ;
                     logFileHashStore.error(errMsg);
                     throw new IOException(errMsg);
                 }
@@ -1448,8 +1564,6 @@ public class FileHashStore implements HashStore {
                 throw new IllegalArgumentException(errMsg);
             }
         }
-
-        return true;
     }
 
     /**
@@ -1507,6 +1621,16 @@ public class FileHashStore implements HashStore {
      */
     protected boolean verifyChecksumParameters(String checksum, String checksumAlgorithm)
         throws NoSuchAlgorithmException {
+        // First ensure algorithm is compatible and values are valid if they aren't null
+        if (checksumAlgorithm != null) {
+            FileHashStoreUtility.checkForEmptyString(
+                checksumAlgorithm, "checksumAlgorithm", "putObject"
+            );
+            validateAlgorithm(checksumAlgorithm);
+        }
+        if (checksum != null) {
+            FileHashStoreUtility.checkForEmptyString(checksum, "checksum", "putObject");
+        }
         // If checksum is supplied, checksumAlgorithm cannot be empty
         if (checksum != null && !checksum.trim().isEmpty()) {
             FileHashStoreUtility.ensureNotNull(
@@ -1704,6 +1828,12 @@ public class FileHashStore implements HashStore {
                     + targetFilePath
             );
 
+        } catch (FileAlreadyExistsException amnse) {
+            logFileHashStore.warn(
+                "FileHashStore.move - File already exists, skipping request to move object."
+                    + " Source: " + source + ". Target: " + target
+            );
+
         } catch (AtomicMoveNotSupportedException amnse) {
             logFileHashStore.error(
                 "FileHashStore.move - StandardCopyOption.ATOMIC_MOVE failed. AtomicMove is"
@@ -1719,6 +1849,39 @@ public class FileHashStore implements HashStore {
             );
             throw ioe;
 
+        }
+    }
+
+    /**
+     * Attempt to delete an object based on the given content identifier (cid). If the object
+     * has pids that references it and/or a cid refs file exists, the object will not be deleted.
+     * 
+     * @param cid Content identifier
+     * @throws IOException              If an issue arises during deletion of object
+     * @throws NoSuchAlgorithmException Incompatible algorithm used to find relative path to cid
+     */
+    protected void deleteObjectByCid(String cid) throws IOException, NoSuchAlgorithmException {
+        Path absCidRefsPath = getExpectedPath(cid, "refs", HashStoreIdTypes.cid.getName());
+        if (Files.exists(absCidRefsPath)) {
+            String warnMsg = "FileHashStore - deleteObjectByCid: cid refs file still contains"
+                + " references, skipping deletion.";
+            logFileHashStore.warn(warnMsg);
+            // The cid is referenced by pids, do not delete.
+
+        } else {
+            // Get permanent address of the actual cid
+            String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+                DIRECTORY_DEPTH, DIRECTORY_WIDTH, cid
+            );
+            Path expectedRealPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
+
+            // If file exists, delete it.
+            if (Files.exists(expectedRealPath)) {
+                Files.delete(expectedRealPath);
+            }
+            String debugMsg = "FileHashStore - deleteObjectByCid: object deleted at"
+                + expectedRealPath;
+            logFileHashStore.debug(debugMsg);
         }
     }
 
@@ -1760,7 +1923,7 @@ public class FileHashStore implements HashStore {
                 logFileHashStore.error(errMsg);
                 throw new IOException(errMsg);
             }
-            boolean pidFoundInCidRefFiles = isPidInCidRefsFile(pid, absCidRefsPath);
+            boolean pidFoundInCidRefFiles = isStringInRefsFile(pid, absCidRefsPath);
             if (!pidFoundInCidRefFiles) {
                 String errMsg = "FileHashStore.verifyHashStoreRefsFiles - Missing expected pid: "
                     + pid + " in cid refs file: " + absCidRefsPath;
@@ -1774,187 +1937,129 @@ public class FileHashStore implements HashStore {
         }
     }
 
+
     /**
-     * Writes the given 'pid' into a file in the 'cid' refs file format, which consists of
-     * multiple pids that references a 'cid' each on its own line (delimited by "\n").
+     * Writes the given ref into a temporary file. The client must explicitly move this file to
+     * where it belongs otherwise it will be removed during garbage collection.
      *
-     * @param pid Authority-based or persistent identifier to write
-     * @throws IOException Failure to write pid refs file
+     * @param ref     Authority-based or persistent identifier to write
+     * @param refType Type of reference 'pid', 'cid' or 'sysmeta'
+     * @throws IOException Failure to write refs file
+     * @return File object with single reference
      */
-    protected File writeCidRefsFile(String pid) throws IOException {
+    protected File writeRefsFile(String ref, String refType) throws IOException {
         File cidRefsTmpFile = FileHashStoreUtility.generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
         try (BufferedWriter writer = new BufferedWriter(
             new OutputStreamWriter(
                 Files.newOutputStream(cidRefsTmpFile.toPath()), StandardCharsets.UTF_8
             )
         )) {
-            writer.write(pid);
+            writer.write(ref);
             writer.close();
 
             logFileHashStore.debug(
-                "FileHashStore.writeCidRefsFile - cid refs file written for: " + pid
+                "FileHashStore.writeRefsFile - " + refType + " refs file written for: " + ref
             );
             return cidRefsTmpFile;
 
         } catch (IOException ioe) {
-            logFileHashStore.error(
-                "FileHashStore.writeCidRefsFile - Unable to write cid refs file for pid: " + pid
-                    + " IOException: " + ioe.getMessage()
-            );
-            throw ioe;
-        }
-    }
-
-    /**
-     * Writes the given 'cid' into a file in the 'pid' refs file format. A pid refs file
-     * contains a single 'cid'. Note, a 'pid' can only ever reference one 'cid'.
-     * 
-     * @param cid Content identifier to write
-     * @throws IOException Failure to write pid refs file
-     */
-    protected File writePidRefsFile(String cid) throws IOException {
-        File pidRefsTmpFile = FileHashStoreUtility.generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
-        try (BufferedWriter writer = new BufferedWriter(
-            new OutputStreamWriter(
-                Files.newOutputStream(pidRefsTmpFile.toPath()), StandardCharsets.UTF_8
-            )
-        )) {
-            writer.write(cid);
-            writer.close();
-
-            logFileHashStore.debug(
-                "FileHashStore.writePidRefsFile - pid refs file written for: " + cid
-            );
-            return pidRefsTmpFile;
-
-        } catch (IOException ioe) {
-            String errMsg =
-                "FileHashStore.writePidRefsFile - Unable to write pid refs file for cid: " + cid
-                    + " IOException: " + ioe.getMessage();
+            String errMsg = "FileHashStore.writeRefsFile - Unable to write refs file for ref: "
+                + refType + " IOException: " + ioe.getMessage();
             logFileHashStore.error(errMsg);
             throw new IOException(errMsg);
         }
     }
 
     /**
-     * Checks a given cid refs file for a pid. This is case-sensitive.
+     * Checks a given refs file for a ref. This is case-sensitive.
      * 
-     * @param pid            Authority-based or persistent identifier to search
-     * @param absCidRefsPath Path to the cid refs file to check
+     * @param ref         Authority-based or persistent identifier to search
+     * @param absRefsPath Path to the refs file to check
      * @return True if cid is found, false otherwise
      * @throws IOException If unable to read the cid refs file.
      */
-    protected boolean isPidInCidRefsFile(String pid, Path absCidRefsPath) throws IOException {
-        List<String> lines = Files.readAllLines(absCidRefsPath);
-        boolean pidFoundInCidRefFiles = false;
+    protected boolean isStringInRefsFile(String ref, Path absRefsPath) throws IOException {
+        List<String> lines = Files.readAllLines(absRefsPath);
+        boolean refFoundInCidRefFiles = false;
         for (String line : lines) {
-            if (line.equals(pid)) {
-                pidFoundInCidRefFiles = true;
+            if (line.equals(ref)) {
+                refFoundInCidRefFiles = true;
                 break;
             }
         }
-        return pidFoundInCidRefFiles;
+        return refFoundInCidRefFiles;
     }
 
     /**
-     * Updates a cid refs file with a pid that references the cid
+     * Adds or removes a ref value from a refs file given an 'updateType'
      * 
-     * @param pid            Authority-based or persistent identifier
-     * @param absCidRefsPath Path to the cid refs file to update
-     * @throws IOException Issue with updating a cid refs file
+     * @param ref         Authority-based or persistent identifier
+     * @param absRefsPath Path to the refs file to update
+     * @param updateType  "add" or "remove"
+     * @throws IOException Issue with updating or accessing a refs file
      */
-    protected void updateCidRefsFiles(String pid, Path absCidRefsPath) throws IOException {
+    protected void updateRefsFile(String ref, Path absRefsPath, String updateType)
+        throws IOException {
         // This update process is atomic, so we first write the updated content
         // into a temporary file before overwriting it.
         File tmpFile = FileHashStoreUtility.generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
         Path tmpFilePath = tmpFile.toPath();
+
         try {
             // Obtain a lock on the file before updating it
             try (FileChannel channel = FileChannel.open(
-                absCidRefsPath, StandardOpenOption.READ, StandardOpenOption.WRITE
+                absRefsPath, StandardOpenOption.READ, StandardOpenOption.WRITE
             ); FileLock ignored = channel.lock()) {
-                List<String> lines = new ArrayList<>(Files.readAllLines(absCidRefsPath));
-                lines.add(pid);
+                List<String> lines = new ArrayList<>(Files.readAllLines(absRefsPath));
 
-                Files.write(tmpFilePath, lines, StandardOpenOption.WRITE);
-                move(tmpFile, absCidRefsPath.toFile(), "refs");
-                logFileHashStore.debug(
-                    "FileHashStore.updateCidRefsFiles - Pid: " + pid
-                        + " has been added to cid refs file: " + absCidRefsPath
-                );
+                if (updateType.equals("add")) {
+                    lines.add(ref);
+                    Files.write(tmpFilePath, lines, StandardOpenOption.WRITE);
+                    move(tmpFile, absRefsPath.toFile(), "refs");
+                    logFileHashStore.debug(
+                        "FileHashStore.updateRefsFile - Ref: " + ref
+                            + " has been added to refs file: " + absRefsPath
+                    );
+                }
+
+                if (updateType.equals("remove")) {
+                    lines.remove(ref);
+                    Files.write(tmpFilePath, lines, StandardOpenOption.WRITE);
+                    move(tmpFile, absRefsPath.toFile(), "refs");
+                    logFileHashStore.debug(
+                        "FileHashStore.updateRefsFile - Ref: " + ref
+                            + " has been removed from refs file: " + absRefsPath
+                    );
+                }
             }
             // The lock is automatically released when the try block exits
         } catch (IOException ioe) {
-            String errMsg = "FileHashStore.updateCidRefsFiles - " + ioe.getMessage();
+            String errMsg = "FileHashStore.updateRefsFile - " + ioe.getMessage();
             logFileHashStore.error(errMsg);
             throw new IOException(errMsg);
         }
     }
 
     /**
-     * Deletes a pid references file
+     * Deletes a references file at the given path
      * 
-     * @param pid Authority-based or persistent identifier
-     * @throws NoSuchAlgorithmException Incompatible algorithm used to find pid refs file
-     * @throws IOException              Unable to delete object or open pid refs file
+     * @param absRefsPath Path to the refs file to delete
+     * @throws IOException Unable to delete object or open pid refs file
      */
-    protected void deletePidRefsFile(String pid) throws NoSuchAlgorithmException, IOException {
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "deletePidRefsFile");
-        FileHashStoreUtility.checkForEmptyString(pid, "pid", "deletePidRefsFile");
-
-        Path absPidRefsPath = getRealPath(pid, "refs", "pid");
+    protected void deleteRefsFile(Path absRefsPath) throws IOException {
         // Check to see if pid refs file exists
-        if (!Files.exists(absPidRefsPath)) {
-            String errMsg =
-                "FileHashStore.deletePidRefsFile - File refs file does not exist for pid: " + pid
-                    + " with address: " + absPidRefsPath;
+        if (!Files.exists(absRefsPath)) {
+            String errMsg = "FileHashStore.deleteRefsFile - Refs file does not exist at: "
+                + absRefsPath;
             logFileHashStore.error(errMsg);
             throw new FileNotFoundException(errMsg);
 
         } else {
             // Proceed to delete
-            Files.delete(absPidRefsPath);
+            Files.delete(absRefsPath);
             logFileHashStore.debug(
-                "FileHashStore.deletePidRefsFile - Pid refs file deleted for: " + pid
-                    + " with address: " + absPidRefsPath
+                "FileHashStore.deleteRefsFile - Refs file deleted at: " + absRefsPath
             );
-        }
-    }
-
-
-    /**
-     * Removes a pid from a cid refs file.
-     * 
-     * @param pid            Authority-based or persistent identifier.
-     * @param absCidRefsPath Path to the cid refs file to remove the pid from
-     * @throws IOException Unable to access cid refs file
-     */
-    protected void deleteCidRefsPid(String pid, Path absCidRefsPath) throws IOException {
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "deleteCidRefsPid");
-        FileHashStoreUtility.ensureNotNull(absCidRefsPath, "absCidRefsPath", "deleteCidRefsPid");
-        // This deletes process is atomic, so we first write the updated content
-        // into a temporary file before overwriting it.
-        File tmpFile = FileHashStoreUtility.generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
-        Path tmpFilePath = tmpFile.toPath();
-        try (FileChannel channel = FileChannel.open(
-            absCidRefsPath, StandardOpenOption.READ, StandardOpenOption.WRITE
-        ); FileLock ignored = channel.lock()) {
-            // Read all lines into a List
-            List<String> lines = new ArrayList<>(Files.readAllLines(absCidRefsPath));
-            lines.remove(pid);
-            Files.write(tmpFilePath, lines, StandardOpenOption.WRITE);
-            move(tmpFile, absCidRefsPath.toFile(), "refs");
-            logFileHashStore.debug(
-                "FileHashStore.deleteCidRefsPid - Pid: " + pid + " removed from cid refs file: "
-                    + absCidRefsPath
-            );
-            // The lock is automatically released when the try block exits
-        } catch (IOException ioe) {
-            String errMsg = "FileHashStore.deleteCidRefsPid - Unable to remove pid: " + pid
-                + " from cid refs file: " + absCidRefsPath + ". Additional Info: " + ioe
-                    .getMessage();
-            logFileHashStore.error(errMsg);
-            throw new IOException(errMsg);
         }
     }
 
@@ -1974,7 +2079,7 @@ public class FileHashStore implements HashStore {
     protected String putMetadata(InputStream metadata, String pid, String formatId)
         throws NoSuchAlgorithmException, IOException {
         logFileHashStore.debug(
-            "FileHashStore.putMetadata - Called to put metadata for pid:" + pid
+            "FileHashStore.putMetadata - Called to put metadata for pid: " + pid
                 + " , with metadata namespace: " + formatId
         );
 
@@ -1994,10 +2099,9 @@ public class FileHashStore implements HashStore {
         }
 
         // Get permanent address for the given metadata document
-        String metadataCid = FileHashStoreUtility.getPidHexDigest(
-            pid + checkedFormatId, OBJECT_STORE_ALGORITHM
-        );
-        Path metadataCidPath = getRealPath(pid, "metadata", checkedFormatId);
+        // All metadata documents for a pid are stored in a directory that is formed
+        // by using the hash of the 'pid', with the file name being the hash of the 'formatId'
+        Path pathToStoredMetadata = getExpectedPath(pid, "metadata", checkedFormatId);
 
         // Store metadata to tmpMetadataFile
         File tmpMetadataFile = FileHashStoreUtility.generateTmpFile(
@@ -2007,16 +2111,16 @@ public class FileHashStore implements HashStore {
         if (tmpMetadataWritten) {
             logFileHashStore.debug(
                 "FileHashStore.putMetadata - tmp metadata file has been written, moving to"
-                    + " permanent location: " + metadataCidPath
+                    + " permanent location: " + pathToStoredMetadata
             );
-            File permMetadataFile = metadataCidPath.toFile();
+            File permMetadataFile = pathToStoredMetadata.toFile();
             move(tmpMetadataFile, permMetadataFile, "metadata");
         }
         logFileHashStore.debug(
             "FileHashStore.putMetadata - Move metadata success, permanent address: "
-                + metadataCidPath
+                + pathToStoredMetadata
         );
-        return metadataCid;
+        return pathToStoredMetadata.toString();
     }
 
     /**
@@ -2065,50 +2169,69 @@ public class FileHashStore implements HashStore {
      * @throws NoSuchAlgorithmException If store algorithm is not supported
      * @throws IOException              If unable to retrieve cid
      */
-    protected Path getRealPath(String abId, String entity, String formatId)
+    protected Path getExpectedPath(String abId, String entity, String formatId)
         throws IllegalArgumentException, NoSuchAlgorithmException, IOException {
         Path realPath;
+        String hashId = FileHashStoreUtility.getPidHexDigest(abId, OBJECT_STORE_ALGORITHM);
         if (entity.equalsIgnoreCase("object")) {
-            // 'abId' is expected to be a pid
-            String objectCid = findObject(abId);
-            String objShardString = FileHashStoreUtility.getHierarchicalPathString(
+            // hashId = pidRefId
+            String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+                DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashId
+            );
+            Path pathToPidRefsFile = REFS_PID_FILE_DIRECTORY.resolve(pidRelativePath);
+            // Attempt to retrieve the cid
+            String objectCid;
+            if (!Files.exists(pathToPidRefsFile)) {
+                String errMsg =
+                    "FileHashStore.getExpectedPath - Pid Refs file does not exist for pid: " + abId
+                        + " with object address: " + pathToPidRefsFile + ". Cannot retrive cid.";
+                logFileHashStore.warn(errMsg);
+                throw new FileNotFoundException(errMsg);
+            } else {
+                objectCid = new String(Files.readAllBytes(pathToPidRefsFile));
+            }
+            // If cid is found, return the expected real path to object
+            String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
                 DIRECTORY_DEPTH, DIRECTORY_WIDTH, objectCid
             );
-            realPath = OBJECT_STORE_DIRECTORY.resolve(objShardString);
+            realPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
 
         } else if (entity.equalsIgnoreCase("metadata")) {
-            String objectCid = FileHashStoreUtility.getPidHexDigest(
-                abId + formatId, OBJECT_STORE_ALGORITHM
+            // Get the pid metadata directory (the relative path of the hashId)
+            String pidMetadataDirRelPath = FileHashStoreUtility.getHierarchicalPathString(
+                DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashId
             );
-            String objShardString = FileHashStoreUtility.getHierarchicalPathString(
-                DIRECTORY_DEPTH, DIRECTORY_WIDTH, objectCid
+            // The file name for the metadata document is the hash of the supplied 'formatId'
+            String metadataFormatIdHash = FileHashStoreUtility.getPidHexDigest(
+                formatId, OBJECT_STORE_ALGORITHM
             );
-            realPath = METADATA_STORE_DIRECTORY.resolve(objShardString);
+            realPath = METADATA_STORE_DIRECTORY.resolve(pidMetadataDirRelPath).resolve(
+                metadataFormatIdHash
+            );
 
         } else if (entity.equalsIgnoreCase("refs")) {
-            if (formatId.equalsIgnoreCase("pid")) {
-                String pidRefId = FileHashStoreUtility.getPidHexDigest(
-                    abId, OBJECT_STORE_ALGORITHM
+            if (formatId.equalsIgnoreCase(HashStoreIdTypes.pid.getName())) {
+                // hashId = pidRefId
+                String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashId
                 );
-                String pidShardString = FileHashStoreUtility.getHierarchicalPathString(
-                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, pidRefId
+                realPath = REFS_PID_FILE_DIRECTORY.resolve(pidRelativePath);
+            } else if (formatId.equalsIgnoreCase(HashStoreIdTypes.cid.getName())) {
+                // hashId = cid
+                String cidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashId
                 );
-                realPath = REFS_PID_FILE_DIRECTORY.resolve(pidShardString);
-            } else if (formatId.equalsIgnoreCase("cid")) {
-                String cidShardString = FileHashStoreUtility.getHierarchicalPathString(
-                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, abId
-                );
-                realPath = REFS_CID_FILE_DIRECTORY.resolve(cidShardString);
+                realPath = REFS_CID_FILE_DIRECTORY.resolve(cidRelativePath);
             } else {
                 String errMsg =
-                    "FileHashStore.getRealPath - formatId must be 'pid' or 'cid' when entity is 'refs'";
+                    "FileHashStore.getExpectedPath - formatId must be 'pid' or 'cid' when entity is 'refs'";
                 logFileHashStore.error(errMsg);
                 throw new IllegalArgumentException(errMsg);
             }
 
         } else {
             throw new IllegalArgumentException(
-                "FileHashStore.getRealPath - entity must be 'object' or 'metadata'"
+                "FileHashStore.getExpectedPath - entity must be 'object' or 'metadata'"
             );
         }
         return realPath;

@@ -1,11 +1,13 @@
 package org.dataone.hashstore.filehashstore;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -102,7 +104,7 @@ public class FileHashStoreUtility {
      * @return True if a file is found or the directory is empty, False otherwise
      * @throws IOException If I/O occurs when accessing directory
      */
-    public static boolean isDirectoryEmpty(Path directory) throws IOException {
+    public static boolean dirContainsFiles(Path directory) throws IOException {
         try (Stream<Path> stream = Files.list(directory)) {
             // The findFirst() method is called on the stream created from the given
             // directory to retrieve the first element. If the stream is empty (i.e., the
@@ -112,7 +114,64 @@ public class FileHashStoreUtility {
             // findFirst(). If the Optional contains a value (i.e., an element was found),
             // isPresent() returns true. If the Optional is empty (i.e., the stream is
             // empty), isPresent() returns false.
-            return !stream.findFirst().isPresent();
+            return stream.findFirst().isPresent();
+        }
+    }
+
+    /**
+     * Checks a directory for files and returns a list of paths
+     *
+     * @param directory Directory to check
+     * @return List<Path> of files
+     * @throws IOException If I/O occurs when accessing directory
+     */
+    public static List<Path> getFilesFromDir(Path directory) throws IOException {
+        List<Path> filePaths = new ArrayList<>();
+        if (Files.isDirectory(directory) && dirContainsFiles(directory)) {
+            try (Stream<Path> stream = Files.walk(directory)) {
+                stream.filter(Files::isRegularFile).forEach(filePaths::add);
+            }
+        }
+        return filePaths;
+    }
+
+    /**
+     * Rename the given path to the 'file name' + '_delete'
+     * 
+     * @param pathToRename The path to the file to be renamed with '_delete'
+     * @return Path to the file with '_delete' appended
+     * @throws IOException Issue with renaming the given file path
+     */
+    public static Path renamePathForDeletion(Path pathToRename) throws IOException {
+        ensureNotNull(pathToRename, "pathToRename", "renamePathForDeletion");
+        if (!Files.exists(pathToRename)) {
+            String errMsg = "FileHashStoreUtility.renamePathForDeletion - Given path to file: "
+                + pathToRename + " does not exist.";
+            throw new FileNotFoundException(errMsg);
+        }
+        Path parentPath = pathToRename.getParent();
+        Path fileName = pathToRename.getFileName();
+        String newFileName = fileName.toString() + "_delete";
+
+        Path deletePath = parentPath.resolve(newFileName);
+        Files.move(pathToRename, deletePath, StandardCopyOption.ATOMIC_MOVE);
+        return deletePath;
+    }
+
+    /**
+     * Delete all paths found in the given List<Path> object.
+     *
+     * @param deleteList Directory to check
+     * @throws IOException Unexpected I/O error when deleting files
+     */
+    public static void deleteListItems(List<Path> deleteList) throws IOException {
+        ensureNotNull(deleteList, "deleteList", "deleteListItems");
+        if (deleteList.size() > 0) {
+            for (Path deleteItem : deleteList) {
+                if (Files.exists(deleteItem)) {
+                    Files.delete(deleteItem);
+                }
+            }
         }
     }
 
