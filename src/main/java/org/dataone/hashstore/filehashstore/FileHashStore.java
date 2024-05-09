@@ -815,7 +815,7 @@ public class FileHashStore implements HashStore {
             // Throw exception if the cid refs file doesn't exist
             if (!Files.exists(absCidRefsPath)) {
                 String errMsg =
-                    "FileHashStore.deleteObject - Cid refs file does not exist for cid: " + cid
+                    "FileHashStore.findObject - Cid refs file does not exist for cid: " + cid
                         + " with address: " + absCidRefsPath + ", but pid refs file exists.";
                 logFileHashStore.error(errMsg);
                 throw new OrphanPidRefsFileException(errMsg);
@@ -841,7 +841,7 @@ public class FileHashStore implements HashStore {
                 }
 
             } else {
-                String errMsg = "FileHashStore.deleteObject - Pid refs file exists, but pid (" + pid
+                String errMsg = "FileHashStore.findObject - Pid refs file exists, but pid (" + pid
                     + ") not found in cid refs file for cid: " + cid + " with address: "
                     + absCidRefsPath;
                 logFileHashStore.error(errMsg);
@@ -1864,14 +1864,16 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Attempt to delete an object based on the given content identifier (cid). If the object
-     * has pids that references it and/or a cid refs file exists, the object will not be deleted.
-     * 
+     * Attempt to delete an object based on the given content identifier (cid). If the object has
+     * pids that references it and/or a cid refs file exists, the object will not be deleted.
+     *
      * @param cid Content identifier
      * @throws IOException              If an issue arises during deletion of object
      * @throws NoSuchAlgorithmException Incompatible algorithm used to find relative path to cid
+     * @throws InterruptedException     Issue with synchronization of cid deletion
      */
-    protected void deleteObjectByCid(String cid) throws IOException, NoSuchAlgorithmException {
+    protected void deleteObjectByCid(String cid)
+        throws IOException, NoSuchAlgorithmException, InterruptedException {
         Path absCidRefsPath = getExpectedPath(cid, "refs", HashStoreIdTypes.cid.getName());
         if (Files.exists(absCidRefsPath)) {
             String warnMsg = "FileHashStore - deleteObjectByCid: cid refs file still contains"
@@ -1886,13 +1888,46 @@ public class FileHashStore implements HashStore {
             );
             Path expectedRealPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
 
-            // If file exists, delete it.
-            if (Files.exists(expectedRealPath)) {
-                Files.delete(expectedRealPath);
+            // Minimize the amount of time the cid is locked
+            synchronized (referenceLockedCids) {
+                while (referenceLockedCids.contains(cid)) {
+                    try {
+                        referenceLockedCids.wait(TIME_OUT_MILLISEC);
+
+                    } catch (InterruptedException ie) {
+                        String errMsg =
+                            "FileHashStore.deleteObject - referenceLockedCids lock was interrupted while"
+                                + " waiting to delete object with cid: " + cid
+                                + ". InterruptedException: " + ie.getMessage();
+                        logFileHashStore.error(errMsg);
+                        throw new InterruptedException(errMsg);
+                    }
+                }
+                logFileHashStore.debug(
+                    "FileHashStore.deleteObject - Synchronizing referenceLockedCids for cid: " + cid
+                );
+                referenceLockedCids.add(cid);
             }
-            String debugMsg = "FileHashStore - deleteObjectByCid: object deleted at"
-                + expectedRealPath;
-            logFileHashStore.debug(debugMsg);
+
+            try {
+                // If file exists, delete it.
+                if (Files.exists(expectedRealPath)) {
+                    Files.delete(expectedRealPath);
+                }
+                String debugMsg = "FileHashStore - deleteObjectByCid: object deleted at"
+                    + expectedRealPath;
+                logFileHashStore.debug(debugMsg);
+
+            } finally {
+                // Release lock
+                synchronized (referenceLockedCids) {
+                    logFileHashStore.debug(
+                        "FileHashStore.deleteObject - Releasing referenceLockedCids for cid: " + cid
+                    );
+                    referenceLockedCids.remove(cid);
+                    referenceLockedCids.notifyAll();
+                }
+            }
         }
     }
 
