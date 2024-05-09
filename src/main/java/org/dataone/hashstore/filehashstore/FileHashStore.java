@@ -672,7 +672,7 @@ public class FileHashStore implements HashStore {
                 );
             } else if (pidRefsFound && !cidRefsFound) {
                 // If pid refs exists, it can only contain and reference one cid
-                // First, compare the cid retrieved from the pid refs file from the supplid cid
+                // First, compare the cid retrieved from the pid refs file from the supplied cid
                 String retrievedCid = new String(Files.readAllBytes(absPidRefsPath));
                 if (retrievedCid.equalsIgnoreCase(cid)) {
                     // The pid correctly references the cid, but the cid refs file is missing
@@ -1894,16 +1894,16 @@ public class FileHashStore implements HashStore {
 
                     } catch (InterruptedException ie) {
                         String errMsg =
-                            "FileHashStore.deleteObject - referenceLockedCids lock was interrupted while"
-                                + " waiting to delete object with cid: " + cid
+                            "FileHashStore.deleteObjectByCid - referenceLockedCids lock was "
+                                + "interrupted while waiting to delete object with cid: " + cid
                                 + ". InterruptedException: " + ie.getMessage();
                         logFileHashStore.error(errMsg);
                         throw new InterruptedException(errMsg);
                     }
                 }
                 logFileHashStore.debug(
-                    "FileHashStore.deleteObject - Synchronizing referenceLockedCids for cid: " + cid
-                );
+                    "FileHashStore.deleteObjectByCid - Synchronizing referenceLockedCids for cid: "
+                        + cid);
                 referenceLockedCids.add(cid);
             }
 
@@ -1920,8 +1920,8 @@ public class FileHashStore implements HashStore {
                 // Release lock
                 synchronized (referenceLockedCids) {
                     logFileHashStore.debug(
-                        "FileHashStore.deleteObject - Releasing referenceLockedCids for cid: " + cid
-                    );
+                        "FileHashStore.deleteObject - Releasing referenceLockedCids for cid: "
+                            + cid);
                     referenceLockedCids.remove(cid);
                     referenceLockedCids.notifyAll();
                 }
@@ -2203,7 +2203,7 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Get the absolute path of a HashStore object or metadata file
+     * Get the absolute path of a HashStore object, metadata or refs file
      *
      * @param abId     Authority-based, persistent or content identifier
      * @param entity   "object" or "metadata"
