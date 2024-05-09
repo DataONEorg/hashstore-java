@@ -1817,7 +1817,16 @@ public class FileHashStore implements HashStore {
         // Create parent directory if it doesn't exist
         if (!destinationDirectory.exists()) {
             Path destinationDirectoryPath = destinationDirectory.toPath();
-            Files.createDirectories(destinationDirectoryPath);
+
+            try {
+                Files.createDirectories(destinationDirectoryPath);
+
+            } catch (FileAlreadyExistsException faee) {
+                logFileHashStore.warn(
+                    "FileHashStore.move - Directory already exists at: "
+                        + destinationDirectoryPath + " - Skipping directory creation"
+                );
+            }
         }
 
         // Move file
@@ -1830,7 +1839,7 @@ public class FileHashStore implements HashStore {
                     + targetFilePath
             );
 
-        } catch (FileAlreadyExistsException amnse) {
+        } catch (FileAlreadyExistsException faee) {
             logFileHashStore.warn(
                 "FileHashStore.move - File already exists, skipping request to move object."
                     + " Source: " + source + ". Target: " + target
