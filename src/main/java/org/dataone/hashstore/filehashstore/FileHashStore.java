@@ -2218,7 +2218,7 @@ public class FileHashStore implements HashStore {
         Path realPath;
         String hashId = FileHashStoreUtility.getPidHexDigest(abId, OBJECT_STORE_ALGORITHM);
         if (entity.equalsIgnoreCase("object")) {
-            // hashId = pidRefId
+            // `hashId` is the pid refs file string to split, and contains the cid
             String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
                 DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashId
             );
@@ -2255,13 +2255,13 @@ public class FileHashStore implements HashStore {
 
         } else if (entity.equalsIgnoreCase("refs")) {
             if (formatId.equalsIgnoreCase(HashStoreIdTypes.pid.getName())) {
-                // hashId = pidRefId
+                // `hashId` is the pid refs file string to split
                 String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
                     DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashId
                 );
                 realPath = REFS_PID_FILE_DIRECTORY.resolve(pidRelativePath);
             } else if (formatId.equalsIgnoreCase(HashStoreIdTypes.cid.getName())) {
-                // hashId = cid
+                // `hashId` is the cid refs file string to split
                 String cidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
                     DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashId
                 );
