@@ -1675,7 +1675,7 @@ public class FileHashStore implements HashStore {
      * @throws NoSuchAlgorithmException Unable to generate new instance of supplied algorithm
      * @throws IOException              Issue with writing file from InputStream
      * @throws SecurityException        Unable to write to tmpFile
-     * @throws FileNotFoundException    tmnpFile cannot be found
+     * @throws FileNotFoundException    tmpFile cannot be found
      */
     protected Map<String, String> writeToTmpFileAndGenerateChecksums(
         File tmpFile, InputStream dataStream, String additionalAlgorithm, String checksumAlgorithm
@@ -2230,7 +2230,7 @@ public class FileHashStore implements HashStore {
             if (!Files.exists(pathToPidRefsFile)) {
                 String errMsg =
                     "FileHashStore.getExpectedPath - Pid Refs file does not exist for pid: " + abId
-                        + " with object address: " + pathToPidRefsFile + ". Cannot retrive cid.";
+                        + " with object address: " + pathToPidRefsFile + ". Cannot retrieve cid.";
                 logFileHashStore.warn(errMsg);
                 throw new FileNotFoundException(errMsg);
             } else {
