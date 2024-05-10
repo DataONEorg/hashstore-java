@@ -1273,20 +1273,21 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(formatId, "formatId", "deleteMetadata");
         FileHashStoreUtility.checkForEmptyString(formatId, "formatId", "deleteMetadata");
 
-        // Get permanent address of the pid by calculating its sha-256 hex digest
-        Path metadataCidPath = getExpectedPath(pid, "metadata", formatId);
+        // Get permanent address of the metadata document by calculating the sha-256 hex digest
+        // of the 'pid' + 'formatId'
+        Path metadataDocPath = getExpectedPath(pid, "metadata", formatId);
 
-        if (!Files.exists(metadataCidPath)) {
+        if (!Files.exists(metadataDocPath)) {
             String errMsg = "FileHashStore.deleteMetadata - File does not exist for pid: " + pid
-                + " with metadata address: " + metadataCidPath;
+                + " with metadata address: " + metadataDocPath;
             logFileHashStore.warn(errMsg);
 
         } else {
             // Proceed to delete
-            Files.delete(metadataCidPath);
+            Files.delete(metadataDocPath);
             logFileHashStore.info(
                 "FileHashStore.deleteMetadata - File deleted for: " + pid
-                    + " with metadata address: " + metadataCidPath
+                    + " with metadata address: " + metadataDocPath
             );
         }
     }
@@ -2210,11 +2211,11 @@ public class FileHashStore implements HashStore {
         Path realPath;
         String hashId = FileHashStoreUtility.getPidHexDigest(abId, OBJECT_STORE_ALGORITHM);
         if (entity.equalsIgnoreCase("object")) {
-            // `hashId` is the pid refs file string to split, and contains the cid
-            String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+            // `hashId` here is the address of the pid refs file, and contains the cid
+            String pidRefsFileRelativePath = FileHashStoreUtility.getHierarchicalPathString(
                 DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashId
             );
-            Path pathToPidRefsFile = REFS_PID_FILE_DIRECTORY.resolve(pidRelativePath);
+            Path pathToPidRefsFile = REFS_PID_FILE_DIRECTORY.resolve(pidRefsFileRelativePath);
             // Attempt to retrieve the cid
             String objectCid;
             if (!Files.exists(pathToPidRefsFile)) {
@@ -2233,27 +2234,26 @@ public class FileHashStore implements HashStore {
             realPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
 
         } else if (entity.equalsIgnoreCase("metadata")) {
-            // Get the pid metadata directory (the relative path of the hashId)
+            // Get the pid metadata directory (the sharded path of the hashId)
             String pidMetadataDirRelPath = FileHashStoreUtility.getHierarchicalPathString(
                 DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashId
             );
-            // The file name for the metadata document is the hash of the supplied 'formatId'
-            String metadataFormatIdHash = FileHashStoreUtility.getPidHexDigest(
-                formatId, OBJECT_STORE_ALGORITHM
-            );
+            // The file name for the metadata document is the hash of the supplied 'pid + 'formatId'
+            String metadataDocHash =
+                FileHashStoreUtility.getPidHexDigest(abId + formatId, OBJECT_STORE_ALGORITHM);
             realPath = METADATA_STORE_DIRECTORY.resolve(pidMetadataDirRelPath).resolve(
-                metadataFormatIdHash
+                metadataDocHash
             );
 
         } else if (entity.equalsIgnoreCase("refs")) {
             if (formatId.equalsIgnoreCase(HashStoreIdTypes.pid.getName())) {
-                // `hashId` is the pid refs file string to split
+                // `hashId` here is the pid refs file string to split
                 String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
                     DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashId
                 );
                 realPath = REFS_PID_FILE_DIRECTORY.resolve(pidRelativePath);
             } else if (formatId.equalsIgnoreCase(HashStoreIdTypes.cid.getName())) {
-                // `hashId` is the cid refs file string to split
+                // `hashId` here is the cid refs file string to split
                 String cidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
                     DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashId
                 );

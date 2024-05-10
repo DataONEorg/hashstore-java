@@ -225,7 +225,7 @@ public class HashStoreClientTest {
             );
             // The file name for the metadata document is the hash of the supplied 'formatId'
             String metadataCidPartTwo = FileHashStoreUtility.getPidHexDigest(
-                optFormatIdValue, storeAlgorithm
+                pid + optFormatIdValue, storeAlgorithm
             );
             Path expectedMetadataPath = metadataDirectory.resolve(pidMetadataDirectory).resolve(
                 metadataCidPartTwo
