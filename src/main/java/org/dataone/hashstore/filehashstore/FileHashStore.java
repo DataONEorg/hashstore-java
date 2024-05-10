@@ -52,6 +52,7 @@ public class FileHashStore implements HashStore {
     private static final ArrayList<String> objectLockedIds = new ArrayList<>(100);
     private static final ArrayList<String> metadataLockedIds = new ArrayList<>(100);
     private static final ArrayList<String> referenceLockedCids = new ArrayList<>(100);
+    private static final ArrayList<String> referenceLockedPids = new ArrayList<>(100);
     private final Path STORE_ROOT;
     private final int DIRECTORY_DEPTH;
     private final int DIRECTORY_WIDTH;
@@ -621,10 +622,10 @@ public class FileHashStore implements HashStore {
         boolean cidRefsFound = Files.exists(absCidRefsPath);
 
         try {
-            synchronized (referenceLockedCids) {
-                while (referenceLockedCids.contains(cid)) {
+            synchronized (referenceLockedPids) {
+                while (referenceLockedPids.contains(pid)) {
                     try {
-                        referenceLockedCids.wait(TIME_OUT_MILLISEC);
+                        referenceLockedPids.wait(TIME_OUT_MILLISEC);
 
                     } catch (InterruptedException ie) {
                         String errMsg =
@@ -636,9 +637,9 @@ public class FileHashStore implements HashStore {
                     }
                 }
                 logFileHashStore.debug(
-                    "FileHashStore.tagObject - Synchronizing referenceLockedCids for cid: " + cid
+                    "FileHashStore.tagObject - Synchronizing referenceLockedPids for pid: " + pid
                 );
-                referenceLockedCids.add(cid);
+                referenceLockedPids.add(pid);
             }
 
             // Both files found, confirm that reference files are where they are expected to be
@@ -721,12 +722,12 @@ public class FileHashStore implements HashStore {
 
         } finally {
             // Release lock
-            synchronized (referenceLockedCids) {
+            synchronized (referenceLockedPids) {
                 logFileHashStore.debug(
-                    "FileHashStore.tagObject - Releasing referenceLockedCids for cid: " + cid
+                    "FileHashStore.tagObject - Releasing referenceLockedPids for pid: " + pid
                 );
-                referenceLockedCids.remove(cid);
-                referenceLockedCids.notifyAll();
+                referenceLockedPids.remove(pid);
+                referenceLockedPids.notifyAll();
             }
         }
     }
@@ -1088,6 +1089,7 @@ public class FileHashStore implements HashStore {
 
         // If 'idType' is cid, attempt to delete the object directly without checking refs files
         if (idType.equals(HashStoreIdTypes.cid.getName())) {
+            // The following method is synchronized based on cids
             deleteObjectByCid(id);
 
         } else {
@@ -1867,10 +1869,10 @@ public class FileHashStore implements HashStore {
         throws IOException, NoSuchAlgorithmException, InterruptedException {
         Path absCidRefsPath = getExpectedPath(cid, "refs", HashStoreIdTypes.cid.getName());
         if (Files.exists(absCidRefsPath)) {
+            // The cid refs file exists, so the cid object cannot be deleted.
             String warnMsg = "FileHashStore - deleteObjectByCid: cid refs file still contains"
                 + " references, skipping deletion.";
             logFileHashStore.warn(warnMsg);
-            // The cid is referenced by pids, do not delete.
 
         } else {
             // Get permanent address of the actual cid
