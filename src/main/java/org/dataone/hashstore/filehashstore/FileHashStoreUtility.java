@@ -12,6 +12,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.stream.Stream;
 
@@ -261,5 +262,24 @@ public class FileHashStoreUtility {
         File newFile = newPath.toFile();
         newFile.deleteOnExit();
         return newFile;
+    }
+
+    /**
+     * Ensures that two objects are equal. If not, throws an IllegalArgumentException.
+     *
+     * @param nameValue  The name of the object being checked
+     * @param suppliedValue The value supplied to compare
+     * @param existingValue The existing value to compare with
+     * @throws IllegalArgumentException If the supplied value is not equal to the existing value
+     */
+    public static void checkObjectEquality(
+        String nameValue, Object suppliedValue, Object existingValue) {
+        if (!Objects.equals(suppliedValue, existingValue)) {
+            String errMsg =
+                "FileHashStore.checkConfigurationEquality() - Mismatch in " + nameValue + ": "
+                    + suppliedValue + " does not match the existing configuration value: "
+                    + existingValue;
+            throw new IllegalArgumentException(errMsg);
+        }
     }
 }
