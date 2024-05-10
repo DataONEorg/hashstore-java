@@ -1133,7 +1133,8 @@ public class FileHashStore implements HashStore {
                     referenceLockedPids.add(pid);
                 }
                 // Begin by looking for the cid and confirming state
-                // If a custom exception is thrown, this try block will return;
+                // If there is an issue with finding an object (ex. orphaned reference files),
+                // custom exceptions will be thrown and handled in the catch blocks
                 cid = findObject(id);
 
                 // Proceed with comprehensive deletion - cid exists, nothing out of place
@@ -1173,7 +1174,10 @@ public class FileHashStore implements HashStore {
                 );
 
             } catch (OrphanPidRefsFileException oprfe) {
-                // Rename pid refs file for deletion
+                // `findObject` throws this exception when the cid refs file doesn't exist,
+                // so we only need to delete the pid refs file and related metadata documents
+
+                // Begin by renaming pid refs file for deletion
                 Path absPidRefsPath = getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName());
                 deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
 
@@ -1189,7 +1193,9 @@ public class FileHashStore implements HashStore {
                 logFileHashStore.warn(warnMsg);
 
             } catch (OrphanRefsFilesException orfe) {
-                // Object does not exist, but cid&pid refs do, attempt to remove orphan files
+                // `findObject` throws this exception when the pid and cid refs file exists,
+                // but the actual object being referenced by the pid does not exist
+
                 // Rename pid refs file for deletion
                 Path absPidRefsPath = getExpectedPath(id, "refs", HashStoreIdTypes.pid.getName());
                 String cidRead = new String(Files.readAllBytes(absPidRefsPath));
@@ -1219,6 +1225,9 @@ public class FileHashStore implements HashStore {
                 logFileHashStore.warn(warnMsg);
 
             } catch (PidNotFoundInCidRefsFileException pnficrfe) {
+                // `findObject` throws this exception when both the pid and cid refs file exists
+                // but the pid is not found in the cid refs file.
+
                 // Rename pid refs file for deletion
                 Path absPidRefsPath = getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName());
                 deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
