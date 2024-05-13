@@ -525,7 +525,7 @@ public class FileHashStore implements HashStore {
                     "FileHashStore.syncPutObject - Releasing objectLockedIds for pid: " + pid
                 );
                 objectLockedIds.remove(pid);
-                objectLockedIds.notifyAll();
+                objectLockedIds.notify();
             }
         }
     }
@@ -727,7 +727,7 @@ public class FileHashStore implements HashStore {
                     "FileHashStore.tagObject - Releasing referenceLockedCids for pid: " + pid
                 );
                 referenceLockedCids.remove(pid);
-                referenceLockedCids.notifyAll();
+                referenceLockedCids.notify();
             }
         }
     }
@@ -924,7 +924,7 @@ public class FileHashStore implements HashStore {
                         + " and formatId " + checkedFormatId
                 );
                 metadataLockedIds.remove(pidFormatId);
-                metadataLockedIds.notifyAll();
+                metadataLockedIds.notify();
             }
         }
     }
@@ -1257,7 +1257,7 @@ public class FileHashStore implements HashStore {
                         "FileHashStore.deleteObject - Releasing referenceLockedCids for pid: "
                             + pid);
                     referenceLockedCids.remove(pid);
-                    referenceLockedCids.notifyAll();
+                    referenceLockedCids.notify();
                 }
             }
         }
@@ -1931,7 +1931,7 @@ public class FileHashStore implements HashStore {
                         "FileHashStore.deleteObject - Releasing referenceLockedCids for cid: "
                             + cid);
                     referenceLockedCids.remove(cid);
-                    referenceLockedCids.notifyAll();
+                    referenceLockedCids.notify();
                 }
             }
         }
