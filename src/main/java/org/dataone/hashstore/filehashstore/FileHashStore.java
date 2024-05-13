@@ -484,6 +484,7 @@ public class FileHashStore implements HashStore {
             );
             // Tag object
             String cid = objInfo.getCid();
+            objInfo.setPid(pid);
             tagObject(pid, cid);
             logFileHashStore.info(
                 "FileHashStore.syncPutObject - Object stored for pid: " + pid
@@ -616,14 +617,14 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(cid, "cid", "tagObject");
 
         synchronized (referenceLockedCids) {
-            while (referenceLockedCids.contains(pid)) {
+            while (referenceLockedCids.contains(cid)) {
                 try {
                     referenceLockedCids.wait(TIME_OUT_MILLISEC);
 
                 } catch (InterruptedException ie) {
                     String errMsg =
                         "FileHashStore.tagObject - referenceLockedCids lock was interrupted while"
-                            + " waiting to tag pid: " + pid + " and cid: " + cid
+                            + " waiting to tag pid: " + pid + " with cid: " + cid
                             + ". InterruptedException: " + ie.getMessage();
                     logFileHashStore.error(errMsg);
                     throw new InterruptedException(errMsg);
@@ -632,7 +633,7 @@ public class FileHashStore implements HashStore {
             logFileHashStore.debug(
                 "FileHashStore.tagObject - Synchronizing referenceLockedCids for pid: " + pid
             );
-            referenceLockedCids.add(pid);
+            referenceLockedCids.add(cid);
         }
 
         try {
@@ -725,8 +726,8 @@ public class FileHashStore implements HashStore {
             synchronized (referenceLockedCids) {
                 logFileHashStore.debug(
                     "FileHashStore.tagObject - Releasing referenceLockedCids for pid: " + pid
-                );
-                referenceLockedCids.remove(pid);
+                        + " with cid: " + cid);
+                referenceLockedCids.remove(cid);
                 referenceLockedCids.notifyAll();;
             }
         }
@@ -1193,7 +1194,7 @@ public class FileHashStore implements HashStore {
             }
 
             synchronized (referenceLockedCids) {
-                while (referenceLockedCids.contains(pid)) {
+                while (referenceLockedCids.contains(cid)) {
                     try {
                         referenceLockedCids.wait(TIME_OUT_MILLISEC);
 
@@ -1208,8 +1209,8 @@ public class FileHashStore implements HashStore {
                 }
                 logFileHashStore.debug(
                     "FileHashStore.deleteObject - Synchronizing referenceLockedCids for pid: "
-                        + pid);
-                referenceLockedCids.add(pid);
+                        + pid + " with cid: " + cid);
+                referenceLockedCids.add(cid);
             }
 
             try {
@@ -1254,8 +1255,8 @@ public class FileHashStore implements HashStore {
                 synchronized (referenceLockedCids) {
                     logFileHashStore.debug(
                         "FileHashStore.deleteObject - Releasing referenceLockedCids for pid: "
-                            + pid);
-                    referenceLockedCids.remove(pid);
+                            + pid + " with cid: " + cid);
+                    referenceLockedCids.remove(cid);
                     referenceLockedCids.notifyAll();;
                 }
             }
