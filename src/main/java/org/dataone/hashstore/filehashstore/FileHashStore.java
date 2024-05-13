@@ -456,12 +456,6 @@ public class FileHashStore implements HashStore {
         String checksumAlgorithm, long objSize
     ) throws NoSuchAlgorithmException, PidRefsFileExistsException, IOException, RuntimeException,
         InterruptedException {
-        logFileHashStore.debug(
-            "FileHashStore.syncPutObject - called .putObject() to store pid: " + pid
-                + ". additionalAlgorithm: " + additionalAlgorithm + ". checksum: " + checksum
-                + ". checksumAlgorithm: " + checksumAlgorithm
-        );
-
         // Lock pid for thread safety, transaction control and atomic writing
         // An object is stored once and only once
         synchronized (objectLockedIds) {
@@ -479,6 +473,11 @@ public class FileHashStore implements HashStore {
         }
 
         try {
+            logFileHashStore.debug(
+                "FileHashStore.syncPutObject - called .putObject() to store pid: " + pid
+                    + ". additionalAlgorithm: " + additionalAlgorithm + ". checksum: " + checksum
+                    + ". checksumAlgorithm: " + checksumAlgorithm
+            );
             // Store object
             ObjectMetadata objInfo = putObject(
                 object, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize
@@ -525,7 +524,7 @@ public class FileHashStore implements HashStore {
                     "FileHashStore.syncPutObject - Releasing objectLockedIds for pid: " + pid
                 );
                 objectLockedIds.remove(pid);
-                objectLockedIds.notify();
+                objectLockedIds.notifyAll();;
             }
         }
     }
@@ -615,11 +614,6 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(cid, "cid", "tagObject");
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "tagObject");
         FileHashStoreUtility.checkForEmptyString(cid, "cid", "tagObject");
-        // Prepare booleans to determine path of tagObject to proceed with
-        Path absPidRefsPath = getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName());
-        Path absCidRefsPath = getExpectedPath(cid, "refs", HashStoreIdTypes.cid.getName());
-        boolean pidRefsFound = Files.exists(absPidRefsPath);
-        boolean cidRefsFound = Files.exists(absCidRefsPath);
 
         synchronized (referenceLockedCids) {
             while (referenceLockedCids.contains(pid)) {
@@ -642,6 +636,12 @@ public class FileHashStore implements HashStore {
         }
 
         try {
+            // Prepare booleans to determine path of tagObject to proceed with
+            Path absPidRefsPath = getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName());
+            Path absCidRefsPath = getExpectedPath(cid, "refs", HashStoreIdTypes.cid.getName());
+            boolean pidRefsFound = Files.exists(absPidRefsPath);
+            boolean cidRefsFound = Files.exists(absCidRefsPath);
+
             // Both files found, confirm that reference files are where they are expected to be
             if (pidRefsFound && cidRefsFound) {
                 verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
@@ -727,7 +727,7 @@ public class FileHashStore implements HashStore {
                     "FileHashStore.tagObject - Releasing referenceLockedCids for pid: " + pid
                 );
                 referenceLockedCids.remove(pid);
-                referenceLockedCids.notify();
+                referenceLockedCids.notifyAll();;
             }
         }
     }
@@ -868,11 +868,6 @@ public class FileHashStore implements HashStore {
         // However, the same pid could be used with different formatIds, so
         // synchronize ids with pid + formatId;
         String pidFormatId = pid + checkedFormatId;
-        logFileHashStore.debug(
-            "FileHashStore.storeMetadata - .putMetadata() request for pid: " + pid
-                + ". formatId: " + checkedFormatId
-        );
-
         synchronized (metadataLockedIds) {
             while (metadataLockedIds.contains(pidFormatId)) {
                 try {
@@ -894,6 +889,10 @@ public class FileHashStore implements HashStore {
         }
 
         try {
+            logFileHashStore.debug(
+                "FileHashStore.storeMetadata - .putMetadata() request for pid: " + pid
+                    + ". formatId: " + checkedFormatId
+            );
             // Store metadata
             String pathToStoredMetadata = putMetadata(metadata, pid, checkedFormatId);
             logFileHashStore.info(
@@ -924,7 +923,7 @@ public class FileHashStore implements HashStore {
                         + " and formatId " + checkedFormatId
                 );
                 metadataLockedIds.remove(pidFormatId);
-                metadataLockedIds.notify();
+                metadataLockedIds.notifyAll();;
             }
         }
     }
@@ -1257,7 +1256,7 @@ public class FileHashStore implements HashStore {
                         "FileHashStore.deleteObject - Releasing referenceLockedCids for pid: "
                             + pid);
                     referenceLockedCids.remove(pid);
-                    referenceLockedCids.notify();
+                    referenceLockedCids.notifyAll();;
                 }
             }
         }
@@ -1931,7 +1930,7 @@ public class FileHashStore implements HashStore {
                         "FileHashStore.deleteObject - Releasing referenceLockedCids for cid: "
                             + cid);
                     referenceLockedCids.remove(cid);
-                    referenceLockedCids.notify();
+                    referenceLockedCids.notifyAll();;
                 }
             }
         }
