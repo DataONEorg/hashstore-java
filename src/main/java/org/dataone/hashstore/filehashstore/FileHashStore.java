@@ -1113,6 +1113,87 @@ public class FileHashStore implements HashStore {
 
             // Before we begin deleting files, we handle orphaned files scenarios
             try {
+                // Begin by looking for the cid and confirming state
+                // If there is an issue with finding an object (ex. orphaned reference files),
+                // custom exceptions will be thrown and handled in the catch blocks
+                cid = findObject(id);
+
+            } catch (OrphanPidRefsFileException oprfe) {
+                // `findObject` throws this exception when the cid refs file doesn't exist,
+                // so we only need to delete the pid refs file and related metadata documents
+
+                // Begin by renaming pid refs file for deletion
+                Path absPidRefsPath = getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName());
+                deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
+
+                // Rename metadata documents for deletion
+                for (Path metadataDoc : metadataDocPaths) {
+                    deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDoc));
+                }
+
+                FileHashStoreUtility.deleteListItems(deleteList);
+                String warnMsg =
+                    "FileHashStore.deleteObject - Cid refs file does not exist for pid: " + pid
+                        + ". Deleted orphan pid refs file and metadata.";
+                logFileHashStore.warn(warnMsg);
+                return;
+
+            } catch (OrphanRefsFilesException orfe) {
+                // `findObject` throws this exception when the pid and cid refs file exists,
+                // but the actual object being referenced by the pid does not exist
+
+                // Rename pid refs file for deletion
+                Path absPidRefsPath = getExpectedPath(id, "refs", HashStoreIdTypes.pid.getName());
+                String cidRead = new String(Files.readAllBytes(absPidRefsPath));
+                deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
+
+                // Remove the pid from the cid refs file
+                Path absCidRefsPath = getExpectedPath(
+                    cidRead, "refs", HashStoreIdTypes.cid.getName()
+                );
+                updateRefsFile(pid, absCidRefsPath, "remove");
+
+                // Add the cid reference file to deleteList if it's now empty
+                if (Files.size(absCidRefsPath) == 0) {
+                    deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
+                }
+
+                // Rename metadata documents for deletion
+                for (Path metadataDoc : metadataDocPaths) {
+                    deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDoc));
+                }
+
+                // Delete items
+                FileHashStoreUtility.deleteListItems(deleteList);
+                String warnMsg = "FileHashStore.deleteObject - Object with cid: " + cidRead
+                    + " does not exist, but pid and cid reference file found for pid: " + pid
+                    + ". Deleted pid and cid ref files and metadata.";
+                logFileHashStore.warn(warnMsg);
+                return;
+
+            } catch (PidNotFoundInCidRefsFileException pnficrfe) {
+                // `findObject` throws this exception when both the pid and cid refs file exists
+                // but the pid is not found in the cid refs file.
+
+                // Rename pid refs file for deletion
+                Path absPidRefsPath = getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName());
+                deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
+
+                // Rename metadata documents for deletion
+                for (Path metadataDoc : metadataDocPaths) {
+                    deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDoc));
+                }
+
+                // Delete items
+                FileHashStoreUtility.deleteListItems(deleteList);
+                String warnMsg =
+                    "FileHashStore.deleteObject - Pid not found in expected cid refs file for pid: "
+                        + pid + ". Deleted orphan pid refs file and metadata.";
+                logFileHashStore.warn(warnMsg);
+                return;
+            }
+
+            try {
                 synchronized (referenceLockedPids) {
                     while (referenceLockedPids.contains(pid)) {
                         try {
@@ -1132,10 +1213,6 @@ public class FileHashStore implements HashStore {
                             + pid);
                     referenceLockedPids.add(pid);
                 }
-                // Begin by looking for the cid and confirming state
-                // If there is an issue with finding an object (ex. orphaned reference files),
-                // custom exceptions will be thrown and handled in the catch blocks
-                cid = findObject(id);
 
                 // Proceed with comprehensive deletion - cid exists, nothing out of place
                 // Get all the required paths to streamline deletion process
@@ -1172,77 +1249,6 @@ public class FileHashStore implements HashStore {
                     "FileHashStore.deleteObject - File and references deleted for: " + pid
                         + " with object address: " + objRealPath
                 );
-
-            } catch (OrphanPidRefsFileException oprfe) {
-                // `findObject` throws this exception when the cid refs file doesn't exist,
-                // so we only need to delete the pid refs file and related metadata documents
-
-                // Begin by renaming pid refs file for deletion
-                Path absPidRefsPath = getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName());
-                deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
-
-                // Rename metadata documents for deletion
-                for (Path metadataDoc : metadataDocPaths) {
-                    deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDoc));
-                }
-
-                FileHashStoreUtility.deleteListItems(deleteList);
-                String warnMsg =
-                    "FileHashStore.deleteObject - Cid refs file does not exist for pid: " + pid
-                        + ". Deleted orphan pid refs file and metadata.";
-                logFileHashStore.warn(warnMsg);
-
-            } catch (OrphanRefsFilesException orfe) {
-                // `findObject` throws this exception when the pid and cid refs file exists,
-                // but the actual object being referenced by the pid does not exist
-
-                // Rename pid refs file for deletion
-                Path absPidRefsPath = getExpectedPath(id, "refs", HashStoreIdTypes.pid.getName());
-                String cidRead = new String(Files.readAllBytes(absPidRefsPath));
-                deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
-
-                // Remove the pid from the cid refs file
-                Path absCidRefsPath = getExpectedPath(
-                    cidRead, "refs", HashStoreIdTypes.cid.getName()
-                );
-                updateRefsFile(pid, absCidRefsPath, "remove");
-
-                // Add the cid reference file to deleteList if it's now empty
-                if (Files.size(absCidRefsPath) == 0) {
-                    deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
-                }
-
-                // Rename metadata documents for deletion
-                for (Path metadataDoc : metadataDocPaths) {
-                    deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDoc));
-                }
-
-                // Delete items
-                FileHashStoreUtility.deleteListItems(deleteList);
-                String warnMsg = "FileHashStore.deleteObject - Object with cid: " + cidRead
-                    + " does not exist, but pid and cid reference file found for pid: " + pid
-                    + ". Deleted pid and cid ref files and metadata.";
-                logFileHashStore.warn(warnMsg);
-
-            } catch (PidNotFoundInCidRefsFileException pnficrfe) {
-                // `findObject` throws this exception when both the pid and cid refs file exists
-                // but the pid is not found in the cid refs file.
-
-                // Rename pid refs file for deletion
-                Path absPidRefsPath = getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName());
-                deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
-
-                // Rename metadata documents for deletion
-                for (Path metadataDoc : metadataDocPaths) {
-                    deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDoc));
-                }
-
-                // Delete items
-                FileHashStoreUtility.deleteListItems(deleteList);
-                String warnMsg =
-                    "FileHashStore.deleteObject - Pid not found in expected cid refs file for pid: "
-                        + pid + ". Deleted orphan pid refs file and metadata.";
-                logFileHashStore.warn(warnMsg);
 
             } finally {
                 // Release lock
