@@ -52,7 +52,6 @@ public class FileHashStore implements HashStore {
     private static final ArrayList<String> objectLockedIds = new ArrayList<>(100);
     private static final ArrayList<String> metadataLockedIds = new ArrayList<>(100);
     private static final ArrayList<String> referenceLockedCids = new ArrayList<>(100);
-    private static final ArrayList<String> referenceLockedPids = new ArrayList<>(100);
     private final Path STORE_ROOT;
     private final int DIRECTORY_DEPTH;
     private final int DIRECTORY_WIDTH;
@@ -622,10 +621,10 @@ public class FileHashStore implements HashStore {
         boolean cidRefsFound = Files.exists(absCidRefsPath);
 
         try {
-            synchronized (referenceLockedPids) {
-                while (referenceLockedPids.contains(pid)) {
+            synchronized (referenceLockedCids) {
+                while (referenceLockedCids.contains(pid)) {
                     try {
-                        referenceLockedPids.wait(TIME_OUT_MILLISEC);
+                        referenceLockedCids.wait(TIME_OUT_MILLISEC);
 
                     } catch (InterruptedException ie) {
                         String errMsg =
@@ -637,9 +636,9 @@ public class FileHashStore implements HashStore {
                     }
                 }
                 logFileHashStore.debug(
-                    "FileHashStore.tagObject - Synchronizing referenceLockedPids for pid: " + pid
+                    "FileHashStore.tagObject - Synchronizing referenceLockedCids for pid: " + pid
                 );
-                referenceLockedPids.add(pid);
+                referenceLockedCids.add(pid);
             }
 
             // Both files found, confirm that reference files are where they are expected to be
@@ -722,12 +721,12 @@ public class FileHashStore implements HashStore {
 
         } finally {
             // Release lock
-            synchronized (referenceLockedPids) {
+            synchronized (referenceLockedCids) {
                 logFileHashStore.debug(
-                    "FileHashStore.tagObject - Releasing referenceLockedPids for pid: " + pid
+                    "FileHashStore.tagObject - Releasing referenceLockedCids for pid: " + pid
                 );
-                referenceLockedPids.remove(pid);
-                referenceLockedPids.notifyAll();
+                referenceLockedCids.remove(pid);
+                referenceLockedCids.notifyAll();
             }
         }
     }
@@ -1194,14 +1193,14 @@ public class FileHashStore implements HashStore {
             }
 
             try {
-                synchronized (referenceLockedPids) {
-                    while (referenceLockedPids.contains(pid)) {
+                synchronized (referenceLockedCids) {
+                    while (referenceLockedCids.contains(pid)) {
                         try {
-                            referenceLockedPids.wait(TIME_OUT_MILLISEC);
+                            referenceLockedCids.wait(TIME_OUT_MILLISEC);
 
                         } catch (InterruptedException ie) {
                             String errMsg =
-                                "FileHashStore.deleteObject - referenceLockedPids lock was "
+                                "FileHashStore.deleteObject - referenceLockedCids lock was "
                                     + "interrupted while waiting to delete objects for pid: " + pid
                                     + ". InterruptedException: " + ie.getMessage();
                             logFileHashStore.error(errMsg);
@@ -1209,9 +1208,9 @@ public class FileHashStore implements HashStore {
                         }
                     }
                     logFileHashStore.debug(
-                        "FileHashStore.deleteObject - Synchronizing referenceLockedPids for pid: "
+                        "FileHashStore.deleteObject - Synchronizing referenceLockedCids for pid: "
                             + pid);
-                    referenceLockedPids.add(pid);
+                    referenceLockedCids.add(pid);
                 }
 
                 // Proceed with comprehensive deletion - cid exists, nothing out of place
@@ -1252,12 +1251,12 @@ public class FileHashStore implements HashStore {
 
             } finally {
                 // Release lock
-                synchronized (referenceLockedPids) {
+                synchronized (referenceLockedCids) {
                     logFileHashStore.debug(
-                        "FileHashStore.deleteObject - Releasing referenceLockedPids for pid: "
+                        "FileHashStore.deleteObject - Releasing referenceLockedCids for pid: "
                             + pid);
-                    referenceLockedPids.remove(pid);
-                    referenceLockedPids.notifyAll();
+                    referenceLockedCids.remove(pid);
+                    referenceLockedCids.notifyAll();
                 }
             }
         }
