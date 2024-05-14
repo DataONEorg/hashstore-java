@@ -1101,14 +1101,14 @@ public class FileHashStore implements HashStore {
             synchronized (objectLockedIds) {
                 if (objectLockedIds.contains(pid)) {
                     String errMsg =
-                        "FileHashStore.syncPutObject - Duplicate object request encountered for "
+                        "FileHashStore.deleteObject - Duplicate object request encountered for "
                             + "pid: "
                             + pid + ". Already in progress.";
                     logFileHashStore.warn(errMsg);
                     throw new RuntimeException(errMsg);
                 }
                 logFileHashStore.debug(
-                    "FileHashStore.storeObject - Synchronizing objectLockedIds for pid: " + pid);
+                    "FileHashStore.deleteObject - Synchronizing objectLockedIds for pid: " + pid);
                 objectLockedIds.add(pid);
             }
 
@@ -1193,6 +1193,23 @@ public class FileHashStore implements HashStore {
 
                     try {
                         updateRefsFile(pid, absCidRefsPath, "remove");
+                        // Add the cid reference file to deleteList if it's now empty
+                        if (Files.size(absCidRefsPath) == 0) {
+                            deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
+                        }
+
+                        // Rename metadata documents for deletion
+                        for (Path metadataDoc : metadataDocPaths) {
+                            deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDoc));
+                        }
+
+                        // Delete items
+                        FileHashStoreUtility.deleteListItems(deleteList);
+                        String warnMsg = "FileHashStore.deleteObject - Object with cid: " + cidRead
+                            + " does not exist, but pid and cid reference file found for pid: " + pid
+                            + ". Deleted pid and cid ref files and metadata.";
+                        logFileHashStore.warn(warnMsg);
+                        return;
 
                     } finally {
                         // Release lock
@@ -1205,25 +1222,6 @@ public class FileHashStore implements HashStore {
                             referenceLockedCids.notify();
                         }
                     }
-
-                    // Add the cid reference file to deleteList if it's now empty
-                    if (Files.size(absCidRefsPath) == 0) {
-                        deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
-                    }
-
-                    // Rename metadata documents for deletion
-                    for (Path metadataDoc : metadataDocPaths) {
-                        deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDoc));
-                    }
-
-                    // Delete items
-                    FileHashStoreUtility.deleteListItems(deleteList);
-                    String warnMsg = "FileHashStore.deleteObject - Object with cid: " + cidRead
-                        + " does not exist, but pid and cid reference file found for pid: " + pid
-                        + ". Deleted pid and cid ref files and metadata.";
-                    logFileHashStore.warn(warnMsg);
-                    return;
-
                 } catch (PidNotFoundInCidRefsFileException pnficrfe) {
                     // `findObject` throws this exception when both the pid and cid refs file exists
                     // but the pid is not found in the cid refs file.
@@ -1321,7 +1319,7 @@ public class FileHashStore implements HashStore {
                 // Release lock
                 synchronized (objectLockedIds) {
                     logFileHashStore.debug(
-                        "FileHashStore.syncPutObject - Releasing objectLockedIds for pid: " + pid);
+                        "FileHashStore.deleteObject - Releasing objectLockedIds for pid: " + pid);
                     objectLockedIds.remove(pid);
                     objectLockedIds.notify();
                 }
