@@ -1207,7 +1207,6 @@ public class FileHashStore implements HashStore {
                         }
                     }
 
-
                     // Add the cid reference file to deleteList if it's now empty
                     if (Files.size(absCidRefsPath) == 0) {
                         deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
@@ -1948,59 +1947,58 @@ public class FileHashStore implements HashStore {
      */
     protected void deleteObjectByCid(String cid)
         throws IOException, NoSuchAlgorithmException, InterruptedException {
+        logFileHashStore.debug("FileHashStore - deleteObjectByCid: called to delete cid: " + cid);
+        // Get expected path of the cid refs file
         Path absCidRefsPath = getExpectedPath(cid, "refs", HashStoreIdTypes.cid.getName());
-        if (Files.exists(absCidRefsPath)) {
-            // The cid refs file exists, so the cid object cannot be deleted.
-            String warnMsg = "FileHashStore - deleteObjectByCid: cid refs file still contains"
-                + " references, skipping deletion.";
-            logFileHashStore.warn(warnMsg);
+        // Get permanent address of the actual cid
+        String objRelativePath =
+            FileHashStoreUtility.getHierarchicalPathString(DIRECTORY_DEPTH, DIRECTORY_WIDTH, cid);
+        Path expectedRealPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
 
-        } else {
-            // Get permanent address of the actual cid
-            String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
-                DIRECTORY_DEPTH, DIRECTORY_WIDTH, cid
-            );
-            Path expectedRealPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
+        // Minimize the amount of time the cid is locked
+        synchronized (referenceLockedCids) {
+            while (referenceLockedCids.contains(cid)) {
+                try {
+                    referenceLockedCids.wait(TIME_OUT_MILLISEC);
 
-            // Minimize the amount of time the cid is locked
-            synchronized (referenceLockedCids) {
-                while (referenceLockedCids.contains(cid)) {
-                    try {
-                        referenceLockedCids.wait(TIME_OUT_MILLISEC);
-
-                    } catch (InterruptedException ie) {
-                        String errMsg =
-                            "FileHashStore.deleteObjectByCid - referenceLockedCids lock was "
-                                + "interrupted while waiting to delete object with cid: " + cid
-                                + ". InterruptedException: " + ie.getMessage();
-                        logFileHashStore.error(errMsg);
-                        throw new InterruptedException(errMsg);
-                    }
+                } catch (InterruptedException ie) {
+                    String errMsg =
+                        "FileHashStore.deleteObjectByCid - referenceLockedCids lock was "
+                            + "interrupted while waiting to delete object with cid: " + cid
+                            + ". InterruptedException: " + ie.getMessage();
+                    logFileHashStore.error(errMsg);
+                    throw new InterruptedException(errMsg);
                 }
-                logFileHashStore.debug(
-                    "FileHashStore.deleteObjectByCid - Synchronizing referenceLockedCids for cid: "
-                        + cid);
-                referenceLockedCids.add(cid);
             }
+            logFileHashStore.debug(
+                "FileHashStore.deleteObjectByCid - Synchronizing referenceLockedCids for cid: "
+                    + cid);
+            referenceLockedCids.add(cid);
+        }
 
-            try {
+        try {
+            if (Files.exists(absCidRefsPath)) {
+                // The cid refs file exists, so the cid object cannot be deleted.
+                String warnMsg = "FileHashStore - deleteObjectByCid: cid refs file still contains"
+                    + " references, skipping deletion.";
+                logFileHashStore.warn(warnMsg);
+            } else {
                 // If file exists, delete it.
                 if (Files.exists(expectedRealPath)) {
                     Files.delete(expectedRealPath);
                 }
-                String debugMsg = "FileHashStore - deleteObjectByCid: object deleted at"
-                    + expectedRealPath;
+                String debugMsg =
+                    "FileHashStore - deleteObjectByCid: object deleted at" + expectedRealPath;
                 logFileHashStore.debug(debugMsg);
-
-            } finally {
-                // Release lock
-                synchronized (referenceLockedCids) {
-                    logFileHashStore.debug(
-                        "FileHashStore.deleteObject - Releasing referenceLockedCids for cid: "
-                            + cid);
-                    referenceLockedCids.remove(cid);
-                    referenceLockedCids.notify();
-                }
+            }
+        } finally {
+            // Release lock
+            synchronized (referenceLockedCids) {
+                logFileHashStore.debug(
+                    "FileHashStore.deleteObjectByCid - Releasing referenceLockedCids for cid: "
+                        + cid);
+                referenceLockedCids.remove(cid);
+                referenceLockedCids.notify();
             }
         }
     }
