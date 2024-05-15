@@ -1073,8 +1073,7 @@ public class FileHashStore implements HashStore {
         NoSuchAlgorithmException, InterruptedException {
         logFileHashStore.debug(
             "FileHashStore.deleteObject - Called to delete object for id: " + id + "(" + idType
-                + ")"
-        );
+                + ")");
         // Validate input parameters
         FileHashStoreUtility.ensureNotNull(id, "id", "deleteObject");
         FileHashStoreUtility.checkForEmptyString(id, "id", "deleteObject");
@@ -1153,14 +1152,15 @@ public class FileHashStore implements HashStore {
                             } catch (InterruptedException ie) {
                                 String errMsg =
                                     "FileHashStore.deleteObject - referenceLockedCids lock was "
-                                        + "interrupted while waiting to delete objects for pid: " + pid
-                                        + ". InterruptedException: " + ie.getMessage();
+                                        + "interrupted while waiting to delete objects for pid: "
+                                        + pid + ". InterruptedException: " + ie.getMessage();
                                 logFileHashStore.error(errMsg);
                                 throw new InterruptedException(errMsg);
                             }
                         }
                         logFileHashStore.debug(
-                            "FileHashStore.deleteObject - Synchronizing referenceLockedCids for pid: "
+                            "FileHashStore.deleteObject - Synchronizing referenceLockedCids for "
+                            + "pid: "
                                 + pid + " with cid: " + cid);
                         referenceLockedCids.add(cid);
                     }
@@ -1189,13 +1189,15 @@ public class FileHashStore implements HashStore {
                         // Delete obj and cid refs file **only** if the cid refs file is empty
                         if (Files.size(absCidRefsPath) == 0) {
                             // Rename empty cid refs file to prepare for deletion
-                            deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
+                            deleteList.add(
+                                FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
                             // Rename actual object to prepare for deletion
                             deleteList.add(FileHashStoreUtility.renamePathForDeletion(objRealPath));
                         } else {
                             String warnMsg =
                                 "FileHashStore.deleteObject - cid referenced by pid: " + pid
-                                    + " is not empty (refs exist for cid). Skipping object deletion.";
+                                    + " is not empty (refs exist for cid). Skipping object "
+                                    + "deletion.";
                             logFileHashStore.warn(warnMsg);
                         }
                         // Delete all related/relevant items with the least amount of delay
@@ -1208,7 +1210,8 @@ public class FileHashStore implements HashStore {
                         // Release lock
                         synchronized (referenceLockedCids) {
                             logFileHashStore.debug(
-                                "FileHashStore.deleteObject - Releasing referenceLockedCids for pid: "
+                                "FileHashStore.deleteObject - Releasing referenceLockedCids for "
+                                + "pid: "
                                     + pid + " with cid: " + cid);
                             referenceLockedCids.remove(cid);
                             referenceLockedCids.notify();
@@ -1275,7 +1278,8 @@ public class FileHashStore implements HashStore {
                         updateRefsFile(pid, absCidRefsPath, "remove");
                         // Add the cid reference file to deleteList if it's now empty
                         if (Files.size(absCidRefsPath) == 0) {
-                            deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
+                            deleteList.add(
+                                FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
                         }
 
                         // Rename metadata documents for deletion
@@ -1286,8 +1290,8 @@ public class FileHashStore implements HashStore {
                         // Delete items
                         FileHashStoreUtility.deleteListItems(deleteList);
                         String warnMsg = "FileHashStore.deleteObject - Object with cid: " + cidRead
-                            + " does not exist, but pid and cid reference file found for pid: " + pid
-                            + ". Deleted pid and cid ref files and metadata.";
+                            + " does not exist, but pid and cid reference file found for pid: "
+                            + pid + ". Deleted pid and cid ref files and metadata.";
                         logFileHashStore.warn(warnMsg);
 
                     } finally {
@@ -1295,8 +1299,7 @@ public class FileHashStore implements HashStore {
                         synchronized (referenceLockedCids) {
                             logFileHashStore.debug(
                                 "FileHashStore.deleteObject - Releasing referenceLockedCids for "
-                                + "pid: "
-                                    + pid + " with cid: " + cidRead);
+                                    + "pid: " + pid + " with cid: " + cidRead);
                             referenceLockedCids.remove(cidRead);
                             referenceLockedCids.notify();
                         }
@@ -1319,8 +1322,7 @@ public class FileHashStore implements HashStore {
                     FileHashStoreUtility.deleteListItems(deleteList);
                     String warnMsg =
                         "FileHashStore.deleteObject - Pid not found in expected cid refs file for"
-                        + " pid: "
-                            + pid + ". Deleted orphan pid refs file and metadata.";
+                            + " pid: " + pid + ". Deleted orphan pid refs file and metadata.";
                     logFileHashStore.warn(warnMsg);
                 }
             } finally {
