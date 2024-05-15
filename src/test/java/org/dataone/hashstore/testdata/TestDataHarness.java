@@ -13,7 +13,8 @@ import java.util.Map;
  * - "object_cid" is the SHA-256 hash of the pid
  * - algorithms without any prefixes are the algorithm hash of the pid's respective data object
  * content
- * - "metadata_sha256" is the hash of the pid's respective metadata object content
+ * - "metadata_sha256" is the hash of the pid's respective metadata object content identifier
+ * - "metacat_cid" is the sha256 hash of the pid + formatId
  * 
  */
 public class TestDataHarness {
