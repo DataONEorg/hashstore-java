@@ -2341,9 +2341,9 @@ public class FileHashStore implements HashStore {
                 );
                 realPath = REFS_PID_FILE_DIRECTORY.resolve(pidRelativePath);
             } else if (formatId.equalsIgnoreCase(HashStoreIdTypes.cid.getName())) {
-                // `hashId` here is the cid refs file string to split
+                // If refs type is 'cid', use the abId directly provided
                 String cidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
-                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashId
+                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, abId
                 );
                 realPath = REFS_CID_FILE_DIRECTORY.resolve(cidRelativePath);
             } else {
