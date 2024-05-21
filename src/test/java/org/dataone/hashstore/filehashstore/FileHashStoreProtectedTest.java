@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -968,6 +969,9 @@ public class FileHashStoreProtectedTest {
         }
     }
 
+    /**
+     * Confirm getExpectedPath returns a file path that exists
+     */
     @Test
     public void getExpectedPath() throws Exception {
         // Get single test file to "upload"
@@ -984,5 +988,167 @@ public class FileHashStoreProtectedTest {
         assertTrue(Files.exists(objCidAbsPath));
         assertTrue(Files.exists(pidRefsPath));
         assertTrue(Files.exists(cidRefsPath));
+    }
+
+    /**
+     * Confirm getExpectedPath returns correct object path
+     */
+    @Test
+    public void getExpectedPath_objectPath() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStream, pid, null, null, null, -1
+            );
+            String cid = objInfo.getCid();
+
+            // Manually form the permanent address of the actual cid
+            Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+            int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
+            int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
+            String objShardString = FileHashStoreUtility.getHierarchicalPathString(
+                storeDepth, storeWidth, cid
+            );
+            Path calculatedObjRealPath = storePath.resolve("objects").resolve(objShardString);
+
+            Path expectedObjCidAbsPath = fileHashStore.getExpectedPath(pid, "object", null);
+
+            assertEquals(expectedObjCidAbsPath, calculatedObjRealPath);
+        }
+    }
+
+    /**
+     * Confirm getExpectedPath returns correct metadata path
+     */
+    @Test
+    public void getExpectedPath_metadataPath() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            String metadataPath = fileHashStore.storeMetadata(metadataStream, pid);
+
+            Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+            String storeFormatId = fhsProperties.getProperty("storeMetadataNamespace");
+            String storeAlgo = fhsProperties.getProperty("storeAlgorithm");
+            int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
+            int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
+
+            // Document ID
+            String hashId = FileHashStoreUtility.getPidHexDigest(pid + storeFormatId, storeAlgo);
+
+            // Metadata directory of the given pid
+            String metadataPidDirId = FileHashStoreUtility.getPidHexDigest(pid, storeAlgo);
+            String metadataPidDirIdSharded = FileHashStoreUtility.getHierarchicalPathString(
+                storeDepth, storeWidth, metadataPidDirId
+            );
+
+            // Complete path
+            Path calculatedMetadataRealPath =
+                storePath.resolve("metadata").resolve(metadataPidDirIdSharded).resolve(hashId);
+
+            Path expectedMetadataPidPath = fileHashStore.getExpectedPath(
+                pid, "metadata", storeFormatId
+            );
+
+            assertEquals(expectedMetadataPidPath, calculatedMetadataRealPath);
+        }
+    }
+
+    /**
+     * Confirm getExpectedPath returns correct pid refs path
+     */
+    @Test
+    public void getExpectedPath_pidRefsPaths() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStream, pid, null, null, null, -1
+            );
+            String cid = objInfo.getCid();
+
+            // Manually form the permanent address of the actual cid
+            Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+            int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
+            int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
+            String storeAlgo = fhsProperties.getProperty("storeAlgorithm");
+
+            // Pid refs file
+            String metadataPidHash = FileHashStoreUtility.getPidHexDigest(pid, storeAlgo);
+            String metadataPidHashSharded = FileHashStoreUtility.getHierarchicalPathString(
+                storeDepth, storeWidth, metadataPidHash
+            );
+            Path calculatedPidRefsRealPath = storePath.resolve("refs/pid").resolve(metadataPidHashSharded);
+
+            Path expectedPidRefsPath = fileHashStore.getExpectedPath(pid, "refs", "pid");
+
+            assertEquals(expectedPidRefsPath, calculatedPidRefsRealPath);
+        }
+    }
+
+    /**
+     * Confirm getExpectedPath returns correct cid refs path
+     */
+    @Test
+    public void getExpectedPath_cidRefsPaths() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStream, pid, null, null, null, -1
+            );
+            String cid = objInfo.getCid();
+
+            // Manually form the permanent address of the actual cid
+            Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+            int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
+            int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
+            String storeAlgo = fhsProperties.getProperty("storeAlgorithm");
+
+            // Cid refs file
+            String objShardString = FileHashStoreUtility.getHierarchicalPathString(
+                storeDepth, storeWidth, cid
+            );
+            Path calculatedCidRefsRealPath = storePath.resolve("refs/cid").resolve(objShardString);
+
+            Path expectedCidRefsPath = fileHashStore.getExpectedPath(cid, "refs", "cid");
+
+            assertEquals(expectedCidRefsPath, calculatedCidRefsRealPath);
+        }
+    }
+
+    /**
+     * Confirm getExpectedPath throws exception when requesting the path to a refs file
+     * with a formatId arg that is not "cid" or "pid"
+     */
+    @Test
+    public void getExpectedPath_incorrectRefsFormatId()  {
+        assertThrows(IllegalArgumentException.class, () -> {
+            String cid = "testcid";
+            fileHashStore.getExpectedPath(cid, "refs", "not_cid_or_pid");
+        });
+    }
+
+    /**
+     * Confirm getExpectedPath throws exception when requesting path for an object
+     * that does not exist
+     */
+    @Test
+    public void getExpectedPath_fileNotFound()  {
+        assertThrows(FileNotFoundException.class, () -> {
+            String pid = "dou.test.1";
+            fileHashStore.getExpectedPath(pid, "object", null);
+        });
     }
 }
