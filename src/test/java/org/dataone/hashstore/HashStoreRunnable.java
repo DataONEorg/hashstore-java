@@ -33,6 +33,15 @@ public class HashStoreRunnable implements Runnable {
         this.pid = pid;
     }
 
+    public HashStoreRunnable(HashStore hashstore, int publicAPIMethod, String pid) {
+        FileHashStoreUtility.ensureNotNull(hashstore, "hashstore",
+                                           "HashStoreServiceRequestConstructor");
+        FileHashStoreUtility.checkNotNegativeOrZero(publicAPIMethod, "HashStoreServiceRequestConstructor");
+        this.hashstore = hashstore;
+        this.publicAPIMethod = publicAPIMethod;
+        this.pid = pid;
+    }
+
     public void run() {
         logHssr.debug("HashStoreServiceRequest - Called to: " + publicAPIMethod);
         try {

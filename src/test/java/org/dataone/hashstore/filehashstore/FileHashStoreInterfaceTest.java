@@ -1673,6 +1673,52 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
+     * Test deleteObject synchronization using a Runnable class
+     */
+    @Test
+    public void deleteObject_50Pids_1Obj_viaRunnable() throws Exception {
+        // Get single test file to "upload"
+        String pid = "jtao.1700.1";
+        Path testDataFile = testData.getTestFile(pid);
+
+        List<String> pidModifiedList = new ArrayList<>();
+        for (int i = 1; i <= 50; i++) {
+            pidModifiedList.add(pid + ".dou.test." + i);
+        }
+
+        ExecutorService executorService = Executors.newFixedThreadPool(5);
+
+        // Store 50
+        for (String pidAdjusted : pidModifiedList) {
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            HashStoreRunnable
+                request = new HashStoreRunnable(fileHashStore, 1, dataStream, pidAdjusted);
+            executorService.execute(request);
+        }
+        // Delete 50
+        for (String pidAdjusted : pidModifiedList) {
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            HashStoreRunnable
+                request = new HashStoreRunnable(fileHashStore, 2, pidAdjusted);
+            executorService.execute(request);
+        }
+
+        executorService.shutdown();
+        executorService.awaitTermination(1, TimeUnit.MINUTES);
+
+        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+        // Check that no objects exist
+        List<Path> objects = FileHashStoreUtility.getFilesFromDir(storePath.resolve("objects"));
+        assertEquals(0, objects.size());
+        // Check that no refs files exist
+        List<Path> pidRefFiles = FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs/pid"));
+        assertEquals(0, pidRefFiles.size());
+        List<Path> cidRefFiles = FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs/cid"));
+        assertEquals(0, pidRefFiles.size());
+    }
+
+
+    /**
      * Confirm that deleteMetadata deletes metadata and empty sub directories
      */
     @Test
