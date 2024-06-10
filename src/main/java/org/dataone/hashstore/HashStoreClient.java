@@ -246,6 +246,11 @@ public class HashStoreClient {
                         "Metadata for pid (" + pid + ") and namespace (" + formatId
                             + ") has been deleted."
                     );
+                } else if (cmd.hasOption("hsr")) {
+                    String pid = cmd.getOptionValue("pid");
+                    Path path = Paths.get(cmd.getOptionValue("path"));
+                    InputStream dataStream = Files.newInputStream(path);
+                    HashStoreServiceRequest request = new HashStoreServiceRequest(hashStore, 1, dataStream, pid);
                 } else {
                     System.out.println("HashStoreClient - No options found, use -h for help.");
                 }
@@ -353,6 +358,7 @@ public class HashStoreClient {
         options.addOption(
             "dfs", "delfromhs", false, "(knbvm) Test flag to delete objs from a HashStore"
         );
+        options.addOption("hsr", "hsservicerequest", false, "Dev option to test threading.");
         return options;
     }
 
