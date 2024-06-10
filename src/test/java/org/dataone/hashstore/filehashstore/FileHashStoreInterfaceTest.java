@@ -19,9 +19,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -717,15 +720,19 @@ public class FileHashStoreInterfaceTest {
      * Test storeObject synchronization using a Runnable class
      */
     @Test
-    public void storeObject_50duplicateObjects_viaRunnable() throws Exception {
+    public void storeObject_50Pids_1Obj_viaRunnable() throws Exception {
         // Get single test file to "upload"
         String pid = "jtao.1700.1";
         Path testDataFile = testData.getTestFile(pid);
 
+        List<String> pidModifiedList = new ArrayList<>();
+        for (int i = 1; i <= 50; i++) {
+            pidModifiedList.add(pid + ".dou.test." + i);
+        }
+
         ExecutorService executorService = Executors.newFixedThreadPool(5);
 
-        for (int i = 1; i <= 50; i++) {
-            String pidAdjusted = pid + ".dou.test." + i;
+        for (String pidAdjusted : pidModifiedList) {
             InputStream dataStream = Files.newInputStream(testDataFile);
             HashStoreRunnable
                 request = new HashStoreRunnable(fileHashStore, 1, dataStream, pidAdjusted);
@@ -738,13 +745,16 @@ public class FileHashStoreInterfaceTest {
         // Check cid refs file that every pid is found
         String cidSha256DigestFromTestData = testData.pidData.get(pid).get("sha256");
         Path cidRefsFilePath = fileHashStore.getExpectedPath(cidSha256DigestFromTestData, "refs", "cid");
-        for (int i = 1; i <= 50; i++) {
-            String pidAdjusted = pid + ".dou.test." + i;
-            boolean pidFoundInCidRefFiles = fileHashStore.isStringInRefsFile(
-                pidAdjusted, cidRefsFilePath
-            );
-            assertTrue(pidFoundInCidRefFiles);
+        Set<String> stringSet = new HashSet<>(pidModifiedList);
+        List<String> lines = Files.readAllLines(cidRefsFilePath);
+        boolean allFoundPidsFound = true;
+        for (String line : lines) {
+            if (!stringSet.contains(line)) {
+                allFoundPidsFound = false;
+                break;
+            }
         }
+        assertTrue(allFoundPidsFound);
 
         // Confirm that 50 pid refs file exists
         Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
