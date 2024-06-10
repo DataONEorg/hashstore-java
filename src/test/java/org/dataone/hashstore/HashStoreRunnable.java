@@ -8,11 +8,11 @@ import org.dataone.hashstore.filehashstore.FileHashStoreUtility;
 import java.io.InputStream;
 
 /**
- * A HashStoreServiceRequest represents the data needed for a single request to HashStore
+ * A HashStoreRunnable represents the data needed for a single request to HashStore
  * packaged as a Runnable task that can be executed within a thread pool, typically
  * provided by the Executor service.
  */
-public class HashStoreServiceRequest {
+public class HashStoreRunnable implements Runnable {
     public static final int storeObject = 1;
     public static final int deleteObject = 2;
     private HashStore hashstore = null;
@@ -20,9 +20,10 @@ public class HashStoreServiceRequest {
     private String pid;
     private InputStream objStream;
 
-    private static final Log logHssr = LogFactory.getLog(HashStoreServiceRequest.class);
+    private static final Log logHssr = LogFactory.getLog(HashStoreRunnable.class);
 
-    protected HashStoreServiceRequest(HashStore hashstore, int publicAPIMethod, InputStream objStream, String pid) {
+    public HashStoreRunnable(HashStore hashstore, int publicAPIMethod, InputStream objStream,
+                             String pid) {
         FileHashStoreUtility.ensureNotNull(hashstore, "hashstore",
                                            "HashStoreServiceRequestConstructor");
         FileHashStoreUtility.checkNotNegativeOrZero(publicAPIMethod, "HashStoreServiceRequestConstructor");
@@ -42,12 +43,14 @@ public class HashStoreServiceRequest {
                     } catch (Exception e) {
                         throw new HashStoreServiceException(e.getMessage());
                     }
+                    break;
                 case deleteObject:
                     try {
                         hashstore.deleteObject("pid", pid);
                     } catch (Exception e) {
                         throw new HashStoreServiceException(e.getMessage());
                     }
+                    break;
             }
         } catch (HashStoreServiceException hse) {
             logHssr.error("HashStoreServiceRequest - Error: " + hse.getMessage());

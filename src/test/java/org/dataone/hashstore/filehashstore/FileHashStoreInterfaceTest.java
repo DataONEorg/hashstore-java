@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
@@ -29,6 +30,7 @@ import java.util.stream.Stream;
 
 import javax.xml.bind.DatatypeConverter;
 
+import org.dataone.hashstore.HashStoreRunnable;
 import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.exceptions.OrphanPidRefsFileException;
 import org.dataone.hashstore.exceptions.OrphanRefsFilesException;
@@ -709,6 +711,45 @@ public class FileHashStoreInterfaceTest {
         future5.get();
         executorService.shutdown();
         executorService.awaitTermination(1, TimeUnit.MINUTES);
+    }
+
+    /**
+     * Test storeObject synchronization using a Runnable class
+     */
+    @Test
+    public void storeObject_50duplicateObjects_viaRunnable() throws Exception {
+        // Get single test file to "upload"
+        String pid = "jtao.1700.1";
+        Path testDataFile = testData.getTestFile(pid);
+
+        ExecutorService executorService = Executors.newFixedThreadPool(5);
+
+        for (int i = 1; i <= 50; i++) {
+            String pidAdjusted = pid + ".dou.test." + i;
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            HashStoreRunnable
+                request = new HashStoreRunnable(fileHashStore, 1, dataStream, pidAdjusted);
+            executorService.execute(request);
+        }
+
+        executorService.shutdown();
+        executorService.awaitTermination(1, TimeUnit.MINUTES);
+
+        // Check cid refs file that every pid is found
+        String cidSha256DigestFromTestData = testData.pidData.get(pid).get("sha256");
+        Path cidRefsFilePath = fileHashStore.getExpectedPath(cidSha256DigestFromTestData, "refs", "cid");
+        for (int i = 1; i <= 50; i++) {
+            String pidAdjusted = pid + ".dou.test." + i;
+            boolean pidFoundInCidRefFiles = fileHashStore.isStringInRefsFile(
+                pidAdjusted, cidRefsFilePath
+            );
+            assertTrue(pidFoundInCidRefFiles);
+        }
+
+        // Confirm that 50 pid refs file exists
+        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+        List<Path> pidRefFiles = FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs/pid"));
+        assertEquals(50, pidRefFiles.size());
     }
 
     /**
