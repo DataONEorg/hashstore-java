@@ -1697,7 +1697,6 @@ public class FileHashStoreInterfaceTest {
         }
         // Delete 50
         for (String pidAdjusted : pidModifiedList) {
-            InputStream dataStream = Files.newInputStream(testDataFile);
             HashStoreRunnable
                 request = new HashStoreRunnable(fileHashStore, 2, pidAdjusted);
             executorService.execute(request);
@@ -1714,7 +1713,7 @@ public class FileHashStoreInterfaceTest {
         List<Path> pidRefFiles = FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs/pid"));
         assertEquals(0, pidRefFiles.size());
         List<Path> cidRefFiles = FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs/cid"));
-        assertEquals(0, pidRefFiles.size());
+        assertEquals(0, cidRefFiles.size());
     }
 
 
