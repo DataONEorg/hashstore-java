@@ -1822,8 +1822,8 @@ public class FileHashStore implements HashStore {
 
         } catch (IOException ioe) {
             String errMsg =
-                "FileHashStore.writeToTmpFileAndGenerateChecksums - Unexpected Exception: " + ioe
-                    .fillInStackTrace();
+                "FileHashStore.writeToTmpFileAndGenerateChecksums - Unexpected Exception ~ " + ioe
+                    .getClass().getName() + ": " + ioe.getMessage();
             logFileHashStore.error(errMsg);
             throw ioe;
 
