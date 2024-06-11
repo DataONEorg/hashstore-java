@@ -80,9 +80,9 @@ public class FileHashStoreReferencesTest {
         fileHashStore.tagObject(pid, cid);
 
         Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
-        File[] pidRefsFiles = storePath.resolve("refs/pid").toFile().listFiles();
+        File[] pidRefsFiles = storePath.resolve("refs/pids").toFile().listFiles();
         assertEquals(1, pidRefsFiles.length);
-        File[] cidRefsFiles = storePath.resolve("refs/cid").toFile().listFiles();
+        File[] cidRefsFiles = storePath.resolve("refs/cids").toFile().listFiles();
         assertEquals(1, cidRefsFiles.length);
     }
 
@@ -132,9 +132,9 @@ public class FileHashStoreReferencesTest {
         fileHashStore.tagObject(pid, cid);
         // Confirm that there is only 1 of each refs file
         Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
-        File[] pidRefsFiles = storePath.resolve("refs/pid").toFile().listFiles();
+        File[] pidRefsFiles = storePath.resolve("refs/pids").toFile().listFiles();
         assertEquals(1, pidRefsFiles.length);
-        File[] cidRefsFiles = storePath.resolve("refs/cid").toFile().listFiles();
+        File[] cidRefsFiles = storePath.resolve("refs/cids").toFile().listFiles();
         assertEquals(1, cidRefsFiles.length);
     }
 
@@ -181,9 +181,9 @@ public class FileHashStoreReferencesTest {
         fileHashStore.tagObject(pid, cid);
         // There should only be 1 of each refs file
         Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
-        File[] pidRefsFiles = storePath.resolve("refs/pid").toFile().listFiles();
+        File[] pidRefsFiles = storePath.resolve("refs/pids").toFile().listFiles();
         assertEquals(1, pidRefsFiles.length);
-        File[] cidRefsFiles = storePath.resolve("refs/cid").toFile().listFiles();
+        File[] cidRefsFiles = storePath.resolve("refs/cids").toFile().listFiles();
         assertEquals(1, cidRefsFiles.length);
     }
 
@@ -202,9 +202,9 @@ public class FileHashStoreReferencesTest {
         fileHashStore.tagObject(pid, cid);
         // Confirm that there is only 1 of each refs file
         Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
-        File[] pidRefsFiles = storePath.resolve("refs/pid").toFile().listFiles();
+        File[] pidRefsFiles = storePath.resolve("refs/pids").toFile().listFiles();
         assertEquals(1, pidRefsFiles.length);
-        File[] cidRefsFiles = storePath.resolve("refs/cid").toFile().listFiles();
+        File[] cidRefsFiles = storePath.resolve("refs/cids").toFile().listFiles();
         assertEquals(1, cidRefsFiles.length);
     }
 
@@ -236,9 +236,9 @@ public class FileHashStoreReferencesTest {
 
         // There should be 2 pid refs file, and 1 cid refs file
         Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
-        File[] pidRefsFiles = storePath.resolve("refs/pid").toFile().listFiles();
+        File[] pidRefsFiles = storePath.resolve("refs/pids").toFile().listFiles();
         assertEquals(2, pidRefsFiles.length);
-        File[] cidRefsFiles = storePath.resolve("refs/cid").toFile().listFiles();
+        File[] cidRefsFiles = storePath.resolve("refs/cids").toFile().listFiles();
         assertEquals(1, cidRefsFiles.length);
     }
 

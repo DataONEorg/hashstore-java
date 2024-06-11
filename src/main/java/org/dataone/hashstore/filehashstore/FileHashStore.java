@@ -161,8 +161,8 @@ public class FileHashStore implements HashStore {
         OBJECT_TMP_FILE_DIRECTORY = OBJECT_STORE_DIRECTORY.resolve("tmp");
         METADATA_TMP_FILE_DIRECTORY = METADATA_STORE_DIRECTORY.resolve("tmp");
         REFS_TMP_FILE_DIRECTORY = REFS_STORE_DIRECTORY.resolve("tmp");
-        REFS_PID_FILE_DIRECTORY = REFS_STORE_DIRECTORY.resolve(HashStoreIdTypes.pid.getName());
-        REFS_CID_FILE_DIRECTORY = REFS_STORE_DIRECTORY.resolve(HashStoreIdTypes.cid.getName());
+        REFS_PID_FILE_DIRECTORY = REFS_STORE_DIRECTORY.resolve("pids");
+        REFS_CID_FILE_DIRECTORY = REFS_STORE_DIRECTORY.resolve("cids");
 
         try {
             // Physically create object & metadata store and tmp directories
