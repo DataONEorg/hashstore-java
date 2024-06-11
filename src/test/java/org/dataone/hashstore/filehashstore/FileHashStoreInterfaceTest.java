@@ -758,7 +758,8 @@ public class FileHashStoreInterfaceTest {
 
         // Confirm that 50 pid refs file exists
         Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
-        List<Path> pidRefFiles = FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs/pid"));
+        List<Path> pidRefFiles = FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs"
+                                                                                            + "/pids"));
         assertEquals(50, pidRefFiles.size());
     }
 
@@ -1710,9 +1711,11 @@ public class FileHashStoreInterfaceTest {
         List<Path> objects = FileHashStoreUtility.getFilesFromDir(storePath.resolve("objects"));
         assertEquals(0, objects.size());
         // Check that no refs files exist
-        List<Path> pidRefFiles = FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs/pid"));
+        List<Path> pidRefFiles = FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs"
+                                                                                            + "/pids"));
         assertEquals(0, pidRefFiles.size());
-        List<Path> cidRefFiles = FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs/cid"));
+        List<Path> cidRefFiles = FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs"
+                                                                                            + "/cids"));
         assertEquals(0, cidRefFiles.size());
     }
 

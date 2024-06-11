@@ -277,9 +277,9 @@ public class FileHashStorePublicTest {
         assertTrue(Files.isDirectory(refsPath));
         Path refsTmpPath = rootDirectory.resolve("refs/tmp");
         assertTrue(Files.isDirectory(refsTmpPath));
-        Path refsPidPath = rootDirectory.resolve("refs/pid");
+        Path refsPidPath = rootDirectory.resolve("refs/pids");
         assertTrue(Files.isDirectory(refsPidPath));
-        Path refsCidPath = rootDirectory.resolve("refs/cid");
+        Path refsCidPath = rootDirectory.resolve("refs/cids");
         assertTrue(Files.isDirectory(refsCidPath));
     }
 

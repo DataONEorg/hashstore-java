@@ -1087,7 +1087,8 @@ public class FileHashStoreProtectedTest {
             String metadataPidHashSharded = FileHashStoreUtility.getHierarchicalPathString(
                 storeDepth, storeWidth, metadataPidHash
             );
-            Path calculatedPidRefsRealPath = storePath.resolve("refs/pid").resolve(metadataPidHashSharded);
+            Path calculatedPidRefsRealPath =
+                storePath.resolve("refs/pids").resolve(metadataPidHashSharded);
 
             Path expectedPidRefsPath = fileHashStore.getExpectedPath(pid, "refs", "pid");
 
@@ -1120,7 +1121,7 @@ public class FileHashStoreProtectedTest {
             String objShardString = FileHashStoreUtility.getHierarchicalPathString(
                 storeDepth, storeWidth, cid
             );
-            Path calculatedCidRefsRealPath = storePath.resolve("refs/cid").resolve(objShardString);
+            Path calculatedCidRefsRealPath = storePath.resolve("refs/cids").resolve(objShardString);
 
             Path expectedCidRefsPath = fileHashStore.getExpectedPath(cid, "refs", "cid");
 
