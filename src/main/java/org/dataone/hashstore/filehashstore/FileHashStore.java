@@ -1130,11 +1130,6 @@ public class FileHashStore implements HashStore {
                 String pidRelativePath =
                     FileHashStoreUtility.getHierarchicalPathString(DIRECTORY_DEPTH, DIRECTORY_WIDTH,
                                                                    pidHexDigest);
-                Path expectedPidMetadataDirectory =
-                    METADATA_STORE_DIRECTORY.resolve(pidRelativePath);
-                // Add all metadata doc paths to a List to iterate over below
-                List<Path> metadataDocPaths =
-                    FileHashStoreUtility.getFilesFromDir(expectedPidMetadataDirectory);
 
                 try {
                     // Before we begin deletion process, we look for the `cid` by calling
@@ -1179,11 +1174,6 @@ public class FileHashStore implements HashStore {
                         Path absPidRefsPath =
                             getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName());
 
-                        // Rename metadata documents to prepare for deletion
-                        for (Path metadataDoc : metadataDocPaths) {
-                            deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDoc));
-                        }
-
                         // Rename pid refs file to prepare for deletion
                         deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
                         // Remove pid from cid refs file
@@ -1204,6 +1194,8 @@ public class FileHashStore implements HashStore {
                         }
                         // Delete all related/relevant items with the least amount of delay
                         FileHashStoreUtility.deleteListItems(deleteList);
+                        // Remove metadata files
+                        deleteMetadata(pid);
                         logFileHashStore.info(
                             "FileHashStore.deleteObject - File and references deleted for: " + pid
                                 + " with object address: " + objRealPath);
@@ -1228,13 +1220,10 @@ public class FileHashStore implements HashStore {
                     Path absPidRefsPath =
                         getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName());
                     deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
-
-                    // Rename metadata documents for deletion
-                    for (Path metadataDoc : metadataDocPaths) {
-                        deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDoc));
-                    }
-
+                    // Delete items
                     FileHashStoreUtility.deleteListItems(deleteList);
+                    // Remove metadata files
+                    deleteMetadata(pid);
                     String warnMsg =
                         "FileHashStore.deleteObject - Cid refs file does not exist for pid: " + pid
                             + ". Deleted orphan pid refs file and metadata.";
@@ -1283,14 +1272,10 @@ public class FileHashStore implements HashStore {
                             deleteList.add(
                                 FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
                         }
-
-                        // Rename metadata documents for deletion
-                        for (Path metadataDoc : metadataDocPaths) {
-                            deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDoc));
-                        }
-
                         // Delete items
                         FileHashStoreUtility.deleteListItems(deleteList);
+                        // Remove metadata files
+                        deleteMetadata(pid);
                         String warnMsg = "FileHashStore.deleteObject - Object with cid: " + cidRead
                             + " does not exist, but pid and cid reference file found for pid: "
                             + pid + ". Deleted pid and cid ref files and metadata.";
@@ -1314,14 +1299,10 @@ public class FileHashStore implements HashStore {
                     Path absPidRefsPath =
                         getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName());
                     deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
-
-                    // Rename metadata documents for deletion
-                    for (Path metadataDoc : metadataDocPaths) {
-                        deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDoc));
-                    }
-
                     // Delete items
                     FileHashStoreUtility.deleteListItems(deleteList);
+                    // Remove metadata files
+                    deleteMetadata(pid);
                     String warnMsg =
                         "FileHashStore.deleteObject - Pid not found in expected cid refs file for"
                             + " pid: " + pid + ". Deleted orphan pid refs file and metadata.";
