@@ -869,8 +869,10 @@ public class FileHashStore implements HashStore {
         // However, the same pid could be used with different formatIds, so
         // synchronize ids with pid + formatId;
         String pidFormatId = pid + checkedFormatId;
+        String metadataDocId = FileHashStoreUtility.getPidHexDigest(pidFormatId,
+                                                                OBJECT_STORE_ALGORITHM);
         synchronized (metadataLockedIds) {
-            while (metadataLockedIds.contains(pidFormatId)) {
+            while (metadataLockedIds.contains(metadataDocId)) {
                 try {
                     metadataLockedIds.wait(TIME_OUT_MILLISEC);
 
@@ -886,7 +888,7 @@ public class FileHashStore implements HashStore {
             logFileHashStore.debug(
                 "FileHashStore.storeMetadata - Synchronizing metadataLockedIds for pid: " + pid
             );
-            metadataLockedIds.add(pidFormatId);
+            metadataLockedIds.add(metadataDocId);
         }
 
         try {
@@ -923,7 +925,7 @@ public class FileHashStore implements HashStore {
                     "FileHashStore.storeMetadata - Releasing metadataLockedIds for pid: " + pid
                         + " and formatId " + checkedFormatId
                 );
-                metadataLockedIds.remove(pidFormatId);
+                metadataLockedIds.remove(metadataDocId);
                 metadataLockedIds.notify();
             }
         }
@@ -1128,11 +1130,6 @@ public class FileHashStore implements HashStore {
                 String pidRelativePath =
                     FileHashStoreUtility.getHierarchicalPathString(DIRECTORY_DEPTH, DIRECTORY_WIDTH,
                                                                    pidHexDigest);
-                Path expectedPidMetadataDirectory =
-                    METADATA_STORE_DIRECTORY.resolve(pidRelativePath);
-                // Add all metadata doc paths to a List to iterate over below
-                List<Path> metadataDocPaths =
-                    FileHashStoreUtility.getFilesFromDir(expectedPidMetadataDirectory);
 
                 try {
                     // Before we begin deletion process, we look for the `cid` by calling
@@ -1177,11 +1174,6 @@ public class FileHashStore implements HashStore {
                         Path absPidRefsPath =
                             getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName());
 
-                        // Rename metadata documents to prepare for deletion
-                        for (Path metadataDoc : metadataDocPaths) {
-                            deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDoc));
-                        }
-
                         // Rename pid refs file to prepare for deletion
                         deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
                         // Remove pid from cid refs file
@@ -1202,6 +1194,8 @@ public class FileHashStore implements HashStore {
                         }
                         // Delete all related/relevant items with the least amount of delay
                         FileHashStoreUtility.deleteListItems(deleteList);
+                        // Remove metadata files
+                        deleteMetadata(pid);
                         logFileHashStore.info(
                             "FileHashStore.deleteObject - File and references deleted for: " + pid
                                 + " with object address: " + objRealPath);
@@ -1226,13 +1220,10 @@ public class FileHashStore implements HashStore {
                     Path absPidRefsPath =
                         getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName());
                     deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
-
-                    // Rename metadata documents for deletion
-                    for (Path metadataDoc : metadataDocPaths) {
-                        deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDoc));
-                    }
-
+                    // Delete items
                     FileHashStoreUtility.deleteListItems(deleteList);
+                    // Remove metadata files
+                    deleteMetadata(pid);
                     String warnMsg =
                         "FileHashStore.deleteObject - Cid refs file does not exist for pid: " + pid
                             + ". Deleted orphan pid refs file and metadata.";
@@ -1281,14 +1272,10 @@ public class FileHashStore implements HashStore {
                             deleteList.add(
                                 FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
                         }
-
-                        // Rename metadata documents for deletion
-                        for (Path metadataDoc : metadataDocPaths) {
-                            deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDoc));
-                        }
-
                         // Delete items
                         FileHashStoreUtility.deleteListItems(deleteList);
+                        // Remove metadata files
+                        deleteMetadata(pid);
                         String warnMsg = "FileHashStore.deleteObject - Object with cid: " + cidRead
                             + " does not exist, but pid and cid reference file found for pid: "
                             + pid + ". Deleted pid and cid ref files and metadata.";
@@ -1312,14 +1299,10 @@ public class FileHashStore implements HashStore {
                     Path absPidRefsPath =
                         getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName());
                     deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
-
-                    // Rename metadata documents for deletion
-                    for (Path metadataDoc : metadataDocPaths) {
-                        deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDoc));
-                    }
-
                     // Delete items
                     FileHashStoreUtility.deleteListItems(deleteList);
+                    // Remove metadata files
+                    deleteMetadata(pid);
                     String warnMsg =
                         "FileHashStore.deleteObject - Pid not found in expected cid refs file for"
                             + " pid: " + pid + ". Deleted orphan pid refs file and metadata.";
@@ -1352,9 +1335,10 @@ public class FileHashStore implements HashStore {
 
     @Override
     public void deleteMetadata(String pid, String formatId) throws IllegalArgumentException,
-        IOException, NoSuchAlgorithmException {
+        IOException, NoSuchAlgorithmException, InterruptedException {
         logFileHashStore.debug(
-            "FileHashStore.deleteMetadata - Called to delete metadata for pid: " + pid
+            "FileHashStore.deleteMetadata - Called to delete metadata for pid: " + pid + " with "
+                + "formatId: " + formatId
         );
         // Validate input parameters
         FileHashStoreUtility.ensureNotNull(pid, "pid", "deleteMetadata");
@@ -1362,22 +1346,55 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(formatId, "formatId", "deleteMetadata");
         FileHashStoreUtility.checkForEmptyString(formatId, "formatId", "deleteMetadata");
 
-        // Get permanent address of the metadata document by calculating the sha-256 hex digest
-        // of the 'pid' + 'formatId'
-        Path metadataDocPath = getExpectedPath(pid, "metadata", formatId);
+        String metadataDocId = FileHashStoreUtility.getPidHexDigest(pid + formatId,
+                                                                    OBJECT_STORE_ALGORITHM);
+        synchronized (metadataLockedIds) {
+            while (metadataLockedIds.contains(metadataDocId)) {
+                try {
+                    metadataLockedIds.wait(TIME_OUT_MILLISEC);
 
-        if (!Files.exists(metadataDocPath)) {
-            String errMsg = "FileHashStore.deleteMetadata - File does not exist for pid: " + pid
-                + " with metadata address: " + metadataDocPath;
-            logFileHashStore.warn(errMsg);
-
-        } else {
-            // Proceed to delete
-            Files.delete(metadataDocPath);
-            logFileHashStore.info(
-                "FileHashStore.deleteMetadata - File deleted for: " + pid
-                    + " with metadata address: " + metadataDocPath
+                } catch (InterruptedException ie) {
+                    String errMsg =
+                        "FileHashStore.deleteMetadata - Metadata lock was interrupted while"
+                            + " deleting metadata for: " + pid + " and formatId: " + formatId
+                            + ". InterruptedException: " + ie.getMessage();
+                    logFileHashStore.error(errMsg);
+                    throw new InterruptedException(errMsg);
+                }
+            }
+            logFileHashStore.debug(
+                "FileHashStore.deleteMetadata - Synchronizing metadataLockedIds for pid: " + pid
             );
+            metadataLockedIds.add(metadataDocId);
+        }
+
+        try {
+            // Get permanent address of the metadata document
+            Path metadataDocPath = getExpectedPath(pid, "metadata", formatId);
+
+            if (!Files.exists(metadataDocPath)) {
+                String errMsg = "FileHashStore.deleteMetadata - File does not exist for pid: " + pid
+                    + " with metadata address: " + metadataDocPath;
+                logFileHashStore.warn(errMsg);
+
+            } else {
+                // Proceed to delete
+                Files.delete(metadataDocPath);
+                logFileHashStore.info(
+                    "FileHashStore.deleteMetadata - File deleted for: " + pid
+                        + " with metadata address: " + metadataDocPath
+                );
+            }
+        } finally {
+            // Release lock
+            synchronized (metadataLockedIds) {
+                logFileHashStore.debug(
+                    "FileHashStore.deleteMetadata - Releasing metadataLockedIds for pid: " + pid
+                        + " and formatId " + formatId
+                );
+                metadataLockedIds.remove(metadataDocId);
+                metadataLockedIds.notify();
+            }
         }
     }
 
@@ -1386,7 +1403,7 @@ public class FileHashStore implements HashStore {
      */
     @Override
     public void deleteMetadata(String pid) throws IllegalArgumentException, IOException,
-        NoSuchAlgorithmException {
+        NoSuchAlgorithmException, InterruptedException {
         logFileHashStore.debug(
             "FileHashStore.deleteMetadata - Called to delete all metadata for pid: " + pid
         );
@@ -1405,7 +1422,41 @@ public class FileHashStore implements HashStore {
             expectedPidMetadataDirectory
         );
         for (Path metadataDoc : metadataDocPaths) {
-            deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDoc));
+            String metadataDocId = metadataDoc.getFileName().toString();
+            synchronized (metadataLockedIds) {
+                while (metadataLockedIds.contains(metadataDocId)) {
+                    try {
+                        metadataLockedIds.wait(TIME_OUT_MILLISEC);
+
+                    } catch (InterruptedException ie) {
+                        String errMsg =
+                            "FileHashStore.deleteMetadata - Metadata lock was interrupted while"
+                                + " deleting metadata doc: " + metadataDocId + " for pid: " + pid
+                                + ". InterruptedException: " + ie.getMessage();
+                        logFileHashStore.error(errMsg);
+                        throw new InterruptedException(errMsg);
+                    }
+                }
+                logFileHashStore.debug(
+                    "FileHashStore.deleteMetadata - Synchronizing metadataLockedIds for pid: " + pid
+                );
+                metadataLockedIds.add(metadataDocId);
+            }
+
+            try {
+                deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDoc));
+            } finally {
+                // Release lock
+                synchronized (metadataLockedIds) {
+                    logFileHashStore.debug(
+                        "FileHashStore.deleteMetadata - Releasing metadataLockedIds for pid: " + pid
+                            + " and doc " + metadataDocId
+                    );
+                    metadataLockedIds.remove(metadataDocId);
+                    metadataLockedIds.notify();
+                }
+            }
+
         }
         // Delete all items in the list
         FileHashStoreUtility.deleteListItems(deleteList);
@@ -2225,7 +2276,7 @@ public class FileHashStore implements HashStore {
 
         // Get permanent address for the given metadata document
         // All metadata documents for a pid are stored in a directory that is formed
-        // by using the hash of the 'pid', with the file name being the hash of the 'formatId'
+        // by using the hash of the 'pid', with the file name being the hash of the 'pid+formatId'
         Path pathToStoredMetadata = getExpectedPath(pid, "metadata", checkedFormatId);
 
         // Store metadata to tmpMetadataFile
