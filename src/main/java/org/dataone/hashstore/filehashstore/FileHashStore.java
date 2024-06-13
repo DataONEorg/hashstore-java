@@ -1422,7 +1422,7 @@ public class FileHashStore implements HashStore {
      */
     @Override
     public void deleteMetadata(String pid) throws IllegalArgumentException, IOException,
-        NoSuchAlgorithmException {
+        NoSuchAlgorithmException, InterruptedException {
         logFileHashStore.debug(
             "FileHashStore.deleteMetadata - Called to delete all metadata for pid: " + pid
         );
@@ -1441,7 +1441,41 @@ public class FileHashStore implements HashStore {
             expectedPidMetadataDirectory
         );
         for (Path metadataDoc : metadataDocPaths) {
-            deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDoc));
+            String metadataDocId = metadataDoc.getFileName().toString();
+            synchronized (metadataLockedIds) {
+                while (metadataLockedIds.contains(metadataDocId)) {
+                    try {
+                        metadataLockedIds.wait(TIME_OUT_MILLISEC);
+
+                    } catch (InterruptedException ie) {
+                        String errMsg =
+                            "FileHashStore.deleteMetadata - Metadata lock was interrupted while"
+                                + " deleting metadata doc: " + metadataDocId + " for pid: " + pid
+                                + ". InterruptedException: " + ie.getMessage();
+                        logFileHashStore.error(errMsg);
+                        throw new InterruptedException(errMsg);
+                    }
+                }
+                logFileHashStore.debug(
+                    "FileHashStore.deleteMetadata - Synchronizing metadataLockedIds for pid: " + pid
+                );
+                metadataLockedIds.add(metadataDocId);
+            }
+
+            try {
+                deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDoc));
+            } finally {
+                // Release lock
+                synchronized (metadataLockedIds) {
+                    logFileHashStore.debug(
+                        "FileHashStore.deleteMetadata - Releasing metadataLockedIds for pid: " + pid
+                            + " and doc " + metadataDocId
+                    );
+                    metadataLockedIds.remove(metadataDocId);
+                    metadataLockedIds.notify();
+                }
+            }
+
         }
         // Delete all items in the list
         FileHashStoreUtility.deleteListItems(deleteList);
