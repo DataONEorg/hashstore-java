@@ -1354,9 +1354,10 @@ public class FileHashStore implements HashStore {
 
     @Override
     public void deleteMetadata(String pid, String formatId) throws IllegalArgumentException,
-        IOException, NoSuchAlgorithmException {
+        IOException, NoSuchAlgorithmException, InterruptedException {
         logFileHashStore.debug(
-            "FileHashStore.deleteMetadata - Called to delete metadata for pid: " + pid
+            "FileHashStore.deleteMetadata - Called to delete metadata for pid: " + pid + " with "
+                + "formatId: " + formatId
         );
         // Validate input parameters
         FileHashStoreUtility.ensureNotNull(pid, "pid", "deleteMetadata");
@@ -1364,21 +1365,55 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(formatId, "formatId", "deleteMetadata");
         FileHashStoreUtility.checkForEmptyString(formatId, "formatId", "deleteMetadata");
 
-        // Get permanent address of the metadata document
-        Path metadataDocPath = getExpectedPath(pid, "metadata", formatId);
+        String metadataDocId = FileHashStoreUtility.getPidHexDigest(pid + formatId,
+                                                                    OBJECT_STORE_ALGORITHM);
+        synchronized (metadataLockedIds) {
+            while (metadataLockedIds.contains(metadataDocId)) {
+                try {
+                    metadataLockedIds.wait(TIME_OUT_MILLISEC);
 
-        if (!Files.exists(metadataDocPath)) {
-            String errMsg = "FileHashStore.deleteMetadata - File does not exist for pid: " + pid
-                + " with metadata address: " + metadataDocPath;
-            logFileHashStore.warn(errMsg);
-
-        } else {
-            // Proceed to delete
-            Files.delete(metadataDocPath);
-            logFileHashStore.info(
-                "FileHashStore.deleteMetadata - File deleted for: " + pid
-                    + " with metadata address: " + metadataDocPath
+                } catch (InterruptedException ie) {
+                    String errMsg =
+                        "FileHashStore.deleteMetadata - Metadata lock was interrupted while"
+                            + " deleting metadata for: " + pid + " and formatId: " + formatId
+                            + ". InterruptedException: " + ie.getMessage();
+                    logFileHashStore.error(errMsg);
+                    throw new InterruptedException(errMsg);
+                }
+            }
+            logFileHashStore.debug(
+                "FileHashStore.deleteMetadata - Synchronizing metadataLockedIds for pid: " + pid
             );
+            metadataLockedIds.add(metadataDocId);
+        }
+
+        try {
+            // Get permanent address of the metadata document
+            Path metadataDocPath = getExpectedPath(pid, "metadata", formatId);
+
+            if (!Files.exists(metadataDocPath)) {
+                String errMsg = "FileHashStore.deleteMetadata - File does not exist for pid: " + pid
+                    + " with metadata address: " + metadataDocPath;
+                logFileHashStore.warn(errMsg);
+
+            } else {
+                // Proceed to delete
+                Files.delete(metadataDocPath);
+                logFileHashStore.info(
+                    "FileHashStore.deleteMetadata - File deleted for: " + pid
+                        + " with metadata address: " + metadataDocPath
+                );
+            }
+        } finally {
+            // Release lock
+            synchronized (metadataLockedIds) {
+                logFileHashStore.debug(
+                    "FileHashStore.deleteMetadata - Releasing metadataLockedIds for pid: " + pid
+                        + " and formatId " + formatId
+                );
+                metadataLockedIds.remove(metadataDocId);
+                metadataLockedIds.notify();
+            }
         }
     }
 
