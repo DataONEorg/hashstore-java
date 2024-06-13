@@ -292,7 +292,7 @@ public interface HashStore {
          * @throws IOException              I/O error when deleting metadata or empty directories
          * @throws NoSuchAlgorithmException When algorithm used to calculate object address is not
          *                                  supported
-         * @throws InterruptedException Issue with synchronization on metadta doc
+         * @throws InterruptedException Issue with synchronization on metadata doc
          */
         public void deleteMetadata(String pid, String formatId) throws IllegalArgumentException,
                 IOException, NoSuchAlgorithmException, InterruptedException;
@@ -305,7 +305,7 @@ public interface HashStore {
          * @throws IOException              I/O error when deleting metadata or empty directories
          * @throws NoSuchAlgorithmException When algorithm used to calculate object address is not
          *                                  supported
-         * @throws InterruptedException Issue with synchronization on metadta doc
+         * @throws InterruptedException Issue with synchronization on metadata doc
          */
         public void deleteMetadata(String pid) throws IllegalArgumentException, IOException,
                 NoSuchAlgorithmException, InterruptedException;
