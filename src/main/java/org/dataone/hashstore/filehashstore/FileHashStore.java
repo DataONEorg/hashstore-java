@@ -869,8 +869,10 @@ public class FileHashStore implements HashStore {
         // However, the same pid could be used with different formatIds, so
         // synchronize ids with pid + formatId;
         String pidFormatId = pid + checkedFormatId;
+        String metadataDocId = FileHashStoreUtility.getPidHexDigest(pidFormatId,
+                                                                OBJECT_STORE_ALGORITHM);
         synchronized (metadataLockedIds) {
-            while (metadataLockedIds.contains(pidFormatId)) {
+            while (metadataLockedIds.contains(metadataDocId)) {
                 try {
                     metadataLockedIds.wait(TIME_OUT_MILLISEC);
 
@@ -886,7 +888,7 @@ public class FileHashStore implements HashStore {
             logFileHashStore.debug(
                 "FileHashStore.storeMetadata - Synchronizing metadataLockedIds for pid: " + pid
             );
-            metadataLockedIds.add(pidFormatId);
+            metadataLockedIds.add(metadataDocId);
         }
 
         try {
@@ -923,7 +925,7 @@ public class FileHashStore implements HashStore {
                     "FileHashStore.storeMetadata - Releasing metadataLockedIds for pid: " + pid
                         + " and formatId " + checkedFormatId
                 );
-                metadataLockedIds.remove(pidFormatId);
+                metadataLockedIds.remove(metadataDocId);
                 metadataLockedIds.notify();
             }
         }
@@ -1362,8 +1364,7 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(formatId, "formatId", "deleteMetadata");
         FileHashStoreUtility.checkForEmptyString(formatId, "formatId", "deleteMetadata");
 
-        // Get permanent address of the metadata document by calculating the sha-256 hex digest
-        // of the 'pid' + 'formatId'
+        // Get permanent address of the metadata document
         Path metadataDocPath = getExpectedPath(pid, "metadata", formatId);
 
         if (!Files.exists(metadataDocPath)) {
@@ -2225,7 +2226,7 @@ public class FileHashStore implements HashStore {
 
         // Get permanent address for the given metadata document
         // All metadata documents for a pid are stored in a directory that is formed
-        // by using the hash of the 'pid', with the file name being the hash of the 'formatId'
+        // by using the hash of the 'pid', with the file name being the hash of the 'pid+formatId'
         Path pathToStoredMetadata = getExpectedPath(pid, "metadata", checkedFormatId);
 
         // Store metadata to tmpMetadataFile
