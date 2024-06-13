@@ -69,7 +69,7 @@ hashStore.storeObject(stream, pid)
 
 In HashStore, objects are first saved as temporary files while their content identifiers are calculated. Once the default hash algorithm list and their hashes are generated, objects are stored in their permanent location using the store's algorithm's corresponding hash value, the store depth and the store width. Lastly, reference files are created for the object so that they can be found and retrieved given an identifier (ex. persistent identifier (pid)). Note: Objects are also stored once and only once.
 
-By calling the various interface methods for  `storeObject`, the calling app/client can validate, store and tag an object simultaneously if the relevant data is available. In the absence of an identfiier (ex. persistent identifier (pid)), `storeObject` can be called to solely store an object. The client is then expected to call `verifyObject` when the relevant metadata is available to confirm that the object has been stored as expected. And to finalize the process (to make the object discoverable), the client calls `tagObject``. In summary, there are two expected paths to store an object:
+By calling the various interface methods for  `storeObject`, the calling app/client can validate, store and tag an object simultaneously if the relevant data is available. In the absence of an identifier (ex. persistent identifier (pid)), `storeObject` can be called to solely store an object. The client is then expected to call `verifyObject` when the relevant metadata is available to confirm that the object has been stored as expected. And to finalize the process (to make the object discoverable), the client calls `tagObject``. In summary, there are two expected paths to store an object:
 ```java
 // All-in-one process which stores, validates and tags an object
 objectMetadata objInfo = storeObject(InputStream, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize)
@@ -92,13 +92,13 @@ tagObject(pid, cid)
 
 **How do I delete an object if I have the pid?**
 - To delete an object, all its associated reference files and its metadata, call the Public API method `deleteObject()` with `idType` 'pid'. If an `idType` is not given (ex. calling `deleteObject(String pid)`), the `idType` will be assumed to be a 'pid'
-- To delete only an object, call `deleteObject()` with `idType` 'cid' which will remove the object if it it is not referenced by any pids.
+- To delete only an object, call `deleteObject()` with `idType` 'cid' which will remove the object if it is not referenced by any pids.
 - Note, `deleteObject` and `tagObject` calls are synchronized on their content identifier values so that the shared reference files are not unintentionally modified concurrently. An object that is in the process of being deleted should not be tagged, and vice versa. These calls have been implemented to occur sequentially to improve clarity in the event of an unexpected conflict or issue.
 
 
 ###### Working with metadata (store, retrieve, delete)
 
-HashStore's '/metadata' directory holds all metadata for objects stored in HashStore. All metadata documents related to a 'pid' are stored in a directory determined by calculating the hash of the pid (based on the store's algorithm). Each specific metadata document is then stored by calculating the hash of its associated `formatId`. By default, calling `storeMetadata` will use HashStore's default metadata namespace as the 'formatId' when storing metadata. Should the calling app wish to store multiple metadata files about an object, the client app is expected to provide a 'formatId' that represents an object format for the metadata type (ex. `storeMetadata(stream, pid, formatId)`). 
+HashStore's '/metadata' directory holds all metadata for objects stored in HashStore. All metadata documents related to a 'pid' are stored in a directory determined by calculating the hash of the pid (based on the store's algorithm). Each specific metadata document is then stored by calculating the hash of its associated `pid+formatId`. By default, calling `storeMetadata` will use HashStore's default metadata namespace as the 'formatId' when storing metadata. Should the calling app wish to store multiple metadata files about an object, the client app is expected to provide a 'formatId' that represents an object format for the metadata type (ex. `storeMetadata(stream, pid, formatId)`). 
 
 **How do I retrieve a metadata file?**
 - To find a metadata object, call the Public API method `retrieveMetadata` which returns a stream to the metadata file that's been stored with the default metadata namespace if it exists.
@@ -139,17 +139,33 @@ These reference files are implemented in HashStore underneath the hood with no e
 ## - Objects are stored using their content identifier as the file address
 ## - The reference file for each pid contains a single cid
 ## - The reference file for each cid contains multiple pids each on its own line
-## - There is one sysmeta document under the metadata directory for the pid hash
+## - There are two metadata docs under the metadata directory for the pid (sysmeta, annotations)
 
-.../metacat/hashstore/
-└─ objects
-    └─ /d5/95/3b/d802fa74edea72eb941...00d154a727ed7c2
-└─ metadata
-    └─ /d5/95/3b/d802fa74edea72eb941...00d154a727ed7c2/affe1b6dd20659c63e99e63a29c...579c2d688880adc
-└─ refs
-    └─ pid/0d/55/5e/d77052d7e166017f779...7230bcf7abcef65e
-    └─ cid/d5/95/3b/d802fa74edea72eb941...00d154a727ed7c2
-hashstore.yaml
+.../metacat/hashstore
+├── hashstore.yaml
+└── objects
+|   ├── 4d
+|       └── 19
+|           └── 81
+|               └── 71eef969d553d4c9537b1811a7b078f9a3804fc978a761bc014c05972c
+└── metadata
+|   ├── 0d
+|       └── 55
+|           └── 55
+|               └── 5ed77052d7e166017f779cbc193357c3a5006ee8b8457230bcf7abcef65e
+|                   └── 323e0799524cec4c7e14d31289cefd884b563b5c052f154a066de5ec1e477da7
+|                   └── sha256(pid+formatId_annotations)
+└── refs
+    ├── cids
+    |   ├── 4d
+    |       └── 19
+    |           └── 81
+    |               └── 71eef969d553d4c9537b1811a7b078f9a3804fc978a761bc014c05972c
+    └── pids
+        ├── 0d
+            └── 55
+                └── 55
+                    └── 5ed77052d7e166017f779cbc193357c3a5006ee8b8457230bcf7abcef65e
 ```
 
 
@@ -182,7 +198,7 @@ $ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.HashStoreCl
 # Get the checksum of a data object
 $ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.HashStoreClient -store /path/to/store -getchecksum -pid testpid1 -algo SHA-256
 
-# Find an object in HashStore (returns its content identifer if it exists)
+# Find an object in HashStore (returns its content identifier if it exists)
 $ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.HashStoreClient -store /path/to/store -findobject -pid testpid1
 
 # Store a data object
