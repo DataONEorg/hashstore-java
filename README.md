@@ -53,7 +53,7 @@ storeProperties.setProperty("storeDepth", "3");
 storeProperties.setProperty("storeWidth", "2");
 storeProperties.setProperty("storeAlgorithm", "SHA-256");
 storeProperties.setProperty(
-    "storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0"
+    "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
 );
 
 // Instantiate a HashStore

@@ -49,7 +49,7 @@ public class FileHashStorePublicTest {
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
         storeProperties.setProperty(
-            "storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0"
+            "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
         );
 
         try {
@@ -91,7 +91,7 @@ public class FileHashStorePublicTest {
             storeProperties.setProperty("storeWidth", "2");
             storeProperties.setProperty("storeAlgorithm", "SHA-256");
             storeProperties.setProperty(
-                "storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0"
+                "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
             );
 
             new FileHashStore(storeProperties);
@@ -110,7 +110,7 @@ public class FileHashStorePublicTest {
             storeProperties.setProperty("storeWidth", "2");
             storeProperties.setProperty("storeAlgorithm", "SHA-256");
             storeProperties.setProperty(
-                "storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0"
+                "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
             );
 
             new FileHashStore(storeProperties);
@@ -129,7 +129,7 @@ public class FileHashStorePublicTest {
             storeProperties.setProperty("storeWidth", "0");
             storeProperties.setProperty("storeAlgorithm", "SHA-256");
             storeProperties.setProperty(
-                "storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0"
+                "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
             );
 
             new FileHashStore(storeProperties);
@@ -148,7 +148,7 @@ public class FileHashStorePublicTest {
             storeProperties.setProperty("storeWidth", "2");
             storeProperties.setProperty("storeAlgorithm", "MD5");
             storeProperties.setProperty(
-                "storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0"
+                "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
             );
 
             new FileHashStore(storeProperties);
@@ -167,7 +167,7 @@ public class FileHashStorePublicTest {
             storeProperties.setProperty("storeWidth", "2");
             storeProperties.setProperty("storeAlgorithm", "");
             storeProperties.setProperty(
-                "storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0"
+                "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
             );
 
             new FileHashStore(storeProperties);
@@ -186,7 +186,7 @@ public class FileHashStorePublicTest {
             storeProperties.setProperty("storeWidth", "2");
             storeProperties.setProperty("storeAlgorithm", "       ");
             storeProperties.setProperty(
-                "storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0"
+                "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
             );
 
             new FileHashStore(storeProperties);
@@ -239,7 +239,7 @@ public class FileHashStorePublicTest {
             storeProperties.setProperty("storeWidth", "2");
             storeProperties.setProperty("storeAlgorithm", "SHA-256");
             storeProperties.setProperty(
-                "storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0"
+                "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
             );
 
             new FileHashStore(storeProperties);
@@ -302,7 +302,7 @@ public class FileHashStorePublicTest {
         assertEquals(hsProperties.get("storeWidth"), 2);
         assertEquals(hsProperties.get("storeAlgorithm"), "SHA-256");
         assertEquals(
-            hsProperties.get("storeMetadataNamespace"), "http://ns.dataone.org/service/types/v2.0"
+            hsProperties.get("storeMetadataNamespace"), "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
         );
     }
 
@@ -317,7 +317,7 @@ public class FileHashStorePublicTest {
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
         storeProperties.setProperty(
-            "storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0"
+            "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
         );
 
         new FileHashStore(storeProperties);
@@ -336,7 +336,7 @@ public class FileHashStorePublicTest {
             storeProperties.setProperty("storeWidth", "2");
             storeProperties.setProperty("storeAlgorithm", "MD5");
             storeProperties.setProperty(
-                "storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0"
+                "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
             );
 
             new FileHashStore(storeProperties);
@@ -356,7 +356,7 @@ public class FileHashStorePublicTest {
             storeProperties.setProperty("storeWidth", "2");
             storeProperties.setProperty("storeAlgorithm", "SHA-256");
             storeProperties.setProperty(
-                "storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0"
+                "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
             );
 
             new FileHashStore(storeProperties);
@@ -376,7 +376,7 @@ public class FileHashStorePublicTest {
             storeProperties.setProperty("storeWidth", "1");
             storeProperties.setProperty("storeAlgorithm", "SHA-256");
             storeProperties.setProperty(
-                "storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0"
+                "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
             );
 
             new FileHashStore(storeProperties);
@@ -418,7 +418,7 @@ public class FileHashStorePublicTest {
             storeProperties.setProperty("storeWidth", "2");
             storeProperties.setProperty("storeAlgorithm", "SHA-256");
             storeProperties.setProperty(
-                "storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0"
+                "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
             );
 
             FileHashStore secondHashStore = new FileHashStore(storeProperties);

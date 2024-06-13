@@ -74,7 +74,7 @@ public class FileHashStoreInterfaceTest {
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
         storeProperties.setProperty(
-            "storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0"
+            "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
         );
 
         try {
@@ -987,7 +987,7 @@ public class FileHashStoreInterfaceTest {
         // Submit 3 threads, each calling storeMetadata
         Future<?> future1 = executorService.submit(() -> {
             try {
-                String formatId = "http://ns.dataone.org/service/types/v2.0";
+                String formatId = "https://ns.dataone.org/service/types/v2.0#SystemMetadata";
                 InputStream metadataStream = Files.newInputStream(testMetaDataFile);
                 String metadataPath = fileHashStore.storeMetadata(metadataStream, pid, formatId);
                 // Calculate absolute path
@@ -1002,7 +1002,7 @@ public class FileHashStoreInterfaceTest {
         });
         Future<?> future2 = executorService.submit(() -> {
             try {
-                String formatId = "http://ns.dataone.org/service/types/v2.0";
+                String formatId = "https://ns.dataone.org/service/types/v2.0#SystemMetadata";
                 InputStream metadataStream = Files.newInputStream(testMetaDataFile);
                 String metadataPath = fileHashStore.storeMetadata(metadataStream, pid, formatId);
                 // Calculate absolute path
@@ -1017,7 +1017,7 @@ public class FileHashStoreInterfaceTest {
         });
         Future<?> future3 = executorService.submit(() -> {
             try {
-                String formatId = "http://ns.dataone.org/service/types/v2.0";
+                String formatId = "https://ns.dataone.org/service/types/v2.0#SystemMetadata";
                 InputStream metadataStream = Files.newInputStream(testMetaDataFile);
                 String metadataPath = fileHashStore.storeMetadata(metadataStream, pid, formatId);
                 // Calculate absolute path
