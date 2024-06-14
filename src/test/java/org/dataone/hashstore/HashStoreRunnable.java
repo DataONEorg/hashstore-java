@@ -5,6 +5,7 @@ import org.apache.commons.logging.LogFactory;
 import org.dataone.hashstore.exceptions.HashStoreServiceException;
 import org.dataone.hashstore.filehashstore.FileHashStoreUtility;
 
+import java.io.IOException;
 import java.io.InputStream;
 
 /**
@@ -52,6 +53,7 @@ public class HashStoreRunnable implements Runnable {
                     } catch (Exception e) {
                         throw new HashStoreServiceException(e.getMessage());
                     }
+                    objStream.close();
                     break;
                 case deleteObject:
                     try {
@@ -63,6 +65,8 @@ public class HashStoreRunnable implements Runnable {
             }
         } catch (HashStoreServiceException hse) {
             logHssr.error("HashStoreServiceRequest - Error: " + hse.getMessage());
+        } catch (IOException ioe) {
+            logHssr.error("HashStoreServiceRequest - Error: " + ioe.getMessage());
         }
     }
 }

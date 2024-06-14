@@ -408,6 +408,7 @@ public class FileHashStoreReferencesTest {
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             ObjectMetadata objInfo = fileHashStore.storeObject(dataStream);
+            dataStream.close();
 
             String defaultStoreAlgorithm = fhsProperties.getProperty("storeAlgorithm");
 
@@ -433,6 +434,7 @@ public class FileHashStoreReferencesTest {
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             ObjectMetadata objInfo = fileHashStore.storeObject(dataStream);
+            dataStream.close();
 
             // Get verifyObject args
             String expectedChecksum = testData.pidData.get(pid).get("md2");
@@ -456,6 +458,7 @@ public class FileHashStoreReferencesTest {
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             ObjectMetadata objInfo = fileHashStore.storeObject(dataStream);
+            dataStream.close();
 
             assertThrows(UnsupportedHashAlgorithmException.class, () -> {
                 fileHashStore.verifyObject(
@@ -476,6 +479,7 @@ public class FileHashStoreReferencesTest {
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             ObjectMetadata objInfo = fileHashStore.storeObject(dataStream);
+            dataStream.close();
 
             String defaultStoreAlgorithm = fhsProperties.getProperty("storeAlgorithm");
 
@@ -502,6 +506,7 @@ public class FileHashStoreReferencesTest {
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             ObjectMetadata objInfo = fileHashStore.storeObject(dataStream);
+            dataStream.close();
 
             String defaultStoreAlgorithm = fhsProperties.getProperty("storeAlgorithm");
 
