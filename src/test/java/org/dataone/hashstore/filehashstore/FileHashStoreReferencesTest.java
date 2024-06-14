@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Properties;
 
 import org.dataone.hashstore.ObjectMetadata;
+import org.dataone.hashstore.exceptions.NonMatchingChecksumException;
+import org.dataone.hashstore.exceptions.NonMatchingObjSizeException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 import org.dataone.hashstore.filehashstore.FileHashStore.HashStoreIdTypes;
 import org.dataone.hashstore.testdata.TestDataHarness;
@@ -395,7 +397,7 @@ public class FileHashStoreReferencesTest {
     }
 
     /**
-     * Check that verifyObject returns true with good values
+     * Check that verifyObject does not throw exception with matching values
      */
     @Test
     public void verifyObject_correctValues() throws Exception {
@@ -412,15 +414,14 @@ public class FileHashStoreReferencesTest {
             String expectedChecksum = testData.pidData.get(pid).get("sha256");
             long expectedSize = Long.parseLong(testData.pidData.get(pid).get("size"));
 
-            boolean isObjectValid = fileHashStore.verifyObject(
+            fileHashStore.verifyObject(
                 objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize
             );
-            assertTrue(isObjectValid);
         }
     }
 
     /**
-     * Check that verifyObject returns false with mismatched size value
+     * Check that verifyObject throws exception when non-matching size value provided
      */
     @Test
     public void verifyObject_mismatchedValuesBadSize() throws Exception {
@@ -437,16 +438,16 @@ public class FileHashStoreReferencesTest {
             String expectedChecksum = testData.pidData.get(pid).get("sha256");
             long expectedSize = 123456789;
 
-            boolean isObjectValid = fileHashStore.verifyObject(
-                objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize
-            );
-            assertFalse(isObjectValid);
+            assertThrows(NonMatchingObjSizeException.class, () -> {
+                fileHashStore.verifyObject(
+                    objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize
+                );
+            });
         }
     }
 
     /**
-     * Check that verifyObject returns false and does not delete the file when
-     * there is a mismatch
+     * Check that verifyObject throws exception with non-matching checksum value
      */
     @Test
     public void verifyObject_mismatchedValuesObjectDeleted() throws Exception {
@@ -463,10 +464,11 @@ public class FileHashStoreReferencesTest {
             String expectedChecksum = "intentionallyWrongValue";
             long expectedSize = Long.parseLong(testData.pidData.get(pid).get("size"));
 
-            boolean isObjectValid = fileHashStore.verifyObject(
-                objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize
-            );
-            assertFalse(isObjectValid);
+            assertThrows(NonMatchingChecksumException.class, () -> {
+                fileHashStore.verifyObject(
+                    objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize
+                );
+            });
 
             int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
             int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));

@@ -35,10 +35,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.HashStore;
+import org.dataone.hashstore.exceptions.NonMatchingChecksumException;
+import org.dataone.hashstore.exceptions.NonMatchingObjSizeException;
 import org.dataone.hashstore.exceptions.OrphanPidRefsFileException;
 import org.dataone.hashstore.exceptions.OrphanRefsFilesException;
 import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
+import org.dataone.hashstore.exceptions.UnsupportedHashAlgorithmException;
 
 /**
  * FileHashStore is a HashStore adapter class that manages the storage of objects and metadata to a
@@ -734,9 +737,10 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public boolean verifyObject(
+    public void verifyObject(
         ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize
-    ) throws IllegalArgumentException {
+    ) throws NonMatchingObjSizeException, NonMatchingChecksumException,
+        UnsupportedHashAlgorithmException {
         logFileHashStore.debug(
             "FileHashStore.verifyObject - Called to verify object with id: " + objectInfo.getCid()
         );
@@ -746,32 +750,30 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkNotNegativeOrZero(objSize, "verifyObject");
 
         Map<String, String> hexDigests = objectInfo.getHexDigests();
+        // TODO: CHeck if algorithm is found in hexDigests, and whether it's supported or not
         String digestFromHexDigests = hexDigests.get(checksumAlgorithm);
         long objInfoRetrievedSize = objectInfo.getSize();
         String objCid = objectInfo.getCid();
 
         if (objInfoRetrievedSize != objSize) {
-            logFileHashStore.info(
-                "FileHashStore.verifyObject - Object size invalid for cid: " + objCid
-                    + ". Expected size: " + objSize + ". Actual size: " + objInfoRetrievedSize
-            );
-            return false;
+            String errMsg = "FileHashStore.verifyObject - Object size invalid for cid: " + objCid
+                + ". Expected size: " + objSize + ". Actual size: " + objInfoRetrievedSize;
+            logFileHashStore.error(errMsg);
+            throw new NonMatchingObjSizeException(errMsg);
 
         } else if (!digestFromHexDigests.equals(checksum)) {
-            logFileHashStore.info(
-                "FileHashStore.verifyObject - Object content invalid for cid: " + objCid
-                    + ". Expected checksum: " + checksum + ". Actual checksum calculated: "
-                    + digestFromHexDigests + " (algorithm: " + checksumAlgorithm + ")"
-            );
-            return false;
+            String errMsg = "FileHashStore.verifyObject - Object content invalid for cid: " + objCid
+                + ". Expected checksum: " + checksum + ". Actual checksum calculated: "
+                + digestFromHexDigests + " (algorithm: " + checksumAlgorithm + ")";
+            logFileHashStore.error(errMsg);
+            throw new NonMatchingChecksumException(errMsg);
 
         } else {
-            logFileHashStore.info(
-                "FileHashStore.verifyObject - Object has been validated for cid: " + objCid
-                    + ". Expected checksum: " + checksum + ". Actual checksum calculated: "
-                    + digestFromHexDigests + " (algorithm: " + checksumAlgorithm + ")"
-            );
-            return true;
+            String errMsg = "FileHashStore.verifyObject - Object has been validated for cid: " + objCid
+                + ". Expected checksum: " + checksum + ". Actual checksum calculated: "
+                + digestFromHexDigests + " (algorithm: " + checksumAlgorithm + ")";
+            logFileHashStore.error(errMsg);
+            throw new UnsupportedHashAlgorithmException(errMsg);
         }
     }
 
