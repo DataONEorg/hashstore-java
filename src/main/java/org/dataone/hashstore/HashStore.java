@@ -154,11 +154,12 @@ public interface HashStore {
          * @throws NonMatchingObjSizeException       Given size =/= objMeta size value
          * @throws NonMatchingChecksumException      Given checksum =/= objMeta checksum value
          * @throws UnsupportedHashAlgorithmException Given algo is not found or supported
+         * @throws IOException Issue with recalculating supported algo for checksum not found
          */
         public void verifyObject(
                 ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize
         ) throws NonMatchingObjSizeException, NonMatchingChecksumException,
-            UnsupportedHashAlgorithmException;
+            UnsupportedHashAlgorithmException, IOException;
 
         /**
          * Checks whether an object referenced by a pid exists and returns the content identifier.
