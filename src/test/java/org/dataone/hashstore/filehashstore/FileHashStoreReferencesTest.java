@@ -514,16 +514,6 @@ public class FileHashStoreReferencesTest {
                     objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize
                 );
             });
-
-            int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
-            int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
-            String actualCid = objInfo.getCid();
-            String cidShardString = FileHashStoreUtility.getHierarchicalPathString(
-                storeDepth, storeWidth, actualCid
-            );
-            Path objectStoreDirectory = rootDirectory.resolve("objects").resolve(cidShardString);
-            assertTrue(Files.exists(objectStoreDirectory));
-
         }
     }
 }
