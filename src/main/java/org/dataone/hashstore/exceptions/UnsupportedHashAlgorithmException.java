@@ -5,4 +5,5 @@ public class UnsupportedHashAlgorithmException extends IllegalArgumentException 
     public UnsupportedHashAlgorithmException(String message) {
         super(message);
     }
+
 }
