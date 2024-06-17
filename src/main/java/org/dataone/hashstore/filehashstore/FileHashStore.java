@@ -1151,20 +1151,10 @@ public class FileHashStore implements HashStore {
             }
 
             try {
-                // Get list of metadata documents first, these will always be deleted if they exist
-                // and reduces the time spent in the synchronization block. We have locked the `pid`
-                // so we are safe to proceed with working on `pid` related metadata documents.
-                // Metadata directory
-                String pidHexDigest =
-                    FileHashStoreUtility.getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
-                String pidRelativePath =
-                    FileHashStoreUtility.getHierarchicalPathString(DIRECTORY_DEPTH, DIRECTORY_WIDTH,
-                                                                   pidHexDigest);
-
+                // Before we begin deletion process, we look for the `cid` by calling
+                // `findObject` which will throw custom exceptions if there is an issue with
+                // the reference files, which help us determine the path to proceed with.
                 try {
-                    // Before we begin deletion process, we look for the `cid` by calling
-                    // `findObject` which will throw custom exceptions if there is an issue with
-                    // the reference files, which help us determine the path to proceed with.
                     cid = findObject(id);
 
                     // If no exceptions are thrown, we proceed to synchronization based on the `cid`
