@@ -35,10 +35,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.HashStore;
+import org.dataone.hashstore.exceptions.NonMatchingChecksumException;
+import org.dataone.hashstore.exceptions.NonMatchingObjSizeException;
 import org.dataone.hashstore.exceptions.OrphanPidRefsFileException;
 import org.dataone.hashstore.exceptions.OrphanRefsFilesException;
 import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
+import org.dataone.hashstore.exceptions.UnsupportedHashAlgorithmException;
 
 /**
  * FileHashStore is a HashStore adapter class that manages the storage of objects and metadata to a
@@ -734,9 +737,10 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public boolean verifyObject(
+    public void verifyObject(
         ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize
-    ) throws IllegalArgumentException {
+    ) throws NonMatchingObjSizeException, NonMatchingChecksumException,
+        UnsupportedHashAlgorithmException, IOException {
         logFileHashStore.debug(
             "FileHashStore.verifyObject - Called to verify object with id: " + objectInfo.getCid()
         );
@@ -745,34 +749,60 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm", "verifyObject");
         FileHashStoreUtility.checkNotNegativeOrZero(objSize, "verifyObject");
 
+        String objCid = objectInfo.getCid();
+        long objInfoRetrievedSize = objectInfo.getSize();
         Map<String, String> hexDigests = objectInfo.getHexDigests();
         String digestFromHexDigests = hexDigests.get(checksumAlgorithm);
-        long objInfoRetrievedSize = objectInfo.getSize();
-        String objCid = objectInfo.getCid();
 
-        if (objInfoRetrievedSize != objSize) {
-            logFileHashStore.info(
-                "FileHashStore.verifyObject - Object size invalid for cid: " + objCid
-                    + ". Expected size: " + objSize + ". Actual size: " + objInfoRetrievedSize
-            );
-            return false;
-
-        } else if (!digestFromHexDigests.equals(checksum)) {
-            logFileHashStore.info(
-                "FileHashStore.verifyObject - Object content invalid for cid: " + objCid
-                    + ". Expected checksum: " + checksum + ". Actual checksum calculated: "
-                    + digestFromHexDigests + " (algorithm: " + checksumAlgorithm + ")"
-            );
-            return false;
-
-        } else {
-            logFileHashStore.info(
-                "FileHashStore.verifyObject - Object has been validated for cid: " + objCid
-                    + ". Expected checksum: " + checksum + ". Actual checksum calculated: "
-                    + digestFromHexDigests + " (algorithm: " + checksumAlgorithm + ")"
-            );
-            return true;
+        // Confirm that requested checksum to verify against is available
+        if (digestFromHexDigests == null) {
+            try {
+                validateAlgorithm(checksumAlgorithm);
+                // If no exceptions thrown, calculate the checksum with the given algo
+                String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, objCid
+                );
+                Path pathToCidObject = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
+                try (InputStream inputStream = Files.newInputStream(pathToCidObject)) {
+                    digestFromHexDigests = FileHashStoreUtility.calculateHexDigest(inputStream,
+                        checksumAlgorithm);
+                } catch (IOException ioe) {
+                    String errMsg =
+                        "FileHashStore.verifyObject - Unexpected error when calculating a checksum"
+                            + " for cid: " + objCid + " with algorithm (" + checksumAlgorithm
+                        + ") that is not part of the default list. " + ioe.getMessage();
+                    throw new IOException(errMsg);
+                }
+            } catch (NoSuchAlgorithmException nsae) {
+                String errMsg =
+                    "FileHashStore.verifyObject - checksumAlgorithm given: " + checksumAlgorithm
+                        + " is not supported. Supported algorithms: " + Arrays.toString(
+                        SUPPORTED_HASH_ALGORITHMS
+                    );
+                logFileHashStore.error(errMsg);
+                throw new UnsupportedHashAlgorithmException(errMsg);
+            }
         }
+        // Validate checksum
+        if (!digestFromHexDigests.equals(checksum)) {
+            String errMsg = "FileHashStore.verifyObject - Object content invalid for cid: " + objCid
+                + ". Expected checksum: " + checksum + ". Actual checksum calculated: "
+                + digestFromHexDigests + " (algorithm: " + checksumAlgorithm + ")";
+            logFileHashStore.error(errMsg);
+            throw new NonMatchingChecksumException(errMsg);
+        }
+        // Validate size
+        if (objInfoRetrievedSize != objSize) {
+            String errMsg = "FileHashStore.verifyObject - Object size invalid for cid: " + objCid
+                + ". Expected size: " + objSize + ". Actual size: " + objInfoRetrievedSize;
+            logFileHashStore.error(errMsg);
+            throw new NonMatchingObjSizeException(errMsg);
+        }
+
+        String infoMsg = "FileHashStore.verifyObject - Object has been validated for cid: " + objCid
+                + ". Expected checksum: " + checksum + ". Actual checksum calculated: "
+                + digestFromHexDigests + " (algorithm: " + checksumAlgorithm + ")";
+        logFileHashStore.info(infoMsg);
     }
 
     @Override
@@ -2371,7 +2401,6 @@ public class FileHashStore implements HashStore {
                 DIRECTORY_DEPTH, DIRECTORY_WIDTH, objectCid
             );
             realPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
-
         } else if (entity.equalsIgnoreCase("metadata")) {
             // Get the pid metadata directory (the sharded path of the hashId)
             String pidMetadataDirRelPath = FileHashStoreUtility.getHierarchicalPathString(
@@ -2406,7 +2435,7 @@ public class FileHashStore implements HashStore {
 
         } else {
             throw new IllegalArgumentException(
-                "FileHashStore.getExpectedPath - entity must be 'object' or 'metadata'"
+                "FileHashStore.getExpectedPath - entity must be 'object', 'metadata' or 'refs'"
             );
         }
         return realPath;

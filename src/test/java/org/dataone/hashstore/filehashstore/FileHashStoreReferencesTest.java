@@ -18,7 +18,10 @@ import java.util.List;
 import java.util.Properties;
 
 import org.dataone.hashstore.ObjectMetadata;
+import org.dataone.hashstore.exceptions.NonMatchingChecksumException;
+import org.dataone.hashstore.exceptions.NonMatchingObjSizeException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
+import org.dataone.hashstore.exceptions.UnsupportedHashAlgorithmException;
 import org.dataone.hashstore.filehashstore.FileHashStore.HashStoreIdTypes;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.jupiter.api.BeforeEach;
@@ -395,7 +398,7 @@ public class FileHashStoreReferencesTest {
     }
 
     /**
-     * Check that verifyObject returns true with good values
+     * Check that verifyObject does not throw exception with matching values
      */
     @Test
     public void verifyObject_correctValues() throws Exception {
@@ -405,6 +408,7 @@ public class FileHashStoreReferencesTest {
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             ObjectMetadata objInfo = fileHashStore.storeObject(dataStream);
+            dataStream.close();
 
             String defaultStoreAlgorithm = fhsProperties.getProperty("storeAlgorithm");
 
@@ -412,24 +416,70 @@ public class FileHashStoreReferencesTest {
             String expectedChecksum = testData.pidData.get(pid).get("sha256");
             long expectedSize = Long.parseLong(testData.pidData.get(pid).get("size"));
 
-            boolean isObjectValid = fileHashStore.verifyObject(
+            fileHashStore.verifyObject(
                 objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize
             );
-            assertTrue(isObjectValid);
         }
     }
 
     /**
-     * Check that verifyObject returns false with mismatched size value
+     * Check that verifyObject calculates and verifies a checksum with a supported algorithm that is
+     * not included in the default list
      */
     @Test
-    public void verifyObject_mismatchedValuesBadSize() throws Exception {
+    public void verifyObject_supportedAlgoNotInDefaultList() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             ObjectMetadata objInfo = fileHashStore.storeObject(dataStream);
+            dataStream.close();
+
+            // Get verifyObject args
+            String expectedChecksum = testData.pidData.get(pid).get("md2");
+            long expectedSize = Long.parseLong(testData.pidData.get(pid).get("size"));
+
+            fileHashStore.verifyObject(
+                objInfo, expectedChecksum, "MD2", expectedSize
+            );
+        }
+    }
+
+    /**
+     * Check that verifyObject calculates throws exception when given a checksumAlgorithm that is
+     * not supported
+     */
+    @Test
+    public void verifyObject_unsupportedAlgo() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(dataStream);
+            dataStream.close();
+
+            assertThrows(UnsupportedHashAlgorithmException.class, () -> {
+                fileHashStore.verifyObject(
+                    objInfo, "ValueNotRelevant", "BLAKE2S", 1000
+                );
+            });
+        }
+    }
+
+    /**
+     * Check that verifyObject throws exception when non-matching size value provided
+     */
+    @Test
+    public void verifyObject_mismatchedValuesNonMatchingSize() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(dataStream);
+            dataStream.close();
 
             String defaultStoreAlgorithm = fhsProperties.getProperty("storeAlgorithm");
 
@@ -437,25 +487,26 @@ public class FileHashStoreReferencesTest {
             String expectedChecksum = testData.pidData.get(pid).get("sha256");
             long expectedSize = 123456789;
 
-            boolean isObjectValid = fileHashStore.verifyObject(
-                objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize
-            );
-            assertFalse(isObjectValid);
+            assertThrows(NonMatchingObjSizeException.class, () -> {
+                fileHashStore.verifyObject(
+                    objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize
+                );
+            });
         }
     }
 
     /**
-     * Check that verifyObject returns false and does not delete the file when
-     * there is a mismatch
+     * Check that verifyObject throws exception with non-matching checksum value
      */
     @Test
-    public void verifyObject_mismatchedValuesObjectDeleted() throws Exception {
+    public void verifyObject_mismatchedValuesNonMatchingChecksum() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             ObjectMetadata objInfo = fileHashStore.storeObject(dataStream);
+            dataStream.close();
 
             String defaultStoreAlgorithm = fhsProperties.getProperty("storeAlgorithm");
 
@@ -463,20 +514,11 @@ public class FileHashStoreReferencesTest {
             String expectedChecksum = "intentionallyWrongValue";
             long expectedSize = Long.parseLong(testData.pidData.get(pid).get("size"));
 
-            boolean isObjectValid = fileHashStore.verifyObject(
-                objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize
-            );
-            assertFalse(isObjectValid);
-
-            int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
-            int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
-            String actualCid = objInfo.getCid();
-            String cidShardString = FileHashStoreUtility.getHierarchicalPathString(
-                storeDepth, storeWidth, actualCid
-            );
-            Path objectStoreDirectory = rootDirectory.resolve("objects").resolve(cidShardString);
-            assertTrue(Files.exists(objectStoreDirectory));
-
+            assertThrows(NonMatchingChecksumException.class, () -> {
+                fileHashStore.verifyObject(
+                    objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize
+                );
+            });
         }
     }
 }

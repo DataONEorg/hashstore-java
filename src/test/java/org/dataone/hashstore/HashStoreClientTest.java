@@ -258,6 +258,7 @@ public class HashStoreClientTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
             InputStream dataStream = Files.newInputStream(testDataFile);
             hashStore.storeObject(dataStream, pid, null, null, null, -1);
+            dataStream.close();
 
             // Call client
             String optRetrieveObject = "-retrieveobject";
@@ -294,6 +295,7 @@ public class HashStoreClientTest {
             Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
             hashStore.storeMetadata(metadataStream, pid);
+            metadataStream.close();
 
             // Call client
             String optRetrieveMetadata = "-retrievemetadata";
@@ -333,6 +335,7 @@ public class HashStoreClientTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
             InputStream dataStream = Files.newInputStream(testDataFile);
             hashStore.storeObject(dataStream, pid, null, null, null, -1);
+            dataStream.close();
 
             // Call client
             String optDeleteObject = "-deleteobject";
@@ -373,6 +376,7 @@ public class HashStoreClientTest {
             Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
             hashStore.storeMetadata(metadataStream, pid);
+            metadataStream.close();
 
             // Call client
             String optDeleteMetadata = "-deletemetadata";
@@ -418,6 +422,7 @@ public class HashStoreClientTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
             InputStream dataStream = Files.newInputStream(testDataFile);
             hashStore.storeObject(dataStream, pid, null, null, null, -1);
+            dataStream.close();
 
             // Call client
             String optGetChecksum = "-getchecksum";
@@ -460,6 +465,7 @@ public class HashStoreClientTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
             InputStream dataStream = Files.newInputStream(testDataFile);
             hashStore.storeObject(dataStream, pid, null, null, null, -1);
+            dataStream.close();
 
             // Call client
             String optFindObject = "-findobject";

@@ -434,6 +434,7 @@ public class FileHashStorePublicTest {
 
                 InputStream dataStream = Files.newInputStream(testDataFile);
                 secondHashStore.storeObject(dataStream, pid, null, null, null, -1);
+                dataStream.close();
             }
 
             // Delete configuration

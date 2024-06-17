@@ -5,10 +5,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
 
+import org.dataone.hashstore.exceptions.NonMatchingChecksumException;
+import org.dataone.hashstore.exceptions.NonMatchingObjSizeException;
 import org.dataone.hashstore.exceptions.OrphanPidRefsFileException;
 import org.dataone.hashstore.exceptions.OrphanRefsFilesException;
 import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
+import org.dataone.hashstore.exceptions.UnsupportedHashAlgorithmException;
 
 /**
  * HashStore is a content-addressable file management system that utilizes the content identifier of
@@ -143,16 +146,20 @@ public interface HashStore {
         /**
          * Confirms that an ObjectMetadata's content is equal to the given values. If it is not
          * equal, it will return False - otherwise True.
-         * 
+         *
          * @param objectInfo        ObjectMetadata object with values
          * @param checksum          Value of checksum to validate against
          * @param checksumAlgorithm Algorithm of checksum submitted
          * @param objSize           Expected size of object to validate after storing
-         * @throws IllegalArgumentException An expected value does not match
+         * @throws NonMatchingObjSizeException       Given size =/= objMeta size value
+         * @throws NonMatchingChecksumException      Given checksum =/= objMeta checksum value
+         * @throws UnsupportedHashAlgorithmException Given algo is not found or supported
+         * @throws IOException Issue with recalculating supported algo for checksum not found
          */
-        public boolean verifyObject(
+        public void verifyObject(
                 ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize
-        ) throws IllegalArgumentException;
+        ) throws NonMatchingObjSizeException, NonMatchingChecksumException,
+            UnsupportedHashAlgorithmException, IOException;
 
         /**
          * Checks whether an object referenced by a pid exists and returns the content identifier.
