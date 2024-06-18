@@ -396,19 +396,18 @@ public class FileHashStore implements HashStore {
                 + "#    │       └── c1\n" + "#    │           └── "
                 + "8f0b04e812a3b4c8f686ce34e6fec558804bf61e54b176742a7f6368d6\n\n"
                 + "############### Format of the Metadata ###############\n"
-                + "store_sysmeta_namespace: \"http://ns.dataone" + ".org/service/types/v2.0\"\n\n"
+                + "store_metadata_namespace: \"%s\"\n"
                 + "############### Hash Algorithms ###############\n"
                 + "# Hash algorithm to use when calculating object's hex digest "
                 + "for the permanent address\n" + "store_algorithm: \"%s\"\n"
                 + "############### Hash Algorithms ###############\n"
                 + "# Hash algorithm to use when calculating object's hex digest "
-                + "for the permanent address\n" + "store_metadata_namespace: \"%s\"\n"
+                + "for the permanent address\n"
                 + "# The default algorithm list includes the hash algorithms "
                 + "calculated when storing an\n"
                 + "# object to disk and returned to the caller after successful " + "storage.\n"
                 + "store_default_algo_list:\n" + "- \"MD5\"\n" + "- \"SHA-1\"\n" + "- \"SHA-256\"\n"
-                + "- \"SHA-384\"\n" + "- \"SHA-512\"\n", storeDepth, storeWidth, storeAlgorithm,
-            storeMetadataNamespace
+                + "- \"SHA-384\"\n" + "- \"SHA-512\"\n", storeDepth, storeWidth, storeMetadataNamespace, storeAlgorithm
         );
     }
 
