@@ -1,6 +1,8 @@
 package org.dataone.hashstore.exceptions;
 
-import java.io.IOException;
+/**
+ * An exception thrown when a data object size does not match what is expected.
+ */
 
 public class NonMatchingObjSizeException extends IllegalArgumentException {
 

@@ -1,6 +1,8 @@
 package org.dataone.hashstore.exceptions;
 
-import java.io.IOException;
+/**
+ * An exception thrown when a checksum does not match what is expected.
+ */
 
 public class NonMatchingChecksumException extends IllegalArgumentException {
 
