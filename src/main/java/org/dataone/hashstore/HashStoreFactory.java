@@ -75,12 +75,14 @@ public class HashStoreFactory {
             String errMsg = "HashStoreFactory - Error instantiating 'FileHashStore'"
                 + "(likely related to `.newInstance()`): " + ie.getMessage();
             logHashStore.error(errMsg);
+            ie.printStackTrace();
             throw new HashStoreFactoryException(errMsg);
 
         } catch (InvocationTargetException ite) {
             String errMsg = "HashStoreFactory - Error creating 'FileHashStore' instance: " + ite
                 .getMessage();
             logHashStore.error(errMsg);
+            ite.printStackTrace();
             throw new HashStoreFactoryException(errMsg);
 
         }
