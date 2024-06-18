@@ -7,7 +7,7 @@
 - Contact us: support@dataone.org
 - [DataONE discussions](https://github.com/DataONEorg/dataone/discussions)
 
-HashStore is a server-side java library implementing a content-based identifier file system for storing and accessing data and metadata for DataONE services.  The package is used in DataONE system components that need direct, filesystem-based access to data objects, their system metadata, and extended metadata about the objects. This package is a core component of the [DataONE federation](https://dataone.org), and supports large-scale object storage for a variety of repositories, including the [KNB Data Repository](http://knb.ecoinformatics.org), the [NSF Arctic Data Center](https://arcticdata.io/catalog/), the [DataONE search service](https://search.dataone.org), and other repositories.
+HashStore is a server-side java library that implements an object storage file system for storing and accessing data and metadata for DataONE services. The package is used in DataONE system components that need direct, filesystem-based access to data objects, their system metadata, and extended metadata about the objects. This package is a core component of the [DataONE federation](https://dataone.org), and supports large-scale object storage for a variety of repositories, including the [KNB Data Repository](http://knb.ecoinformatics.org), the [NSF Arctic Data Center](https://arcticdata.io/catalog/), the [DataONE search service](https://search.dataone.org), and other repositories.
 
 DataONE in general, and HashStore in particular, are open source, community projects.  We [welcome contributions](https://github.com/DataONEorg/hashstore-java/blob/main/CONTRIBUTING.md) in many forms, including code, graphics, documentation, bug reports, testing, etc.  Use the [DataONE discussions](https://github.com/DataONEorg/dataone/discussions) to discuss these contributions with us.
 
@@ -17,7 +17,7 @@ Documentation is a work in progress, and can be found on the [Metacat repository
 
 ## HashStore Overview
 
-HashStore is a content-addressable file management system that utilizes the content identifier of an object to address files. The system stores both objects, references (refs) and metadata in its respective directories and provides an API for interacting with the store. HashStore storage classes (like `FileHashStore`) must implement the HashStore interface to ensure the expected usage of HashStore.
+HashStore is an object storage system that provides persistent file-based storage using content hashes to de-duplicate data. The system stores both objects, references (refs) and metadata in its respective directories and utilizes an identifier-based API for interacting with the store. HashStore storage classes (like `FileHashStore`) must implement the HashStore interface to ensure the expected usage of HashStore.
 
 ###### Public API Methods
 - storeObject
@@ -188,7 +188,7 @@ $ mvn clean package -Dmaven.test.skip=true
 # Get help
 $ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.HashStoreClient -h
 
-# Step 2:
+# Step 2: Determine where your hashstore should live (ex. `/var/hashstore`)
 ## Create a HashStore (long option)
 $ java -cp ./target/hashstore-1.0-SNAPSHOT.jar org.dataone.hashstore.HashStoreClient --createhashstore --storepath=/path/to/store --storedepth=3 --storewidth=2 --storealgo=SHA-256 --storenamespace=http://ns.dataone.org/service/types/v2.0
 
