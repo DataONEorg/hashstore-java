@@ -278,19 +278,27 @@ public class FileHashStore implements HashStore {
                 "store metadata namespace", storeMetadataNamespace, existingStoreMetadataNs);
 
         } else {
-            // Check if HashStore exists at the given store path (and is missing config)
+            // Check if HashStore related folders exist at the given store path
             logFileHashStore.debug(
                 "FileHashStore - 'hashstore.yaml' not found, check store path for"
                     + " objects and directories."
             );
 
             if (Files.isDirectory(storePath)) {
-                if (FileHashStoreUtility.dirContainsFiles(storePath)) {
-                    String errMsg = "FileHashStore - Missing 'hashstore.yaml' but directories"
-                        + " and/or objects found.";
-                    logFileHashStore.fatal(errMsg);
-                    throw new IllegalStateException(errMsg);
-
+                Path[] conflictingDirectories = {
+                    storePath.resolve("objects"),
+                    storePath.resolve("metadata"),
+                    storePath.resolve("refs")
+                };
+                for (Path dir : conflictingDirectories) {
+                    if (Files.exists(dir) && Files.isDirectory(dir)) {
+                        String errMsg = "FileHashStore - Unable to initialize HashStore."
+                            + "`hashstore.yaml` is not found but potential conflicting"
+                            + " directory exists: " + dir + ". Please choose a new folder or"
+                            + " delete the conflicting directory and try again.";
+                        logFileHashStore.fatal(errMsg);
+                        throw new IllegalStateException(errMsg);
+                    }
                 }
             }
             logFileHashStore.debug(
