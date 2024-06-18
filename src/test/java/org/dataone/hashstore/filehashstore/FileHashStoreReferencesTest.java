@@ -42,7 +42,7 @@ public class FileHashStoreReferencesTest {
      */
     @BeforeEach
     public void initializeFileHashStore() {
-        rootDirectory = tempFolder.resolve("metacat");
+        rootDirectory = tempFolder.resolve("hashstore");
 
         Properties storeProperties = new Properties();
         storeProperties.setProperty("storePath", rootDirectory.toString());

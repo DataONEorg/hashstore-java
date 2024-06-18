@@ -35,7 +35,7 @@ public class HashStoreClientTest {
     @BeforeEach
     public void getHashStore() {
         String classPackage = "org.dataone.hashstore.filehashstore.FileHashStore";
-        Path rootDirectory = tempFolder.resolve("metacat");
+        Path rootDirectory = tempFolder.resolve("hashstore");
 
         Properties storeProperties = new Properties();
         storeProperties.setProperty("storePath", rootDirectory.toString());
@@ -43,7 +43,7 @@ public class HashStoreClientTest {
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
         storeProperties.setProperty(
-            "storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0"
+            "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
         );
 
         try {
@@ -117,7 +117,7 @@ public class HashStoreClientTest {
     public void client_createHashStore() throws Exception {
         String optCreateHashstore = "-chs";
         String optStore = "-store";
-        String optStorePath = tempFolder + "/metacat";
+        String optStorePath = tempFolder + "/hashstore";
         String optStoreDepth = "-dp";
         String optStoreDepthValue = "3";
         String optStoreWidth = "-wp";
@@ -125,7 +125,7 @@ public class HashStoreClientTest {
         String optAlgo = "-ap";
         String optAlgoValue = "SHA-256";
         String optFormatId = "-nsp";
-        String optFormatIdValue = "http://ns.dataone.org/service/types/v2.0";
+        String optFormatIdValue = "https://ns.dataone.org/service/types/v2.0#SystemMetadata";
         String[] args = {optCreateHashstore, optStore, optStorePath, optStoreDepth,
             optStoreDepthValue, optStoreWidth, optStoreWidthValue, optAlgo, optAlgoValue,
             optFormatId, optFormatIdValue};

@@ -37,7 +37,7 @@ public class FileHashStorePublicTest {
     @BeforeEach
     public void initializeFileHashStore() {
         Path root = tempFolder;
-        rootDirectory = root.resolve("metacat");
+        rootDirectory = root.resolve("hashstore");
         objStringFull = rootDirectory.resolve("objects");
         objTmpStringFull = rootDirectory.resolve("objects/tmp");
         metadataStringFull = rootDirectory.resolve("metadata");

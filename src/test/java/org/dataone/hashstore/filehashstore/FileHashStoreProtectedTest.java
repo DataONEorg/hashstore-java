@@ -39,7 +39,7 @@ public class FileHashStoreProtectedTest {
      */
     @BeforeEach
     public void initializeFileHashStore() {
-        Path rootDirectory = tempFolder.resolve("metacat");
+        Path rootDirectory = tempFolder.resolve("hashstore");
 
         Properties storeProperties = new Properties();
         storeProperties.setProperty("storePath", rootDirectory.toString());
@@ -67,7 +67,7 @@ public class FileHashStoreProtectedTest {
      * Non-test method using to generate a temp file
      */
     public File generateTemporaryFile() throws Exception {
-        Path directory = tempFolder.resolve("metacat");
+        Path directory = tempFolder.resolve("hashstore");
         // newFile
         return FileHashStoreUtility.generateTmpFile("testfile", directory);
     }
