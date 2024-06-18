@@ -65,7 +65,7 @@ public class FileHashStoreInterfaceTest {
      */
     @BeforeEach
     public void initializeFileHashStore() {
-        rootDirectory = tempFolder.resolve("metacat");
+        rootDirectory = tempFolder.resolve("hashstore");
         fhsDeleteTypePid = HashStoreIdTypes.pid.getName();
         fhsDeleteTypeCid = HashStoreIdTypes.cid.getName();
 
