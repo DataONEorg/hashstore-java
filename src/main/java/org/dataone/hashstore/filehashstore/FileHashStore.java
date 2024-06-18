@@ -276,14 +276,14 @@ public class FileHashStore implements HashStore {
                                                      existingStoreAlgorithm);
             FileHashStoreUtility.checkObjectEquality(
                 "store metadata namespace", storeMetadataNamespace, existingStoreMetadataNs);
+            logFileHashStore.info("FileHashStore - 'hashstore.yaml' found and HashStore verified");
 
         } else {
             // Check if HashStore related folders exist at the given store path
             logFileHashStore.debug(
-                "FileHashStore - 'hashstore.yaml' not found, check store path for"
-                    + " objects and directories."
+                "FileHashStore - 'hashstore.yaml' not found, checking store path for"
+                    + " `/objects`, `/metadata` and `/refs` directories."
             );
-
             if (Files.isDirectory(storePath)) {
                 Path[] conflictingDirectories = {
                     storePath.resolve("objects"),
