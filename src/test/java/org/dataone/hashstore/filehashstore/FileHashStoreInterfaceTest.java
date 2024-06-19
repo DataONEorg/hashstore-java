@@ -1391,7 +1391,7 @@ public class FileHashStoreInterfaceTest {
             String sha256MetadataDigest = DatatypeConverter.printHexBinary(sha256.digest())
                 .toLowerCase();
             String sha256MetadataDigestFromTestData = testData.pidData.get(pid).get(
-                "metadata_sha256"
+                "metadata_cid_sha256"
             );
             assertEquals(sha256MetadataDigest, sha256MetadataDigestFromTestData);
         }

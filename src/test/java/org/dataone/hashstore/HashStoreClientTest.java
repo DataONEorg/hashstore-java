@@ -91,7 +91,7 @@ public class HashStoreClientTest {
 
     /**
      * Utility method to get absolute path of a given object and objType
-     * ("objects" or "metadata").
+     * ("objects", "metadata", "cid", or "pid").
      */
     public Path getObjectAbsPath(String id, String objType) throws Exception {
         String storeAlgo = hsProperties.getProperty("storeAlgorithm");
@@ -109,7 +109,7 @@ public class HashStoreClientTest {
             // Get pid metadata directory hash(pid)
             String pidHash = FileHashStoreUtility.getPidHexDigest(id, storeAlgo);
             String pidMetadataDirectory = getHierarchicalPathString(shardDepth, shardWidth, pidHash);
-            // Get document name hash(pid+formatId)
+            // Get sysmeta name hash(pid+default_formatId)
             String metadataDocHash =
                 FileHashStoreUtility.getPidHexDigest(id + hsProperties.getProperty(
                     "storeMetadataNamespace"), storeAlgo);
@@ -368,7 +368,7 @@ public class HashStoreClientTest {
             HashStoreClient.main(args);
 
             // Confirm object was deleted
-            Path absPath = getObjectAbsPath(testData.pidData.get(pid).get("object_cid"), "object");
+            Path absPath = getObjectAbsPath(testData.pidData.get(pid).get("sha256"), "object");
             assertFalse(Files.exists(absPath));
 
             // Put things back
@@ -412,10 +412,8 @@ public class HashStoreClientTest {
             HashStoreClient.main(args);
 
             // Confirm metadata was deleted
-            Path absPath = getObjectAbsPath(
-                testData.pidData.get(pid).get("metadata_cid"), "metadata"
-            );
-            assertFalse(Files.exists(absPath));
+            Path sysmetaPath = getObjectAbsPath(pid, "metadata");
+            assertFalse(Files.exists(sysmetaPath));
 
             // Put things back
             System.out.flush();
