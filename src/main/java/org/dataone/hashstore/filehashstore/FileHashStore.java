@@ -847,6 +847,7 @@ public class FileHashStore implements HashStore {
                 if (Files.exists(realPath)) {
                     Map<String, String> objInfoMap = new HashMap<>();
                     objInfoMap.put("cid", cid);
+                    objInfoMap.put("object_path", realPath.toString());
                     return objInfoMap;
 
                 } else {

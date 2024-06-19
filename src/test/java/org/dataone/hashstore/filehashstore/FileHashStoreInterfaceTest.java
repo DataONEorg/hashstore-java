@@ -2045,6 +2045,35 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
+     * Check that findObject returns cid as expected.
+     */
+    @Test
+    public void findObject_cidPath() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStream, pid, null, null, null, -1
+            );
+            dataStream.close();
+
+            int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
+            int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
+            Map<String, String> objInfoMap = fileHashStore.findObject(pid);
+            String objectPath = objInfoMap.get("object_path");
+
+            String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+                storeDepth, storeWidth, objInfo.getCid()
+            );
+            Path realPath = rootDirectory.resolve("objects").resolve(objRelativePath);
+
+            assertEquals(objectPath, realPath.toString());
+        }
+    }
+
+    /**
      * Confirm findObject throws exception when cid object does not exist but reference
      * files exist.
      */
