@@ -42,12 +42,9 @@ public class ObjectMetadata {
 
     /**
      * Set the persistent identifier
-     * 
-     * @return pid
      */
-    public String setPid(String pid) {
+    public void setPid(String pid) {
         this.pid = pid;
-        return pid;
     }
 
     /**
