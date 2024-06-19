@@ -93,19 +93,40 @@ public class HashStoreClientTest {
      * Utility method to get absolute path of a given object and objType
      * ("objects" or "metadata").
      */
-    public Path getObjectAbsPath(String id, String objType) {
+    public Path getObjectAbsPath(String id, String objType) throws Exception {
+        String storeAlgo = hsProperties.getProperty("storeAlgorithm");
         int shardDepth = Integer.parseInt(hsProperties.getProperty("storeDepth"));
         int shardWidth = Integer.parseInt(hsProperties.getProperty("storeWidth"));
-        // Get relative path
-        String objCidShardString = this.getHierarchicalPathString(shardDepth, shardWidth, id);
         // Get absolute path
         Path storePath = Paths.get(hsProperties.getProperty("storePath"));
         Path absPath = null;
         if (objType.equals("object")) {
+            // Get relative path
+            String objCidShardString = getHierarchicalPathString(shardDepth, shardWidth, id);
             absPath = storePath.resolve("objects/" + objCidShardString);
         }
         if (objType.equals("metadata")) {
-            absPath = storePath.resolve("metadata/" + objCidShardString);
+            // Get pid metadata directory hash(pid)
+            String pidHash = FileHashStoreUtility.getPidHexDigest(id, storeAlgo);
+            String pidMetadataDirectory = getHierarchicalPathString(shardDepth, shardWidth, pidHash);
+            // Get document name hash(pid+formatId)
+            String metadataDocHash =
+                FileHashStoreUtility.getPidHexDigest(id + hsProperties.getProperty(
+                    "storeMetadataNamespace"), storeAlgo);
+            absPath = storePath.resolve("metadata").resolve(pidMetadataDirectory).resolve(metadataDocHash);
+        }
+        if (objType.equals("cid")) {
+            String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+                shardDepth, shardWidth, id
+            );
+            absPath = storePath.resolve("refs/cids").resolve(pidRelativePath);
+        }
+        if (objType.equals("pid")) {
+            String hashId = FileHashStoreUtility.getPidHexDigest(id, storeAlgo);
+            String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+                shardDepth, shardWidth, hashId
+            );
+            absPath = storePath.resolve("refs/pids").resolve(pidRelativePath);
         }
         return absPath;
     }
@@ -461,11 +482,17 @@ public class HashStoreClientTest {
             PrintStream old = System.out;
             System.setOut(ps);
 
+            // Store object
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
             InputStream dataStream = Files.newInputStream(testDataFile);
             hashStore.storeObject(dataStream, pid, null, null, null, -1);
             dataStream.close();
+            // Store metadata
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            hashStore.storeMetadata(metadataStream, pid);
+            metadataStream.close();
 
             // Call client
             String optFindObject = "-findobject";
@@ -477,6 +504,25 @@ public class HashStoreClientTest {
             HashStoreClient.main(args);
 
             String contentIdentifier = testData.pidData.get(pid).get("sha256");
+            Path absObjPath = getObjectAbsPath(testData.pidData.get(pid).get("sha256"), "object");
+            Path sysMetaPath = getObjectAbsPath(pid, "metadata");
+            String storeAlgo = hsProperties.getProperty("storeAlgorithm").toLowerCase().replace(
+                "-", "");
+            Path cidRefsPath = getObjectAbsPath(
+                testData.pidData.get(pid).get(storeAlgo), "cid"
+            );;
+            Path pidRefsPath = getObjectAbsPath(
+                pid, "pid"
+            );
+
+            String expectedOutPutPt1 = "Content Identifier:\n" + contentIdentifier + "\n";
+            String expectedOutPutPt2 = "Object Path:\n" + absObjPath.toString() + "\n";
+            String expectedOutPutPt3 = "Cid Reference File Path:\n" + cidRefsPath + "\n";
+            String expectedOutPutPt4 = "Pid Reference File Path:\n" + pidRefsPath + "\n";
+            String expectedOutPutPt5 = "Sysmeta Path:\n" + sysMetaPath;
+            String expectedOutPutFull =
+                expectedOutPutPt1 + expectedOutPutPt2 + expectedOutPutPt3 + expectedOutPutPt4 + expectedOutPutPt5;;
+
 
             // Put things back
             System.out.flush();
@@ -484,7 +530,7 @@ public class HashStoreClientTest {
 
             // Confirm correct content identifier has been saved
             String pidStdOut = outputStream.toString();
-            assertEquals(contentIdentifier, pidStdOut.trim());
+            assertEquals(expectedOutPutFull, pidStdOut.trim());
         }
     }
 }

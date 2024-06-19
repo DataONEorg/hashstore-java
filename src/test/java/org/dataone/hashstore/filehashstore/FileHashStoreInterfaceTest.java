@@ -2062,7 +2062,7 @@ public class FileHashStoreInterfaceTest {
             int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
             int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
             Map<String, String> objInfoMap = fileHashStore.findObject(pid);
-            String objectPath = objInfoMap.get("object_path");
+            String objectPath = objInfoMap.get("cid_object_path");
 
             String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
                 storeDepth, storeWidth, objInfo.getCid()

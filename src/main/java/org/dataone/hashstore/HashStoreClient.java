@@ -147,7 +147,21 @@ public class HashStoreClient {
                     FileHashStoreUtility.ensureNotNull(pid, "-pid", "HashStoreClient");
 
                     Map<String, String> objInfoMap = hashStore.findObject(pid);
-                    System.out.println(objInfoMap.get("cid"));
+                    String cid = objInfoMap.get("cid");
+                    String cidPath = objInfoMap.get("cid_object_path");
+                    String cidRefsPath = objInfoMap.get("cid_refs_path");
+                    String pidRefsPath = objInfoMap.get("pid_refs_path");
+                    String sysmetaPath = objInfoMap.get("sysmeta_path");
+                    System.out.println("Content Identifier:");
+                    System.out.println(cid);
+                    System.out.println("Object Path:");
+                    System.out.println(cidPath);
+                    System.out.println("Cid Reference File Path:");
+                    System.out.println(cidRefsPath);
+                    System.out.println("Pid Reference File Path:");
+                    System.out.println(pidRefsPath);
+                    System.out.println("Sysmeta Path:");
+                    System.out.println(sysmetaPath);
 
                 } else if (cmd.hasOption("storeobject")) {
                     System.out.println("Storing object");
