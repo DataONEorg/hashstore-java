@@ -2039,8 +2039,8 @@ public class FileHashStoreInterfaceTest {
             );
             dataStream.close();
 
-            String cidRetrieved = fileHashStore.findObject(pid);
-            assertEquals(cidRetrieved, objInfo.getCid());
+            Map<String, String> objInfoMap = fileHashStore.findObject(pid);
+            assertEquals(objInfoMap.get("cid"), objInfo.getCid());
         }
     }
 

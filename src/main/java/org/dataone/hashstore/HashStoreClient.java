@@ -146,8 +146,8 @@ public class HashStoreClient {
                     String pid = cmd.getOptionValue("pid");
                     FileHashStoreUtility.ensureNotNull(pid, "-pid", "HashStoreClient");
 
-                    String cid = hashStore.findObject(pid);
-                    System.out.println(cid);
+                    Map<String, String> objInfoMap = hashStore.findObject(pid);
+                    System.out.println(objInfoMap.get("cid"));
 
                 } else if (cmd.hasOption("storeobject")) {
                     System.out.println("Storing object");

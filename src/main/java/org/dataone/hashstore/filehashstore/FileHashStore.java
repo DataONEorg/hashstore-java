@@ -813,7 +813,7 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public String findObject(String pid) throws NoSuchAlgorithmException, IOException,
+    public Map<String, String> findObject(String pid) throws NoSuchAlgorithmException, IOException,
         OrphanPidRefsFileException, PidNotFoundInCidRefsFileException, OrphanRefsFilesException {
         logFileHashStore.debug("FileHashStore.findObject - Called to find object for pid: " + pid);
         FileHashStoreUtility.ensureNotNull(pid, "pid", "findObject");
@@ -845,7 +845,9 @@ public class FileHashStore implements HashStore {
                 );
                 Path realPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
                 if (Files.exists(realPath)) {
-                    return cid;
+                    Map<String, String> objInfoMap = new HashMap<>();
+                    objInfoMap.put("cid", cid);
+                    return objInfoMap;
 
                 } else {
                     String errMsg = "FileHashStore.findObject - Object with cid: " + cid
@@ -1162,7 +1164,8 @@ public class FileHashStore implements HashStore {
                 // `findObject` which will throw custom exceptions if there is an issue with
                 // the reference files, which help us determine the path to proceed with.
                 try {
-                    cid = findObject(id);
+                    Map<String, String> objInfoMap = findObject(id);
+                    cid = objInfoMap.get("cid");
 
                     // If no exceptions are thrown, we proceed to synchronization based on the `cid`
                     // Multiple threads may access the cid reference file (which contains a list of
@@ -1505,7 +1508,8 @@ public class FileHashStore implements HashStore {
 
         // Find the content identifier
         if (algorithm.equals(OBJECT_STORE_ALGORITHM)) {
-            return findObject(pid);
+            Map<String, String> objInfoMap = findObject(pid);
+            return objInfoMap.get("cid");
 
         } else {
             // Get permanent address of the pid

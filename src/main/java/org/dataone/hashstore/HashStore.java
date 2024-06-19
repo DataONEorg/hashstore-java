@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
+import java.util.Map;
 
 import org.dataone.hashstore.exceptions.NonMatchingChecksumException;
 import org.dataone.hashstore.exceptions.NonMatchingObjSizeException;
@@ -162,7 +163,8 @@ public interface HashStore {
             UnsupportedHashAlgorithmException, IOException;
 
         /**
-         * Checks whether an object referenced by a pid exists and returns the content identifier.
+         * Checks whether an object referenced by a pid exists and returns a map containing the
+         * absolute path to the object, pid refs file, cid refs file and sysmeta document.
          * 
          * @param pid Authority-based identifier
          * @return Content identifier (cid)
@@ -177,7 +179,7 @@ public interface HashStore {
          * @throws PidNotFoundInCidRefsFileException When pid and cid ref files exists but the
          *                                           expected pid is not found in the cid refs file.
          */
-        public String findObject(String pid) throws NoSuchAlgorithmException, IOException,
+        public Map<String, String> findObject(String pid) throws NoSuchAlgorithmException, IOException,
                 OrphanPidRefsFileException, PidNotFoundInCidRefsFileException;
 
         /**
