@@ -508,7 +508,7 @@ public class HashStoreClientTest {
                 "-", "");
             Path cidRefsPath = getObjectAbsPath(
                 testData.pidData.get(pid).get(storeAlgo), "cid"
-            );;
+            );
             Path pidRefsPath = getObjectAbsPath(
                 pid, "pid"
             );
@@ -519,7 +519,7 @@ public class HashStoreClientTest {
             String expectedOutPutPt4 = "Pid Reference File Path:\n" + pidRefsPath + "\n";
             String expectedOutPutPt5 = "Sysmeta Path:\n" + sysMetaPath;
             String expectedOutPutFull =
-                expectedOutPutPt1 + expectedOutPutPt2 + expectedOutPutPt3 + expectedOutPutPt4 + expectedOutPutPt5;;
+                expectedOutPutPt1 + expectedOutPutPt2 + expectedOutPutPt3 + expectedOutPutPt4 + expectedOutPutPt5;
 
 
             // Put things back

@@ -133,7 +133,7 @@ public class FileHashStoreReferencesTest {
 
         // Should not throw any exceptions, everything is where it's supposed to be.
         fileHashStore.tagObject(pid, cid);
-        // Confirm that there is only 1 of each refs file
+        // Confirm that there is only 1 of each ref file
         Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
         File[] pidRefsFiles = storePath.resolve("refs/pids").toFile().listFiles();
         assertEquals(1, pidRefsFiles.length);
@@ -162,7 +162,7 @@ public class FileHashStoreReferencesTest {
 
 
     /**
-     * Check tagObject overwrites a oprhaned pid refs file.
+     * Check tagObject overwrites an orphaned pid refs file.
      */
     @Test
     public void tagObject_pidRefsFileFound_differentCidRetrieved_cidRefsFileNotFound()
@@ -182,7 +182,7 @@ public class FileHashStoreReferencesTest {
         fileHashStore.move(pidRefsTmpFile, absPathPidRefsFile, "refs");
 
         fileHashStore.tagObject(pid, cid);
-        // There should only be 1 of each refs file
+        // There should only be 1 of each ref file
         Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
         File[] pidRefsFiles = storePath.resolve("refs/pids").toFile().listFiles();
         assertEquals(1, pidRefsFiles.length);
@@ -203,7 +203,7 @@ public class FileHashStoreReferencesTest {
         Files.delete(cidRefsFilePath);
 
         fileHashStore.tagObject(pid, cid);
-        // Confirm that there is only 1 of each refs file
+        // Confirm that there is only 1 of each ref file
         Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
         File[] pidRefsFiles = storePath.resolve("refs/pids").toFile().listFiles();
         assertEquals(1, pidRefsFiles.length);

@@ -35,7 +35,6 @@ import javax.xml.bind.DatatypeConverter;
 
 import org.dataone.hashstore.HashStoreRunnable;
 import org.dataone.hashstore.ObjectMetadata;
-import org.dataone.hashstore.exceptions.NonMatchingChecksumException;
 import org.dataone.hashstore.exceptions.OrphanPidRefsFileException;
 import org.dataone.hashstore.exceptions.OrphanRefsFilesException;
 import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
