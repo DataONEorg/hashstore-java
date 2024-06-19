@@ -891,7 +891,7 @@ public class FileHashStoreProtectedTest {
 
             String sha256Digest = DatatypeConverter.printHexBinary(sha256.digest()).toLowerCase();
             String sha256MetadataDigestFromTestData = testData.pidData.get(pid).get(
-                "metadata_sha256"
+                "metadata_cid_sha256"
             );
             assertEquals(sha256Digest, sha256MetadataDigestFromTestData);
 
@@ -1069,7 +1069,7 @@ public class FileHashStoreProtectedTest {
             Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
 
             InputStream metadataStream = Files.newInputStream(testMetaDataFile);
-            String metadataPath = fileHashStore.storeMetadata(metadataStream, pid);
+            fileHashStore.storeMetadata(metadataStream, pid);
             metadataStream.close();
 
             Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
@@ -1155,7 +1155,6 @@ public class FileHashStoreProtectedTest {
             Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
             int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
             int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
-            String storeAlgo = fhsProperties.getProperty("storeAlgorithm");
 
             // Cid refs file
             String objShardString = FileHashStoreUtility.getHierarchicalPathString(

@@ -16,7 +16,7 @@ import java.io.InputStream;
 public class HashStoreRunnable implements Runnable {
     public static final int storeObject = 1;
     public static final int deleteObject = 2;
-    private HashStore hashstore = null;
+    private HashStore hashstore;
     private int publicAPIMethod;
     private String pid;
     private InputStream objStream;
