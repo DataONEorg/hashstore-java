@@ -2045,7 +2045,7 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Check that findObject returns cid as expected.
+     * Check that findObject returns the path to the object as expected.
      */
     @Test
     public void findObject_cidPath() throws Exception {
@@ -2070,6 +2070,98 @@ public class FileHashStoreInterfaceTest {
             Path realPath = rootDirectory.resolve("objects").resolve(objRelativePath);
 
             assertEquals(objectPath, realPath.toString());
+        }
+    }
+
+    /**
+     * Check that findObject returns the absolute path to the pid and cid refs file
+     */
+    @Test
+    public void findObject_refsPaths() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStream, pid, null, null, null, -1
+            );
+            dataStream.close();
+
+            Map<String, String> objInfoMap = fileHashStore.findObject(pid);
+            String cidRefsPath = objInfoMap.get("cid_refs_path");
+            String pidRefsPath = objInfoMap.get("pid_refs_path");
+
+            Path cidRefsFilePath = fileHashStore.getExpectedPath(objInfo.getCid(), "refs", "cid");
+            Path pidRefsFilePath = fileHashStore.getExpectedPath(pid, "refs", "pid");
+
+            assertEquals(cidRefsPath, cidRefsFilePath.toString());
+            assertEquals(pidRefsPath, pidRefsFilePath.toString());
+        }
+    }
+
+    /**
+     * Check that findObject returns the absolute path to sysmeta document if it exists
+     */
+    @Test
+    public void findObject_sysmetaPath_exists() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            // Store Object
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStream, pid, null, null, null, -1
+            );
+            dataStream.close();
+
+            // Store Metadata
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            String metadataPath = fileHashStore.storeMetadata(metadataStream, pid);
+            metadataStream.close();
+            System.out.println(metadataPath);
+
+
+            Map<String, String> objInfoMap = fileHashStore.findObject(pid);
+            String objInfoSysmetaPath = objInfoMap.get("sysmeta_path");
+
+            String storeMetadataNamespace = fhsProperties.getProperty("storeMetadataNamespace");
+            Path sysmetaPath = fileHashStore.getExpectedPath(
+                pid, "metadata", storeMetadataNamespace
+            );
+            System.out.println(sysmetaPath);
+
+            assertEquals(objInfoSysmetaPath, sysmetaPath.toString());
+        }
+    }
+
+    /**
+     * Check that findObject returns "Does not exist." when there is no sysmeta for the pid.
+     */
+    @Test
+    public void findObject_sysmetaPath_doesNotExist() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStream, pid, null, null, null, -1
+            );
+            dataStream.close();
+
+
+            Map<String, String> objInfoMap = fileHashStore.findObject(pid);
+            String objInfoSysmetaPath = objInfoMap.get("sysmeta_path");
+
+            String storeMetadataNamespace = fhsProperties.getProperty("storeMetadataNamespace");
+            Path sysmetaPath = fileHashStore.getExpectedPath(
+                pid, "metadata", storeMetadataNamespace
+            );
+
+            assertEquals(objInfoSysmetaPath, "Does not exist");
         }
     }
 

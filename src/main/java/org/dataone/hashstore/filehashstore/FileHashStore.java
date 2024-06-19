@@ -848,6 +848,17 @@ public class FileHashStore implements HashStore {
                     Map<String, String> objInfoMap = new HashMap<>();
                     objInfoMap.put("cid", cid);
                     objInfoMap.put("object_path", realPath.toString());
+                    objInfoMap.put("pid_refs_path", absPidRefsPath.toString());
+                    objInfoMap.put("cid_refs_path", absCidRefsPath.toString());
+                    // If the default system metadata exists, include it
+                    Path metadataPidExpectedPath = getExpectedPath(
+                        pid, "metadata", DEFAULT_METADATA_NAMESPACE
+                    );
+                    if (Files.exists(metadataPidExpectedPath)) {
+                        objInfoMap.put("sysmeta_path", metadataPidExpectedPath.toString());
+                    } else {
+                        objInfoMap.put("sysmeta_path", "Does not exist");
+                    }
                     return objInfoMap;
 
                 } else {
