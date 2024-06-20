@@ -221,8 +221,8 @@ public class FileHashStore implements HashStore {
      *
      * If `hashstore.yaml` exists, it will retrieve its properties and compare them with the given
      * values; and if there is a mismatch, an exception will be thrown. If not, it will look to see
-     * if any directories/files exist in the given store path and throw an exception if any file or
-     * directory is found.
+     * if any relevant HashStore directories exist (i.e. '/objects', '/metadata', '/refs') in the
+     * given store path and throw an exception if any of those directories exist.
      *
      * @param storePath              Path where HashStore will store objects
      * @param storeDepth             Depth of directories
@@ -257,7 +257,7 @@ public class FileHashStore implements HashStore {
         // Check to see if configuration exists before initializing
         Path hashstoreYamlPredictedPath = Paths.get(storePath + "/hashstore.yaml");
         if (Files.exists(hashstoreYamlPredictedPath)) {
-            logFileHashStore.debug("FileHashStore - 'hashstore.yaml' found, verifying properties.");
+            logFileHashStore.debug("FileHashStore - 'hashstore.yaml' found, checking properties.");
 
             HashMap<String, Object> hsProperties = loadHashStoreYaml(storePath);
             int existingStoreDepth = (int) hsProperties.get(HashStoreProperties.storeDepth.name());
@@ -302,9 +302,7 @@ public class FileHashStore implements HashStore {
                 }
             }
             logFileHashStore.debug(
-                "FileHashStore - 'hashstore.yaml' not found and store path"
-                    + " not yet initialized."
-            );
+                "FileHashStore - 'hashstore.yaml' not found. Supplied properties accepted.");
         }
     }
 
