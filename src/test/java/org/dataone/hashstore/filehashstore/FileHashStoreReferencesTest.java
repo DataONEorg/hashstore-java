@@ -18,8 +18,10 @@ import java.util.List;
 import java.util.Properties;
 
 import org.dataone.hashstore.ObjectMetadata;
+import org.dataone.hashstore.exceptions.CidNotFoundInPidRefsFileException;
 import org.dataone.hashstore.exceptions.NonMatchingChecksumException;
 import org.dataone.hashstore.exceptions.NonMatchingObjSizeException;
+import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 import org.dataone.hashstore.exceptions.UnsupportedHashAlgorithmException;
 import org.dataone.hashstore.filehashstore.FileHashStore.HashStoreIdTypes;
@@ -275,7 +277,7 @@ public class FileHashStoreReferencesTest {
         // Get path of the cid refs file
         Path cidRefsFilePath = fileHashStore.getExpectedPath(cid, "refs", "cid");
 
-        assertThrows(IOException.class, () -> {
+        assertThrows(CidNotFoundInPidRefsFileException.class, () -> {
             fileHashStore.verifyHashStoreRefsFiles(pid, cid, pidRefsTmpFilePath, cidRefsFilePath);
         });
     }
@@ -297,7 +299,7 @@ public class FileHashStoreReferencesTest {
         // Get path of the pid refs file
         Path pidRefsFilePath = fileHashStore.getExpectedPath(pid, "refs", "pid");
 
-        assertThrows(IOException.class, () -> {
+        assertThrows(PidNotFoundInCidRefsFileException.class, () -> {
             fileHashStore.verifyHashStoreRefsFiles(pid, cid, pidRefsFilePath, cidRefsTmpFilePath);
         });
     }
