@@ -385,7 +385,6 @@ public class FileHashStore implements HashStore {
     protected String buildHashStoreYamlString(
         int storeDepth, int storeWidth, String storeAlgorithm, String storeMetadataNamespace
     ) {
-
         return String.format(
             "# Default configuration variables for HashStore\n\n"
                 + "############### Directory Structure ###############\n"
@@ -474,14 +473,14 @@ public class FileHashStore implements HashStore {
                 throw new RuntimeException(errMsg);
             }
             logFileHashStore.debug(
-                "FileHashStore.storeObject - Synchronizing objectLockedIds for pid: " + pid
+                "FileHashStore.syncPutObject - Synchronizing objectLockedIds for pid: " + pid
             );
             objectLockedIds.add(pid);
         }
 
         try {
             logFileHashStore.debug(
-                "FileHashStore.syncPutObject - called .putObject() to store pid: " + pid
+                "FileHashStore.syncPutObject - calling .putObject() to store pid: " + pid
                     + ". additionalAlgorithm: " + additionalAlgorithm + ". checksum: " + checksum
                     + ". checksumAlgorithm: " + checksumAlgorithm
             );
@@ -1674,7 +1673,7 @@ public class FileHashStore implements HashStore {
     private void validateTmpObject(
         boolean requestValidation, String checksum, String checksumAlgorithm, Path tmpFile,
         Map<String, String> hexDigests, long objSize, long storedObjFileSize
-    ) throws NoSuchAlgorithmException, IOException {
+    ) throws NoSuchAlgorithmException, NonMatchingChecksumException, NonMatchingObjSizeException {
         if (objSize > 0) {
             if (objSize != storedObjFileSize) {
                 // Delete tmp File
@@ -1688,7 +1687,7 @@ public class FileHashStore implements HashStore {
                             + storedObjFileSize + ". Failed to delete tmpFile: " + tmpFile + ". "
                             + ge.getMessage();
                     logFileHashStore.error(errMsg);
-                    throw new IOException(errMsg);
+                    throw new NonMatchingObjSizeException(errMsg);
                 }
 
                 String errMsg =
@@ -1696,7 +1695,7 @@ public class FileHashStore implements HashStore {
                         + " stored object size. ObjSize: " + objSize + ". storedObjFileSize: "
                         + storedObjFileSize + ". Deleting tmpFile: " + tmpFile;
                 logFileHashStore.error(errMsg);
-                throw new IllegalArgumentException(errMsg);
+                throw new NonMatchingObjSizeException(errMsg);
             }
         }
 
@@ -1727,7 +1726,7 @@ public class FileHashStore implements HashStore {
                             + ". Checksum" + " provided: " + checksum
                             + ". Failed to delete tmpFile: " + tmpFile + ". " + ge.getMessage();
                     logFileHashStore.error(errMsg);
-                    throw new IOException(errMsg);
+                    throw new NonMatchingChecksumException(errMsg);
                 }
 
                 String errMsg =
@@ -1735,7 +1734,7 @@ public class FileHashStore implements HashStore {
                         + " calculated hex digest: " + digestFromHexDigests + ". Checksum"
                         + " provided: " + checksum + ". tmpFile has been deleted: " + tmpFile;
                 logFileHashStore.error(errMsg);
-                throw new IllegalArgumentException(errMsg);
+                throw new NonMatchingChecksumException(errMsg);
             }
         }
     }
