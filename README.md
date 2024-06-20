@@ -144,12 +144,12 @@ These reference files are implemented in HashStore underneath the hood with no e
 .../metacat/hashstore
 ├── hashstore.yaml
 └── objects
-|   ├── 4d
+|   └── 4d
 |       └── 19
 |           └── 81
 |               └── 71eef969d553d4c9537b1811a7b078f9a3804fc978a761bc014c05972c
 └── metadata
-|   ├── 0d
+|   └── 0d
 |       └── 55
 |           └── 55
 |               └── 5ed77052d7e166017f779cbc193357c3a5006ee8b8457230bcf7abcef65e
@@ -157,12 +157,12 @@ These reference files are implemented in HashStore underneath the hood with no e
 |                   └── sha256(pid+formatId_annotations)
 └── refs
     ├── cids
-    |   ├── 4d
+    |   └── 4d
     |       └── 19
     |           └── 81
     |               └── 71eef969d553d4c9537b1811a7b078f9a3804fc978a761bc014c05972c
     └── pids
-        ├── 0d
+        └── 0d
             └── 55
                 └── 55
                     └── 5ed77052d7e166017f779cbc193357c3a5006ee8b8457230bcf7abcef65e
