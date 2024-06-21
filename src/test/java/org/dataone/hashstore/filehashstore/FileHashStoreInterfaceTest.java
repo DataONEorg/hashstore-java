@@ -35,6 +35,7 @@ import javax.xml.bind.DatatypeConverter;
 
 import org.dataone.hashstore.HashStoreRunnable;
 import org.dataone.hashstore.ObjectMetadata;
+import org.dataone.hashstore.exceptions.HashStoreRefsAlreadyExistException;
 import org.dataone.hashstore.exceptions.OrphanPidRefsFileException;
 import org.dataone.hashstore.exceptions.OrphanRefsFilesException;
 import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
@@ -608,14 +609,15 @@ public class FileHashStoreInterfaceTest {
     /**
      * Tests that the `storeObject` method can store an object successfully with multiple threads
      * (5). This test uses five futures (threads) that run concurrently, all except one of which
-     * will encounter a `RunTimeException`. The thread that does not encounter an exception will
-     * store the given object, and verifies that the object is stored successfully.
-     * 
-     * The threads are expected to encounter a `RunTimeException` since the expected
-     * object to store is already in progress (thrown by `syncPutObject` which coordinates
-     * `store_object` requests with a pid). If both threads execute simultaneously and bypasses
-     * the store object synchronization flow, we may also run into a `PidRefsFileExistsException`
-     * - which prevents the cid from being tagged twice by the same pid.
+     * will encounter a `HashStoreRefsAlreadyExistException`. The thread that does not encounter an
+     * exception will store the given object, and verifies that the object is stored successfully.
+     *
+     * The threads are expected to encounter a `RunTimeException` since the expected object to store
+     * is already in progress (thrown by `syncPutObject` which coordinates `store_object` requests
+     * with a pid). If both threads execute simultaneously and bypasses the store object
+     * synchronization flow, we may also run into a `HashStoreRefsAlreadyExistException` - which is
+     * called during the `tagObject` process when reference files already exist with the expected
+     * values.
      */
     @Test
     public void storeObject_objectLockedIds_FiveThreads() throws Exception {
@@ -644,8 +646,8 @@ public class FileHashStoreInterfaceTest {
                     assertTrue(Files.exists(cidRefsPath));
                 }
             } catch (Exception e) {
-                e.printStackTrace();
-                assertTrue(e instanceof RuntimeException | e instanceof PidRefsFileExistsException);
+                System.out.println("storeObject_objectLockedIds_FiveThreads - Exception Cause: " + e.getCause());
+                assertTrue(e instanceof RuntimeException | e instanceof HashStoreRefsAlreadyExistException);
             }
         });
         Future<?> future2 = executorService.submit(() -> {
@@ -665,8 +667,8 @@ public class FileHashStoreInterfaceTest {
                     assertTrue(Files.exists(cidRefsPath));
                 }
             } catch (Exception e) {
-                e.printStackTrace();
-                assertTrue(e instanceof RuntimeException | e instanceof PidRefsFileExistsException);
+                System.out.println("storeObject_objectLockedIds_FiveThreads - Exception Cause: " + e.getCause());
+                assertTrue(e instanceof RuntimeException | e instanceof HashStoreRefsAlreadyExistException);
             }
         });
         Future<?> future3 = executorService.submit(() -> {
@@ -686,8 +688,8 @@ public class FileHashStoreInterfaceTest {
                     assertTrue(Files.exists(cidRefsPath));
                 }
             } catch (Exception e) {
-                e.printStackTrace();
-                assertTrue(e instanceof RuntimeException | e instanceof PidRefsFileExistsException);
+                System.out.println("storeObject_objectLockedIds_FiveThreads - Exception Cause: " + e.getCause());
+                assertTrue(e instanceof RuntimeException | e instanceof HashStoreRefsAlreadyExistException);
             }
         });
         Future<?> future4 = executorService.submit(() -> {
@@ -707,8 +709,8 @@ public class FileHashStoreInterfaceTest {
                     assertTrue(Files.exists(cidRefsPath));
                 }
             } catch (Exception e) {
-                e.printStackTrace();
-                assertTrue(e instanceof RuntimeException | e instanceof PidRefsFileExistsException);
+                System.out.println("storeObject_objectLockedIds_FiveThreads - Exception Cause: " + e.getCause());
+                assertTrue(e instanceof RuntimeException | e instanceof HashStoreRefsAlreadyExistException);
             }
         });
         Future<?> future5 = executorService.submit(() -> {
@@ -728,8 +730,8 @@ public class FileHashStoreInterfaceTest {
                     assertTrue(Files.exists(cidRefsPath));
                 }
             } catch (Exception e) {
-                e.printStackTrace();
-                assertTrue(e instanceof RuntimeException | e instanceof PidRefsFileExistsException);
+                System.out.println("storeObject_objectLockedIds_FiveThreads - Exception Cause: " + e.getCause());
+                assertTrue(e instanceof RuntimeException | e instanceof HashStoreRefsAlreadyExistException);
             }
         });
 
