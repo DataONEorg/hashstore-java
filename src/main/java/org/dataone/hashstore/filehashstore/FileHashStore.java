@@ -677,8 +677,7 @@ public class FileHashStore implements HashStore {
                     Path retrievedAbsCidRefsPath = getExpectedPath(
                         retrievedCid, "refs", HashStoreIdTypes.cid.getName()
                     );
-                    boolean retrievedAbsCidRefsPathExists = Files.exists(retrievedAbsCidRefsPath);
-                    if (retrievedAbsCidRefsPathExists && isStringInRefsFile(
+                    if (Files.exists(retrievedAbsCidRefsPath) && isStringInRefsFile(
                         pid, retrievedAbsCidRefsPath
                     )) {
                         // This pid is accounted for and tagged as expected.
@@ -695,8 +694,7 @@ public class FileHashStore implements HashStore {
                 }
             } else if (!Files.exists(absPidRefsPath) && Files.exists(absCidRefsPath)) {
                 // Only update cid refs file if pid is not in the file
-                boolean pidFoundInCidRefFiles = isStringInRefsFile(pid, absCidRefsPath);
-                if (!pidFoundInCidRefFiles) {
+                if (!isStringInRefsFile(pid, absCidRefsPath)) {
                     updateRefsFile(pid, absCidRefsPath, "add");
                 }
                 // Get the pid refs file and verify tagging process
@@ -719,7 +717,7 @@ public class FileHashStore implements HashStore {
             File absPathCidRefsFile = absCidRefsPath.toFile();
             move(pidRefsTmpFile, absPathPidRefsFile, "refs");
             move(cidRefsTmpFile, absPathCidRefsFile, "refs");
-            // Verify tagging process, this throws exceptions if there's an issue
+            // Verify tagging process, this throws an exception if there's an issue
             verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
             logFileHashStore.info(
                 "FileHashStore.tagObject - Object with cid: " + cid
