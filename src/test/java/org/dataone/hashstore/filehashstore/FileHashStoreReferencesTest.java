@@ -19,6 +19,7 @@ import java.util.Properties;
 
 import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.exceptions.CidNotFoundInPidRefsFileException;
+import org.dataone.hashstore.exceptions.HashStoreRefsAlreadyExistException;
 import org.dataone.hashstore.exceptions.NonMatchingChecksumException;
 import org.dataone.hashstore.exceptions.NonMatchingObjSizeException;
 import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
@@ -133,8 +134,10 @@ public class FileHashStoreReferencesTest {
         String cid = "abcdef123456789";
         fileHashStore.tagObject(pid, cid);
 
-        // Should not throw any exceptions, everything is where it's supposed to be.
-        fileHashStore.tagObject(pid, cid);
+        assertThrows(HashStoreRefsAlreadyExistException.class, () -> {
+            fileHashStore.tagObject(pid, cid);
+        });
+
         // Confirm that there is only 1 of each ref file
         Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
         File[] pidRefsFiles = storePath.resolve("refs/pids").toFile().listFiles();

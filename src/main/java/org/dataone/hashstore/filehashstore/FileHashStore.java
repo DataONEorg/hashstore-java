@@ -36,6 +36,7 @@ import org.apache.commons.logging.LogFactory;
 import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.HashStore;
 import org.dataone.hashstore.exceptions.CidNotFoundInPidRefsFileException;
+import org.dataone.hashstore.exceptions.HashStoreRefsAlreadyExistException;
 import org.dataone.hashstore.exceptions.NonMatchingChecksumException;
 import org.dataone.hashstore.exceptions.NonMatchingObjSizeException;
 import org.dataone.hashstore.exceptions.OrphanPidRefsFileException;
@@ -651,10 +652,12 @@ public class FileHashStore implements HashStore {
             // Both files found, confirm that reference files are where they are expected to be
             if (Files.exists(absPidRefsPath) && Files.exists(absCidRefsPath)) {
                 verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
-                logFileHashStore.info(
-                    "FileHashStore.tagObject - Object with cid: " + cid
-                        + " already exists and is tagged with pid: " + pid
-                );
+                // We throw an exception so the client is aware that everything is in place
+                String errMsg = "FileHashStore.tagObject - Object with cid: " + cid
+                    + " already exists and is tagged with pid: " + pid;
+                logFileHashStore.error(errMsg);
+                throw new HashStoreRefsAlreadyExistException(errMsg);
+
             } else if (Files.exists(absPidRefsPath) && !Files.exists(absCidRefsPath)) {
                 // If pid refs exists, it can only contain and reference one cid
                 // First, compare the cid retrieved from the pid refs file from the supplied cid
