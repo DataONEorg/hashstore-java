@@ -645,20 +645,17 @@ public class FileHashStore implements HashStore {
         }
 
         try {
-            // Prepare booleans to determine path of tagObject to proceed with
             Path absPidRefsPath = getExpectedPath(pid, "refs", HashStoreIdTypes.pid.getName());
             Path absCidRefsPath = getExpectedPath(cid, "refs", HashStoreIdTypes.cid.getName());
-            boolean pidRefsFound = Files.exists(absPidRefsPath);
-            boolean cidRefsFound = Files.exists(absCidRefsPath);
 
             // Both files found, confirm that reference files are where they are expected to be
-            if (pidRefsFound && cidRefsFound) {
+            if (Files.exists(absPidRefsPath) && Files.exists(absCidRefsPath)) {
                 verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
                 logFileHashStore.info(
                     "FileHashStore.tagObject - Object with cid: " + cid
                         + " already exists and is tagged with pid: " + pid
                 );
-            } else if (pidRefsFound && !cidRefsFound) {
+            } else if (Files.exists(absPidRefsPath) && !Files.exists(absCidRefsPath)) {
                 // If pid refs exists, it can only contain and reference one cid
                 // First, compare the cid retrieved from the pid refs file from the supplied cid
                 String retrievedCid = new String(Files.readAllBytes(absPidRefsPath));
@@ -696,7 +693,7 @@ public class FileHashStore implements HashStore {
                     // but doesn't contain the cid. Proceed to overwrite the pid refs file.
                     // There is no return statement, so we move out of this if block.
                 }
-            } else if (!pidRefsFound && cidRefsFound) {
+            } else if (!Files.exists(absPidRefsPath) && Files.exists(absCidRefsPath)) {
                 // Only update cid refs file if pid is not in the file
                 boolean pidFoundInCidRefFiles = isStringInRefsFile(pid, absCidRefsPath);
                 if (!pidFoundInCidRefFiles) {
