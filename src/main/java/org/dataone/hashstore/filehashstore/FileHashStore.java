@@ -2114,7 +2114,7 @@ public class FileHashStore implements HashStore {
         String pid, String cid, Path absPidRefsPath, Path absCidRefsPath
     ) throws FileNotFoundException, CidNotFoundInPidRefsFileException,
         PidNotFoundInCidRefsFileException, IOException {
-        // First confirm that the files were created
+        // First confirm that the refs files have been created
         if (!Files.exists(absCidRefsPath)) {
             String errMsg = "FileHashStore.verifyHashStoreRefsFiles - cid refs file is missing: "
                 + absCidRefsPath + " for pid: " + pid;
@@ -2127,7 +2127,7 @@ public class FileHashStore implements HashStore {
             logFileHashStore.error(errMsg);
             throw new FileNotFoundException(errMsg);
         }
-        // Now verify the content
+        // Now confirm that the content is what is expected
         try {
             String cidRead = new String(Files.readAllBytes(absPidRefsPath));
             if (!cidRead.equals(cid)) {
@@ -2137,8 +2137,7 @@ public class FileHashStore implements HashStore {
                 logFileHashStore.error(errMsg);
                 throw new CidNotFoundInPidRefsFileException(errMsg);
             }
-            boolean pidFoundInCidRefFiles = isStringInRefsFile(pid, absCidRefsPath);
-            if (!pidFoundInCidRefFiles) {
+            if (!isStringInRefsFile(pid, absCidRefsPath)) {
                 String errMsg = "FileHashStore.verifyHashStoreRefsFiles - Missing expected pid: "
                     + pid + " in cid refs file: " + absCidRefsPath;
                 logFileHashStore.error(errMsg);
