@@ -1655,7 +1655,9 @@ public class FileHashStoreInterfaceTest {
             pidModifiedList.add(pid + ".dou.test." + i);
         }
 
-        ExecutorService executorService = Executors.newFixedThreadPool(5);
+        Runtime runtime = Runtime.getRuntime();
+        int numCores = runtime.availableProcessors();
+        ExecutorService executorService = Executors.newFixedThreadPool(numCores);
 
         // Store 50
         for (String pidAdjusted : pidModifiedList) {
