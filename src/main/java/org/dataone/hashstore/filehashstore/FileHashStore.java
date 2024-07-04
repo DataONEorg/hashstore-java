@@ -686,9 +686,10 @@ public class FileHashStore implements HashStore {
     @Override
     public void verifyObject(
         ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize,
-        boolean deleteInvalidObject
-    ) throws NonMatchingObjSizeException, NonMatchingChecksumException,
-        UnsupportedHashAlgorithmException, IOException {
+        boolean deleteInvalidObject)
+        throws NonMatchingObjSizeException, NonMatchingChecksumException,
+        UnsupportedHashAlgorithmException, InterruptedException, NoSuchAlgorithmException,
+        IOException {
         logFileHashStore.debug(
             "FileHashStore.verifyObject - Called to verify object with id: " + objectInfo.getCid()
         );
@@ -733,6 +734,9 @@ public class FileHashStore implements HashStore {
         }
         // Validate checksum
         if (!digestFromHexDigests.equals(checksum)) {
+            if (deleteInvalidObject) {
+                deleteObjectByCid(objCid);
+            }
             String errMsg = "FileHashStore.verifyObject - Object content invalid for cid: " + objCid
                 + ". Expected checksum: " + checksum + ". Actual checksum calculated: "
                 + digestFromHexDigests + " (algorithm: " + checksumAlgorithm + ")";
@@ -741,6 +745,9 @@ public class FileHashStore implements HashStore {
         }
         // Validate size
         if (objInfoRetrievedSize != objSize) {
+            if (deleteInvalidObject) {
+                deleteObjectByCid(objCid);
+            }
             String errMsg = "FileHashStore.verifyObject - Object size invalid for cid: " + objCid
                 + ". Expected size: " + objSize + ". Actual size: " + objInfoRetrievedSize;
             logFileHashStore.error(errMsg);

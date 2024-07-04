@@ -419,8 +419,18 @@ public class FileHashStoreReferencesTest {
             long expectedSize = Long.parseLong(testData.pidData.get(pid).get("size"));
 
             fileHashStore.verifyObject(
-                objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize, false
+                objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize, true
             );
+
+            int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
+            int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
+            // If cid is found, return the expected real path to object
+            String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+                storeDepth, storeWidth, objInfo.getCid()
+            );
+            // Real path to the data object
+            assertTrue(Files.exists(Paths.get(fhsProperties.getProperty("storePath")).resolve(
+                "objects").resolve(objRelativePath)));
         }
     }
 
@@ -443,8 +453,18 @@ public class FileHashStoreReferencesTest {
             long expectedSize = Long.parseLong(testData.pidData.get(pid).get("size"));
 
             fileHashStore.verifyObject(
-                objInfo, expectedChecksum, "MD2", expectedSize, false
+                objInfo, expectedChecksum, "MD2", expectedSize, true
             );
+
+            int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
+            int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
+            // If cid is found, return the expected real path to object
+            String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+                storeDepth, storeWidth, objInfo.getCid()
+            );
+            // Real path to the data object
+            assertTrue(Files.exists(Paths.get(fhsProperties.getProperty("storePath")).resolve(
+                "objects").resolve(objRelativePath)));
         }
     }
 
@@ -467,6 +487,16 @@ public class FileHashStoreReferencesTest {
                     objInfo, "ValueNotRelevant", "BLAKE2S", 1000, false
                 );
             });
+
+            int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
+            int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
+            // If cid is found, return the expected real path to object
+            String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+                storeDepth, storeWidth, objInfo.getCid()
+            );
+            // Real path to the data object
+            assertTrue(Files.exists(Paths.get(fhsProperties.getProperty("storePath")).resolve(
+                "objects").resolve(objRelativePath)));
         }
     }
 
@@ -474,7 +504,7 @@ public class FileHashStoreReferencesTest {
      * Check that verifyObject throws exception when non-matching size value provided
      */
     @Test
-    public void verifyObject_mismatchedValuesNonMatchingSize() throws Exception {
+    public void verifyObject_mismatchedSize() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -494,6 +524,16 @@ public class FileHashStoreReferencesTest {
                     objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize, false
                 );
             });
+
+            int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
+            int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
+            // If cid is found, return the expected real path to object
+            String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+                storeDepth, storeWidth, objInfo.getCid()
+            );
+            // Real path to the data object
+            assertTrue(Files.exists(Paths.get(fhsProperties.getProperty("storePath")).resolve(
+                "objects").resolve(objRelativePath)));
         }
     }
 
@@ -501,7 +541,7 @@ public class FileHashStoreReferencesTest {
      * Check that verifyObject throws exception with non-matching checksum value
      */
     @Test
-    public void verifyObject_mismatchedValuesNonMatchingChecksum() throws Exception {
+    public void verifyObject_mismatchedChecksum() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -521,6 +561,90 @@ public class FileHashStoreReferencesTest {
                     objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize, false
                 );
             });
+
+            int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
+            int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
+            // If cid is found, return the expected real path to object
+            String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+                storeDepth, storeWidth, objInfo.getCid()
+            );
+            // Real path to the data object
+            assertTrue(Files.exists(Paths.get(fhsProperties.getProperty("storePath")).resolve(
+                "objects").resolve(objRelativePath)));
+        }
+    }
+
+    /**
+     * Check that verifyObject throws exception when non-matching size value provided
+     */
+    @Test
+    public void verifyObject_mismatchedSize_deleteInvalidObject_true() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(dataStream);
+            dataStream.close();
+
+            String defaultStoreAlgorithm = fhsProperties.getProperty("storeAlgorithm");
+
+            // Get verifyObject args
+            String expectedChecksum = testData.pidData.get(pid).get("sha256");
+            long expectedSize = 123456789;
+
+            assertThrows(NonMatchingObjSizeException.class, () -> {
+                fileHashStore.verifyObject(
+                    objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize, true
+                );
+            });
+
+            int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
+            int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
+            // If cid is found, return the expected real path to object
+            String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+                storeDepth, storeWidth, objInfo.getCid()
+            );
+            // Real path to the data object
+            assertFalse(Files.exists(Paths.get(fhsProperties.getProperty("storePath")).resolve(
+                "objects").resolve(objRelativePath)));
+        }
+    }
+
+    /**
+     * Check that verifyObject throws exception with non-matching checksum value
+     */
+    @Test
+    public void verifyObject_mismatchedChecksum_deleteInvalidObject_true() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(dataStream);
+            dataStream.close();
+
+            String defaultStoreAlgorithm = fhsProperties.getProperty("storeAlgorithm");
+
+            // Get verifyObject args
+            String expectedChecksum = "intentionallyWrongValue";
+            long expectedSize = Long.parseLong(testData.pidData.get(pid).get("size"));
+
+            assertThrows(NonMatchingChecksumException.class, () -> {
+                fileHashStore.verifyObject(
+                    objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize, true
+                );
+            });
+
+            int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
+            int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
+            // If cid is found, return the expected real path to object
+            String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+                storeDepth, storeWidth, objInfo.getCid()
+            );
+            // Real path to the data object
+            assertFalse(Files.exists(Paths.get(fhsProperties.getProperty("storePath")).resolve(
+                "objects").resolve(objRelativePath)));
         }
     }
 }
