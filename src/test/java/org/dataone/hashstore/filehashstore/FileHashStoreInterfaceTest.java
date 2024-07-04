@@ -216,6 +216,40 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
+     * Check that store object throws exception when pid contains new line character
+     */
+    @Test
+    public void storeObject_pidWithNewLine() throws Exception {
+        for (String pid : testData.pidList) {
+            assertThrows(IllegalArgumentException.class, () -> {
+                String pidFormatted = pid.replace("/", "_");
+                Path testDataFile = testData.getTestFile(pidFormatted);
+
+                InputStream dataStream = Files.newInputStream(testDataFile);
+                fileHashStore.storeObject(dataStream, "dou.test.1\n", null, null, null, -1);
+                dataStream.close();
+            });
+        }
+    }
+
+    /**
+     * Check that store object throws exception when pid contains tab character
+     */
+    @Test
+    public void storeObject_pidWithTab() throws Exception {
+        for (String pid : testData.pidList) {
+            assertThrows(IllegalArgumentException.class, () -> {
+                String pidFormatted = pid.replace("/", "_");
+                Path testDataFile = testData.getTestFile(pidFormatted);
+
+                InputStream dataStream = Files.newInputStream(testDataFile);
+                fileHashStore.storeObject(dataStream, "dou.test.1\t", null, null, null, -1);
+                dataStream.close();
+            });
+        }
+    }
+
+    /**
      * Check that store object throws exception when object size is 0
      */
     @Test
