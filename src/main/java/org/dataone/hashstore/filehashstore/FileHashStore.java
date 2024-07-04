@@ -2357,18 +2357,7 @@ public class FileHashStore implements HashStore {
             );
             realPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
         } else if (entity.equalsIgnoreCase("metadata")) {
-            String hashId = FileHashStoreUtility.getPidHexDigest(abId, OBJECT_STORE_ALGORITHM);
-            // Get the pid metadata directory (the sharded path of the hashId)
-            String pidMetadataDirRelPath = FileHashStoreUtility.getHierarchicalPathString(
-                DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashId
-            );
-            // The file name for the metadata document is the hash of the supplied 'pid + 'formatId'
-            String metadataDocHash =
-                FileHashStoreUtility.getPidHexDigest(abId + formatId, OBJECT_STORE_ALGORITHM);
-            realPath = METADATA_STORE_DIRECTORY.resolve(pidMetadataDirRelPath).resolve(
-                metadataDocHash
-            );
-
+            realPath = getHashStoreMetadataPath(abId, formatId);
         } else if (entity.equalsIgnoreCase("refs")) {
             realPath = getHashStoreRefsPath(abId, formatId);
         } else {
@@ -2377,6 +2366,28 @@ public class FileHashStore implements HashStore {
             );
         }
         return realPath;
+    }
+
+    /**
+     * Get the absolute path to a HashStore metadata document
+     * @param abpId Authority-based or persistent identifier
+     * @param formatId Metadata formatId or namespace
+     * @return Path to the requested metadata document
+     * @throws NoSuchAlgorithmException When an algorithm used to calculate a hash is not supported
+     */
+    private Path getHashStoreMetadataPath(String abpId, String formatId) throws NoSuchAlgorithmException {
+        // Get the pid metadata directory (the sharded path of the hashId)
+        String hashId = FileHashStoreUtility.getPidHexDigest(abpId, OBJECT_STORE_ALGORITHM);
+        String pidMetadataDirRelPath = FileHashStoreUtility.getHierarchicalPathString(
+            DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashId
+        );
+        // The file name for the metadata document is the hash of the supplied 'pid + 'formatId'
+        String metadataDocHash =
+            FileHashStoreUtility.getPidHexDigest(abpId + formatId, OBJECT_STORE_ALGORITHM);
+        // Real path to metadata doc
+        return METADATA_STORE_DIRECTORY.resolve(pidMetadataDirRelPath).resolve(
+            metadataDocHash
+        );
     }
 
     /**
