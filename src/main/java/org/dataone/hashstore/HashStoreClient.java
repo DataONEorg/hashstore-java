@@ -21,7 +21,6 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 
 import org.dataone.hashstore.filehashstore.FileHashStoreUtility;
-import org.dataone.hashstore.filehashstore.FileHashStore.HashStoreIdTypes;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -245,8 +244,7 @@ public class HashStoreClient {
                     String pid = cmd.getOptionValue("pid");
                     FileHashStoreUtility.ensureNotNull(pid, "-pid", "HashStoreClient");
 
-                    String deleteIdType = HashStoreIdTypes.pid.getName();
-                    hashStore.deleteObject(deleteIdType, pid);
+                    hashStore.deleteObject(pid);
                     System.out.println("Object for pid (" + pid + ") has been deleted.");
 
                 } else if (cmd.hasOption("deletemetadata")) {
@@ -718,8 +716,7 @@ public class HashStoreClient {
 
                 // Delete object
                 System.out.println("Deleting object for guid: " + guid);
-                String deleteIdType = HashStoreIdTypes.pid.getName();
-                hashStore.deleteObject(deleteIdType, guid);
+                hashStore.deleteObject(guid);
 
             } catch (FileNotFoundException fnfe) {
                 String errMsg = "Unexpected Error: " + fnfe.fillInStackTrace();

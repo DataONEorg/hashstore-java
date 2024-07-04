@@ -108,26 +108,36 @@ public interface HashStore {
          * Confirms that an ObjectMetadata's content is equal to the given values. If it is not
          * equal, it will return False - otherwise True.
          *
-         * @param objectInfo        ObjectMetadata object with values
-         * @param checksum          Value of checksum to validate against
-         * @param checksumAlgorithm Algorithm of checksum submitted
-         * @param objSize           Expected size of object to validate after storing
+         * @param objectInfo          ObjectMetadata object with values
+         * @param checksum            Value of checksum to validate against
+         * @param checksumAlgorithm   Algorithm of checksum submitted
+         * @param objSize             Expected size of object to validate after storing
+         * @param deleteInvalidObject If true, HashStore will attempt to remove the data object
+         *                            given to verify
          * @throws NonMatchingObjSizeException       Given size =/= objMeta size value
          * @throws NonMatchingChecksumException      Given checksum =/= objMeta checksum value
          * @throws UnsupportedHashAlgorithmException Given algo is not found or supported
-         * @throws IOException Issue with recalculating supported algo for checksum not found
+         * @throws NoSuchAlgorithmException          When 'deleteInvalidObject' is true and an algo
+         *                                           used to get a cid refs file is not supported
+         * @throws InterruptedException              When 'deleteInvalidObject' is true and an issue
+         *                                           with coordinating deleting objects occurs
+         * @throws IOException                       Issue with recalculating supported algo for
+         *                                           checksum not found
          */
         public void verifyObject(
-                ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize
-        ) throws NonMatchingObjSizeException, NonMatchingChecksumException,
-            UnsupportedHashAlgorithmException, IOException;
+            ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize,
+            boolean deleteInvalidObject)
+            throws NonMatchingObjSizeException, NonMatchingChecksumException,
+            UnsupportedHashAlgorithmException, InterruptedException, NoSuchAlgorithmException,
+            IOException;
 
         /**
          * Checks whether an object referenced by a pid exists and returns a map containing the
          * absolute path to the object, pid refs file, cid refs file and sysmeta document.
-         * 
+         *
          * @param pid Authority-based identifier
-         * @return Content identifier (cid)
+         * @return Map containing the following keys: cid, cid_object_path, cid_refs_path,
+         * pid_refs_path, sysmeta_path
          * @throws NoSuchAlgorithmException          When algorithm used to calculate pid refs
          *                                           file's absolute address is not valid
          * @throws IOException                       Unable to read from a pid refs file or pid refs
@@ -219,34 +229,17 @@ public interface HashStore {
                 FileNotFoundException, IOException, NoSuchAlgorithmException;
 
         /**
-         * Deletes an object and its related data permanently from HashStore using a given
-         * persistent identifier. If the `idType` is 'pid', the object associated with the pid will
-         * be deleted if it is not referenced by any other pids, along with its reference files and
-         * all metadata documents found in its respective metadata directory. If the `idType` is
-         * 'cid', only the object will be deleted if it is not referenced by other pids.
+         * Deletes an object and all relevant associated files (ex. system metadata, reference
+         * files, etc.) based on a given pid. If other pids still reference the pid's associated
+         * object, the object will not be deleted.
          * 
-         * Notes: All objects are renamed at their existing path with a '_deleted' appended
-         * to their file name before they are deleted.
-         * 
-         * @param idType 'pid' or 'cid'
-         * @param id     Authority-based identifier or content identifier
+         * @param pid Authority-based identifier
          * @throws IllegalArgumentException When pid is null or empty
          * @throws IOException              I/O error when deleting empty directories,
          *                                  modifying/deleting reference files
          * @throws NoSuchAlgorithmException When algorithm used to calculate an object or metadata's
          *                                  address is not supported
          * @throws InterruptedException     When deletion synchronization is interrupted
-         */
-        public void deleteObject(String idType, String id) throws IllegalArgumentException,
-                IOException, NoSuchAlgorithmException, InterruptedException;
-
-        /**
-         * Deletes an object and all relevant associated files (ex. system metadata, reference
-         * files, etc.) based on a given pid. If other pids still reference the pid's associated
-         * object, the object will not be deleted.
-         * 
-         * @param pid Authority-based identifier
-         * @see #deleteObject(String, String) for more details.
          */
         public void deleteObject(String pid) throws IllegalArgumentException, IOException,
                 NoSuchAlgorithmException, InterruptedException;
