@@ -57,7 +57,7 @@ public class HashStoreRunnable implements Runnable {
                     break;
                 case deleteObject:
                     try {
-                        hashstore.deleteObject("pid", pid);
+                        hashstore.deleteObject(pid);
                     } catch (Exception e) {
                         throw new HashStoreServiceException(e.getMessage());
                     }

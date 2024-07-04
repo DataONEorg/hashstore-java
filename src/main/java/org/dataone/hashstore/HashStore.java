@@ -224,34 +224,17 @@ public interface HashStore {
                 FileNotFoundException, IOException, NoSuchAlgorithmException;
 
         /**
-         * Deletes an object and its related data permanently from HashStore using a given
-         * persistent identifier. If the `idType` is 'pid', the object associated with the pid will
-         * be deleted if it is not referenced by any other pids, along with its reference files and
-         * all metadata documents found in its respective metadata directory. If the `idType` is
-         * 'cid', only the object will be deleted if it is not referenced by other pids.
+         * Deletes an object and all relevant associated files (ex. system metadata, reference
+         * files, etc.) based on a given pid. If other pids still reference the pid's associated
+         * object, the object will not be deleted.
          * 
-         * Notes: All objects are renamed at their existing path with a '_deleted' appended
-         * to their file name before they are deleted.
-         * 
-         * @param idType 'pid' or 'cid'
-         * @param id     Authority-based identifier or content identifier
+         * @param pid Authority-based identifier
          * @throws IllegalArgumentException When pid is null or empty
          * @throws IOException              I/O error when deleting empty directories,
          *                                  modifying/deleting reference files
          * @throws NoSuchAlgorithmException When algorithm used to calculate an object or metadata's
          *                                  address is not supported
          * @throws InterruptedException     When deletion synchronization is interrupted
-         */
-        public void deleteObject(String idType, String id) throws IllegalArgumentException,
-                IOException, NoSuchAlgorithmException, InterruptedException;
-
-        /**
-         * Deletes an object and all relevant associated files (ex. system metadata, reference
-         * files, etc.) based on a given pid. If other pids still reference the pid's associated
-         * object, the object will not be deleted.
-         * 
-         * @param pid Authority-based identifier
-         * @see #deleteObject(String, String) for more details.
          */
         public void deleteObject(String pid) throws IllegalArgumentException, IOException,
                 NoSuchAlgorithmException, InterruptedException;
