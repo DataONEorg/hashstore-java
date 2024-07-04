@@ -177,12 +177,13 @@ public class FileHashStoreUtility {
     }
 
     /**
-     * Checks whether a given string is empty and throws an exception if so
+     * Checks whether a given string is empty or contains illegal characters, and throws an
+     * exception if so
      *
      * @param string   String to check
      * @param argument Value that is being checked
      * @param method   Calling method
-     * @throws IllegalArgumentException If the string is empty or null
+     * @throws IllegalArgumentException If the string is empty or contains illegal characters
      */
     public static void checkForEmptyString(String string, String argument, String method)
         throws IllegalArgumentException {
@@ -192,6 +193,29 @@ public class FileHashStoreUtility {
                 + "(): " + argument + " cannot be empty.";
             throw new IllegalArgumentException(errMsg);
         }
+        if (!isValidString(string)) {
+            String errMsg = "FileHashStoreUtility.checkForEmptyString - Calling Method: " + method
+                + "(): " + argument + " contains empty white spaces, tabs or newlines.";
+            throw new IllegalArgumentException(errMsg);
+        }
+    }
+
+    /**
+     * Iterates over a given string and checks each character to make sure that there are no
+     * whitespaces, tabs, new lines or other illegal characters.
+     * @param string String to check
+     * @return True if valid, False if illegal characters found.
+     */
+    public static boolean isValidString(String string) {
+        boolean valid = true;
+        for (int i = 0; i < string.length(); i++) {
+            char ch = string.charAt(i);
+            if (Character.isWhitespace(ch)) {
+                valid = false;
+                break;
+            }
+        }
+        return valid;
     }
 
     /**
