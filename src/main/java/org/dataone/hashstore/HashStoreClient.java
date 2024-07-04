@@ -604,7 +604,7 @@ public class HashStoreClient {
 
                 // Store object
                 System.out.println("Storing object for guid: " + guid);
-                hashStore.storeObject(objStream, guid, checksum, algorithm);
+                hashStore.storeObject(objStream, guid, null, checksum, algorithm, -1);
 
             } catch (PidRefsFileExistsException poee) {
                 String errMsg = "Unexpected Error: " + poee.fillInStackTrace();
