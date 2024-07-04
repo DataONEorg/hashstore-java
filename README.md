@@ -43,7 +43,7 @@ To create or interact with a HashStore, instantiate a HashStore object with the 
 - storeAlgorithm
 - storeMetadataNamespace
 
-```java
+```
 String classPackage = "org.dataone.hashstore.filehashstore.FileHashStore";
 Path rootDirectory = tempFolder.resolve("metacat");
 
@@ -70,7 +70,7 @@ hashStore.storeObject(stream, pid)
 In HashStore, objects are first saved as temporary files while their content identifiers are calculated. Once the default hash algorithm list and their hashes are generated, objects are stored in their permanent location using the store's algorithm's corresponding hash value, the store depth and the store width. Lastly, reference files are created for the object so that they can be found and retrieved given an identifier (ex. persistent identifier (pid)). Note: Objects are also stored once and only once.
 
 By calling the various interface methods for  `storeObject`, the calling app/client can validate, store and tag an object simultaneously if the relevant data is available. In the absence of an identifier (ex. persistent identifier (pid)), `storeObject` can be called to solely store an object. The client is then expected to call `verifyObject` when the relevant metadata is available to confirm that the object has been stored as expected. And to finalize the process (to make the object discoverable), the client calls `tagObject``. In summary, there are two expected paths to store an object:
-```java
+```
 // All-in-one process which stores, validates and tags an object
 objectMetadata objInfo = storeObject(InputStream, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize)
 
@@ -78,7 +78,7 @@ objectMetadata objInfo = storeObject(InputStream, pid, additionalAlgorithm, chec
 // Store object
 objectMetadata objInfo = storeObject(InputStream)
 // Validate object, returns False if there is a mismatch and deletes the associated file
-verifyObject(objInfo, checksum, checksumAlgorithn, objSize)
+verifyObject(objInfo, checksum, checksumAlgorithn, objSize, true)
 // Tag object, makes the object discoverable (find, retrieve, delete)
 tagObject(pid, cid)
 ```
