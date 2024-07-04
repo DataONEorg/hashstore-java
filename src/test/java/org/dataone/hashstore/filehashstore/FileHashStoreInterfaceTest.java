@@ -39,7 +39,6 @@ import org.dataone.hashstore.exceptions.HashStoreRefsAlreadyExistException;
 import org.dataone.hashstore.exceptions.OrphanPidRefsFileException;
 import org.dataone.hashstore.exceptions.OrphanRefsFilesException;
 import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
-import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 import org.dataone.hashstore.filehashstore.FileHashStore.HashStoreIdTypes;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.jupiter.api.BeforeEach;
@@ -234,70 +233,6 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Verify that storeObject stores and validates a given checksum and its expected size
-     * with overloaded method
-     */
-    @Test
-    public void storeObject_overloadChecksumCsAlgoAndSize() throws Exception {
-        for (String pid : testData.pidList) {
-            String pidFormatted = pid.replace("/", "_");
-            Path testDataFile = testData.getTestFile(pidFormatted);
-            String md2 = testData.pidData.get(pid).get("md2");
-            long objectSize = Long.parseLong(testData.pidData.get(pid).get("size"));
-
-            InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectMetadata objInfo = fileHashStore.storeObject(
-                dataStream, pid, md2, "MD2", objectSize
-            );
-            dataStream.close();
-
-            Map<String, String> hexDigests = objInfo.getHexDigests();
-
-            // Validate checksum values
-            assertEquals(md2, hexDigests.get("MD2"));
-        }
-    }
-
-    /**
-     * Verify that storeObject stores and validates a given checksum with overloaded method
-     */
-    @Test
-    public void storeObject_overloadChecksumAndChecksumAlgo() throws Exception {
-        for (String pid : testData.pidList) {
-            String pidFormatted = pid.replace("/", "_");
-            Path testDataFile = testData.getTestFile(pidFormatted);
-            String md2 = testData.pidData.get(pid).get("md2");
-
-            InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectMetadata objInfo = fileHashStore.storeObject(dataStream, pid, md2, "MD2");
-            dataStream.close();
-
-            Map<String, String> hexDigests = objInfo.getHexDigests();
-
-            // Validate checksum values
-            assertEquals(md2, hexDigests.get("MD2"));
-        }
-    }
-
-    /**
-     * Check that store object returns the correct ObjectMetadata size with overloaded method
-     */
-    @Test
-    public void storeObject_overloadObjSize() throws Exception {
-        for (String pid : testData.pidList) {
-            String pidFormatted = pid.replace("/", "_");
-            Path testDataFile = testData.getTestFile(pidFormatted);
-
-            long objectSize = Long.parseLong(testData.pidData.get(pid).get("size"));
-            InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectMetadata objInfo = fileHashStore.storeObject(dataStream, pid, objectSize);
-            dataStream.close();
-
-            assertEquals(objectSize, objInfo.getSize());
-        }
-    }
-
-    /**
      * Check that store object executes as expected with only an InputStream (does not create
      * any reference files)
      */
@@ -323,27 +258,6 @@ public class FileHashStoreInterfaceTest {
 
             Path cidRefsFilePath = fileHashStore.getExpectedPath(cid, "refs", "cid");
             assertFalse(Files.exists(cidRefsFilePath));
-        }
-    }
-
-    /**
-     * Verify that storeObject generates an additional checksum with overloaded method
-     */
-    @Test
-    public void storeObject_overloadAdditionalAlgo() throws Exception {
-        for (String pid : testData.pidList) {
-            String pidFormatted = pid.replace("/", "_");
-            Path testDataFile = testData.getTestFile(pidFormatted);
-
-            InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectMetadata objInfo = fileHashStore.storeObject(dataStream, pid, "MD2");
-            dataStream.close();
-
-            Map<String, String> hexDigests = objInfo.getHexDigests();
-
-            // Validate checksum values
-            String md2 = testData.pidData.get(pid).get("md2");
-            assertEquals(md2, hexDigests.get("MD2"));
         }
     }
 

@@ -556,62 +556,6 @@ public class FileHashStore implements HashStore {
     }
 
 
-    /**
-     * Overload method for storeObject with size and a checksum & checksumAlgorithm.
-     */
-    @Override
-    public ObjectMetadata storeObject(
-        InputStream object, String pid, String checksum, String checksumAlgorithm, long objSize
-    ) throws NoSuchAlgorithmException, IOException, PidRefsFileExistsException, RuntimeException,
-        InterruptedException {
-        FileHashStoreUtility.ensureNotNull(checksum, "checksum", "storeObject");
-        FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm", "storeObject");
-        FileHashStoreUtility.checkNotNegativeOrZero(objSize, "storeObject");
-
-        return storeObject(object, pid, null, checksum, checksumAlgorithm, objSize);
-    }
-
-    /**
-     * Overload method for storeObject with just a checksum and checksumAlgorithm
-     */
-    @Override
-    public ObjectMetadata storeObject(
-        InputStream object, String pid, String checksum, String checksumAlgorithm
-    ) throws NoSuchAlgorithmException, IOException, PidRefsFileExistsException, RuntimeException,
-        InterruptedException {
-        FileHashStoreUtility.ensureNotNull(checksum, "checksum", "storeObject");
-        FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm", "storeObject");
-
-        return storeObject(object, pid, null, checksum, checksumAlgorithm, -1);
-    }
-
-    /**
-     * Overload method for storeObject with just the size of object to validate
-     */
-    @Override
-    public ObjectMetadata storeObject(InputStream object, String pid, long objSize)
-        throws NoSuchAlgorithmException, IOException, PidRefsFileExistsException, RuntimeException,
-        InterruptedException {
-        FileHashStoreUtility.checkNotNegativeOrZero(objSize, "storeObject");
-
-        return storeObject(object, pid, null, null, null, objSize);
-    }
-
-    /**
-     * Overload method for storeObject with an additionalAlgorithm
-     */
-    @Override
-    public ObjectMetadata storeObject(InputStream object, String pid, String additionalAlgorithm)
-        throws NoSuchAlgorithmException, IOException, PidRefsFileExistsException, RuntimeException,
-        InterruptedException {
-        FileHashStoreUtility.ensureNotNull(
-            additionalAlgorithm, "additionalAlgorithm", "storeObject"
-        );
-
-        return storeObject(object, pid, additionalAlgorithm, null, null, -1);
-    }
-
-
     @Override
     public void tagObject(String pid, String cid) throws IOException, PidRefsFileExistsException,
         NoSuchAlgorithmException, FileNotFoundException, InterruptedException {
