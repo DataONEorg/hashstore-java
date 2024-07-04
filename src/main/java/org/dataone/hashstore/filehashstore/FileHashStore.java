@@ -2333,8 +2333,8 @@ public class FileHashStore implements HashStore {
     protected Path getExpectedPath(String abId, String entity, String formatId)
         throws IllegalArgumentException, NoSuchAlgorithmException, IOException {
         Path realPath;
-        String hashId = FileHashStoreUtility.getPidHexDigest(abId, OBJECT_STORE_ALGORITHM);
         if (entity.equalsIgnoreCase("object")) {
+            String hashId = FileHashStoreUtility.getPidHexDigest(abId, OBJECT_STORE_ALGORITHM);
             // `hashId` here is the address of the pid refs file, and contains the cid
             String pidRefsFileRelativePath = FileHashStoreUtility.getHierarchicalPathString(
                 DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashId
@@ -2357,6 +2357,7 @@ public class FileHashStore implements HashStore {
             );
             realPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
         } else if (entity.equalsIgnoreCase("metadata")) {
+            String hashId = FileHashStoreUtility.getPidHexDigest(abId, OBJECT_STORE_ALGORITHM);
             // Get the pid metadata directory (the sharded path of the hashId)
             String pidMetadataDirRelPath = FileHashStoreUtility.getHierarchicalPathString(
                 DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashId
@@ -2369,29 +2370,40 @@ public class FileHashStore implements HashStore {
             );
 
         } else if (entity.equalsIgnoreCase("refs")) {
-            if (formatId.equalsIgnoreCase(HashStoreIdTypes.pid.getName())) {
-                // `hashId` here is the pid refs file string to split
-                String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
-                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashId
-                );
-                realPath = REFS_PID_FILE_DIRECTORY.resolve(pidRelativePath);
-            } else if (formatId.equalsIgnoreCase(HashStoreIdTypes.cid.getName())) {
-                // If refs type is 'cid', use the abId directly provided
-                String cidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
-                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, abId
-                );
-                realPath = REFS_CID_FILE_DIRECTORY.resolve(cidRelativePath);
-            } else {
-                String errMsg =
-                    "FileHashStore.getExpectedPath - formatId must be 'pid' or 'cid' when entity is 'refs'";
-                logFileHashStore.error(errMsg);
-                throw new IllegalArgumentException(errMsg);
-            }
-
+            realPath = getHashStoreRefsPath(abId, formatId);
         } else {
             throw new IllegalArgumentException(
                 "FileHashStore.getExpectedPath - entity must be 'object', 'metadata' or 'refs'"
             );
+        }
+        return realPath;
+    }
+
+    /**
+     * Get the absolute path to a HashStore pid or cid ref file
+     * @param abpcId Authority-based identifier, persistent identifier or content identifier
+     * @param refType "cid" or "pid
+     * @return Path to the requested refs file
+     * @throws NoSuchAlgorithmException When an algorithm used to calculate a hash is not supported
+     */
+    private Path getHashStoreRefsPath(String abpcId, String refType) throws NoSuchAlgorithmException {
+        Path realPath;
+        if (refType.equalsIgnoreCase(HashStoreIdTypes.pid.getName())) {
+            String hashedId = FileHashStoreUtility.getPidHexDigest(abpcId, OBJECT_STORE_ALGORITHM);
+            String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+                DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashedId
+            );
+            realPath = REFS_PID_FILE_DIRECTORY.resolve(pidRelativePath);
+        } else if (refType.equalsIgnoreCase(HashStoreIdTypes.cid.getName())) {
+            String cidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+                DIRECTORY_DEPTH, DIRECTORY_WIDTH, abpcId
+            );
+            realPath = REFS_CID_FILE_DIRECTORY.resolve(cidRelativePath);
+        } else {
+            String errMsg =
+                "FileHashStore.getExpectedPath - formatId must be 'pid' or 'cid' when entity is 'refs'";
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
         }
         return realPath;
     }
