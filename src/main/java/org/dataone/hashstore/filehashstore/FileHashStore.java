@@ -2322,50 +2322,62 @@ public class FileHashStore implements HashStore {
     /**
      * Get the absolute path of a HashStore object, metadata or refs file
      *
-     * @param abId     Authority-based, persistent or content identifier
-     * @param entity   "object" or "metadata"
+     * @param abpcId     Authority-based, persistent or content identifier
+     * @param entity   "object", "metadata" or "refs"
      * @param formatId Metadata namespace or reference type (pid/cid)
      * @return Actual path to object
      * @throws IllegalArgumentException If entity is not object or metadata
      * @throws NoSuchAlgorithmException If store algorithm is not supported
      * @throws IOException              If unable to retrieve cid
      */
-    protected Path getExpectedPath(String abId, String entity, String formatId)
+    protected Path getExpectedPath(String abpcId, String entity, String formatId)
         throws IllegalArgumentException, NoSuchAlgorithmException, IOException {
         Path realPath;
         if (entity.equalsIgnoreCase("object")) {
-            String hashId = FileHashStoreUtility.getPidHexDigest(abId, OBJECT_STORE_ALGORITHM);
-            // `hashId` here is the address of the pid refs file, and contains the cid
-            String pidRefsFileRelativePath = FileHashStoreUtility.getHierarchicalPathString(
-                DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashId
-            );
-            Path pathToPidRefsFile = REFS_PID_FILE_DIRECTORY.resolve(pidRefsFileRelativePath);
-            // Attempt to retrieve the cid
-            String objectCid;
-            if (!Files.exists(pathToPidRefsFile)) {
-                String errMsg =
-                    "FileHashStore.getExpectedPath - Pid Refs file does not exist for pid: " + abId
-                        + " with object address: " + pathToPidRefsFile + ". Cannot retrieve cid.";
-                logFileHashStore.warn(errMsg);
-                throw new FileNotFoundException(errMsg);
-            } else {
-                objectCid = new String(Files.readAllBytes(pathToPidRefsFile));
-            }
-            // If cid is found, return the expected real path to object
-            String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
-                DIRECTORY_DEPTH, DIRECTORY_WIDTH, objectCid
-            );
-            realPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
+            realPath = getHashStoreDataObject(abpcId);
         } else if (entity.equalsIgnoreCase("metadata")) {
-            realPath = getHashStoreMetadataPath(abId, formatId);
+            realPath = getHashStoreMetadataPath(abpcId, formatId);
         } else if (entity.equalsIgnoreCase("refs")) {
-            realPath = getHashStoreRefsPath(abId, formatId);
+            realPath = getHashStoreRefsPath(abpcId, formatId);
         } else {
             throw new IllegalArgumentException(
                 "FileHashStore.getExpectedPath - entity must be 'object', 'metadata' or 'refs'"
             );
         }
         return realPath;
+    }
+
+    /**
+     * Get the absolute path to a HashStore data object
+     * @param abpId Authority-based or persistent identifier
+     * @return Path to the HasHStore data object
+     * @throws NoSuchAlgorithmException When an algorithm used to calculate a hash is not supported
+     * @throws IOException Issue when reading a pid refs file to retrieve a 'cid'
+     */
+    private Path getHashStoreDataObject(String abpId) throws NoSuchAlgorithmException, IOException {
+        String hashedId = FileHashStoreUtility.getPidHexDigest(abpId, OBJECT_STORE_ALGORITHM);
+        // `hashId` here is used to calculate the address of the pid refs file
+        String pidRefsFileRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+            DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashedId
+        );
+        Path pathToPidRefsFile = REFS_PID_FILE_DIRECTORY.resolve(pidRefsFileRelativePath);
+        // Attempt to retrieve the cid from the pid refs file
+        String objectCid;
+        if (!Files.exists(pathToPidRefsFile)) {
+            String errMsg =
+                "FileHashStore.getExpectedPath - Pid Refs file does not exist for pid: " + abpId
+                    + " with object address: " + pathToPidRefsFile + ". Cannot retrieve cid.";
+            logFileHashStore.warn(errMsg);
+            throw new FileNotFoundException(errMsg);
+        } else {
+            objectCid = new String(Files.readAllBytes(pathToPidRefsFile));
+        }
+        // If cid is found, return the expected real path to object
+        String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+            DIRECTORY_DEPTH, DIRECTORY_WIDTH, objectCid
+        );
+        // Real path to the data object
+        return OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
     }
 
     /**
