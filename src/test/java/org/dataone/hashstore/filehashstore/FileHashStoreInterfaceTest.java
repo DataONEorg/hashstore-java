@@ -1645,13 +1645,13 @@ public class FileHashStoreInterfaceTest {
      * Test deleteObject synchronization using a Runnable class
      */
     @Test
-    public void deleteObject_50Pids_1Obj_viaRunnable() throws Exception {
+    public void deleteObject_1000Pids_1Obj_viaRunnable() throws Exception {
         // Get single test file to "upload"
         String pid = "jtao.1700.1";
         Path testDataFile = testData.getTestFile(pid);
 
         List<String> pidModifiedList = new ArrayList<>();
-        for (int i = 1; i <= 50; i++) {
+        for (int i = 1; i <= 1000; i++) {
             pidModifiedList.add(pid + ".dou.test." + i);
         }
 
