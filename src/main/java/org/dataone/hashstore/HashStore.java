@@ -117,6 +117,10 @@ public interface HashStore {
          * @throws NonMatchingObjSizeException       Given size =/= objMeta size value
          * @throws NonMatchingChecksumException      Given checksum =/= objMeta checksum value
          * @throws UnsupportedHashAlgorithmException Given algo is not found or supported
+         * @throws NoSuchAlgorithmException          When 'deleteInvalidObject' is true and an algo
+         *                                           used to get a cid refs file is not supported
+         * @throws InterruptedException              When 'deleteInvalidObject' is true and an issue
+         *                                           with coordinating deleting objects occurs
          * @throws IOException                       Issue with recalculating supported algo for
          *                                           checksum not found
          */
@@ -124,7 +128,8 @@ public interface HashStore {
             ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize,
             boolean deleteInvalidObject)
             throws NonMatchingObjSizeException, NonMatchingChecksumException,
-            UnsupportedHashAlgorithmException, IOException;
+            UnsupportedHashAlgorithmException, InterruptedException, NoSuchAlgorithmException,
+            IOException;
 
         /**
          * Checks whether an object referenced by a pid exists and returns a map containing the
