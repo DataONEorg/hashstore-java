@@ -125,9 +125,10 @@ public interface HashStore {
         /**
          * Checks whether an object referenced by a pid exists and returns a map containing the
          * absolute path to the object, pid refs file, cid refs file and sysmeta document.
-         * 
+         *
          * @param pid Authority-based identifier
-         * @return Content identifier (cid)
+         * @return Map containing the following keys: cid, cid_object_path, cid_refs_path,
+         * pid_refs_path, sysmeta_path
          * @throws NoSuchAlgorithmException          When algorithm used to calculate pid refs
          *                                           file's absolute address is not valid
          * @throws IOException                       Unable to read from a pid refs file or pid refs
