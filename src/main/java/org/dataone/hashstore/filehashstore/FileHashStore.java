@@ -2322,39 +2322,38 @@ public class FileHashStore implements HashStore {
     /**
      * Get the absolute path of a HashStore object, metadata or refs file
      *
-     * @param abpcId     Authority-based, persistent or content identifier
-     * @param entity   "object", "metadata" or "refs"
-     * @param formatId Metadata namespace or reference type (pid/cid)
+     * @param abpcId Authority-based, persistent or content identifier
+     * @param entity "object", "metadata" or "refs"
+     * @param detail Metadata namespace, ref type (pid/cid) or other value
      * @return Actual path to object
      * @throws IllegalArgumentException If entity is not object or metadata
      * @throws NoSuchAlgorithmException If store algorithm is not supported
      * @throws IOException              If unable to retrieve cid
      */
-    protected Path getExpectedPath(String abpcId, String entity, String formatId)
+    protected Path getExpectedPath(String abpcId, String entity, String detail)
         throws IllegalArgumentException, NoSuchAlgorithmException, IOException {
-        Path realPath;
         if (entity.equalsIgnoreCase("object")) {
-            realPath = getHashStoreDataObject(abpcId);
+            return getHashStoreDataObjectPath(abpcId);
         } else if (entity.equalsIgnoreCase("metadata")) {
-            realPath = getHashStoreMetadataPath(abpcId, formatId);
+            return getHashStoreMetadataPath(abpcId, detail);
         } else if (entity.equalsIgnoreCase("refs")) {
-            realPath = getHashStoreRefsPath(abpcId, formatId);
+            return getHashStoreRefsPath(abpcId, detail);
         } else {
             throw new IllegalArgumentException(
-                "FileHashStore.getExpectedPath - entity must be 'object', 'metadata' or 'refs'"
-            );
+                "FileHashStore.getExpectedPath - entity must be 'object', 'metadata' or 'refs'");
         }
-        return realPath;
     }
 
     /**
      * Get the absolute path to a HashStore data object
+     *
      * @param abpId Authority-based or persistent identifier
      * @return Path to the HasHStore data object
      * @throws NoSuchAlgorithmException When an algorithm used to calculate a hash is not supported
      * @throws IOException Issue when reading a pid refs file to retrieve a 'cid'
      */
-    private Path getHashStoreDataObject(String abpId) throws NoSuchAlgorithmException, IOException {
+    protected Path getHashStoreDataObjectPath(String abpId) throws NoSuchAlgorithmException,
+        IOException {
         String hashedId = FileHashStoreUtility.getPidHexDigest(abpId, OBJECT_STORE_ALGORITHM);
         // `hashId` here is used to calculate the address of the pid refs file
         String pidRefsFileRelativePath = FileHashStoreUtility.getHierarchicalPathString(
@@ -2365,8 +2364,9 @@ public class FileHashStore implements HashStore {
         String objectCid;
         if (!Files.exists(pathToPidRefsFile)) {
             String errMsg =
-                "FileHashStore.getExpectedPath - Pid Refs file does not exist for pid: " + abpId
-                    + " with object address: " + pathToPidRefsFile + ". Cannot retrieve cid.";
+                "FileHashStore.getHashStoreDataObjectPath - Pid Refs file does not exist for pid: "
+                    + abpId + " with object address: " + pathToPidRefsFile + ". Cannot retrieve "
+                    + "cid.";
             logFileHashStore.warn(errMsg);
             throw new FileNotFoundException(errMsg);
         } else {
@@ -2382,12 +2382,14 @@ public class FileHashStore implements HashStore {
 
     /**
      * Get the absolute path to a HashStore metadata document
+     *
      * @param abpId Authority-based or persistent identifier
      * @param formatId Metadata formatId or namespace
      * @return Path to the requested metadata document
      * @throws NoSuchAlgorithmException When an algorithm used to calculate a hash is not supported
      */
-    private Path getHashStoreMetadataPath(String abpId, String formatId) throws NoSuchAlgorithmException {
+    protected Path getHashStoreMetadataPath(String abpId, String formatId)
+        throws NoSuchAlgorithmException {
         // Get the pid metadata directory (the sharded path of the hashId)
         String hashId = FileHashStoreUtility.getPidHexDigest(abpId, OBJECT_STORE_ALGORITHM);
         String pidMetadataDirRelPath = FileHashStoreUtility.getHierarchicalPathString(
@@ -2404,12 +2406,14 @@ public class FileHashStore implements HashStore {
 
     /**
      * Get the absolute path to a HashStore pid or cid ref file
+     *
      * @param abpcId Authority-based identifier, persistent identifier or content identifier
      * @param refType "cid" or "pid
      * @return Path to the requested refs file
      * @throws NoSuchAlgorithmException When an algorithm used to calculate a hash is not supported
      */
-    private Path getHashStoreRefsPath(String abpcId, String refType) throws NoSuchAlgorithmException {
+    protected Path getHashStoreRefsPath(String abpcId, String refType)
+        throws NoSuchAlgorithmException {
         Path realPath;
         if (refType.equalsIgnoreCase(HashStoreIdTypes.pid.getName())) {
             String hashedId = FileHashStoreUtility.getPidHexDigest(abpcId, OBJECT_STORE_ALGORITHM);
@@ -2424,7 +2428,8 @@ public class FileHashStore implements HashStore {
             realPath = REFS_CID_FILE_DIRECTORY.resolve(cidRelativePath);
         } else {
             String errMsg =
-                "FileHashStore.getExpectedPath - formatId must be 'pid' or 'cid' when entity is 'refs'";
+                "FileHashStore.getHashStoreRefsPath - formatId must be 'pid' or 'cid' when entity"
+                    + " is 'refs'";
             logFileHashStore.error(errMsg);
             throw new IllegalArgumentException(errMsg);
         }
