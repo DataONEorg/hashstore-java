@@ -422,7 +422,7 @@ public class FileHashStoreReferencesTest {
             long expectedSize = Long.parseLong(testData.pidData.get(pid).get("size"));
 
             fileHashStore.verifyObject(
-                objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize
+                objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize, false
             );
         }
     }
@@ -446,7 +446,7 @@ public class FileHashStoreReferencesTest {
             long expectedSize = Long.parseLong(testData.pidData.get(pid).get("size"));
 
             fileHashStore.verifyObject(
-                objInfo, expectedChecksum, "MD2", expectedSize
+                objInfo, expectedChecksum, "MD2", expectedSize, false
             );
         }
     }
@@ -467,7 +467,7 @@ public class FileHashStoreReferencesTest {
 
             assertThrows(UnsupportedHashAlgorithmException.class, () -> {
                 fileHashStore.verifyObject(
-                    objInfo, "ValueNotRelevant", "BLAKE2S", 1000
+                    objInfo, "ValueNotRelevant", "BLAKE2S", 1000, false
                 );
             });
         }
@@ -494,7 +494,7 @@ public class FileHashStoreReferencesTest {
 
             assertThrows(NonMatchingObjSizeException.class, () -> {
                 fileHashStore.verifyObject(
-                    objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize
+                    objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize, false
                 );
             });
         }
@@ -521,7 +521,7 @@ public class FileHashStoreReferencesTest {
 
             assertThrows(NonMatchingChecksumException.class, () -> {
                 fileHashStore.verifyObject(
-                    objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize
+                    objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize, false
                 );
             });
         }

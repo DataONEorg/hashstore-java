@@ -685,7 +685,8 @@ public class FileHashStore implements HashStore {
 
     @Override
     public void verifyObject(
-        ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize
+        ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize,
+        boolean deleteInvalidObject
     ) throws NonMatchingObjSizeException, NonMatchingChecksumException,
         UnsupportedHashAlgorithmException, IOException {
         logFileHashStore.debug(
