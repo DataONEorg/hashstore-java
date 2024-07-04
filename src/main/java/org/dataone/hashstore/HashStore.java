@@ -86,46 +86,6 @@ public interface HashStore {
                 IOException, PidRefsFileExistsException, RuntimeException, InterruptedException;
 
         /**
-         * @see #storeObject(InputStream, String, String, String, String, long)
-         * 
-         *      Store an object and validate the given checksum & checksum algorithm and size.
-         */
-        public ObjectMetadata storeObject(
-                InputStream object, String pid, String checksum, String checksumAlgorithm,
-                long objSize
-        ) throws NoSuchAlgorithmException, IOException, PidRefsFileExistsException,
-                RuntimeException, InterruptedException;
-
-        /**
-         * @see #storeObject(InputStream, String, String, String, String, long)
-         * 
-         *      Store an object and validate the given checksum & checksum algorithm.
-         */
-        public ObjectMetadata storeObject(
-                InputStream object, String pid, String checksum, String checksumAlgorithm
-        ) throws NoSuchAlgorithmException, IOException, PidRefsFileExistsException,
-                RuntimeException, InterruptedException;
-
-        /**
-         * @see #storeObject(InputStream, String, String, String, String, long)
-         * 
-         *      Store an object and generate an additional algorithm in hex digests.
-         */
-        public ObjectMetadata storeObject(
-                InputStream object, String pid, String additionalAlgorithm
-        ) throws NoSuchAlgorithmException, IOException, PidRefsFileExistsException,
-                RuntimeException, InterruptedException;
-
-        /**
-         * @see #storeObject(InputStream, String, String, String, String, long)
-         * 
-         *      Store an object and validate its size.
-         */
-        public ObjectMetadata storeObject(InputStream object, String pid, long objSize)
-                throws NoSuchAlgorithmException, IOException, PidRefsFileExistsException,
-                RuntimeException, InterruptedException;
-
-        /**
          * Creates references that allow objects stored in HashStore to be discoverable. Retrieving,
          * deleting or calculating a hex digest of an object is based on a pid argument; and to
          * proceed, we must be able to find the object associated with the pid.
