@@ -1579,7 +1579,6 @@ public class FileHashStore implements HashStore {
      * @param objSize           Expected size of object
      * @param storedObjFileSize Actual size of object stored
      * @throws NoSuchAlgorithmException If algorithm requested to validate against is absent
-     * @throws IOException              Issue with deleting tmpFile
      */
     private void validateTmpObject(
         boolean requestValidation, String checksum, String checksumAlgorithm, Path tmpFile,
