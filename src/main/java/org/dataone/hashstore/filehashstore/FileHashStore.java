@@ -2187,7 +2187,7 @@ public class FileHashStore implements HashStore {
                     FileHashStoreUtility.deleteListItems(deleteList);
                     String warnMsg = "FileHashStore.unTagObject - Object with cid: " + cidRead
                         + " does not exist, but pid and cid reference file found for pid: " + pid
-                        + ". Deleted pid and cid ref files and metadata.";
+                        + ". Deleted pid and cid ref files.";
                     logFileHashStore.warn(warnMsg);
 
                 } finally {
