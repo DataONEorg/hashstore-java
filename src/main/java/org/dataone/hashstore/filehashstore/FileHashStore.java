@@ -43,6 +43,7 @@ import org.dataone.hashstore.exceptions.OrphanPidRefsFileException;
 import org.dataone.hashstore.exceptions.OrphanRefsFilesException;
 import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
+import org.dataone.hashstore.exceptions.PidRefsFileNotFoundException;
 import org.dataone.hashstore.exceptions.UnsupportedHashAlgorithmException;
 
 /**
@@ -748,7 +749,7 @@ public class FileHashStore implements HashStore {
             String errMsg = "FileHashStore.findObject - Unable to find cid for pid: " + pid
                 + ". Pid refs file does not exist at: " + absPidRefsPath;
             logFileHashStore.error(errMsg);
-            throw new FileNotFoundException(errMsg);
+            throw new PidRefsFileNotFoundException(errMsg);
         }
     }
 
