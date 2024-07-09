@@ -136,6 +136,77 @@ public class FileHashStoreReferencesTest {
     }
 
     /**
+     * Check that unTagObject deletes pid refs file for a cid that is referenced by
+     * multiple pids, and that the cid refs file is not deleted.
+     */
+    @Test
+    public void unTagObject_cidWithMultiplePidReferences() throws Exception {
+        String pid = "dou.test.1";
+        String pidTwo = "dou.test.2";
+        String pidThree = "dou.test.3";
+        String pidFour = "dou.test.4";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+        fileHashStore.tagObject(pidTwo, cid);
+        fileHashStore.tagObject(pidThree, cid);
+        fileHashStore.tagObject(pidFour, cid);
+
+        fileHashStore.unTagObject(pid, cid);
+
+        // Confirm refs files do not exist
+        Path absCidRefsPath =
+            fileHashStore.getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
+        Path absPidRefsPath =
+            fileHashStore.getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
+
+        assertFalse(Files.exists(absPidRefsPath));
+        assertTrue(Files.exists(absCidRefsPath));
+
+        // Confirm number of reference files
+        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+        List<Path> pidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/pids"));
+        List<Path> cidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/cids"));
+
+        assertEquals(3, pidRefsFiles.size());
+        assertEquals(1, cidRefsFiles.size());
+    }
+
+    /**
+     * Check that unTagObject deletes an orphaned pid refs file
+     */
+    @Test
+    public void unTagObject_orphanPidRefsFile() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        // Delete cid refs file to create orphaned pid refs file
+        Path absCidRefsPath =
+            fileHashStore.getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
+        Files.delete(absCidRefsPath);
+        assertFalse(Files.exists(absCidRefsPath));
+
+        fileHashStore.unTagObject(pid, cid);
+
+        // Confirm pid refs is deleted
+        Path absPidRefsPath =
+            fileHashStore.getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
+        assertFalse(Files.exists(absPidRefsPath));
+
+        // Confirm number of reference files
+        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+        List<Path> pidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/pids"));
+        List<Path> cidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/cids"));
+
+        assertEquals(0, pidRefsFiles.size());
+        assertEquals(0, cidRefsFiles.size());
+    }
+
+    /**
      * Check that the cid supplied is written into the file given
      */
     @Test
