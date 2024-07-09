@@ -2026,12 +2026,16 @@ public class FileHashStore implements HashStore {
 
     /**
      * Untags a data object in HashStore by deleting the 'pid reference file' and removing the 'pid'
-     * from the 'cid reference file'.
+     * from the 'cid reference file'. This method will never delete a data object.
      *
      * @param pid Persistent or authority-based identifier
      * @param cid Content identifier of data object
+     * @throws InterruptedException     When there is a synchronization issue
+     * @throws NoSuchAlgorithmException When there is an algorithm used that is not supported
+     * @throws IOException              When there is an issue deleting refs files
      */
-    protected void unTagObject(String pid, String cid) throws Exception {
+    protected void unTagObject(String pid, String cid) throws InterruptedException,
+        NoSuchAlgorithmException, IOException {
         // Validate input parameters
         FileHashStoreUtility.ensureNotNull(pid, "pid", "unTagObject");
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "unTagObject");
@@ -2215,8 +2219,8 @@ public class FileHashStore implements HashStore {
                         + " pid: " + pid + ". Deleted orphan pid refs file.";
                 logFileHashStore.warn(warnMsg);
             } catch (PidRefsFileNotFoundException prfnfe) {
-                // If pid refs file is not found, check to see if it's in the `cid refs file`
-                // and attempt to remove it
+                // `findObject` throws this exception if the pid refs file is not found
+                // Check to see if pid is in the `cid refs file`and attempt to remove it
                 Path absCidRefsPath =
                     getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
                 if (Files.exists(absCidRefsPath) && isStringInRefsFile(pid, absCidRefsPath)) {
