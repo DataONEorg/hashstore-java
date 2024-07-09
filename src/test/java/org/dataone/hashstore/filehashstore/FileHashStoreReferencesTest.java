@@ -115,6 +115,27 @@ public class FileHashStoreReferencesTest {
     // TODO: Add tagObject tests for the handling of exceptions thrown by verifyHashStoreRefsFiles
 
     /**
+     * Check that unTagObject deletes reference files
+     */
+    @Test
+    public void unTagObject() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        fileHashStore.unTagObject(pid, cid);
+
+        // Confirm refs files do not exist
+        Path absCidRefsPath =
+            fileHashStore.getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
+        Path absPidRefsPath =
+            fileHashStore.getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
+
+        assertFalse(Files.exists(absCidRefsPath));
+        assertFalse(Files.exists(absPidRefsPath));
+    }
+
+    /**
      * Check that the cid supplied is written into the file given
      */
     @Test
@@ -135,11 +156,24 @@ public class FileHashStoreReferencesTest {
         String cid = "abcdef123456789";
         fileHashStore.storeHashStoreRefsFiles(pid, cid);
 
+        // Confirm refs files exist
+        Path absCidRefsPath =
+            fileHashStore.getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
+        Path absPidRefsPath =
+            fileHashStore.getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
+
+        assertTrue(Files.exists(absCidRefsPath));
+        assertTrue(Files.exists(absPidRefsPath));
+
+        // Confirm no additional files were created
         Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
-        File[] pidRefsFiles = storePath.resolve("refs/pids").toFile().listFiles();
-        assertEquals(1, pidRefsFiles.length);
-        File[] cidRefsFiles = storePath.resolve("refs/cids").toFile().listFiles();
-        assertEquals(1, cidRefsFiles.length);
+        List<Path> pidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/pids"));
+        List<Path> cidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/cids"));
+
+        assertEquals(1, pidRefsFiles.size());
+        assertEquals(1, cidRefsFiles.size());
     }
 
     /**
@@ -192,10 +226,13 @@ public class FileHashStoreReferencesTest {
 
         // Confirm that there is only 1 of each ref file
         Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
-        File[] pidRefsFiles = storePath.resolve("refs/pids").toFile().listFiles();
-        assertEquals(1, pidRefsFiles.length);
-        File[] cidRefsFiles = storePath.resolve("refs/cids").toFile().listFiles();
-        assertEquals(1, cidRefsFiles.length);
+        List<Path> pidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/pids"));
+        List<Path> cidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/cids"));
+
+        assertEquals(1, pidRefsFiles.size());
+        assertEquals(1, cidRefsFiles.size());
     }
 
     /**
@@ -240,10 +277,13 @@ public class FileHashStoreReferencesTest {
         fileHashStore.storeHashStoreRefsFiles(pid, cid);
         // There should only be 1 of each ref file
         Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
-        File[] pidRefsFiles = storePath.resolve("refs/pids").toFile().listFiles();
-        assertEquals(1, pidRefsFiles.length);
-        File[] cidRefsFiles = storePath.resolve("refs/cids").toFile().listFiles();
-        assertEquals(1, cidRefsFiles.length);
+        List<Path> pidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/pids"));
+        List<Path> cidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/cids"));
+
+        assertEquals(1, pidRefsFiles.size());
+        assertEquals(1, cidRefsFiles.size());
     }
 
     /**
@@ -272,10 +312,13 @@ public class FileHashStoreReferencesTest {
 
         // There should be 2 pid refs file, and 1 cid refs file
         Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
-        File[] pidRefsFiles = storePath.resolve("refs/pids").toFile().listFiles();
-        assertEquals(2, pidRefsFiles.length);
-        File[] cidRefsFiles = storePath.resolve("refs/cids").toFile().listFiles();
-        assertEquals(1, cidRefsFiles.length);
+        List<Path> pidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/pids"));
+        List<Path> cidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/cids"));
+
+        assertEquals(2, pidRefsFiles.size());
+        assertEquals(1, cidRefsFiles.size());
     }
 
     /**
