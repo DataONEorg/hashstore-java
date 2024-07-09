@@ -2214,6 +2214,17 @@ public class FileHashStore implements HashStore {
                     "FileHashStore.unTagObject - Pid not found in expected cid refs file for"
                         + " pid: " + pid + ". Deleted orphan pid refs file.";
                 logFileHashStore.warn(warnMsg);
+            } catch (PidRefsFileNotFoundException prfnfe) {
+                // If pid refs file is not found, check to see if it's in the `cid refs file`
+                // and attempt to remove it
+                Path absCidRefsPath =
+                    getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
+                if (Files.exists(absCidRefsPath) && isStringInRefsFile(pid, absCidRefsPath)) {
+                    updateRefsFile(pid, absCidRefsPath, "remove");
+                    String errMsg = "FileHashStore.unTagObject - Pid refs file not found, "
+                        + "removed pid found in cid refs file: " + absCidRefsPath;
+                    logFileHashStore.warn(errMsg);
+                }
             }
         } finally {
             // Release lock on the pid

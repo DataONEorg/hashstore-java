@@ -154,7 +154,7 @@ public class FileHashStoreReferencesTest {
 
         fileHashStore.unTagObject(pid, cid);
 
-        // Confirm refs files do not exist
+        // Confirm refs files state
         Path absCidRefsPath =
             fileHashStore.getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
         Path absPidRefsPath =
@@ -208,16 +208,42 @@ public class FileHashStoreReferencesTest {
     }
 
     /**
-     * Check that unTagObject throws exception when a pid refs file does not exist
+     * Check that unTagObject does not throw exception when a pid refs file and cid refs file
+     * does not exist
+     */
+    @Test
+    public void unTagObject_missingRefsFile() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+
+        fileHashStore.unTagObject(pid, cid);
+    }
+
+    /**
+     * Check that unTagObject does not throw exception when a pid refs file and cid refs file
+     * does not exist
      */
     @Test
     public void unTagObject_missingPidRefsFile() throws Exception {
         String pid = "dou.test.1";
+        String pidTwo = "dou.test.2";
+        String pidThree = "dou.test.3";
         String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+        fileHashStore.tagObject(pidTwo, cid);
+        fileHashStore.tagObject(pidThree, cid);
 
-        assertThrows(PidRefsFileNotFoundException.class, () -> {
-            fileHashStore.unTagObject(pid, cid);
-        });
+        // Delete pid refs to create scenario
+        Path absPidRefsPath =
+            fileHashStore.getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
+        Files.delete(absPidRefsPath);
+        assertFalse(Files.exists(absPidRefsPath));
+
+        fileHashStore.unTagObject(pid, cid);
+
+        Path absCidRefsPath =
+            fileHashStore.getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
+        assertFalse(fileHashStore.isStringInRefsFile(pid, absCidRefsPath));
     }
 
     /**
