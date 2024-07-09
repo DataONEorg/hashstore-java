@@ -24,6 +24,7 @@ import org.dataone.hashstore.exceptions.NonMatchingChecksumException;
 import org.dataone.hashstore.exceptions.NonMatchingObjSizeException;
 import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
+import org.dataone.hashstore.exceptions.PidRefsFileNotFoundException;
 import org.dataone.hashstore.exceptions.UnsupportedHashAlgorithmException;
 import org.dataone.hashstore.filehashstore.FileHashStore.HashStoreIdTypes;
 import org.dataone.hashstore.testdata.TestDataHarness;
@@ -204,6 +205,19 @@ public class FileHashStoreReferencesTest {
 
         assertEquals(0, pidRefsFiles.size());
         assertEquals(0, cidRefsFiles.size());
+    }
+
+    /**
+     * Check that unTagObject throws exception when a pid refs file does not exist
+     */
+    @Test
+    public void unTagObject_missingPidRefsFile() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+
+        assertThrows(PidRefsFileNotFoundException.class, () -> {
+            fileHashStore.unTagObject(pid, cid);
+        });
     }
 
     /**

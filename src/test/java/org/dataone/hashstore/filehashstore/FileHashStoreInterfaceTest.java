@@ -39,6 +39,7 @@ import org.dataone.hashstore.exceptions.HashStoreRefsAlreadyExistException;
 import org.dataone.hashstore.exceptions.OrphanPidRefsFileException;
 import org.dataone.hashstore.exceptions.OrphanRefsFilesException;
 import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
+import org.dataone.hashstore.exceptions.PidRefsFileNotFoundException;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -2124,7 +2125,7 @@ public class FileHashStoreInterfaceTest {
     @Test
     public void findObject_pidNotFound() {
         String pid = "dou.test.1";
-        assertThrows(FileNotFoundException.class, () -> {
+        assertThrows(PidRefsFileNotFoundException.class, () -> {
             fileHashStore.findObject(pid);
         });
     }
