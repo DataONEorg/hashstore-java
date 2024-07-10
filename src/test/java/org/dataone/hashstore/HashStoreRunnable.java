@@ -3,7 +3,6 @@ package org.dataone.hashstore;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.dataone.hashstore.exceptions.HashStoreServiceException;
-import org.dataone.hashstore.filehashstore.FileHashStore;
 import org.dataone.hashstore.filehashstore.FileHashStoreUtility;
 
 import java.io.IOException;
@@ -18,9 +17,9 @@ public class HashStoreRunnable implements Runnable {
     private static final Log logHashStoreRunnable = LogFactory.getLog(HashStoreRunnable.class);
     public static final int storeObject = 1;
     public static final int deleteObject = 2;
-    private HashStore hashstore;
-    private int publicAPIMethod;
-    private String pid;
+    private final HashStore hashstore;
+    private final int publicAPIMethod;
+    private final String pid;
     private InputStream objStream;
 
     public HashStoreRunnable(HashStore hashstore, int publicAPIMethod, InputStream objStream,

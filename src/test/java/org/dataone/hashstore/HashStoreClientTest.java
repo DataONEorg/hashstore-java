@@ -184,9 +184,8 @@ public class HashStoreClientTest {
             String optPath = "-path";
             String optObjectPath = testDataFile.toString();
             String optPid = "-pid";
-            String optPidValue = pid;
             String[] args = {optStoreObject, optStore, optStorePath, optPath, optObjectPath, optPid,
-                optPidValue};
+                pid};
             HashStoreClient.main(args);
 
             // Confirm object was stored
@@ -225,11 +224,10 @@ public class HashStoreClientTest {
             String optPath = "-path";
             String optObjectPath = testDataFile.toString();
             String optPid = "-pid";
-            String optPidValue = pid;
             String optFormatId = "-format_id";
             String optFormatIdValue = hsProperties.getProperty("storeMetadataNamespace");
             String[] args = {optStoreMetadata, optStore, optStorePath, optPath, optObjectPath,
-                optPid, optPidValue, optFormatId, optFormatIdValue};
+                optPid, pid, optFormatId, optFormatIdValue};
             HashStoreClient.main(args);
 
             // Confirm metadata was stored
@@ -286,8 +284,7 @@ public class HashStoreClientTest {
             String optStore = "-store";
             String optStorePath = hsProperties.getProperty("storePath");
             String optPid = "-pid";
-            String optPidValue = pid;
-            String[] args = {optRetrieveObject, optStore, optStorePath, optPid, optPidValue};
+            String[] args = {optRetrieveObject, optStore, optStorePath, optPid, pid};
             HashStoreClient.main(args);
 
             // Put things back
@@ -323,10 +320,9 @@ public class HashStoreClientTest {
             String optStore = "-store";
             String optStorePath = hsProperties.getProperty("storePath");
             String optPid = "-pid";
-            String optPidValue = pid;
             String optFormatId = "-format_id";
             String optFormatIdValue = hsProperties.getProperty("storeMetadataNamespace");
-            String[] args = {optRetrieveMetadata, optStore, optStorePath, optPid, optPidValue,
+            String[] args = {optRetrieveMetadata, optStore, optStorePath, optPid, pid,
                 optFormatId, optFormatIdValue};
             HashStoreClient.main(args);
 
@@ -363,8 +359,7 @@ public class HashStoreClientTest {
             String optStore = "-store";
             String optStorePath = hsProperties.getProperty("storePath");
             String optPid = "-pid";
-            String optPidValue = pid;
-            String[] args = {optDeleteObject, optStore, optStorePath, optPid, optPidValue};
+            String[] args = {optDeleteObject, optStore, optStorePath, optPid, pid};
             HashStoreClient.main(args);
 
             // Confirm object was deleted
@@ -404,10 +399,9 @@ public class HashStoreClientTest {
             String optStore = "-store";
             String optStorePath = hsProperties.getProperty("storePath");
             String optPid = "-pid";
-            String optPidValue = pid;
             String optFormatId = "-format_id";
             String optFormatIdValue = hsProperties.getProperty("storeMetadataNamespace");
-            String[] args = {optDeleteMetadata, optStore, optStorePath, optPid, optPidValue,
+            String[] args = {optDeleteMetadata, optStore, optStorePath, optPid, pid,
                 optFormatId, optFormatIdValue};
             HashStoreClient.main(args);
 
@@ -448,10 +442,9 @@ public class HashStoreClientTest {
             String optStore = "-store";
             String optStorePath = hsProperties.getProperty("storePath");
             String optPid = "-pid";
-            String optPidValue = pid;
             String optAlgo = "-algo";
             String optAlgoValue = "SHA-256";
-            String[] args = {optGetChecksum, optStore, optStorePath, optPid, optPidValue, optAlgo,
+            String[] args = {optGetChecksum, optStore, optStorePath, optPid, pid, optAlgo,
                 optAlgoValue};
             HashStoreClient.main(args);
 

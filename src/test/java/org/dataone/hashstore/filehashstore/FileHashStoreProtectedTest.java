@@ -16,11 +16,16 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 
 import javax.xml.bind.DatatypeConverter;
 
 import org.dataone.hashstore.ObjectMetadata;
+import org.dataone.hashstore.exceptions.OrphanPidRefsFileException;
+import org.dataone.hashstore.exceptions.OrphanRefsFilesException;
+import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
+import org.dataone.hashstore.exceptions.PidRefsFileNotFoundException;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,6 +37,7 @@ import org.junit.jupiter.api.io.TempDir;
 public class FileHashStoreProtectedTest {
     private FileHashStore fileHashStore;
     private Properties fhsProperties;
+    private Path rootDirectory;
     private static final TestDataHarness testData = new TestDataHarness();
 
     /**
@@ -39,7 +45,7 @@ public class FileHashStoreProtectedTest {
      */
     @BeforeEach
     public void initializeFileHashStore() {
-        Path rootDirectory = tempFolder.resolve("hashstore");
+        rootDirectory = tempFolder.resolve("hashstore");
 
         Properties storeProperties = new Properties();
         storeProperties.setProperty("storePath", rootDirectory.toString());
@@ -167,6 +173,195 @@ public class FileHashStoreProtectedTest {
         String shardedPathExpected =
             "94/f9/b6/c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
         assertEquals(shardedPath, shardedPathExpected);
+    }
+
+    /**
+     * Check that findObject returns cid as expected.
+     */
+    @Test
+    public void findObject_cid() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStream, pid, null, null, null, -1
+            );
+            dataStream.close();
+
+            Map<String, String> objInfoMap = fileHashStore.findObject(pid);
+            assertEquals(objInfoMap.get("cid"), objInfo.getCid());
+        }
+    }
+
+    /**
+     * Check that findObject returns the path to the object as expected.
+     */
+    @Test
+    public void findObject_cidPath() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStream, pid, null, null, null, -1
+            );
+            dataStream.close();
+
+            int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
+            int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
+            Map<String, String> objInfoMap = fileHashStore.findObject(pid);
+            String objectPath = objInfoMap.get("cid_object_path");
+
+            String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+                storeDepth, storeWidth, objInfo.getCid()
+            );
+            Path realPath = rootDirectory.resolve("objects").resolve(objRelativePath);
+
+            assertEquals(objectPath, realPath.toString());
+        }
+    }
+
+    /**
+     * Check that findObject returns the absolute path to the pid and cid refs file
+     */
+    @Test
+    public void findObject_refsPaths() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo = fileHashStore.storeObject(
+                dataStream, pid, null, null, null, -1
+            );
+            dataStream.close();
+
+            Map<String, String> objInfoMap = fileHashStore.findObject(pid);
+            String cidRefsPath = objInfoMap.get("cid_refs_path");
+            String pidRefsPath = objInfoMap.get("pid_refs_path");
+
+            Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(objInfo.getCid(), "cid");
+            Path pidRefsFilePath = fileHashStore.getHashStoreRefsPath(pid, "pid");
+
+            assertEquals(cidRefsPath, cidRefsFilePath.toString());
+            assertEquals(pidRefsPath, pidRefsFilePath.toString());
+        }
+    }
+
+    /**
+     * Check that findObject returns the absolute path to sysmeta document if it exists
+     */
+    @Test
+    public void findObject_sysmetaPath_exists() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            // Store Object
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            fileHashStore.storeObject(
+                dataStream, pid, null, null, null, -1
+            );
+            dataStream.close();
+
+            // Store Metadata
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            String metadataPath = fileHashStore.storeMetadata(metadataStream, pid);
+            metadataStream.close();
+            System.out.println(metadataPath);
+
+
+            Map<String, String> objInfoMap = fileHashStore.findObject(pid);
+            String objInfoSysmetaPath = objInfoMap.get("sysmeta_path");
+
+            String storeMetadataNamespace = fhsProperties.getProperty("storeMetadataNamespace");
+            Path sysmetaPath = fileHashStore.getHashStoreMetadataPath(pid, storeMetadataNamespace);
+            System.out.println(sysmetaPath);
+
+            assertEquals(objInfoSysmetaPath, sysmetaPath.toString());
+        }
+    }
+
+    /**
+     * Check that findObject returns "Does not exist." when there is no sysmeta for the pid.
+     */
+    @Test
+    public void findObject_sysmetaPath_doesNotExist() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            fileHashStore.storeObject(
+                dataStream, pid, null, null, null, -1
+            );
+            dataStream.close();
+
+
+            Map<String, String> objInfoMap = fileHashStore.findObject(pid);
+            String objInfoSysmetaPath = objInfoMap.get("sysmeta_path");
+
+            assertEquals(objInfoSysmetaPath, "Does not exist");
+        }
+    }
+
+    /**
+     * Confirm findObject throws exception when cid object does not exist but reference
+     * files exist.
+     */
+    @Test
+    public void findObject_refsFileExistButObjectDoesNot() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        assertThrows(OrphanRefsFilesException.class, () -> fileHashStore.findObject(pid));
+    }
+
+    /**
+     * Confirm that findObject throws OrphanPidRefsFileException exception when
+     * pid refs file found but cid refs file is missing.
+     */
+    @Test
+    public void findObject_cidRefsFileNotFound() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        Path cidRefsPath = fileHashStore.getHashStoreRefsPath(cid, "cid");
+        Files.delete(cidRefsPath);
+
+        assertThrows(OrphanPidRefsFileException.class, () -> fileHashStore.findObject(pid));
+    }
+
+
+    /**
+     * Confirm that findObject throws PidNotFoundInCidRefsFileException exception when
+     * pid refs file found but cid refs file is missing.
+     */
+    @Test
+    public void findObject_cidRefsFileMissingPid() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        Path cidRefsPath = fileHashStore.getHashStoreRefsPath(cid, "cid");
+        fileHashStore.updateRefsFile(pid, cidRefsPath, "remove");
+
+        assertThrows(PidNotFoundInCidRefsFileException.class, () -> fileHashStore.findObject(pid));
+    }
+
+    /**
+     * Check that exception is thrown when pid refs file doesn't exist
+     */
+    @Test
+    public void findObject_pidNotFound() {
+        String pid = "dou.test.1";
+        assertThrows(PidRefsFileNotFoundException.class, () -> fileHashStore.findObject(pid));
     }
 
     /**
@@ -425,7 +620,7 @@ public class FileHashStoreProtectedTest {
         // Confirm there are no files in 'objects/tmp' directory
         Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
         File[] files = storePath.resolve("objects/tmp").toFile().listFiles();
-        assertEquals(0, files.length);
+        assertEquals(0, Objects.requireNonNull(files).length);
     }
 
     /**
@@ -1054,9 +1249,8 @@ public class FileHashStoreProtectedTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectMetadata objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
+            fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
             dataStream.close();
-            String cid = objInfo.getCid();
 
             // Manually form the permanent address of the actual cid
             Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
@@ -1137,8 +1331,8 @@ public class FileHashStoreProtectedTest {
      */
     @Test
     public void fileHashStoreUtility_checkForEmptyString() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            FileHashStoreUtility.checkForEmptyString("dou.test.1\n", "pid", "storeObject");
-        });
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> FileHashStoreUtility.checkForEmptyString("dou.test.1\n", "pid", "storeObject"));
     }
 }
