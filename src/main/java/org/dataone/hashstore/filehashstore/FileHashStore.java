@@ -494,6 +494,7 @@ public class FileHashStore implements HashStore {
             // Tag object
             String cid = objInfo.getCid();
             tagObject(pid, cid);
+
             logFileHashStore.info(
                 "FileHashStore.syncPutObject - Object stored for pid: " + pid
                     + ". Permanent address: " + getHashStoreDataObjectPath(pid)
@@ -592,6 +593,18 @@ public class FileHashStore implements HashStore {
 
         try {
             storeHashStoreRefsFiles(pid, cid);
+
+        } catch (HashStoreRefsAlreadyExistException hsrfae) {
+            // This exception is thrown when the pid and cid are already tagged appropriately
+            String errMsg =
+                "FileHashStore.tagObject - HashStore refs files already exist for pid " + pid +
+                    " and cid: " + cid;
+            throw new HashStoreRefsAlreadyExistException(errMsg);
+
+        } catch (Exception e) {
+            // Revert the process for all other exceptions
+            unTagObject(pid, cid);
+            throw e;
 
         } finally {
             // Release lock
