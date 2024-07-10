@@ -132,27 +132,6 @@ public interface HashStore {
             IOException;
 
         /**
-         * Checks whether an object referenced by a pid exists and returns a map containing the
-         * absolute path to the object, pid refs file, cid refs file and sysmeta document.
-         *
-         * @param pid Authority-based identifier
-         * @return Map containing the following keys: cid, cid_object_path, cid_refs_path,
-         * pid_refs_path, sysmeta_path
-         * @throws NoSuchAlgorithmException          When algorithm used to calculate pid refs
-         *                                           file's absolute address is not valid
-         * @throws IOException                       Unable to read from a pid refs file or pid refs
-         *                                           file does not exist
-         * @throws OrphanRefsFilesException          pid and cid refs file found, but object does
-         *                                           not exist
-         * @throws OrphanPidRefsFileException        When pid refs file exists and the cid found
-         *                                           inside does not exist.
-         * @throws PidNotFoundInCidRefsFileException When pid and cid ref files exists but the
-         *                                           expected pid is not found in the cid refs file.
-         */
-        public Map<String, String> findObject(String pid) throws NoSuchAlgorithmException, IOException,
-                OrphanPidRefsFileException, PidNotFoundInCidRefsFileException;
-
-        /**
          * Adds/updates metadata (ex. `sysmeta`) to the HashStore by using a given InputStream, a
          * persistent identifier (`pid`) and metadata format (`formatId`). All metadata documents
          * for a given pid will be stored in the directory (under ../metadata) that is determined
