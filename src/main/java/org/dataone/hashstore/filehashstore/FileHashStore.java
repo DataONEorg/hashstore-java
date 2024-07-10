@@ -601,6 +601,12 @@ public class FileHashStore implements HashStore {
                     " and cid: " + cid;
             throw new HashStoreRefsAlreadyExistException(errMsg);
 
+        } catch (PidRefsFileExistsException prfe) {
+            String errMsg =
+                "FileHashStore.tagObject - pid: " + pid + " already references another cid." +
+                    " A pid can only reference one cid.";
+            throw new PidRefsFileExistsException(errMsg);
+
         } catch (Exception e) {
             // Revert the process for all other exceptions
             unTagObject(pid, cid);

@@ -104,16 +104,63 @@ public class FileHashStoreReferencesTest {
         });
     }
 
-    // TODO: Add tagObject test to confirm 'PidRefsFileExistsException' is handled correctly
+    /**
+     * Check that tagObject throws PidRefsFileExistsException when called to tag a 'pid'
+     * that is already referencing another 'cid'
+     */
+    @Test
+    public void tagObject_PidRefsFileExistsException() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
 
-    // TODO: Add tagObject test to confirm that pid and cid refs file was deleted when tagObject
-    //       encounters an exception
+        // This exception only needs to be re-raised
+        assertThrows(PidRefsFileExistsException.class, () -> {
+            fileHashStore.tagObject(pid, "another.cid");
+        });
 
-    // TODO: Add tagObject test to confirm that only the pid refs file is deleted and that the cid
-    //       refs file is updated when a cid refs file is already being referenced
-    //       (the pid is removed from the cid refs file)
+        // Confirm there are only 1 of each refs files
+        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+        List<Path> pidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/pids"));
+        List<Path> cidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/cids"));
 
-    // TODO: Add tagObject tests for the handling of exceptions thrown by verifyHashStoreRefsFiles
+        assertEquals(1, pidRefsFiles.size());
+        assertEquals(1, cidRefsFiles.size());
+    }
+
+    /**
+     * Check that tagObject untags an object/does not create any orphan refs files
+     * when the process is interrupted
+     */
+    @Test
+    public void tagObject_interruptAndUnTagObject() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+
+        Thread toInterrupt = new Thread(() -> {
+            try {
+                fileHashStore.tagObject(pid, cid);
+            } catch (IOException | NoSuchAlgorithmException | InterruptedException ioe) {
+                ioe.printStackTrace();
+            }
+        });
+
+        toInterrupt.start();
+        toInterrupt.interrupt();
+        toInterrupt.join();
+
+        // Confirm there are no files refs files created
+        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+        List<Path> pidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/pids"));
+        List<Path> cidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/cids"));
+
+        assertEquals(0, pidRefsFiles.size());
+        assertEquals(0, cidRefsFiles.size());
+    }
 
     /**
      * Check that unTagObject deletes reference files
