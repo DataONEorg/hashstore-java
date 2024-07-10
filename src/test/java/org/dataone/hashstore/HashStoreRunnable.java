@@ -52,7 +52,8 @@ public class HashStoreRunnable implements Runnable {
                         hashstore.storeObject(objStream, pid, null, null, null, -1);
                     } catch (Exception e) {
                         String errMsg =
-                            "HashStoreRunnable: UnexpectedError - storeObject: " + e.getCause();
+                            "HashStoreRunnable ~ UnexpectedError - storeObject: " + e.getCause();
+                        System.out.println(errMsg);
                         logHashStoreRunnable.error(errMsg);
                         throw new HashStoreServiceException(errMsg);
                     }
@@ -63,14 +64,16 @@ public class HashStoreRunnable implements Runnable {
                         hashstore.deleteObject(pid);
                     } catch (Exception e) {
                         String errMsg =
-                            "HashStoreRunnable: UnexpectedError - deleteObject: " + e.getCause();
+                            "HashStoreRunnable ~ UnexpectedError - deleteObject: " + e.getCause();
+                        System.out.println(errMsg);
                         logHashStoreRunnable.error(errMsg);
                         throw new HashStoreServiceException(errMsg);
                     }
                     break;
             }
         } catch (HashStoreServiceException | IOException hse) {
-            logHashStoreRunnable.error("HashStoreServiceRequest - Error: " + hse.getMessage());
+            logHashStoreRunnable.error(
+                "HashStoreServiceRequest ~ Unexpected Error: " + hse.getMessage());
         }
     }
 }

@@ -39,6 +39,7 @@ import org.dataone.hashstore.exceptions.HashStoreRefsAlreadyExistException;
 import org.dataone.hashstore.exceptions.OrphanPidRefsFileException;
 import org.dataone.hashstore.exceptions.OrphanRefsFilesException;
 import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
+import org.dataone.hashstore.exceptions.PidRefsFileNotFoundException;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -1659,14 +1660,14 @@ public class FileHashStoreInterfaceTest {
         int numCores = runtime.availableProcessors();
         ExecutorService executorService = Executors.newFixedThreadPool(numCores);
 
-        // Store 50
+        // Store 1000
         for (String pidAdjusted : pidModifiedList) {
             InputStream dataStream = Files.newInputStream(testDataFile);
             HashStoreRunnable
                 request = new HashStoreRunnable(fileHashStore, 1, dataStream, pidAdjusted);
             executorService.execute(request);
         }
-        // Delete 50
+        // Delete 1000
         for (String pidAdjusted : pidModifiedList) {
             HashStoreRunnable
                 request = new HashStoreRunnable(fileHashStore, 2, pidAdjusted);
@@ -1678,8 +1679,12 @@ public class FileHashStoreInterfaceTest {
 
         Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
         // Check that no objects exist
-        List<Path> objects = FileHashStoreUtility.getFilesFromDir(storePath.resolve("objects"));
-        assertEquals(0, objects.size());
+        List<Path> objectPaths = FileHashStoreUtility.getFilesFromDir(storePath.resolve("objects"));
+        // To assist with debugging
+        for (Path path : objectPaths) {
+            System.out.println("HashStoreRunnableTest ~ Path found in Objects Directory: " + path);
+        }
+        assertEquals(0, objectPaths.size());
         // Check that no refs files exist
         List<Path> pidRefFiles = FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs"
                                                                                             + "/pids"));
@@ -2124,7 +2129,7 @@ public class FileHashStoreInterfaceTest {
     @Test
     public void findObject_pidNotFound() {
         String pid = "dou.test.1";
-        assertThrows(FileNotFoundException.class, () -> {
+        assertThrows(PidRefsFileNotFoundException.class, () -> {
             fileHashStore.findObject(pid);
         });
     }

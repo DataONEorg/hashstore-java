@@ -36,7 +36,6 @@ import org.junit.jupiter.api.io.TempDir;
  */
 public class FileHashStoreReferencesTest {
     private FileHashStore fileHashStore;
-    private Path rootDirectory;
     private Properties fhsProperties;
     private static final TestDataHarness testData = new TestDataHarness();
 
@@ -45,7 +44,7 @@ public class FileHashStoreReferencesTest {
      */
     @BeforeEach
     public void initializeFileHashStore() {
-        rootDirectory = tempFolder.resolve("hashstore");
+        Path rootDirectory = tempFolder.resolve("hashstore");
 
         Properties storeProperties = new Properties();
         storeProperties.setProperty("storePath", rootDirectory.toString());
@@ -77,29 +76,269 @@ public class FileHashStoreReferencesTest {
 
 
     /**
-     * Check that tagObject creates reference files
+     * Check tagObject does not throw exception when creating a fresh set
+     * of reference files
      */
     @Test
     public void tagObject() throws Exception {
         String pid = "dou.test.1";
         String cid = "abcdef123456789";
         fileHashStore.tagObject(pid, cid);
-
-        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
-        File[] pidRefsFiles = storePath.resolve("refs/pids").toFile().listFiles();
-        assertEquals(1, pidRefsFiles.length);
-        File[] cidRefsFiles = storePath.resolve("refs/cids").toFile().listFiles();
-        assertEquals(1, cidRefsFiles.length);
     }
 
     /**
-     * Check that tagObject writes expected pid refs files
+     * Check that tagObject successfully tags a cid refs file that already exists
      */
     @Test
-    public void tagObject_pidRefsFileContent() throws Exception {
+    public void tagObject_cidRefsAlreadyExists() throws Exception {
         String pid = "dou.test.1";
         String cid = "abcdef123456789";
         fileHashStore.tagObject(pid, cid);
+
+        String pidTwo = "dou.test.2";
+        fileHashStore.tagObject(pidTwo, cid);
+
+        // Confirm number of ref files
+        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+        List<Path> pidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/pids"));
+        List<Path> cidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/cids"));
+
+        assertEquals(2, pidRefsFiles.size());
+        assertEquals(1, cidRefsFiles.size());
+    }
+
+    /**
+     * Check that tagObject throws HashStoreRefsAlreadyExistException exception when pid and cid
+     * refs file already exists (duplicate tag request)
+     */
+    @Test
+    public void tagObject_HashStoreRefsAlreadyExistException() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        // This exception only needs to be re-raised
+        assertThrows(
+            HashStoreRefsAlreadyExistException.class, () -> fileHashStore.tagObject(pid, cid));
+
+        // Confirm there are only 1 of each ref files
+        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+        List<Path> pidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/pids"));
+        List<Path> cidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/cids"));
+
+        assertEquals(1, pidRefsFiles.size());
+        assertEquals(1, cidRefsFiles.size());
+    }
+
+    /**
+     * Check that tagObject throws PidRefsFileExistsException when called to tag a 'pid'
+     * that is already referencing another 'cid'
+     */
+    @Test
+    public void tagObject_PidRefsFileExistsException() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        // This exception only needs to be re-raised
+        assertThrows(
+            PidRefsFileExistsException.class, () -> fileHashStore.tagObject(pid, "another.cid"));
+
+        // Confirm there are only 1 of each ref files
+        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+        List<Path> pidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/pids"));
+        List<Path> cidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/cids"));
+
+        assertEquals(1, pidRefsFiles.size());
+        assertEquals(1, cidRefsFiles.size());
+    }
+
+    /**
+     * Check that unTagObject deletes reference files
+     */
+    @Test
+    public void unTagObject() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        fileHashStore.unTagObject(pid, cid);
+
+        // Confirm refs files do not exist
+        Path absCidRefsPath =
+            fileHashStore.getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
+        Path absPidRefsPath =
+            fileHashStore.getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
+        assertFalse(Files.exists(absCidRefsPath));
+        assertFalse(Files.exists(absPidRefsPath));
+    }
+
+    /**
+     * Check that unTagObject deletes pid refs file for a cid that is referenced by
+     * multiple pids, and that the cid refs file is not deleted.
+     */
+    @Test
+    public void unTagObject_cidWithMultiplePidReferences() throws Exception {
+        String pid = "dou.test.1";
+        String pidTwo = "dou.test.2";
+        String pidThree = "dou.test.3";
+        String pidFour = "dou.test.4";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+        fileHashStore.tagObject(pidTwo, cid);
+        fileHashStore.tagObject(pidThree, cid);
+        fileHashStore.tagObject(pidFour, cid);
+
+        fileHashStore.unTagObject(pid, cid);
+
+        // Confirm refs files state
+        Path absCidRefsPath =
+            fileHashStore.getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
+        Path absPidRefsPath =
+            fileHashStore.getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
+
+        assertFalse(Files.exists(absPidRefsPath));
+        assertTrue(Files.exists(absCidRefsPath));
+
+        // Confirm number of reference files
+        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+        List<Path> pidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/pids"));
+        List<Path> cidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/cids"));
+
+        assertEquals(3, pidRefsFiles.size());
+        assertEquals(1, cidRefsFiles.size());
+    }
+
+    /**
+     * Check that unTagObject deletes an orphaned pid refs file (there is no cid refs file)
+     */
+    @Test
+    public void unTagObject_orphanPidRefsFile() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        // Delete cid refs file to create orphaned pid refs file
+        Path absCidRefsPath =
+            fileHashStore.getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
+        Files.delete(absCidRefsPath);
+        assertFalse(Files.exists(absCidRefsPath));
+
+        fileHashStore.unTagObject(pid, cid);
+
+        // Confirm pid refs is deleted
+        Path absPidRefsPath =
+            fileHashStore.getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
+        assertFalse(Files.exists(absPidRefsPath));
+
+        // Confirm number of reference files
+        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+        List<Path> pidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/pids"));
+        List<Path> cidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/cids"));
+
+        assertEquals(0, pidRefsFiles.size());
+        assertEquals(0, cidRefsFiles.size());
+    }
+
+    /**
+     * Check that unTagObject does not throw exception when a pid refs file and cid refs file
+     * does not exist
+     */
+    @Test
+    public void unTagObject_missingRefsFiles() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+
+        fileHashStore.unTagObject(pid, cid);
+    }
+
+    /**
+     * Check that unTagObject does not throw exception when a pid refs file and cid refs file
+     * does not exist
+     */
+    @Test
+    public void unTagObject_missingPidRefsFile() throws Exception {
+        String pid = "dou.test.1";
+        String pidTwo = "dou.test.2";
+        String pidThree = "dou.test.3";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+        fileHashStore.tagObject(pidTwo, cid);
+        fileHashStore.tagObject(pidThree, cid);
+
+        // Delete pid refs to create scenario
+        Path absPidRefsPath =
+            fileHashStore.getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
+        Files.delete(absPidRefsPath);
+        assertFalse(Files.exists(absPidRefsPath));
+
+        fileHashStore.unTagObject(pid, cid);
+
+        Path absCidRefsPath =
+            fileHashStore.getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
+        assertFalse(fileHashStore.isStringInRefsFile(pid, absCidRefsPath));
+    }
+
+    /**
+     * Check that the cid supplied is written into the file given
+     */
+    @Test
+    public void writeRefsFile_content() throws Exception {
+        String cidToWrite = "test_cid_123";
+        File pidRefsTmpFile = fileHashStore.writeRefsFile(cidToWrite, "pid");
+
+        String cidRead = new String(Files.readAllBytes(pidRefsTmpFile.toPath()));
+        assertEquals(cidRead, cidToWrite);
+    }
+
+    /**
+     * Check that storeHashStoreRefsFiles creates reference files
+     */
+    @Test
+    public void storeHashStoreRefsFiles() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.storeHashStoreRefsFiles(pid, cid);
+
+        // Confirm refs files exist
+        Path absCidRefsPath =
+            fileHashStore.getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
+        Path absPidRefsPath =
+            fileHashStore.getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
+
+        assertTrue(Files.exists(absCidRefsPath));
+        assertTrue(Files.exists(absPidRefsPath));
+
+        // Confirm no additional files were created
+        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+        List<Path> pidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/pids"));
+        List<Path> cidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/cids"));
+
+        assertEquals(1, pidRefsFiles.size());
+        assertEquals(1, cidRefsFiles.size());
+    }
+
+    /**
+     * Check that storeHashStoreRefsFiles writes expected pid refs files and that the content
+     * is correct
+     */
+    @Test
+    public void storeHashStoreRefsFiles_pidRefsFileContent() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.storeHashStoreRefsFiles(pid, cid);
 
         Path pidRefsFilePath = fileHashStore.getHashStoreRefsPath(pid, "pid");
         assertTrue(Files.exists(pidRefsFilePath));
@@ -109,13 +348,14 @@ public class FileHashStoreReferencesTest {
     }
 
     /**
-     * Check that tagObject writes expected cid refs files
+     * Check that storeHashStoreRefsFiles writes expected cid refs files and that the content
+     * is correct
      */
     @Test
-    public void tagObject_cidRefsFileContent() throws Exception {
+    public void storeHashStoreRefsFiles_cidRefsFileContent() throws Exception {
         String pid = "dou.test.1";
         String cid = "abcdef123456789";
-        fileHashStore.tagObject(pid, cid);
+        fileHashStore.storeHashStoreRefsFiles(pid, cid);
 
         Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(cid, "cid");
         assertTrue(Files.exists(cidRefsFilePath));
@@ -125,52 +365,55 @@ public class FileHashStoreReferencesTest {
     }
 
     /**
-     * Check that tagObject does not throw exception when pid and cid refs
-     * file already exists
+     * Check that storeHashStoreRefsFiles throws HashStoreRefsAlreadyExistException
+     * when refs files already exist
      */
     @Test
-    public void tagObject_refsFileAlreadyExists() throws Exception {
+    public void storeHashStoreRefsFiles_HashStoreRefsAlreadyExistException() throws Exception {
         String pid = "dou.test.1";
         String cid = "abcdef123456789";
-        fileHashStore.tagObject(pid, cid);
+        fileHashStore.storeHashStoreRefsFiles(pid, cid);
 
-        assertThrows(HashStoreRefsAlreadyExistException.class, () -> {
-            fileHashStore.tagObject(pid, cid);
-        });
+        assertThrows(
+            HashStoreRefsAlreadyExistException.class,
+            () -> fileHashStore.storeHashStoreRefsFiles(pid, cid));
 
         // Confirm that there is only 1 of each ref file
         Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
-        File[] pidRefsFiles = storePath.resolve("refs/pids").toFile().listFiles();
-        assertEquals(1, pidRefsFiles.length);
-        File[] cidRefsFiles = storePath.resolve("refs/cids").toFile().listFiles();
-        assertEquals(1, cidRefsFiles.length);
+        List<Path> pidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/pids"));
+        List<Path> cidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/cids"));
+
+        assertEquals(1, pidRefsFiles.size());
+        assertEquals(1, cidRefsFiles.size());
     }
 
     /**
-     * Check tagObject throws exception when the supplied cid is different from what is
-     * found in the pid refs file, and the associated cid refs file from the pid refs file
+     * Check storeHashStoreRefsFiles throws exception when the supplied cid is different from what
+     * is found in the pid refs file, and the associated cid refs file from the pid refs file
      * is correctly tagged (everything is where it's expected to be)
      */
     @Test
-    public void tagObject_pidRefsFileFound_differentCidRetrieved_cidRefsFileFound()
+    public void storeHashStoreRefsFiles_PidRefsFileExistsException()
         throws Exception {
         String pid = "dou.test.1";
         String cid = "abcdef123456789";
         String existingCid = "987654321fedcba";
-        fileHashStore.tagObject(pid, existingCid);
+        fileHashStore.storeHashStoreRefsFiles(pid, existingCid);
 
         // This will throw an exception because the pid and cid refs file are in sync
-        assertThrows(PidRefsFileExistsException.class, () -> {
-            fileHashStore.tagObject(pid, cid);
-        });
+        assertThrows(
+            PidRefsFileExistsException.class,
+            () -> fileHashStore.storeHashStoreRefsFiles(pid, cid));
     }
 
-
     /**
-     * Check tagObject overwrites an orphaned pid refs file.
+     * Check storeHashStoreRefsFiles overwrites an orphaned pid refs file - the 'cid' that it
+     * references does not exist (does not have a cid refs file)
      */
     @Test
-    public void tagObject_pidRefsFileFound_differentCidRetrieved_cidRefsFileNotFound()
+    public void storeHashStoreRefsFiles_pidRefsOrphanedFile()
         throws Exception {
         String pid = "dou.test.1";
         String cid = "abcdef123456789";
@@ -185,48 +428,30 @@ public class FileHashStoreReferencesTest {
         File absPathPidRefsFile = absPidRefsPath.toFile();
         fileHashStore.move(pidRefsTmpFile, absPathPidRefsFile, "refs");
 
-        fileHashStore.tagObject(pid, cid);
+        fileHashStore.storeHashStoreRefsFiles(pid, cid);
         // There should only be 1 of each ref file
         Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
-        File[] pidRefsFiles = storePath.resolve("refs/pids").toFile().listFiles();
-        assertEquals(1, pidRefsFiles.length);
-        File[] cidRefsFiles = storePath.resolve("refs/cids").toFile().listFiles();
-        assertEquals(1, cidRefsFiles.length);
+        List<Path> pidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/pids"));
+        List<Path> cidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/cids"));
+
+        assertEquals(1, pidRefsFiles.size());
+        assertEquals(1, cidRefsFiles.size());
     }
 
     /**
-     * Check that tagObject creates a missing cid refs file
+     * Check that storeHashStoreRefsFiles creates a pid refs file and updates an existing cid refs
+     * file
      */
     @Test
-    public void tagObject_pidRefsFileFound_cidRefsFileNotFound() throws Exception {
+    public void storeHashStoreRefsFiles_updateExistingRefsFile() throws Exception {
         String pid = "dou.test.1";
         String cid = "abcdef123456789";
-        fileHashStore.tagObject(pid, cid);
-        // Manually delete the cid refs file
-        Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(cid, "cid");
-        Files.delete(cidRefsFilePath);
-
-        fileHashStore.tagObject(pid, cid);
-        // Confirm that there is only 1 of each ref file
-        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
-        File[] pidRefsFiles = storePath.resolve("refs/pids").toFile().listFiles();
-        assertEquals(1, pidRefsFiles.length);
-        File[] cidRefsFiles = storePath.resolve("refs/cids").toFile().listFiles();
-        assertEquals(1, cidRefsFiles.length);
-    }
-
-
-    /**
-     * Check that tagObject creates a pid refs file and updates an existing cid refs file
-     */
-    @Test
-    public void tagObject_pidRefsFileNotFound_cidRefsFileFound() throws Exception {
-        String pid = "dou.test.1";
-        String cid = "abcdef123456789";
-        fileHashStore.tagObject(pid, cid);
+        fileHashStore.storeHashStoreRefsFiles(pid, cid);
 
         String pidAdditional = "another.pid.2";
-        fileHashStore.tagObject(pidAdditional, cid);
+        fileHashStore.storeHashStoreRefsFiles(pidAdditional, cid);
 
         // Confirm missing pid refs file has been created
         Path pidAdditionalRefsFilePath = fileHashStore.getHashStoreRefsPath(pidAdditional, "pid");
@@ -241,23 +466,13 @@ public class FileHashStoreReferencesTest {
 
         // There should be 2 pid refs file, and 1 cid refs file
         Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
-        File[] pidRefsFiles = storePath.resolve("refs/pids").toFile().listFiles();
-        assertEquals(2, pidRefsFiles.length);
-        File[] cidRefsFiles = storePath.resolve("refs/cids").toFile().listFiles();
-        assertEquals(1, cidRefsFiles.length);
-    }
+        List<Path> pidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/pids"));
+        List<Path> cidRefsFiles =
+            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/cids"));
 
-
-    /**
-     * Check that the cid supplied is written into the file given
-     */
-    @Test
-    public void writeRefsFile_content() throws Exception {
-        String cidToWrite = "test_cid_123";
-        File pidRefsTmpFile = fileHashStore.writeRefsFile(cidToWrite, "pid");
-
-        String cidRead = new String(Files.readAllBytes(pidRefsTmpFile.toPath()));
-        assertEquals(cidRead, cidToWrite);
+        assertEquals(2, pidRefsFiles.size());
+        assertEquals(1, cidRefsFiles.size());
     }
 
     /**
@@ -277,9 +492,10 @@ public class FileHashStoreReferencesTest {
         // Get path of the cid refs file
         Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(cid, "cid");
 
-        assertThrows(CidNotFoundInPidRefsFileException.class, () -> {
-            fileHashStore.verifyHashStoreRefsFiles(pid, cid, pidRefsTmpFilePath, cidRefsFilePath);
-        });
+        assertThrows(
+            CidNotFoundInPidRefsFileException.class,
+            () -> fileHashStore.verifyHashStoreRefsFiles(pid, cid, pidRefsTmpFilePath,
+                                                         cidRefsFilePath));
     }
 
     /**
@@ -299,9 +515,10 @@ public class FileHashStoreReferencesTest {
         // Get path of the pid refs file
         Path pidRefsFilePath = fileHashStore.getHashStoreRefsPath(pid, "pid");
 
-        assertThrows(PidNotFoundInCidRefsFileException.class, () -> {
-            fileHashStore.verifyHashStoreRefsFiles(pid, cid, pidRefsFilePath, cidRefsTmpFilePath);
-        });
+        assertThrows(
+            PidNotFoundInCidRefsFileException.class,
+            () -> fileHashStore.verifyHashStoreRefsFiles(pid, cid, pidRefsFilePath,
+                                                         cidRefsTmpFilePath));
     }
 
     /**
@@ -317,7 +534,7 @@ public class FileHashStoreReferencesTest {
         Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(cid, "cid");
 
         String pidAdditional = "dou.test.2";
-        fileHashStore.updateRefsFile("dou.test.2", cidRefsFilePath, "add");
+        fileHashStore.updateRefsFile(pidAdditional, cidRefsFilePath, "add");
 
         List<String> lines = Files.readAllLines(cidRefsFilePath);
         boolean pidOriginal_foundInCidRefFiles = false;
@@ -332,6 +549,64 @@ public class FileHashStoreReferencesTest {
         }
         assertTrue(pidOriginal_foundInCidRefFiles);
         assertTrue(pidAdditional_foundInCidRefFiles);
+    }
+
+    /**
+     * Confirm that updateRefsFile does not throw any exception if called to remove a value
+     * that is not found in a cid refs file.
+     */
+    @Test
+    public void updateRefsFile_cidRefsPidNotFound() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        // Get path of the cid refs file
+        Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(cid, "cid");
+        fileHashStore.updateRefsFile("dou.test.2", cidRefsFilePath, "remove");
+
+        List<String> lines = Files.readAllLines(cidRefsFilePath);
+        boolean pidOriginal_foundInCidRefFiles = false;
+        int pidsFound = 0;
+        for (String line : lines) {
+            pidsFound++;
+            if (line.equals(pid)) {
+                pidOriginal_foundInCidRefFiles = true;
+            }
+        }
+        assertTrue(pidOriginal_foundInCidRefFiles);
+        assertEquals(1, pidsFound);
+    }
+
+    /**
+     * Confirm that updateRefsFile does not throw any exception if called to remove a value
+     * from a cid refs file that is empty
+     */
+    @Test
+    public void updateRefsFile_cidRefsEmpty() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        // Get path of the cid refs file
+        Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(cid, "cid");
+        fileHashStore.updateRefsFile(pid, cidRefsFilePath, "remove");
+
+        List<String> lines = Files.readAllLines(cidRefsFilePath);
+        boolean pidOriginal_foundInCidRefFiles = false;
+        int pidsFound = 0;
+        for (String line : lines) {
+            pidsFound++;
+            if (line.equals(pid)) {
+                pidOriginal_foundInCidRefFiles = true;
+            }
+        }
+        assertFalse(pidOriginal_foundInCidRefFiles);
+        assertEquals(0, pidsFound);
+
+        // Confirm that no exception is thrown and that the cid refs still exists
+        fileHashStore.updateRefsFile(pid, cidRefsFilePath, "remove");
+        assertTrue(Files.exists(cidRefsFilePath));
     }
 
     /**
@@ -482,11 +757,10 @@ public class FileHashStoreReferencesTest {
             ObjectMetadata objInfo = fileHashStore.storeObject(dataStream);
             dataStream.close();
 
-            assertThrows(UnsupportedHashAlgorithmException.class, () -> {
-                fileHashStore.verifyObject(
-                    objInfo, "ValueNotRelevant", "BLAKE2S", 1000, false
-                );
-            });
+            assertThrows(
+                UnsupportedHashAlgorithmException.class,
+                () -> fileHashStore.verifyObject(objInfo, "ValueNotRelevant", "BLAKE2S", 1000,
+                                                 false));
 
             int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
             int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
@@ -519,11 +793,10 @@ public class FileHashStoreReferencesTest {
             String expectedChecksum = testData.pidData.get(pid).get("sha256");
             long expectedSize = 123456789;
 
-            assertThrows(NonMatchingObjSizeException.class, () -> {
-                fileHashStore.verifyObject(
-                    objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize, false
-                );
-            });
+            assertThrows(
+                NonMatchingObjSizeException.class,
+                () -> fileHashStore.verifyObject(objInfo, expectedChecksum, defaultStoreAlgorithm,
+                                                 expectedSize, false));
 
             int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
             int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
@@ -556,11 +829,10 @@ public class FileHashStoreReferencesTest {
             String expectedChecksum = "intentionallyWrongValue";
             long expectedSize = Long.parseLong(testData.pidData.get(pid).get("size"));
 
-            assertThrows(NonMatchingChecksumException.class, () -> {
-                fileHashStore.verifyObject(
-                    objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize, false
-                );
-            });
+            assertThrows(
+                NonMatchingChecksumException.class,
+                () -> fileHashStore.verifyObject(objInfo, expectedChecksum, defaultStoreAlgorithm,
+                                                 expectedSize, false));
 
             int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
             int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
@@ -593,11 +865,11 @@ public class FileHashStoreReferencesTest {
             String expectedChecksum = testData.pidData.get(pid).get("sha256");
             long expectedSize = 123456789;
 
-            assertThrows(NonMatchingObjSizeException.class, () -> {
-                fileHashStore.verifyObject(
-                    objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize, true
-                );
-            });
+            assertThrows(
+                NonMatchingObjSizeException.class,
+                () -> fileHashStore.verifyObject(objInfo, expectedChecksum, defaultStoreAlgorithm,
+                                                 expectedSize, true));
+
 
             int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
             int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
@@ -630,11 +902,9 @@ public class FileHashStoreReferencesTest {
             String expectedChecksum = "intentionallyWrongValue";
             long expectedSize = Long.parseLong(testData.pidData.get(pid).get("size"));
 
-            assertThrows(NonMatchingChecksumException.class, () -> {
-                fileHashStore.verifyObject(
-                    objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize, true
-                );
-            });
+            assertThrows(NonMatchingChecksumException.class, () -> fileHashStore.verifyObject(
+                objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize, true
+            ));
 
             int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
             int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));

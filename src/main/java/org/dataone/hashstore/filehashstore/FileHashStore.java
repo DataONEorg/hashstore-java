@@ -43,6 +43,7 @@ import org.dataone.hashstore.exceptions.OrphanPidRefsFileException;
 import org.dataone.hashstore.exceptions.OrphanRefsFilesException;
 import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
+import org.dataone.hashstore.exceptions.PidRefsFileNotFoundException;
 import org.dataone.hashstore.exceptions.UnsupportedHashAlgorithmException;
 
 /**
@@ -493,6 +494,7 @@ public class FileHashStore implements HashStore {
             // Tag object
             String cid = objInfo.getCid();
             tagObject(pid, cid);
+
             logFileHashStore.info(
                 "FileHashStore.syncPutObject - Object stored for pid: " + pid
                     + ". Permanent address: " + getHashStoreDataObjectPath(pid)
@@ -590,86 +592,25 @@ public class FileHashStore implements HashStore {
         }
 
         try {
-            Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
-            Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
+            storeHashStoreRefsFiles(pid, cid);
 
-            // Both files found, confirm that reference files are where they are expected to be
-            if (Files.exists(absPidRefsPath) && Files.exists(absCidRefsPath)) {
-                verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
-                // We throw an exception so the client is aware that everything is in place
-                String errMsg = "FileHashStore.tagObject - Object with cid: " + cid
-                    + " already exists and is tagged with pid: " + pid;
-                logFileHashStore.error(errMsg);
-                throw new HashStoreRefsAlreadyExistException(errMsg);
+        } catch (HashStoreRefsAlreadyExistException hsrfae) {
+            // This exception is thrown when the pid and cid are already tagged appropriately
+            String errMsg =
+                "FileHashStore.tagObject - HashStore refs files already exist for pid " + pid +
+                    " and cid: " + cid;
+            throw new HashStoreRefsAlreadyExistException(errMsg);
 
-            } else if (Files.exists(absPidRefsPath) && !Files.exists(absCidRefsPath)) {
-                // If pid refs exists, it can only contain and reference one cid
-                // First, compare the cid retrieved from the pid refs file from the supplied cid
-                String retrievedCid = new String(Files.readAllBytes(absPidRefsPath));
-                if (retrievedCid.equalsIgnoreCase(cid)) {
-                    // The pid correctly references the cid, but the cid refs file is missing
-                    // Create the file and verify tagging process
-                    File cidRefsTmpFile = writeRefsFile(pid, HashStoreIdTypes.cid.getName());
-                    File absPathCidRefsFile = absCidRefsPath.toFile();
-                    move(cidRefsTmpFile, absPathCidRefsFile, "refs");
-                    verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
-                    logFileHashStore.info(
-                        "FileHashStore.tagObject - Pid refs file exists for pid: " + pid
-                            + ", but cid refs file for: " + cid
-                            + " is missing. Missing cid refs file created and tagging completed."
-                    );
-                    return;
-                } else {
-                    // Check if the retrieved cid refs file exists and pid is referenced
-                    Path retrievedAbsCidRefsPath = getHashStoreRefsPath(
-                        retrievedCid, HashStoreIdTypes.cid.getName()
-                    );
-                    if (Files.exists(retrievedAbsCidRefsPath) && isStringInRefsFile(
-                        pid, retrievedAbsCidRefsPath
-                    )) {
-                        // This pid is accounted for and tagged as expected.
-                        String errMsg =
-                            "FileHashStore.tagObject - pid refs file already exists for pid: " + pid
-                                + ", and the associated cid refs file contains the pid."
-                                + " A pid can only reference one cid.";
-                        logFileHashStore.error(errMsg);
-                        throw new PidRefsFileExistsException(errMsg);
-                    }
-                    // Orphaned pid refs file found, the retrieved cid refs file exists
-                    // but doesn't contain the cid. Proceed to overwrite the pid refs file.
-                    // There is no return statement, so we move out of this if block.
-                }
-            } else if (!Files.exists(absPidRefsPath) && Files.exists(absCidRefsPath)) {
-                // Only update cid refs file if pid is not in the file
-                if (!isStringInRefsFile(pid, absCidRefsPath)) {
-                    updateRefsFile(pid, absCidRefsPath, "add");
-                }
-                // Get the pid refs file and verify tagging process
-                File pidRefsTmpFile = writeRefsFile(cid, HashStoreIdTypes.pid.getName());
-                File absPathPidRefsFile = absPidRefsPath.toFile();
-                move(pidRefsTmpFile, absPathPidRefsFile, "refs");
-                verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
-                logFileHashStore.info(
-                    "FileHashStore.tagObject - Object with cid: " + cid
-                        + " has been updated and tagged successfully with pid: " + pid
-                );
-                return;
-            }
+        } catch (PidRefsFileExistsException prfe) {
+            String errMsg =
+                "FileHashStore.tagObject - pid: " + pid + " already references another cid." +
+                    " A pid can only reference one cid.";
+            throw new PidRefsFileExistsException(errMsg);
 
-            // Get pid and cid refs files 
-            File pidRefsTmpFile = writeRefsFile(cid, HashStoreIdTypes.pid.getName());
-            File cidRefsTmpFile = writeRefsFile(pid, HashStoreIdTypes.cid.getName());
-            // Move refs files to permanent location
-            File absPathPidRefsFile = absPidRefsPath.toFile();
-            File absPathCidRefsFile = absCidRefsPath.toFile();
-            move(pidRefsTmpFile, absPathPidRefsFile, "refs");
-            move(cidRefsTmpFile, absPathCidRefsFile, "refs");
-            // Verify tagging process, this throws an exception if there's an issue
-            verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
-            logFileHashStore.info(
-                "FileHashStore.tagObject - Object with cid: " + cid
-                    + " has been tagged successfully with pid: " + pid
-            );
+        } catch (Exception e) {
+            // Revert the process for all other exceptions
+            unTagObject(pid, cid);
+            throw e;
 
         } finally {
             // Release lock
@@ -827,7 +768,7 @@ public class FileHashStore implements HashStore {
             String errMsg = "FileHashStore.findObject - Unable to find cid for pid: " + pid
                 + ". Pid refs file does not exist at: " + absPidRefsPath;
             logFileHashStore.error(errMsg);
-            throw new FileNotFoundException(errMsg);
+            throw new PidRefsFileNotFoundException(errMsg);
         }
     }
 
@@ -1082,7 +1023,7 @@ public class FileHashStore implements HashStore {
         String cid;
         List<Path> deleteList = new ArrayList<>();
 
-        // Storing and deleting objects are synchronized together
+        // Storing, deleting and untagging objects are synchronized together
         // Duplicate store object requests for a pid are rejected, but deleting an object
         // will wait for a pid to be released if it's found to be in use before proceeding.
         synchronized (objectLockedIds) {
@@ -1707,12 +1648,12 @@ public class FileHashStore implements HashStore {
         // First ensure algorithm is compatible and values are valid if they aren't null
         if (checksumAlgorithm != null) {
             FileHashStoreUtility.checkForEmptyString(
-                checksumAlgorithm, "checksumAlgorithm", "putObject"
-            );
+                checksumAlgorithm, "checksumAlgorithm", "verifyChecksumParameters");
             validateAlgorithm(checksumAlgorithm);
         }
         if (checksum != null) {
-            FileHashStoreUtility.checkForEmptyString(checksum, "checksum", "putObject");
+            FileHashStoreUtility.checkForEmptyString(
+                checksum, "checksum", "verifyChecksumParameters");
         }
         // If checksum is supplied, checksumAlgorithm cannot be empty
         if (checksum != null && !checksum.trim().isEmpty()) {
@@ -2007,6 +1948,314 @@ public class FileHashStore implements HashStore {
                         + cid);
                 referenceLockedCids.remove(cid);
                 referenceLockedCids.notify();
+            }
+        }
+    }
+
+    /**
+     * Create the pid refs file and create/update cid refs files in HashStore to establish
+     * the relationship between a 'pid' and a 'cid'
+     *
+     * @param pid Persistent or authority-based identifier
+     * @param cid Content identifier
+     * @throws NoSuchAlgorithmException If there is an issue related to calculating hashes
+     * @throws IOException If there is an issue reading/writing a refs file
+     */
+    protected void storeHashStoreRefsFiles(String pid, String cid) throws NoSuchAlgorithmException,
+        IOException {
+        Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
+        Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
+
+        // Both files found, confirm that reference files are where they are expected to be
+        if (Files.exists(absPidRefsPath) && Files.exists(absCidRefsPath)) {
+            verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
+            // We throw an exception so the client is aware that everything is in place
+            String errMsg = "FileHashStore.storeHashStoreRefsFiles - Object with cid: " + cid
+                + " already exists and is tagged with pid: " + pid;
+            logFileHashStore.error(errMsg);
+            throw new HashStoreRefsAlreadyExistException(errMsg);
+
+        } else if (Files.exists(absPidRefsPath) && !Files.exists(absCidRefsPath)) {
+            // If pid refs exists, it can only contain and reference one cid
+            // First, compare the cid retrieved from the pid refs file from the supplied cid
+            String retrievedCid = new String(Files.readAllBytes(absPidRefsPath));
+            if (retrievedCid.equalsIgnoreCase(cid)) {
+                // The pid correctly references the cid, but the cid refs file is missing
+                // Create the file and verify tagging process
+                File cidRefsTmpFile = writeRefsFile(pid, HashStoreIdTypes.cid.getName());
+                File absPathCidRefsFile = absCidRefsPath.toFile();
+                move(cidRefsTmpFile, absPathCidRefsFile, "refs");
+                verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
+                logFileHashStore.info(
+                    "FileHashStore.storeHashStoreRefsFiles - Pid refs file exists for pid: "
+                        + pid + ", but cid refs file for: " + cid
+                        + " is missing. Missing cid refs file created and tagging completed.");
+                return;
+            } else {
+                // Check if the retrieved cid refs file exists and pid is referenced
+                Path retrievedAbsCidRefsPath = getHashStoreRefsPath(
+                    retrievedCid, HashStoreIdTypes.cid.getName()
+                );
+                if (Files.exists(retrievedAbsCidRefsPath) && isStringInRefsFile(pid, retrievedAbsCidRefsPath
+                )) {
+                    // This pid is accounted for and tagged as expected.
+                    String errMsg =
+                        "FileHashStore.storeHashStoreRefsFiles - pid refs file already exists for"
+                            + " pid: " + pid + ", and the associated cid refs file contains the "
+                            + "pid. A pid can only reference one cid.";
+                    logFileHashStore.error(errMsg);
+                    throw new PidRefsFileExistsException(errMsg);
+                }
+                // Orphaned pid refs file found, the retrieved cid refs file exists
+                // but doesn't contain the cid. Proceed to overwrite the pid refs file.
+                // There is no return statement, so we move out of this if block.
+            }
+        } else if (!Files.exists(absPidRefsPath) && Files.exists(absCidRefsPath)) {
+            // Only update cid refs file if pid is not in the file
+            if (!isStringInRefsFile(pid, absCidRefsPath)) {
+                updateRefsFile(pid, absCidRefsPath, "add");
+            }
+            // Get the pid refs file and verify tagging process
+            File pidRefsTmpFile = writeRefsFile(cid, HashStoreIdTypes.pid.getName());
+            File absPathPidRefsFile = absPidRefsPath.toFile();
+            move(pidRefsTmpFile, absPathPidRefsFile, "refs");
+            verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
+            logFileHashStore.info(
+                "FileHashStore.storeHashStoreRefsFiles - Object with cid: " + cid
+                    + " has been updated and tagged successfully with pid: " + pid
+            );
+            return;
+        }
+
+        // Get pid and cid refs files
+        File pidRefsTmpFile = writeRefsFile(cid, HashStoreIdTypes.pid.getName());
+        File cidRefsTmpFile = writeRefsFile(pid, HashStoreIdTypes.cid.getName());
+        // Move refs files to permanent location
+        File absPathPidRefsFile = absPidRefsPath.toFile();
+        File absPathCidRefsFile = absCidRefsPath.toFile();
+        move(pidRefsTmpFile, absPathPidRefsFile, "refs");
+        move(cidRefsTmpFile, absPathCidRefsFile, "refs");
+        // Verify tagging process, this throws an exception if there's an issue
+        verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
+        logFileHashStore.info(
+            "FileHashStore.storeHashStoreRefsFiles - Object with cid: " + cid
+                + " has been tagged successfully with pid: " + pid
+        );
+    }
+
+    /**
+     * Untags a data object in HashStore by deleting the 'pid reference file' and removing the 'pid'
+     * from the 'cid reference file'. This method will never delete a data object.
+     *
+     * @param pid Persistent or authority-based identifier
+     * @param cid Content identifier of data object
+     * @throws InterruptedException     When there is a synchronization issue
+     * @throws NoSuchAlgorithmException When there is an algorithm used that is not supported
+     * @throws IOException              When there is an issue deleting refs files
+     */
+    protected void unTagObject(String pid, String cid) throws InterruptedException,
+        NoSuchAlgorithmException, IOException {
+        // Validate input parameters
+        FileHashStoreUtility.ensureNotNull(pid, "pid", "unTagObject");
+        FileHashStoreUtility.checkForEmptyString(pid, "pid", "unTagObject");
+        FileHashStoreUtility.ensureNotNull(cid, "cid", "unTagObject");
+        FileHashStoreUtility.checkForEmptyString(cid, "cid", "unTagObject");
+
+        List<Path> deleteList = new ArrayList<>();
+
+        // Storing, deleting and untagging objects are synchronized together
+        // Duplicate store object requests for a pid are rejected, but deleting an object
+        // will wait for a pid to be released if it's found to be in use before proceeding.
+        synchronized (objectLockedIds) {
+            while (objectLockedIds.contains(pid)) {
+                try {
+                    objectLockedIds.wait(TIME_OUT_MILLISEC);
+
+                } catch (InterruptedException ie) {
+                    String errMsg = "FileHashStore.unTagObject - Untag request for pid: " + pid
+                        + " has been interrupted.";
+                    logFileHashStore.warn(errMsg);
+                    throw new InterruptedException(errMsg);
+                }
+            }
+            logFileHashStore.debug(
+                "FileHashStore.unTagObject - Synchronizing objectLockedIds for pid: " + pid);
+            objectLockedIds.add(pid);
+        }
+
+        try {
+            // Before we begin untagging process, we look for the `cid` by calling
+            // `findObject` which will throw custom exceptions if there is an issue with
+            // the reference files, which help us determine the path to proceed with.
+            try {
+                Map<String, String> objInfoMap = findObject(pid);
+                cid = objInfoMap.get("cid");
+
+                // If no exceptions are thrown, we proceed to synchronization based on the `cid`
+                // Multiple threads may access the cid reference file (which contains a list of
+                // `pid`s that reference a `cid`) and this needs to be coordinated. Otherwise,
+                // we will run into a `OverlappingFileLockException`
+                synchronized (referenceLockedCids) {
+                    while (referenceLockedCids.contains(cid)) {
+                        try {
+                            referenceLockedCids.wait(TIME_OUT_MILLISEC);
+
+                        } catch (InterruptedException ie) {
+                            String errMsg =
+                                "FileHashStore.unTagObject - referenceLockedCids lock was "
+                                    + "interrupted while waiting to delete objects for pid: " + pid
+                                    + ". InterruptedException: " + ie.getMessage();
+                            logFileHashStore.error(errMsg);
+                            throw new InterruptedException(errMsg);
+                        }
+                    }
+                    logFileHashStore.debug(
+                        "FileHashStore.unTagObject - Synchronizing referenceLockedCids for "
+                            + "pid: " + pid + " with cid: " + cid);
+                    referenceLockedCids.add(cid);
+                }
+
+                try {
+                    // Cid refs file
+                    Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
+                    // Pid refs file
+                    Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
+
+                    // Rename pid refs file to prepare for deletion
+                    deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
+                    // Remove pid from cid refs file
+                    updateRefsFile(pid, absCidRefsPath, "remove");
+                    // Delete the cid refs file **only** if the cid refs file is empty
+                    if (Files.size(absCidRefsPath) == 0) {
+                        // Rename empty cid refs file to prepare for deletion
+                        deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
+                    } else {
+                        String warnMsg =
+                            "FileHashStore.unTagObject - cid referenced by pid: " + pid
+                                + " is not empty (refs exist for cid). Skipping object "
+                                + "deletion.";
+                        logFileHashStore.warn(warnMsg);
+                    }
+                    // Delete all related/relevant items with the least amount of delay
+                    FileHashStoreUtility.deleteListItems(deleteList);
+                    logFileHashStore.info(
+                        "FileHashStore.unTagObject - Untagged pid: " + pid + " with cid: " + cid);
+
+                } finally {
+                    // Release lock
+                    synchronized (referenceLockedCids) {
+                        logFileHashStore.debug(
+                            "FileHashStore.unTagObject - Releasing referenceLockedCids for "
+                                + "pid: " + pid + " with cid: " + cid);
+                        referenceLockedCids.remove(cid);
+                        referenceLockedCids.notify();
+                    }
+                }
+
+            } catch (OrphanPidRefsFileException oprfe) {
+                // `findObject` throws this exception when the cid refs file doesn't exist,
+                // so we only need to delete the pid refs file
+
+                // Begin by renaming pid refs file for deletion
+                Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
+                deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
+                // Delete items
+                FileHashStoreUtility.deleteListItems(deleteList);
+                String warnMsg =
+                    "FileHashStore.unTagObject - Cid refs file does not exist for pid: " + pid
+                        + ". Deleted orphan pid refs file.";
+                logFileHashStore.warn(warnMsg);
+
+            } catch (OrphanRefsFilesException orfe) {
+                // `findObject` throws this exception when the pid and cid refs file exists,
+                // but the actual object being referenced by the pid does not exist
+
+                // Get the cid from the pid refs file before renaming it for deletion
+                Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
+                String cidRead = new String(Files.readAllBytes(absPidRefsPath));
+
+                // Since we must access the cid reference file, the `cid` must be synchronized
+                synchronized (referenceLockedCids) {
+                    while (referenceLockedCids.contains(cidRead)) {
+                        try {
+                            referenceLockedCids.wait(TIME_OUT_MILLISEC);
+
+                        } catch (InterruptedException ie) {
+                            String errMsg =
+                                "FileHashStore.unTagObject - referenceLockedCids lock was "
+                                    + "interrupted while waiting to delete objects for pid: " + pid
+                                    + ". InterruptedException: " + ie.getMessage();
+                            logFileHashStore.error(errMsg);
+                            throw new InterruptedException(errMsg);
+                        }
+                    }
+                    logFileHashStore.debug(
+                        "FileHashStore.unTagObject - Synchronizing referenceLockedCids for "
+                            + "pid: " + pid + " with cid: " + cidRead);
+                    referenceLockedCids.add(cidRead);
+                }
+
+                try {
+                    // Rename pid refs file for deletion
+                    deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
+
+                    // Remove the pid from the cid refs file
+                    Path absCidRefsPath =
+                        getHashStoreRefsPath(cidRead, HashStoreIdTypes.cid.getName());
+                    updateRefsFile(pid, absCidRefsPath, "remove");
+                    // Add the cid reference file to deleteList if it's now empty
+                    if (Files.size(absCidRefsPath) == 0) {
+                        deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
+                    }
+                    // Delete items
+                    FileHashStoreUtility.deleteListItems(deleteList);
+                    String warnMsg = "FileHashStore.unTagObject - Object with cid: " + cidRead
+                        + " does not exist, but pid and cid reference file found for pid: " + pid
+                        + ". Deleted pid and cid ref files.";
+                    logFileHashStore.warn(warnMsg);
+
+                } finally {
+                    // Release lock
+                    synchronized (referenceLockedCids) {
+                        logFileHashStore.debug(
+                            "FileHashStore.unTagObject - Releasing referenceLockedCids for "
+                                + "pid: " + pid + " with cid: " + cidRead);
+                        referenceLockedCids.remove(cidRead);
+                        referenceLockedCids.notify();
+                    }
+                }
+            } catch (PidNotFoundInCidRefsFileException pnficrfe) {
+                // `findObject` throws this exception when both the pid and cid refs file exists
+                // but the pid is not found in the cid refs file.
+
+                // Rename pid refs file for deletion
+                Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
+                deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
+                // Delete items
+                FileHashStoreUtility.deleteListItems(deleteList);
+                String warnMsg =
+                    "FileHashStore.unTagObject - Pid not found in expected cid refs file for"
+                        + " pid: " + pid + ". Deleted orphan pid refs file.";
+                logFileHashStore.warn(warnMsg);
+            } catch (PidRefsFileNotFoundException prfnfe) {
+                // `findObject` throws this exception if the pid refs file is not found
+                // Check to see if pid is in the `cid refs file`and attempt to remove it
+                Path absCidRefsPath =
+                    getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
+                if (Files.exists(absCidRefsPath) && isStringInRefsFile(pid, absCidRefsPath)) {
+                    updateRefsFile(pid, absCidRefsPath, "remove");
+                    String errMsg = "FileHashStore.unTagObject - Pid refs file not found, "
+                        + "removed pid found in cid refs file: " + absCidRefsPath;
+                    logFileHashStore.warn(errMsg);
+                }
+            }
+        } finally {
+            // Release lock on the pid
+            synchronized (objectLockedIds) {
+                logFileHashStore.debug(
+                    "FileHashStore.unTagObject - Releasing objectLockedIds for pid: " + pid);
+                objectLockedIds.remove(pid);
+                objectLockedIds.notify();
             }
         }
     }
