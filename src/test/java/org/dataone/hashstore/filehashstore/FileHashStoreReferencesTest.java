@@ -489,7 +489,7 @@ public class FileHashStoreReferencesTest {
         Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(cid, "cid");
 
         String pidAdditional = "dou.test.2";
-        fileHashStore.updateRefsFile("dou.test.2", cidRefsFilePath, "add");
+        fileHashStore.updateRefsFile(pidAdditional, cidRefsFilePath, "add");
 
         List<String> lines = Files.readAllLines(cidRefsFilePath);
         boolean pidOriginal_foundInCidRefFiles = false;
@@ -504,6 +504,64 @@ public class FileHashStoreReferencesTest {
         }
         assertTrue(pidOriginal_foundInCidRefFiles);
         assertTrue(pidAdditional_foundInCidRefFiles);
+    }
+
+    /**
+     * Confirm that updateRefsFile does not throw any exception if called to remove a value
+     * that is not found in a cid refs file.
+     */
+    @Test
+    public void updateRefsFile_cidRefsPidNotFound() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        // Get path of the cid refs file
+        Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(cid, "cid");
+        fileHashStore.updateRefsFile("dou.test.2", cidRefsFilePath, "remove");
+
+        List<String> lines = Files.readAllLines(cidRefsFilePath);
+        boolean pidOriginal_foundInCidRefFiles = false;
+        int pidsFound = 0;
+        for (String line : lines) {
+            pidsFound++;
+            if (line.equals(pid)) {
+                pidOriginal_foundInCidRefFiles = true;
+            }
+        }
+        assertTrue(pidOriginal_foundInCidRefFiles);
+        assertEquals(1, pidsFound);
+    }
+
+    /**
+     * Confirm that updateRefsFile does not throw any exception if called to remove a value
+     * from a cid refs file that is empty
+     */
+    @Test
+    public void updateRefsFile_cidRefsEmpty() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        // Get path of the cid refs file
+        Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(cid, "cid");
+        fileHashStore.updateRefsFile(pid, cidRefsFilePath, "remove");
+
+        List<String> lines = Files.readAllLines(cidRefsFilePath);
+        boolean pidOriginal_foundInCidRefFiles = false;
+        int pidsFound = 0;
+        for (String line : lines) {
+            pidsFound++;
+            if (line.equals(pid)) {
+                pidOriginal_foundInCidRefFiles = true;
+            }
+        }
+        assertFalse(pidOriginal_foundInCidRefFiles);
+        assertEquals(0, pidsFound);
+
+        // Confirm that no exception is thrown and that the cid refs still exists
+        fileHashStore.updateRefsFile(pid, cidRefsFilePath, "remove");
+        assertTrue(Files.exists(cidRefsFilePath));
     }
 
     /**
