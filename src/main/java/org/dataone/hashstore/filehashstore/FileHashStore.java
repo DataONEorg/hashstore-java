@@ -701,95 +701,6 @@ public class FileHashStore implements HashStore {
         logFileHashStore.info(infoMsg);
     }
 
-    /**
-     * Checks whether an object referenced by a pid exists and returns a map containing the
-     * absolute path to the object, pid refs file, cid refs file and sysmeta document.
-     *
-     * @param pid Authority-based identifier
-     * @return Map containing the following keys: cid, cid_object_path, cid_refs_path,
-     * pid_refs_path, sysmeta_path
-     * @throws NoSuchAlgorithmException          When algorithm used to calculate pid refs
-     *                                           file's absolute address is not valid
-     * @throws IOException                       Unable to read from a pid refs file or pid refs
-     *                                           file does not exist
-     * @throws OrphanRefsFilesException          pid and cid refs file found, but object does
-     *                                           not exist
-     * @throws OrphanPidRefsFileException        When pid refs file exists and the cid found
-     *                                           inside does not exist.
-     * @throws PidNotFoundInCidRefsFileException When pid and cid ref files exists but the
-     *                                           expected pid is not found in the cid refs file.
-     */
-    protected Map<String, String> findObject(String pid) throws NoSuchAlgorithmException,
-        IOException,
-        OrphanPidRefsFileException, PidNotFoundInCidRefsFileException, OrphanRefsFilesException {
-        logFileHashStore.debug("FileHashStore.findObject - Called to find object for pid: " + pid);
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "findObject");
-        FileHashStoreUtility.checkForEmptyString(pid, "pid", "findObject");
-
-        // Get path of the pid references file
-        Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
-
-        if (Files.exists(absPidRefsPath)) {
-            String cid = new String(Files.readAllBytes(absPidRefsPath));
-            Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
-
-            // Throw exception if the cid refs file doesn't exist
-            if (!Files.exists(absCidRefsPath)) {
-                String errMsg =
-                    "FileHashStore.findObject - Cid refs file does not exist for cid: " + cid
-                        + " with address: " + absCidRefsPath + ", but pid refs file exists.";
-                logFileHashStore.error(errMsg);
-                throw new OrphanPidRefsFileException(errMsg);
-            }
-            // If the pid is found in the expected cid refs file, and the object exists, return it
-            if (isStringInRefsFile(pid, absCidRefsPath)) {
-                logFileHashStore.info(
-                    "FileHashStore.findObject - Cid (" + cid + ") found for pid: " + pid
-                );
-
-                String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
-                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, cid
-                );
-                Path realPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
-                if (Files.exists(realPath)) {
-                    Map<String, String> objInfoMap = new HashMap<>();
-                    objInfoMap.put("cid", cid);
-                    objInfoMap.put("cid_object_path", realPath.toString());
-                    objInfoMap.put("cid_refs_path", absCidRefsPath.toString());
-                    objInfoMap.put("pid_refs_path", absPidRefsPath.toString());
-                    // If the default system metadata exists, include it
-                    Path metadataPidExpectedPath =
-                        getHashStoreMetadataPath(pid, DEFAULT_METADATA_NAMESPACE);
-                    if (Files.exists(metadataPidExpectedPath)) {
-                        objInfoMap.put("sysmeta_path", metadataPidExpectedPath.toString());
-                    } else {
-                        objInfoMap.put("sysmeta_path", "Does not exist");
-                    }
-                    return objInfoMap;
-
-                } else {
-                    String errMsg = "FileHashStore.findObject - Object with cid: " + cid
-                        + " does not exist, but pid and cid reference file found for pid: " + pid;
-                    logFileHashStore.error(errMsg);
-                    throw new OrphanRefsFilesException(errMsg);
-                }
-
-            } else {
-                String errMsg = "FileHashStore.findObject - Pid refs file exists, but pid (" + pid
-                    + ") not found in cid refs file for cid: " + cid + " with address: "
-                    + absCidRefsPath;
-                logFileHashStore.error(errMsg);
-                throw new PidNotFoundInCidRefsFileException(errMsg);
-            }
-
-        } else {
-            String errMsg = "FileHashStore.findObject - Unable to find cid for pid: " + pid
-                + ". Pid refs file does not exist at: " + absPidRefsPath;
-            logFileHashStore.error(errMsg);
-            throw new PidRefsFileNotFoundException(errMsg);
-        }
-    }
-
     @Override
     public String storeMetadata(InputStream metadata, String pid, String formatId)
         throws IOException, IllegalArgumentException, FileNotFoundException, InterruptedException,
@@ -1415,6 +1326,95 @@ public class FileHashStore implements HashStore {
     }
 
     // FileHashStore Core & Supporting Methods
+
+    /**
+     * Checks whether an object referenced by a pid exists and returns a map containing the
+     * absolute path to the object, pid refs file, cid refs file and sysmeta document.
+     *
+     * @param pid Authority-based identifier
+     * @return Map containing the following keys: cid, cid_object_path, cid_refs_path,
+     * pid_refs_path, sysmeta_path
+     * @throws NoSuchAlgorithmException          When algorithm used to calculate pid refs
+     *                                           file's absolute address is not valid
+     * @throws IOException                       Unable to read from a pid refs file or pid refs
+     *                                           file does not exist
+     * @throws OrphanRefsFilesException          pid and cid refs file found, but object does
+     *                                           not exist
+     * @throws OrphanPidRefsFileException        When pid refs file exists and the cid found
+     *                                           inside does not exist.
+     * @throws PidNotFoundInCidRefsFileException When pid and cid ref files exists but the
+     *                                           expected pid is not found in the cid refs file.
+     */
+    protected Map<String, String> findObject(String pid) throws NoSuchAlgorithmException,
+        IOException,
+        OrphanPidRefsFileException, PidNotFoundInCidRefsFileException, OrphanRefsFilesException {
+        logFileHashStore.debug("FileHashStore.findObject - Called to find object for pid: " + pid);
+        FileHashStoreUtility.ensureNotNull(pid, "pid", "findObject");
+        FileHashStoreUtility.checkForEmptyString(pid, "pid", "findObject");
+
+        // Get path of the pid references file
+        Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
+
+        if (Files.exists(absPidRefsPath)) {
+            String cid = new String(Files.readAllBytes(absPidRefsPath));
+            Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
+
+            // Throw exception if the cid refs file doesn't exist
+            if (!Files.exists(absCidRefsPath)) {
+                String errMsg =
+                    "FileHashStore.findObject - Cid refs file does not exist for cid: " + cid
+                        + " with address: " + absCidRefsPath + ", but pid refs file exists.";
+                logFileHashStore.error(errMsg);
+                throw new OrphanPidRefsFileException(errMsg);
+            }
+            // If the pid is found in the expected cid refs file, and the object exists, return it
+            if (isStringInRefsFile(pid, absCidRefsPath)) {
+                logFileHashStore.info(
+                    "FileHashStore.findObject - Cid (" + cid + ") found for pid: " + pid
+                );
+
+                String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, cid
+                );
+                Path realPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
+                if (Files.exists(realPath)) {
+                    Map<String, String> objInfoMap = new HashMap<>();
+                    objInfoMap.put("cid", cid);
+                    objInfoMap.put("cid_object_path", realPath.toString());
+                    objInfoMap.put("cid_refs_path", absCidRefsPath.toString());
+                    objInfoMap.put("pid_refs_path", absPidRefsPath.toString());
+                    // If the default system metadata exists, include it
+                    Path metadataPidExpectedPath =
+                        getHashStoreMetadataPath(pid, DEFAULT_METADATA_NAMESPACE);
+                    if (Files.exists(metadataPidExpectedPath)) {
+                        objInfoMap.put("sysmeta_path", metadataPidExpectedPath.toString());
+                    } else {
+                        objInfoMap.put("sysmeta_path", "Does not exist");
+                    }
+                    return objInfoMap;
+
+                } else {
+                    String errMsg = "FileHashStore.findObject - Object with cid: " + cid
+                        + " does not exist, but pid and cid reference file found for pid: " + pid;
+                    logFileHashStore.error(errMsg);
+                    throw new OrphanRefsFilesException(errMsg);
+                }
+
+            } else {
+                String errMsg = "FileHashStore.findObject - Pid refs file exists, but pid (" + pid
+                    + ") not found in cid refs file for cid: " + cid + " with address: "
+                    + absCidRefsPath;
+                logFileHashStore.error(errMsg);
+                throw new PidNotFoundInCidRefsFileException(errMsg);
+            }
+
+        } else {
+            String errMsg = "FileHashStore.findObject - Unable to find cid for pid: " + pid
+                + ". Pid refs file does not exist at: " + absPidRefsPath;
+            logFileHashStore.error(errMsg);
+            throw new PidRefsFileNotFoundException(errMsg);
+        }
+    }
 
     /**
      * Takes a given InputStream and writes it to its permanent address on disk based on the SHA-256
