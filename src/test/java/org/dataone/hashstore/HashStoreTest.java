@@ -157,9 +157,8 @@ public class HashStoreTest {
             "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
         );
 
-        assertThrows(HashStoreFactoryException.class, () -> {
-            hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
-        });
+        assertThrows(HashStoreFactoryException.class, () -> hashStore =
+            HashStoreFactory.getHashStore(classPackage, storeProperties));
     }
 
     /**
@@ -183,9 +182,8 @@ public class HashStoreTest {
             "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
         );
 
-        assertThrows(HashStoreFactoryException.class, () -> {
-            hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
-        });
+        assertThrows(HashStoreFactoryException.class, () -> hashStore =
+            HashStoreFactory.getHashStore(classPackage, storeProperties));
     }
 
     /**
@@ -209,8 +207,7 @@ public class HashStoreTest {
             "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
         );
 
-        assertThrows(HashStoreFactoryException.class, () -> {
-            hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
-        });
+        assertThrows(HashStoreFactoryException.class, () -> hashStore =
+            HashStoreFactory.getHashStore(classPackage, storeProperties));
     }
 }

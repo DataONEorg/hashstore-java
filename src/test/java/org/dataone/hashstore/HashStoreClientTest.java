@@ -184,9 +184,8 @@ public class HashStoreClientTest {
             String optPath = "-path";
             String optObjectPath = testDataFile.toString();
             String optPid = "-pid";
-            String optPidValue = pid;
             String[] args = {optStoreObject, optStore, optStorePath, optPath, optObjectPath, optPid,
-                optPidValue};
+                pid};
             HashStoreClient.main(args);
 
             // Confirm object was stored
@@ -225,11 +224,10 @@ public class HashStoreClientTest {
             String optPath = "-path";
             String optObjectPath = testDataFile.toString();
             String optPid = "-pid";
-            String optPidValue = pid;
             String optFormatId = "-format_id";
             String optFormatIdValue = hsProperties.getProperty("storeMetadataNamespace");
             String[] args = {optStoreMetadata, optStore, optStorePath, optPath, optObjectPath,
-                optPid, optPidValue, optFormatId, optFormatIdValue};
+                optPid, pid, optFormatId, optFormatIdValue};
             HashStoreClient.main(args);
 
             // Confirm metadata was stored
@@ -286,8 +284,7 @@ public class HashStoreClientTest {
             String optStore = "-store";
             String optStorePath = hsProperties.getProperty("storePath");
             String optPid = "-pid";
-            String optPidValue = pid;
-            String[] args = {optRetrieveObject, optStore, optStorePath, optPid, optPidValue};
+            String[] args = {optRetrieveObject, optStore, optStorePath, optPid, pid};
             HashStoreClient.main(args);
 
             // Put things back
@@ -323,10 +320,9 @@ public class HashStoreClientTest {
             String optStore = "-store";
             String optStorePath = hsProperties.getProperty("storePath");
             String optPid = "-pid";
-            String optPidValue = pid;
             String optFormatId = "-format_id";
             String optFormatIdValue = hsProperties.getProperty("storeMetadataNamespace");
-            String[] args = {optRetrieveMetadata, optStore, optStorePath, optPid, optPidValue,
+            String[] args = {optRetrieveMetadata, optStore, optStorePath, optPid, pid,
                 optFormatId, optFormatIdValue};
             HashStoreClient.main(args);
 
@@ -363,8 +359,7 @@ public class HashStoreClientTest {
             String optStore = "-store";
             String optStorePath = hsProperties.getProperty("storePath");
             String optPid = "-pid";
-            String optPidValue = pid;
-            String[] args = {optDeleteObject, optStore, optStorePath, optPid, optPidValue};
+            String[] args = {optDeleteObject, optStore, optStorePath, optPid, pid};
             HashStoreClient.main(args);
 
             // Confirm object was deleted
@@ -404,10 +399,9 @@ public class HashStoreClientTest {
             String optStore = "-store";
             String optStorePath = hsProperties.getProperty("storePath");
             String optPid = "-pid";
-            String optPidValue = pid;
             String optFormatId = "-format_id";
             String optFormatIdValue = hsProperties.getProperty("storeMetadataNamespace");
-            String[] args = {optDeleteMetadata, optStore, optStorePath, optPid, optPidValue,
+            String[] args = {optDeleteMetadata, optStore, optStorePath, optPid, pid,
                 optFormatId, optFormatIdValue};
             HashStoreClient.main(args);
 
@@ -448,10 +442,9 @@ public class HashStoreClientTest {
             String optStore = "-store";
             String optStorePath = hsProperties.getProperty("storePath");
             String optPid = "-pid";
-            String optPidValue = pid;
             String optAlgo = "-algo";
             String optAlgoValue = "SHA-256";
-            String[] args = {optGetChecksum, optStore, optStorePath, optPid, optPidValue, optAlgo,
+            String[] args = {optGetChecksum, optStore, optStorePath, optPid, pid, optAlgo,
                 optAlgoValue};
             HashStoreClient.main(args);
 
@@ -465,70 +458,6 @@ public class HashStoreClientTest {
             // Confirm hex digest matches
             String pidStdOut = outputStream.toString();
             assertEquals(testDataChecksum, pidStdOut.trim());
-        }
-    }
-
-    /**
-     * Test hashStore client returns the content identifier (cid) of an object
-     */
-    @Test
-    public void client_findObject() throws Exception {
-        for (String pid : testData.pidList) {
-            // Redirect stdout to capture output
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            PrintStream ps = new PrintStream(outputStream);
-            PrintStream old = System.out;
-            System.setOut(ps);
-
-            // Store object
-            String pidFormatted = pid.replace("/", "_");
-            Path testDataFile = testData.getTestFile(pidFormatted);
-            InputStream dataStream = Files.newInputStream(testDataFile);
-            hashStore.storeObject(dataStream, pid, null, null, null, -1);
-            dataStream.close();
-            // Store metadata
-            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
-            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
-            hashStore.storeMetadata(metadataStream, pid);
-            metadataStream.close();
-
-            // Call client
-            String optFindObject = "-findobject";
-            String optStore = "-store";
-            String optStorePath = hsProperties.getProperty("storePath");
-            String optPid = "-pid";
-            String optPidValue = pid;
-            String[] args = {optFindObject, optStore, optStorePath, optPid, optPidValue};
-            HashStoreClient.main(args);
-
-            String contentIdentifier = testData.pidData.get(pid).get("sha256");
-            Path absObjPath = getObjectAbsPath(testData.pidData.get(pid).get("sha256"), "object");
-            Path sysMetaPath = getObjectAbsPath(pid, "metadata");
-            String storeAlgo = hsProperties.getProperty("storeAlgorithm").toLowerCase().replace(
-                "-", "");
-            Path cidRefsPath = getObjectAbsPath(
-                testData.pidData.get(pid).get(storeAlgo), "cid"
-            );
-            Path pidRefsPath = getObjectAbsPath(
-                pid, "pid"
-            );
-
-            String expectedOutPutPt1 = "Content Identifier:\n" + contentIdentifier + "\n";
-            String expectedOutPutPt2 = "Object Path:\n" + absObjPath.toString() + "\n";
-            String expectedOutPutPt3 = "Cid Reference File Path:\n" + cidRefsPath + "\n";
-            String expectedOutPutPt4 = "Pid Reference File Path:\n" + pidRefsPath + "\n";
-            String expectedOutPutPt5 = "Sysmeta Path:\n" + sysMetaPath;
-            String expectedOutPutFull =
-                expectedOutPutPt1 + expectedOutPutPt2 + expectedOutPutPt3 + expectedOutPutPt4 + expectedOutPutPt5;
-
-
-            // Put things back
-            System.out.flush();
-            System.setOut(old);
-
-            // Confirm correct content identifier has been saved
-            String pidStdOut = outputStream.toString();
-            assertEquals(expectedOutPutFull, pidStdOut.trim());
         }
     }
 }
