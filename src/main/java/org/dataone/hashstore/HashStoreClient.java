@@ -141,27 +141,6 @@ public class HashStoreClient {
                     String hexDigest = hashStore.getHexDigest(pid, algo);
                     System.out.println(hexDigest);
 
-                } else if (cmd.hasOption("findobject")) {
-                    String pid = cmd.getOptionValue("pid");
-                    FileHashStoreUtility.ensureNotNull(pid, "-pid", "HashStoreClient");
-
-                    Map<String, String> objInfoMap = hashStore.findObject(pid);
-                    String cid = objInfoMap.get("cid");
-                    String cidPath = objInfoMap.get("cid_object_path");
-                    String cidRefsPath = objInfoMap.get("cid_refs_path");
-                    String pidRefsPath = objInfoMap.get("pid_refs_path");
-                    String sysmetaPath = objInfoMap.get("sysmeta_path");
-                    System.out.println("Content Identifier:");
-                    System.out.println(cid);
-                    System.out.println("Object Path:");
-                    System.out.println(cidPath);
-                    System.out.println("Cid Reference File Path:");
-                    System.out.println(cidRefsPath);
-                    System.out.println("Pid Reference File Path:");
-                    System.out.println(pidRefsPath);
-                    System.out.println("Sysmeta Path:");
-                    System.out.println(sysmetaPath);
-
                 } else if (cmd.hasOption("storeobject")) {
                     System.out.println("Storing object");
                     String pid = cmd.getOptionValue("pid");
@@ -294,10 +273,6 @@ public class HashStoreClient {
         // Public API options
         options.addOption(
             "getchecksum", "client_getchecksum", false,
-            "Flag to get the hex digest of a data object in a HashStore."
-        );
-        options.addOption(
-            "findobject", "client_findobject", false,
             "Flag to get the hex digest of a data object in a HashStore."
         );
         options.addOption(
