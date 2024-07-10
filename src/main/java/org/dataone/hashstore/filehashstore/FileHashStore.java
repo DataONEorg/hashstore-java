@@ -1648,12 +1648,12 @@ public class FileHashStore implements HashStore {
         // First ensure algorithm is compatible and values are valid if they aren't null
         if (checksumAlgorithm != null) {
             FileHashStoreUtility.checkForEmptyString(
-                checksumAlgorithm, "checksumAlgorithm", "putObject"
-            );
+                checksumAlgorithm, "checksumAlgorithm", "verifyChecksumParameters");
             validateAlgorithm(checksumAlgorithm);
         }
         if (checksum != null) {
-            FileHashStoreUtility.checkForEmptyString(checksum, "checksum", "putObject");
+            FileHashStoreUtility.checkForEmptyString(
+                checksum, "checksum", "verifyChecksumParameters");
         }
         // If checksum is supplied, checksumAlgorithm cannot be empty
         if (checksum != null && !checksum.trim().isEmpty()) {
