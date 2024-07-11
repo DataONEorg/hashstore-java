@@ -21,6 +21,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,9 +55,9 @@ import org.dataone.hashstore.exceptions.UnsupportedHashAlgorithmException;
 public class FileHashStore implements HashStore {
     private static final Log logFileHashStore = LogFactory.getLog(FileHashStore.class);
     private static final int TIME_OUT_MILLISEC = 1000;
-    private static final ArrayList<String> objectLockedIds = new ArrayList<>(100);
-    private static final ArrayList<String> metadataLockedIds = new ArrayList<>(100);
-    private static final ArrayList<String> referenceLockedCids = new ArrayList<>(100);
+    private static final Collection<String> objectLockedIds = new ArrayList<>(100);
+    private static final Collection<String> metadataLockedIds = new ArrayList<>(100);
+    private static final Collection<String> referenceLockedCids = new ArrayList<>(100);
     private final Path STORE_ROOT;
     private final int DIRECTORY_DEPTH;
     private final int DIRECTORY_WIDTH;
@@ -1054,7 +1055,7 @@ public class FileHashStore implements HashStore {
      * @throws IOException          If there is an issue renaming a document
      */
     protected static void syncRenameMetadataDocForDeletion(
-        String pid, List<Path> deleteList, Path metadataDocAbsPath, String metadataDocId)
+        String pid, Collection<Path> deleteList, Path metadataDocAbsPath, String metadataDocId)
         throws InterruptedException, IOException {
         synchronized (metadataLockedIds) {
             while (metadataLockedIds.contains(metadataDocId)) {
@@ -2124,7 +2125,7 @@ public class FileHashStore implements HashStore {
             try (FileChannel channel = FileChannel.open(
                 absRefsPath, StandardOpenOption.READ, StandardOpenOption.WRITE
             ); FileLock ignored = channel.lock()) {
-                List<String> lines = new ArrayList<>(Files.readAllLines(absRefsPath));
+                Collection<String> lines = new ArrayList<>(Files.readAllLines(absRefsPath));
 
                 if (updateType.equals("add")) {
                     lines.add(ref);
