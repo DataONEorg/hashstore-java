@@ -4,13 +4,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
-import java.util.Map;
 
 import org.dataone.hashstore.exceptions.NonMatchingChecksumException;
 import org.dataone.hashstore.exceptions.NonMatchingObjSizeException;
-import org.dataone.hashstore.exceptions.OrphanPidRefsFileException;
-import org.dataone.hashstore.exceptions.OrphanRefsFilesException;
-import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 import org.dataone.hashstore.exceptions.UnsupportedHashAlgorithmException;
 
@@ -71,7 +67,7 @@ public interface HashStore {
          *                                    illegal arguments (ex. empty pid) or null pointers
          * @throws InterruptedException       When tagging pid and cid process is interrupted
          */
-        public ObjectMetadata storeObject(
+        ObjectMetadata storeObject(
                 InputStream object, String pid, String additionalAlgorithm, String checksum,
                 String checksumAlgorithm, long objSize
         ) throws NoSuchAlgorithmException, IOException, PidRefsFileExistsException,
@@ -82,7 +78,7 @@ public interface HashStore {
          * 
          *      Store an object only without reference files.
          */
-        public ObjectMetadata storeObject(InputStream object) throws NoSuchAlgorithmException,
+        ObjectMetadata storeObject(InputStream object) throws NoSuchAlgorithmException,
                 IOException, PidRefsFileExistsException, RuntimeException, InterruptedException;
 
         /**
@@ -100,7 +96,7 @@ public interface HashStore {
          * @throws InterruptedException       When tagObject is waiting to execute but is
          *                                    interrupted
          */
-        public void tagObject(String pid, String cid) throws IOException,
+        void tagObject(String pid, String cid) throws IOException,
                 PidRefsFileExistsException, NoSuchAlgorithmException, FileNotFoundException,
                 InterruptedException;
 
@@ -124,7 +120,7 @@ public interface HashStore {
          * @throws IOException                       Issue with recalculating supported algo for
          *                                           checksum not found
          */
-        public void verifyObject(
+        void verifyObject(
             ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize,
             boolean deleteInvalidObject)
             throws NonMatchingObjSizeException, NonMatchingChecksumException,
@@ -153,7 +149,7 @@ public interface HashStore {
          * @throws NoSuchAlgorithmException Algorithm used to calculate permanent address is not
          *                                  supported
          */
-        public String storeMetadata(InputStream metadata, String pid, String formatId)
+        String storeMetadata(InputStream metadata, String pid, String formatId)
                 throws IOException, IllegalArgumentException, FileNotFoundException,
                 InterruptedException, NoSuchAlgorithmException;
 
@@ -163,7 +159,7 @@ public interface HashStore {
          *      If the '(InputStream metadata, String pid)' signature is used, the metadata format
          *      stored will default to `sysmeta`.
          */
-        public String storeMetadata(InputStream metadata, String pid) throws IOException,
+        String storeMetadata(InputStream metadata, String pid) throws IOException,
                 IllegalArgumentException, FileNotFoundException, InterruptedException,
                 NoSuchAlgorithmException;
 
@@ -178,7 +174,7 @@ public interface HashStore {
          * @throws NoSuchAlgorithmException When algorithm used to calculate object address is not
          *                                  supported
          */
-        public InputStream retrieveObject(String pid) throws IllegalArgumentException,
+        InputStream retrieveObject(String pid) throws IllegalArgumentException,
                 FileNotFoundException, IOException, NoSuchAlgorithmException;
 
         /**
@@ -194,7 +190,7 @@ public interface HashStore {
          * @throws NoSuchAlgorithmException When algorithm used to calculate metadata address is not
          *                                  supported
          */
-        public InputStream retrieveMetadata(String pid, String formatId)
+        InputStream retrieveMetadata(String pid, String formatId)
                 throws IllegalArgumentException, FileNotFoundException, IOException,
                 NoSuchAlgorithmException;
 
@@ -204,7 +200,7 @@ public interface HashStore {
          *      If `retrieveMetadata` is called with signature (String pid), the metadata
          *      document retrieved will be the given pid's 'sysmeta'
          */
-        public InputStream retrieveMetadata(String pid) throws IllegalArgumentException,
+        InputStream retrieveMetadata(String pid) throws IllegalArgumentException,
                 FileNotFoundException, IOException, NoSuchAlgorithmException;
 
         /**
@@ -220,7 +216,7 @@ public interface HashStore {
          *                                  address is not supported
          * @throws InterruptedException     When deletion synchronization is interrupted
          */
-        public void deleteObject(String pid) throws IllegalArgumentException, IOException,
+        void deleteObject(String pid) throws IllegalArgumentException, IOException,
                 NoSuchAlgorithmException, InterruptedException;
 
         /**
@@ -235,7 +231,7 @@ public interface HashStore {
          *                                  supported
          * @throws InterruptedException Issue with synchronization on metadata doc
          */
-        public void deleteMetadata(String pid, String formatId) throws IllegalArgumentException,
+        void deleteMetadata(String pid, String formatId) throws IllegalArgumentException,
                 IOException, NoSuchAlgorithmException, InterruptedException;
 
         /**
@@ -248,7 +244,7 @@ public interface HashStore {
          *                                  supported
          * @throws InterruptedException Issue with synchronization on metadata doc
          */
-        public void deleteMetadata(String pid) throws IllegalArgumentException, IOException,
+        void deleteMetadata(String pid) throws IllegalArgumentException, IOException,
                 NoSuchAlgorithmException, InterruptedException;
 
         /**
@@ -264,6 +260,6 @@ public interface HashStore {
          * @throws NoSuchAlgorithmException When algorithm used to calculate object address is not
          *                                  supported
          */
-        public String getHexDigest(String pid, String algorithm) throws IllegalArgumentException,
+        String getHexDigest(String pid, String algorithm) throws IllegalArgumentException,
                 FileNotFoundException, IOException, NoSuchAlgorithmException;
 }
