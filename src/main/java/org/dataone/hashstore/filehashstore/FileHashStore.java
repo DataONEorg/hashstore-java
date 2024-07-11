@@ -846,7 +846,7 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(formatId, "formatId", "retrieveMetadata");
         FileHashStoreUtility.checkForEmptyString(formatId, "formatId", "retrieveMetadata");
 
-        return getMetadataDocInputStream(pid, formatId);
+        return getHashStoreMetadataInputStream(pid, formatId);
     }
 
     /**
@@ -863,7 +863,7 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(pid, "pid", "retrieveMetadata");
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "retrieveMetadata");
 
-        return getMetadataDocInputStream(pid, DEFAULT_METADATA_NAMESPACE);
+        return getHashStoreMetadataInputStream(pid, DEFAULT_METADATA_NAMESPACE);
     }
 
     @Override
@@ -2381,49 +2381,6 @@ public class FileHashStore implements HashStore {
         }
     }
 
-
-    /**
-     * Get an InputStream to a metadata document if it exists in FileHashStore
-     *
-     * @param pid      Persistent or authority-based identifier
-     * @param formatId Metadata namespace
-     * @return InputStream to metadata doc
-     * @throws NoSuchAlgorithmException An algorithm used in the calculation is not supported
-     * @throws FileNotFoundException    If the metadata document is not found
-     * @throws IOException              If there is an issue returning an input stream
-     */
-    protected InputStream getMetadataDocInputStream(String pid, String formatId)
-        throws NoSuchAlgorithmException, IOException, FileNotFoundException {
-        Path metadataCidPath = getHashStoreMetadataPath(pid, formatId);
-
-        // Check to see if metadata exists
-        if (!Files.exists(metadataCidPath)) {
-            String errMsg =
-                "FileHashStore.getMetadataDocInputStream - Metadata does not exist for pid: " + pid
-                    + " with formatId: " + formatId + ". Metadata address: " + metadataCidPath;
-            logFileHashStore.warn(errMsg);
-            throw new FileNotFoundException(errMsg);
-        }
-
-        // Return an InputStream to read from the metadata document
-        try {
-            InputStream metadataCidInputStream = Files.newInputStream(metadataCidPath);
-            logFileHashStore.info(
-                "FileHashStore.getMetadataDocInputStream - Retrieved metadata for pid: " + pid
-                    + " with formatId: " + formatId);
-            return metadataCidInputStream;
-
-        } catch (IOException ioe) {
-            String errMsg =
-                "FileHashStore.getMetadataDocInputStream - Unexpected error when creating "
-                    + "InputStream for pid: " + pid + " with formatId: " + formatId
-                    + ". IOException: " + ioe.getMessage();
-            logFileHashStore.error(errMsg);
-            throw new IOException(errMsg);
-        }
-    }
-
-
     /**
      * Get the absolute path to a HashStore data object
      *
@@ -2481,6 +2438,47 @@ public class FileHashStore implements HashStore {
         return METADATA_STORE_DIRECTORY.resolve(pidMetadataDirRelPath).resolve(
             metadataDocHash
         );
+    }
+
+    /**
+     * Get an InputStream to a metadata document if it exists in FileHashStore
+     *
+     * @param pid      Persistent or authority-based identifier
+     * @param formatId Metadata namespace
+     * @return InputStream to metadata doc
+     * @throws NoSuchAlgorithmException An algorithm used in the calculation is not supported
+     * @throws FileNotFoundException    If the metadata document is not found
+     * @throws IOException              If there is an issue returning an input stream
+     */
+    protected InputStream getHashStoreMetadataInputStream(String pid, String formatId)
+        throws NoSuchAlgorithmException, IOException, FileNotFoundException {
+        Path metadataCidPath = getHashStoreMetadataPath(pid, formatId);
+
+        // Check to see if metadata exists
+        if (!Files.exists(metadataCidPath)) {
+            String errMsg =
+                "FileHashStore.getMetadataDocInputStream - Metadata does not exist for pid: " + pid
+                    + " with formatId: " + formatId + ". Metadata address: " + metadataCidPath;
+            logFileHashStore.warn(errMsg);
+            throw new FileNotFoundException(errMsg);
+        }
+
+        // Return an InputStream to read from the metadata document
+        try {
+            InputStream metadataCidInputStream = Files.newInputStream(metadataCidPath);
+            logFileHashStore.info(
+                "FileHashStore.getMetadataDocInputStream - Retrieved metadata for pid: " + pid
+                    + " with formatId: " + formatId);
+            return metadataCidInputStream;
+
+        } catch (IOException ioe) {
+            String errMsg =
+                "FileHashStore.getMetadataDocInputStream - Unexpected error when creating "
+                    + "InputStream for pid: " + pid + " with formatId: " + formatId
+                    + ". IOException: " + ioe.getMessage();
+            logFileHashStore.error(errMsg);
+            throw new IOException(errMsg);
+        }
     }
 
     /**
