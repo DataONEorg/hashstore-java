@@ -930,17 +930,15 @@ public class FileHashStore implements HashStore {
 
                 try {
                     // Proceed with comprehensive deletion - cid exists, nothing out of place
-                    // Get all the required paths to streamline deletion process
-                    Path objRealPath = getHashStoreDataObjectPath(pid);
                     Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
                     Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
 
                     // Begin deletion process
-                    deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
                     updateRefsFile(pid, absCidRefsPath, "remove");
                     if (Files.size(absCidRefsPath) == 0) {
-                        deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
+                        Path objRealPath = getHashStoreDataObjectPath(pid);
                         deleteList.add(FileHashStoreUtility.renamePathForDeletion(objRealPath));
+                        deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
                     } else {
                         String warnMsg =
                             "FileHashStore.deleteObject - cid referenced by pid: " + pid
@@ -948,12 +946,12 @@ public class FileHashStore implements HashStore {
                                 + "deletion.";
                         logFileHashStore.warn(warnMsg);
                     }
+                    deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
                     // Delete all related/relevant items with the least amount of delay
                     FileHashStoreUtility.deleteListItems(deleteList);
                     deleteMetadata(pid);
                     logFileHashStore.info(
-                        "FileHashStore.deleteObject - File and references deleted for: " + pid
-                            + " with object address: " + objRealPath);
+                        "FileHashStore.deleteObject - File and references deleted for: " + pid);
 
                 } finally {
                     // Release lock
@@ -1006,13 +1004,13 @@ public class FileHashStore implements HashStore {
                 }
 
                 try {
-                    deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
                     Path absCidRefsPath =
                         getHashStoreRefsPath(cidRead, HashStoreIdTypes.cid.getName());
                     updateRefsFile(pid, absCidRefsPath, "remove");
                     if (Files.size(absCidRefsPath) == 0) {
                         deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
                     }
+                    deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
                     // Delete items
                     FileHashStoreUtility.deleteListItems(deleteList);
                     deleteMetadata(pid);
@@ -2004,18 +2002,13 @@ public class FileHashStore implements HashStore {
                 }
 
                 try {
-                    // Cid refs file
+                    // Get paths to reference files to work on
                     Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
-                    // Pid refs file
                     Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
 
-                    // Rename pid refs file to prepare for deletion
-                    deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
-                    // Remove pid from cid refs file
+                    // Begin deletion process
                     updateRefsFile(pid, absCidRefsPath, "remove");
-                    // Delete the cid refs file **only** if the cid refs file is empty
                     if (Files.size(absCidRefsPath) == 0) {
-                        // Rename empty cid refs file to prepare for deletion
                         deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
                     } else {
                         String warnMsg =
@@ -2024,6 +2017,7 @@ public class FileHashStore implements HashStore {
                                 + "deletion.";
                         logFileHashStore.warn(warnMsg);
                     }
+                    deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
                     // Delete all related/relevant items with the least amount of delay
                     FileHashStoreUtility.deleteListItems(deleteList);
                     logFileHashStore.info(
@@ -2043,8 +2037,6 @@ public class FileHashStore implements HashStore {
             } catch (OrphanPidRefsFileException oprfe) {
                 // `findObject` throws this exception when the cid refs file doesn't exist,
                 // so we only need to delete the pid refs file
-
-                // Begin by renaming pid refs file for deletion
                 Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
                 deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
                 // Delete items
@@ -2057,11 +2049,8 @@ public class FileHashStore implements HashStore {
             } catch (OrphanRefsFilesException orfe) {
                 // `findObject` throws this exception when the pid and cid refs file exists,
                 // but the actual object being referenced by the pid does not exist
-
-                // Get the cid from the pid refs file before renaming it for deletion
                 Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
                 String cidRead = new String(Files.readAllBytes(absPidRefsPath));
-
                 // Since we must access the cid reference file, the `cid` must be synchronized
                 synchronized (referenceLockedCids) {
                     while (referenceLockedCids.contains(cidRead)) {
@@ -2084,17 +2073,13 @@ public class FileHashStore implements HashStore {
                 }
 
                 try {
-                    // Rename pid refs file for deletion
-                    deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
-
-                    // Remove the pid from the cid refs file
                     Path absCidRefsPath =
                         getHashStoreRefsPath(cidRead, HashStoreIdTypes.cid.getName());
                     updateRefsFile(pid, absCidRefsPath, "remove");
-                    // Add the cid reference file to deleteList if it's now empty
                     if (Files.size(absCidRefsPath) == 0) {
                         deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
                     }
+                    deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
                     // Delete items
                     FileHashStoreUtility.deleteListItems(deleteList);
                     String warnMsg = "FileHashStore.unTagObject - Object with cid: " + cidRead
