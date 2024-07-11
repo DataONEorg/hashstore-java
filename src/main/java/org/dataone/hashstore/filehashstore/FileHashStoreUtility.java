@@ -11,6 +11,7 @@ import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
@@ -165,9 +166,9 @@ public class FileHashStoreUtility {
      * @param deleteList Directory to check
      * @throws IOException Unexpected I/O error when deleting files
      */
-    public static void deleteListItems(List<Path> deleteList) throws IOException {
+    public static void deleteListItems(Collection<Path> deleteList) throws IOException {
         ensureNotNull(deleteList, "deleteList", "deleteListItems");
-        if (deleteList.size() > 0) {
+        if (!deleteList.isEmpty()) {
             for (Path deleteItem : deleteList) {
                 if (Files.exists(deleteItem)) {
                     Files.delete(deleteItem);
@@ -244,7 +245,7 @@ public class FileHashStoreUtility {
      * @return String
      */
     public static String getHierarchicalPathString(int depth, int width, String digest) {
-        List<String> tokens = new ArrayList<>();
+        Collection<String> tokens = new ArrayList<>();
         int digestLength = digest.length();
         for (int i = 0; i < depth; i++) {
             int start = i * width;
@@ -256,7 +257,7 @@ public class FileHashStoreUtility {
             tokens.add(digest.substring(depth * width));
         }
 
-        List<String> stringArray = new ArrayList<>();
+        Collection<String> stringArray = new ArrayList<>();
         for (String str : tokens) {
             if (!str.trim().isEmpty()) {
                 stringArray.add(str);
