@@ -551,34 +551,6 @@ public class FileHashStoreReferencesTest {
     }
 
     /**
-     * Check that deleteRefsFile deletes file
-     */
-    @Test
-    public void deleteRefsFile_fileDeleted() throws Exception {
-        String pid = "dou.test.1";
-        String cid = "abcdef123456789";
-        fileHashStore.tagObject(pid, cid);
-
-        Path pidRefsFilePath = fileHashStore.getHashStoreRefsPath(pid, "pid");
-        fileHashStore.deleteRefsFile(pidRefsFilePath);
-
-        assertFalse(Files.exists(pidRefsFilePath));
-    }
-
-    /**
-     * Check that deletePidRefsFile throws exception when there is no file to delete
-     */
-    @Test
-    public void deletePidRefsFile_missingPidRefsFile() {
-        String pid = "dou.test.1";
-
-        assertThrows(FileNotFoundException.class, () -> {
-            Path pidRefsFilePath = fileHashStore.getHashStoreRefsPath(pid, "pid");
-            fileHashStore.deleteRefsFile(pidRefsFilePath);
-        });
-    }
-
-    /**
      * Check that deleteCidRefsPid deletes pid from its cid refs file
      */
     @Test
