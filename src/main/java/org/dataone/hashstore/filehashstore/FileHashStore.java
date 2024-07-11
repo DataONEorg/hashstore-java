@@ -1385,7 +1385,7 @@ public class FileHashStore implements HashStore {
             String errMsg = "FileHashStore.putObject - File already exists for pid: " + pid
                 + ". Object address: " + objRealPath + ". Deleting temporary file.";
             logFileHashStore.warn(errMsg);
-            tmpFile.delete();
+            Files.delete(tmpFilePath);
         } else {
             // Move object
             File permFile = objRealPath.toFile();
