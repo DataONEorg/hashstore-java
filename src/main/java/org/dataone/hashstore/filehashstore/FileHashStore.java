@@ -110,11 +110,11 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Constructor to initialize HashStore, properties are required.
-     *
-     * Note: HashStore is not responsible for ensuring that the given store path is accurate. It
-     * will only check for an existing configuration, directories or objects at the supplied store
-     * path before initializing.
+     * Constructor to initialize FileHashStore, properties are required. FileHashStore is not
+     * responsible for ensuring that the given store path is accurate. Upon initialization, if
+     * an existing config file (hashstore.yaml) is present, it will confirm that it is accurate
+     * against the supplied properties. If not, FileHashSTore will check for 'hashstore' specific
+     * directories at the supplied store path before initializing.
      *
      * @param hashstoreProperties Properties object with the following keys: storePath, storeDepth,
      *                            storeWidth, storeAlgorithm, storeMetadataNamespace
@@ -130,7 +130,6 @@ public class FileHashStore implements HashStore {
         );
 
         // Get properties
-        // Note - Paths.get() throws NullPointerException if arg is null
         Path storePath = Paths.get(
             hashstoreProperties.getProperty(HashStoreProperties.storePath.name())
         );
@@ -147,7 +146,6 @@ public class FileHashStore implements HashStore {
             HashStoreProperties.storeMetadataNamespace.name()
         );
 
-        // Check given properties and/with existing HashStore
         verifyHashStoreProperties(
             storePath, storeDepth, storeWidth, storeAlgorithm, storeMetadataNamespace
         );
@@ -158,12 +156,9 @@ public class FileHashStore implements HashStore {
         DIRECTORY_WIDTH = storeWidth;
         OBJECT_STORE_ALGORITHM = storeAlgorithm;
         DEFAULT_METADATA_NAMESPACE = storeMetadataNamespace;
-        // Resolve object/metadata/refs directories
         OBJECT_STORE_DIRECTORY = storePath.resolve("objects");
         METADATA_STORE_DIRECTORY = storePath.resolve("metadata");
         REFS_STORE_DIRECTORY = storePath.resolve("refs");
-        // Resolve tmp object/metadata directory paths, this is where objects are
-        // created before they are moved to their permanent address
         OBJECT_TMP_FILE_DIRECTORY = OBJECT_STORE_DIRECTORY.resolve("tmp");
         METADATA_TMP_FILE_DIRECTORY = METADATA_STORE_DIRECTORY.resolve("tmp");
         REFS_TMP_FILE_DIRECTORY = REFS_STORE_DIRECTORY.resolve("tmp");
@@ -171,7 +166,6 @@ public class FileHashStore implements HashStore {
         REFS_CID_FILE_DIRECTORY = REFS_STORE_DIRECTORY.resolve("cids");
 
         try {
-            // Physically create object & metadata store and tmp directories
             Files.createDirectories(OBJECT_STORE_DIRECTORY);
             Files.createDirectories(METADATA_STORE_DIRECTORY);
             Files.createDirectories(REFS_STORE_DIRECTORY);
@@ -218,14 +212,11 @@ public class FileHashStore implements HashStore {
 
     /**
      * Determines whether FileHashStore can instantiate by validating a set of arguments and
-     * throwing exceptions. HashStore will not instantiate if an existing configuration file's
-     * properties (`hashstore.yaml`) are different from what is supplied - or if an object store
-     * exists at the given path, but it is missing the `hashstore.yaml` config file.
-     *
-     * If `hashstore.yaml` exists, it will retrieve its properties and compare them with the given
-     * values; and if there is a mismatch, an exception will be thrown. If not, it will look to see
-     * if any relevant HashStore directories exist (i.e. '/objects', '/metadata', '/refs') in the
-     * given store path and throw an exception if any of those directories exist.
+     * throwing exceptions. If HashStore configuration file (`hashstore.yaml`) exists, it will
+     * retrieve its properties and compare them with the given values; and if there is a
+     * mismatch, an exception will be thrown. If not, it will look to see if any relevant
+     * HashStore directories exist (i.e. '/objects', '/metadata', '/refs') in the given store
+     * path and throw an exception if any of those directories exist.
      *
      * @param storePath              Path where HashStore will store objects
      * @param storeDepth             Depth of directories
@@ -247,9 +238,7 @@ public class FileHashStore implements HashStore {
             logFileHashStore.fatal(errMsg);
             throw new IllegalArgumentException(errMsg);
         }
-        // Ensure algorithm supplied is not empty, not null and supported
         validateAlgorithm(storeAlgorithm);
-        // Review metadata format (formatId)
         FileHashStoreUtility.ensureNotNull(
             storeMetadataNamespace, "storeMetadataNamespace", "FileHashStore - constructor"
         );
@@ -272,7 +261,6 @@ public class FileHashStore implements HashStore {
                 HashStoreProperties.storeMetadataNamespace.name()
             );
 
-            // Verify properties when 'hashstore.yaml' found
             FileHashStoreUtility.checkObjectEquality("store depth", storeDepth, existingStoreDepth);
             FileHashStoreUtility.checkObjectEquality("store width", storeWidth, existingStoreWidth);
             FileHashStoreUtility.checkObjectEquality("store algorithm", storeAlgorithm,
@@ -310,7 +298,7 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Get the properties of HashStore from 'hashstore.yaml'
+     * Get the properties of HashStore from an existing 'hashstore.yaml'
      *
      * @param storePath Path to root of store
      * @return HashMap of the properties
@@ -430,8 +418,7 @@ public class FileHashStore implements HashStore {
         logFileHashStore.debug(
             "FileHashStore.storeObject - Called to store object for pid: " + pid
         );
-
-        // Begin input validation
+        // Validate input parameters
         FileHashStoreUtility.ensureNotNull(object, "object", "storeObject");
         FileHashStoreUtility.ensureNotNull(pid, "pid", "storeObject");
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "storeObject");
@@ -552,7 +539,7 @@ public class FileHashStore implements HashStore {
         // algorithm, etc.) is unavailable.
         //
         // Note: This method does not tag the object to make it discoverable, so the client can
-        // call 'verifyObject' (optional) to check that the object is valid, and 'tagObject'
+        // call 'verifyObject' (optional) to check that the object is valid, and then 'tagObject'
         // (required) to create the reference files needed to associate the respective pids/cids.
         return putObject(object, "HashStoreNoPid", null, null, null, -1);
     }
@@ -634,6 +621,7 @@ public class FileHashStore implements HashStore {
         logFileHashStore.debug(
             "FileHashStore.verifyObject - Called to verify object with id: " + objectInfo.getCid()
         );
+        // Validate input parameters
         FileHashStoreUtility.ensureNotNull(objectInfo, "objectInfo", "verifyObject");
         FileHashStoreUtility.ensureNotNull(checksum, "checksum", "verifyObject");
         FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm", "verifyObject");
@@ -714,7 +702,6 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(pid, "pid", "storeMetadata");
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "storeMetadata");
 
-        // Determine metadata namespace
         // If no formatId is supplied, use the default namespace to store metadata
         String checkedFormatId;
         if (formatId == null) {
@@ -732,7 +719,7 @@ public class FileHashStore implements HashStore {
      */
     private String syncPutMetadata(InputStream metadata, String pid, String checkedFormatId)
         throws InterruptedException, IOException, NoSuchAlgorithmException {
-        // Lock pid for thread safety, transaction control and atomic writing
+        // Get the metadata document id, which is the synchronization value
         // Metadata storage requests for the same pid must be written serially
         // However, the same pid could be used with different formatIds, so
         // synchronize ids with pid + formatId;
@@ -773,7 +760,6 @@ public class FileHashStore implements HashStore {
             return pathToStoredMetadata;
 
         } catch (IOException ioe) {
-            // Covers FileNotFoundException
             String errMsg = "FileHashStore.storeMetadata - Unable to store metadata, IOException"
                 + " encountered: " + ioe.getMessage();
             logFileHashStore.error(errMsg);
@@ -819,10 +805,8 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(pid, "pid", "retrieveObject");
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "retrieveObject");
 
-        // Get permanent address of the pid by calculating its sha-256 hex digest
-        Path objRealPath = getHashStoreDataObjectPath(pid);
-
         // Check to see if object exists
+        Path objRealPath = getHashStoreDataObjectPath(pid);
         if (!Files.exists(objRealPath)) {
             String errMsg = "FileHashStore.retrieveObject - File does not exist for pid: " + pid
                 + " with object address: " + objRealPath;
@@ -830,7 +814,7 @@ public class FileHashStore implements HashStore {
             throw new FileNotFoundException(errMsg);
         }
 
-        // If so, return an input stream for the object
+        // Return an InputStream to read from the data object
         try {
             InputStream objectCidInputStream = Files.newInputStream(objRealPath);
             logFileHashStore.info(
@@ -862,34 +846,7 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(formatId, "formatId", "retrieveMetadata");
         FileHashStoreUtility.checkForEmptyString(formatId, "formatId", "retrieveMetadata");
 
-        // Get permanent address of the pid by calculating its sha-256 hex digest
-        Path metadataCidPath = getHashStoreMetadataPath(pid, formatId);
-
-        // Check to see if metadata exists
-        if (!Files.exists(metadataCidPath)) {
-            String errMsg = "FileHashStore.retrieveMetadata - Metadata does not exist for pid: "
-                + pid + " with formatId: " + formatId + ". Metadata address: " + metadataCidPath;
-            logFileHashStore.warn(errMsg);
-            throw new FileNotFoundException(errMsg);
-        }
-
-        // If so, return an input stream for the metadata
-        try {
-            InputStream metadataCidInputStream = Files.newInputStream(metadataCidPath);
-            logFileHashStore.info(
-                "FileHashStore.retrieveMetadata - Retrieved metadata for pid: " + pid
-                    + " with formatId: " + formatId
-            );
-            return metadataCidInputStream;
-
-        } catch (IOException ioe) {
-            String errMsg =
-                "FileHashStore.retrieveMetadata - Unexpected error when creating InputStream"
-                    + " for pid: " + pid + " with formatId: " + formatId + ". IOException: " + ioe
-                        .getMessage();
-            logFileHashStore.error(errMsg);
-            throw new IOException(errMsg);
-        }
+        return getMetadataDocInputStream(pid, formatId);
     }
 
     /**
@@ -906,36 +863,7 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(pid, "pid", "retrieveMetadata");
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "retrieveMetadata");
 
-        // Get permanent address of the pid by calculating its sha-256 hex digest
-        Path metadataCidPath = getHashStoreMetadataPath(pid, DEFAULT_METADATA_NAMESPACE);
-
-        // Check to see if metadata exists
-        if (!Files.exists(metadataCidPath)) {
-            String errMsg = "FileHashStore.retrieveMetadata - Metadata does not exist for pid: "
-                + pid + " with formatId: " + DEFAULT_METADATA_NAMESPACE + ". Metadata address: "
-                + metadataCidPath;
-            logFileHashStore.warn(errMsg);
-            throw new FileNotFoundException(errMsg);
-        }
-
-        // If so, return an input stream for the metadata
-        InputStream metadataCidInputStream;
-        try {
-            metadataCidInputStream = Files.newInputStream(metadataCidPath);
-            logFileHashStore.info(
-                "FileHashStore.retrieveMetadata - Retrieved metadata for pid: " + pid
-                    + " with formatId: " + DEFAULT_METADATA_NAMESPACE
-            );
-        } catch (IOException ioe) {
-            String errMsg =
-                "FileHashStore.retrieveMetadata - Unexpected error when creating InputStream"
-                    + " for pid: " + pid + " with formatId: " + DEFAULT_METADATA_NAMESPACE
-                    + ". IOException: " + ioe.getMessage();
-            logFileHashStore.error(errMsg);
-            throw new IOException(errMsg);
-        }
-
-        return metadataCidInputStream;
+        return getMetadataDocInputStream(pid, DEFAULT_METADATA_NAMESPACE);
     }
 
     @Override
@@ -1638,7 +1566,7 @@ public class FileHashStore implements HashStore {
 
     /**
      * Checks whether the algorithm supplied is included in the DefaultHashAlgorithms
-     * 
+     *
      * @param algorithm Algorithm to check
      * @return True if it's included
      */
@@ -2366,7 +2294,7 @@ public class FileHashStore implements HashStore {
 
     /**
      * Checks a given refs file for a ref. This is case-sensitive.
-     * 
+     *
      * @param ref         Authority-based or persistent identifier to search
      * @param absRefsPath Path to the refs file to check
      * @return True if cid is found, false otherwise
@@ -2386,7 +2314,7 @@ public class FileHashStore implements HashStore {
 
     /**
      * Adds or removes a ref value from a refs file given an 'updateType'
-     * 
+     *
      * @param ref         Authority-based or persistent identifier
      * @param absRefsPath Path to the refs file to update
      * @param updateType  "add" or "remove"
@@ -2436,7 +2364,7 @@ public class FileHashStore implements HashStore {
 
     /**
      * Deletes a references file at the given path
-     * 
+     *
      * @param absRefsPath Path to the refs file to delete
      * @throws IOException Unable to delete object or open pid refs file
      */
@@ -2551,6 +2479,50 @@ public class FileHashStore implements HashStore {
             os.close();
         }
     }
+
+
+    /**
+     * Get an InputStream to a metadata document if it exists in FileHashStore
+     *
+     * @param pid      Persistent or authority-based identifier
+     * @param formatId Metadata namespace
+     * @return InputStream to metadata doc
+     * @throws NoSuchAlgorithmException An algorithm used in the calculation is not supported
+     * @throws FileNotFoundException    If the metadata document is not found
+     * @throws IOException              If there is an issue returning an input stream
+     */
+    protected InputStream getMetadataDocInputStream(String pid, String formatId)
+        throws NoSuchAlgorithmException, IOException, FileNotFoundException {
+        // Get permanent address of the pid by calculating its sha-256 hex digest
+        Path metadataCidPath = getHashStoreMetadataPath(pid, formatId);
+
+        // Check to see if metadata exists
+        if (!Files.exists(metadataCidPath)) {
+            String errMsg = "FileHashStore.retrieveMetadata - Metadata does not exist for pid: "
+                + pid + " with formatId: " + formatId + ". Metadata address: " + metadataCidPath;
+            logFileHashStore.warn(errMsg);
+            throw new FileNotFoundException(errMsg);
+        }
+
+        // Return an InputStream to read from the metadata document
+        try {
+            InputStream metadataCidInputStream = Files.newInputStream(metadataCidPath);
+            logFileHashStore.info(
+                "FileHashStore.retrieveMetadata - Retrieved metadata for pid: " + pid
+                    + " with formatId: " + formatId
+            );
+            return metadataCidInputStream;
+
+        } catch (IOException ioe) {
+            String errMsg =
+                "FileHashStore.retrieveMetadata - Unexpected error when creating InputStream"
+                    + " for pid: " + pid + " with formatId: " + formatId + ". IOException: " + ioe
+                    .getMessage();
+            logFileHashStore.error(errMsg);
+            throw new IOException(errMsg);
+        }
+    }
+
 
     /**
      * Get the absolute path to a HashStore data object
