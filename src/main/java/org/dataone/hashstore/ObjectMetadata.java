@@ -10,7 +10,7 @@ import java.util.Map;
  * underlying file system details.
  */
 public class ObjectMetadata {
-    private String pid = null;
+    private String pid;
     private final String cid;
     private final long size;
     private final Map<String, String> hexDigests;
