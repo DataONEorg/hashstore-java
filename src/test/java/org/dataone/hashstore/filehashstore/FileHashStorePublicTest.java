@@ -14,6 +14,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Properties;
 
+import org.dataone.hashstore.HashStore;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -421,7 +422,7 @@ public class FileHashStorePublicTest {
                 "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
             );
 
-            FileHashStore secondHashStore = new FileHashStore(storeProperties);
+            HashStore secondHashStore = new FileHashStore(storeProperties);
 
             // Confirm config present
             Path newStoreHashStoreYaml = newStoreDirectory.resolve("hashstore.yaml");

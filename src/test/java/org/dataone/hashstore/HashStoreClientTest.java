@@ -12,7 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 import java.util.Properties;
 
 import org.dataone.hashstore.filehashstore.FileHashStoreUtility;
@@ -67,7 +67,7 @@ public class HashStoreClientTest {
      * @return String
      */
     protected String getHierarchicalPathString(int dirDepth, int dirWidth, String digest) {
-        List<String> tokens = new ArrayList<>();
+        Collection<String> tokens = new ArrayList<>();
         int digestLength = digest.length();
         for (int i = 0; i < dirDepth; i++) {
             int start = i * dirWidth;
@@ -79,7 +79,7 @@ public class HashStoreClientTest {
             tokens.add(digest.substring(dirDepth * dirWidth));
         }
 
-        List<String> stringArray = new ArrayList<>();
+        Collection<String> stringArray = new ArrayList<>();
         for (String str : tokens) {
             if (!str.trim().isEmpty()) {
                 stringArray.add(str);

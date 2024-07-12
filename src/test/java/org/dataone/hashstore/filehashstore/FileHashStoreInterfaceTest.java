@@ -20,11 +20,11 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -703,7 +703,7 @@ public class FileHashStoreInterfaceTest {
 
         for (String pidAdjusted : pidModifiedList) {
             InputStream dataStream = Files.newInputStream(testDataFile);
-            HashStoreRunnable
+            Runnable
                 request = new HashStoreRunnable(fileHashStore, 1, dataStream, pidAdjusted);
             executorService.execute(request);
         }
@@ -714,7 +714,7 @@ public class FileHashStoreInterfaceTest {
         // Check cid refs file that every pid is found
         String cidSha256DigestFromTestData = testData.pidData.get(pid).get("sha256");
         Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(cidSha256DigestFromTestData, "cid");
-        Set<String> stringSet = new HashSet<>(pidModifiedList);
+        Collection<String> stringSet = new HashSet<>(pidModifiedList);
         List<String> lines = Files.readAllLines(cidRefsFilePath);
         boolean allFoundPidsFound = true;
         for (String line : lines) {
@@ -1966,7 +1966,7 @@ public class FileHashStoreInterfaceTest {
         String pid = "jtao.1700.1";
         Path testDataFile = testData.getTestFile(pid);
 
-        List<String> pidModifiedList = new ArrayList<>();
+        Collection<String> pidModifiedList = new ArrayList<>();
         for (int i = 1; i <= 1000; i++) {
             pidModifiedList.add(pid + ".dou.test." + i);
         }
@@ -1978,13 +1978,13 @@ public class FileHashStoreInterfaceTest {
         // Store 1000
         for (String pidAdjusted : pidModifiedList) {
             InputStream dataStream = Files.newInputStream(testDataFile);
-            HashStoreRunnable
+            Runnable
                 request = new HashStoreRunnable(fileHashStore, 1, dataStream, pidAdjusted);
             executorService.execute(request);
         }
         // Delete 1000
         for (String pidAdjusted : pidModifiedList) {
-            HashStoreRunnable
+            Runnable
                 request = new HashStoreRunnable(fileHashStore, 2, pidAdjusted);
             executorService.execute(request);
         }
