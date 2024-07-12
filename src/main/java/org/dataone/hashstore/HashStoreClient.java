@@ -11,8 +11,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.sql.Connection;
@@ -34,8 +34,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 /**
- * HashStoreClient is a command line interface that allows a developer to create a new HashStore or
- * interact directly with an existing HashStore. See 'README.md' for usage examples.
+ * HashStoreClient is a command line interface is a development tool to create a new
+ * HashStore or interact directly with an existing HashStore through the command line.
+ * See 'README.md' for usage examples.
  */
 public class HashStoreClient {
     private static HashStore hashStore;
@@ -492,7 +493,7 @@ public class HashStoreClient {
 
             // For each row, get guid, docid, rev, checksum and checksum_algorithm
             // and create a List to loop over
-            List<Map<String, String>> resultObjList = new ArrayList<>();
+            Collection<Map<String, String>> resultObjList = new ArrayList<>();
             while (resultSet.next()) {
                 String guid = resultSet.getString("guid");
                 String docid = resultSet.getString("docid");
@@ -566,7 +567,7 @@ public class HashStoreClient {
      * @param resultObjList List containing items with the following properties: 'pid', 'path',
      *                      'algorithm', 'checksum'
      */
-    private static void storeObjsWithChecksumFromDb(List<Map<String, String>> resultObjList) {
+    private static void storeObjsWithChecksumFromDb(Collection<Map<String, String>> resultObjList) {
         resultObjList.parallelStream().forEach(item -> {
             String guid = null;
             try {
@@ -623,7 +624,7 @@ public class HashStoreClient {
      * @param resultObjList List containing items with the following properties: 'pid', 'algorithm',
      *                      'checksum'
      */
-    private static void retrieveAndValidateObjs(List<Map<String, String>> resultObjList) {
+    private static void retrieveAndValidateObjs(Collection<Map<String, String>> resultObjList) {
         resultObjList.parallelStream().forEach(item -> {
             String guid = null;
             try {
@@ -683,7 +684,7 @@ public class HashStoreClient {
      * 
      * @param resultObjList List containing items with the following property: 'pid'
      */
-    private static void deleteObjectsFromStore(List<Map<String, String>> resultObjList) {
+    private static void deleteObjectsFromStore(Collection<Map<String, String>> resultObjList) {
         resultObjList.parallelStream().forEach(item -> {
             String guid = null;
             try {
@@ -727,7 +728,7 @@ public class HashStoreClient {
      * @param resultObjList List containing items that have the following properties: 'pid', 'path'
      *                      and 'namespace'
      */
-    private static void storeMetadataFromDb(List<Map<String, String>> resultObjList) {
+    private static void storeMetadataFromDb(Collection<Map<String, String>> resultObjList) {
         resultObjList.parallelStream().forEach(item -> {
             String guid = null;
             try {
@@ -773,7 +774,7 @@ public class HashStoreClient {
      * @param resultObjList List containing items with the following properties: 'pid', 'namespace',
      *                      'algorithm', 'checksum'
      */
-    private static void retrieveAndValidateMetadata(List<Map<String, String>> resultObjList) {
+    private static void retrieveAndValidateMetadata(Collection<Map<String, String>> resultObjList) {
         resultObjList.parallelStream().forEach(item -> {
             String guid = null;
             try {
@@ -838,7 +839,7 @@ public class HashStoreClient {
      * 
      * @param resultObjList List containing items with the following property: 'pid'
      */
-    private static void deleteMetadataFromStore(List<Map<String, String>> resultObjList) {
+    private static void deleteMetadataFromStore(Collection<Map<String, String>> resultObjList) {
         resultObjList.parallelStream().forEach(item -> {
             String guid = null;
             try {
