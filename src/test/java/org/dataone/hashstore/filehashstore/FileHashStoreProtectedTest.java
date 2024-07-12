@@ -657,6 +657,45 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
+     * Confirm verifyChecksumParameters returns true with good values
+     */
+    @Test
+    public void verifyChecksumParameters() throws Exception {
+        boolean shouldValidate = fileHashStore.verifyChecksumParameters("abc123","SHA-256");
+        assertTrue(shouldValidate);
+    }
+
+    /**
+     * Confirm verifyChecksumParameters throws exception when checksum value is empty
+     */
+    @Test
+    public void verifyChecksumParameters_emptyChecksum() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            fileHashStore.verifyChecksumParameters("     ","SHA-256");
+        });
+    }
+
+    /**
+     * Confirm verifyChecksumParameters throws exception when checksum algorithm is empty
+     */
+    @Test
+    public void verifyChecksumParameters_emptyAlgorithm() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            fileHashStore.verifyChecksumParameters("abc123","     ");
+        });
+    }
+
+    /**
+     * Confirm verifyChecksumParameters throws exception when checksum algorithm is not supported
+     */
+    @Test
+    public void verifyChecksumParameters_unsupportedAlgorithm() {
+        assertThrows(NoSuchAlgorithmException.class, () -> {
+            fileHashStore.verifyChecksumParameters("abc123","SHA-DOU");
+        });
+    }
+
+    /**
      * Check default checksums are generated
      */
     @Test
