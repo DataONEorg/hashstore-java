@@ -497,11 +497,7 @@ public class FileHashStore implements HashStore {
 
         } finally {
             // Release lock
-            synchronized (objectLockedIds) {
-                logFileHashStore.debug("Releasing objectLockedIds for pid: " + pid);
-                objectLockedIds.remove(pid);
-                objectLockedIds.notify();
-            }
+            releaseObjectLockedIds(pid);
         }
     }
 
@@ -534,22 +530,7 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(cid, "cid", "tagObject");
 
         // tagObject is synchronized with deleteObject based on a `cid`
-        synchronized (referenceLockedCids) {
-            while (referenceLockedCids.contains(cid)) {
-                try {
-                    referenceLockedCids.wait(TIME_OUT_MILLISEC);
-
-                } catch (InterruptedException ie) {
-                    String errMsg =
-                        "referenceLockedCids lock was interrupted while waiting to tag pid: " + pid
-                            + " with cid: " + cid + ". InterruptedException: " + ie.getMessage();
-                    logFileHashStore.error(errMsg);
-                    throw new InterruptedException(errMsg);
-                }
-            }
-            logFileHashStore.debug("Synchronizing referenceLockedCids for pid: " + pid);
-            referenceLockedCids.add(cid);
-        }
+        synchronizeReferencedLockedCids(cid);
 
         try {
             storeHashStoreRefsFiles(pid, cid);
@@ -572,12 +553,7 @@ public class FileHashStore implements HashStore {
 
         } finally {
             // Release lock
-            synchronized (referenceLockedCids) {
-                logFileHashStore.debug(
-                    "Releasing referenceLockedCids for pid: " + pid + " with cid: " + cid);
-                referenceLockedCids.remove(cid);
-                referenceLockedCids.notify();
-            }
+            releaseReferencedLockedCids(cid);
         }
     }
 
@@ -685,29 +661,10 @@ public class FileHashStore implements HashStore {
     private String syncPutMetadata(InputStream metadata, String pid, String checkedFormatId)
         throws InterruptedException, IOException, NoSuchAlgorithmException {
         // Get the metadata document id, which is the synchronization value
-        // Metadata storage requests for the same pid must be written serially
-        // However, the same pid could be used with different formatIds, so
-        // synchronize ids with pid + formatId;
         String pidFormatId = pid + checkedFormatId;
         String metadataDocId = FileHashStoreUtility.getPidHexDigest(pidFormatId,
                                                                 OBJECT_STORE_ALGORITHM);
-        synchronized (metadataLockedIds) {
-            while (metadataLockedIds.contains(metadataDocId)) {
-                try {
-                    metadataLockedIds.wait(TIME_OUT_MILLISEC);
-
-                } catch (InterruptedException ie) {
-                    String errMsg =
-                        "Metadata lock was interrupted while storing metadata for: " + pid
-                            + " and formatId: " + checkedFormatId + ". InterruptedException: "
-                            + ie.getMessage();
-                    logFileHashStore.error(errMsg);
-                    throw new InterruptedException(errMsg);
-                }
-            }
-            logFileHashStore.debug("Synchronizing metadataLockedIds for pid: " + pid);
-            metadataLockedIds.add(metadataDocId);
-        }
+        synchronizeMetadataLockedIds(metadataDocId);
 
         try {
             logFileHashStore.debug(
@@ -732,14 +689,7 @@ public class FileHashStore implements HashStore {
             throw nsae;
 
         } finally {
-            // Release lock
-            synchronized (metadataLockedIds) {
-                logFileHashStore.debug(
-                    "Releasing metadataLockedIds for pid: " + pid + " and formatId "
-                        + checkedFormatId);
-                metadataLockedIds.remove(metadataDocId);
-                metadataLockedIds.notify();
-            }
+            releaseMetadataLockedIds(metadataDocId);
         }
     }
 
@@ -829,20 +779,7 @@ public class FileHashStore implements HashStore {
         // Storing, deleting and untagging objects are synchronized together
         // Duplicate store object requests for a pid are rejected, but deleting an object
         // will wait for a pid to be released if it's found to be in use before proceeding.
-        synchronized (objectLockedIds) {
-            while (objectLockedIds.contains(pid)) {
-                try {
-                    objectLockedIds.wait(TIME_OUT_MILLISEC);
-
-                } catch (InterruptedException ie) {
-                    String errMsg = "Delete request for pid: " + pid + " has been interrupted.";
-                    logFileHashStore.warn(errMsg);
-                    throw new InterruptedException(errMsg);
-                }
-            }
-            logFileHashStore.debug("Synchronizing objectLockedIds for pid: " + pid);
-            objectLockedIds.add(pid);
-        }
+        synchronizeObjectLockedIds(pid);
 
         try {
             // Before we begin deletion process, we look for the `cid` by calling
@@ -853,26 +790,7 @@ public class FileHashStore implements HashStore {
                 String cid = objInfoMap.get("cid");
 
                 // If no exceptions are thrown, we proceed to synchronization based on the `cid`
-                // Multiple threads may access the cid reference file (which contains a list of
-                // `pid`s that reference a `cid`) and this needs to be coordinated. Otherwise,
-                // we will run into a `OverlappingFileLockException`
-                synchronized (referenceLockedCids) {
-                    while (referenceLockedCids.contains(cid)) {
-                        try {
-                            referenceLockedCids.wait(TIME_OUT_MILLISEC);
-
-                        } catch (InterruptedException ie) {
-                            String errMsg = "referenceLockedCids lock was "
-                                + "interrupted while waiting to delete objects for pid: " + pid
-                                + ". InterruptedException: " + ie.getMessage();
-                            logFileHashStore.error(errMsg);
-                            throw new InterruptedException(errMsg);
-                        }
-                    }
-                    logFileHashStore.debug(
-                        "Synchronizing referenceLockedCids for pid: " + pid + " with cid: " + cid);
-                    referenceLockedCids.add(cid);
-                }
+                synchronizeReferencedLockedCids(cid);
 
                 try {
                     // Proceed with comprehensive deletion - cid exists, nothing out of place
@@ -898,13 +816,7 @@ public class FileHashStore implements HashStore {
 
                 } finally {
                     // Release lock
-                    synchronized (referenceLockedCids) {
-                        logFileHashStore.debug(
-                            "Releasing referenceLockedCids for pid: " + pid + " with cid: "
-                                + cid);
-                        referenceLockedCids.remove(cid);
-                        referenceLockedCids.notify();
-                    }
+                    releaseReferencedLockedCids(cid);
                 }
 
             } catch (OrphanPidRefsFileException oprfe) {
@@ -925,24 +837,7 @@ public class FileHashStore implements HashStore {
                 Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
                 String cidRead = new String(Files.readAllBytes(absPidRefsPath));
                 // Since we must access the cid reference file, the `cid` must be synchronized
-                synchronized (referenceLockedCids) {
-                    while (referenceLockedCids.contains(cidRead)) {
-                        try {
-                            referenceLockedCids.wait(TIME_OUT_MILLISEC);
-
-                        } catch (InterruptedException ie) {
-                            String errMsg = "referenceLockedCids lock was "
-                                + "interrupted while waiting to delete objects for pid: " + pid
-                                + ". InterruptedException: " + ie.getMessage();
-                            logFileHashStore.error(errMsg);
-                            throw new InterruptedException(errMsg);
-                        }
-                    }
-                    logFileHashStore.debug(
-                        "Synchronizing referenceLockedCids for pid: " + pid + " with cid: "
-                            + cidRead);
-                    referenceLockedCids.add(cidRead);
-                }
+                synchronizeReferencedLockedCids(cidRead);
 
                 try {
                     Path absCidRefsPath =
@@ -962,13 +857,7 @@ public class FileHashStore implements HashStore {
 
                 } finally {
                     // Release lock
-                    synchronized (referenceLockedCids) {
-                        logFileHashStore.debug(
-                            "Releasing referenceLockedCids for pid: " + pid + " with cid: "
-                                + cidRead);
-                        referenceLockedCids.remove(cidRead);
-                        referenceLockedCids.notify();
-                    }
+                    releaseReferencedLockedCids(cidRead);
                 }
             } catch (PidNotFoundInCidRefsFileException pnficrfe) {
                 // `findObject` throws this exception when both the pid and cid refs file exists
@@ -983,11 +872,7 @@ public class FileHashStore implements HashStore {
             }
         } finally {
             // Release lock
-            synchronized (objectLockedIds) {
-                logFileHashStore.debug("Releasing objectLockedIds for pid: " + pid);
-                objectLockedIds.remove(pid);
-                objectLockedIds.notify();
-            }
+            releaseObjectLockedIds(pid);
         }
     }
 
@@ -1057,35 +942,14 @@ public class FileHashStore implements HashStore {
     protected static void syncRenameMetadataDocForDeletion(
         String pid, Collection<Path> deleteList, Path metadataDocAbsPath, String metadataDocId)
         throws InterruptedException, IOException {
-        synchronized (metadataLockedIds) {
-            while (metadataLockedIds.contains(metadataDocId)) {
-                try {
-                    metadataLockedIds.wait(TIME_OUT_MILLISEC);
-
-                } catch (InterruptedException ie) {
-                    String errMsg = "Metadata lock was interrupted while deleting metadata doc: "
-                        + metadataDocId + " for pid: " + pid + ". InterruptedException: "
-                        + ie.getMessage();
-                    logFileHashStore.error(errMsg);
-                    throw new InterruptedException(errMsg);
-                }
-            }
-            logFileHashStore.debug("Synchronizing metadataLockedIds for pid: " + pid);
-            metadataLockedIds.add(metadataDocId);
-        }
+        synchronizeMetadataLockedIds(metadataDocId);
 
         try {
             if (Files.exists(metadataDocAbsPath)) {
                 deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDocAbsPath));
             }
         } finally {
-            // Release lock
-            synchronized (metadataLockedIds) {
-                logFileHashStore.debug(
-                    "Releasing metadataLockedIds for pid: " + pid + " and doc " + metadataDocId);
-                metadataLockedIds.remove(metadataDocId);
-                metadataLockedIds.notify();
-            }
+            releaseMetadataLockedIds(metadataDocId);
         }
     }
 
@@ -1683,22 +1547,7 @@ public class FileHashStore implements HashStore {
             FileHashStoreUtility.getHierarchicalPathString(DIRECTORY_DEPTH, DIRECTORY_WIDTH, cid);
         Path expectedRealPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
 
-        synchronized (referenceLockedCids) {
-            while (referenceLockedCids.contains(cid)) {
-                try {
-                    referenceLockedCids.wait(TIME_OUT_MILLISEC);
-
-                } catch (InterruptedException ie) {
-                    String errMsg =
-                        "referenceLockedCids lock was interrupted while waiting to delete object "
-                            + "with cid: " + cid + ". InterruptedException: " + ie.getMessage();
-                    logFileHashStore.error(errMsg);
-                    throw new InterruptedException(errMsg);
-                }
-            }
-            logFileHashStore.debug("Synchronizing referenceLockedCids for cid: " + cid);
-            referenceLockedCids.add(cid);
-        }
+        synchronizeReferencedLockedCids(cid);
 
         try {
             if (Files.exists(absCidRefsPath)) {
@@ -1715,11 +1564,7 @@ public class FileHashStore implements HashStore {
             }
         } finally {
             // Release lock
-            synchronized (referenceLockedCids) {
-                logFileHashStore.debug("Releasing referenceLockedCids for cid: " + cid);
-                referenceLockedCids.remove(cid);
-                referenceLockedCids.notify();
-            }
+            releaseReferencedLockedCids(cid);
         }
     }
 
@@ -1777,7 +1622,6 @@ public class FileHashStore implements HashStore {
                 }
                 // Orphaned pid refs file found, the retrieved cid refs file exists
                 // but doesn't contain the pid. Proceed to overwrite the pid refs file.
-                // There is no return statement, so we move out of this if block.
             }
         } else if (!Files.exists(absPidRefsPath) && Files.exists(absCidRefsPath)) {
             // Only update cid refs file if pid is not in the file
@@ -1829,24 +1673,7 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(cid, "cid", "unTagObject");
 
         Collection<Path> deleteList = new ArrayList<>();
-
-        // Storing, deleting and untagging objects are synchronized together
-        // Duplicate store object requests for a pid are rejected, but deleting an object
-        // will wait for a pid to be released if it's found to be in use before proceeding.
-        synchronized (objectLockedIds) {
-            while (objectLockedIds.contains(pid)) {
-                try {
-                    objectLockedIds.wait(TIME_OUT_MILLISEC);
-
-                } catch (InterruptedException ie) {
-                    String errMsg = "Untag request for pid: " + pid + " has been interrupted.";
-                    logFileHashStore.warn(errMsg);
-                    throw new InterruptedException(errMsg);
-                }
-            }
-            logFileHashStore.debug("Synchronizing objectLockedIds for pid: " + pid);
-            objectLockedIds.add(pid);
-        }
+        synchronizeObjectLockedIds(pid);
 
         try {
             // Before we begin untagging process, we look for the `cid` by calling
@@ -1855,29 +1682,8 @@ public class FileHashStore implements HashStore {
             try {
                 Map<String, String> objInfoMap = findObject(pid);
                 cid = objInfoMap.get("cid");
-
                 // If no exceptions are thrown, we proceed to synchronization based on the `cid`
-                // Multiple threads may access the cid reference file (which contains a list of
-                // `pid`s that reference a `cid`) and this needs to be coordinated. Otherwise,
-                // we will run into a `OverlappingFileLockException`
-                synchronized (referenceLockedCids) {
-                    while (referenceLockedCids.contains(cid)) {
-                        try {
-                            referenceLockedCids.wait(TIME_OUT_MILLISEC);
-
-                        } catch (InterruptedException ie) {
-                            String errMsg =
-                                "referenceLockedCids lock was interrupted while waiting to delete"
-                                    + " objects for pid: " + pid + ". InterruptedException: "
-                                    + ie.getMessage();
-                            logFileHashStore.error(errMsg);
-                            throw new InterruptedException(errMsg);
-                        }
-                    }
-                    logFileHashStore.debug(
-                        "Synchronizing referenceLockedCids for pid: " + pid + " with cid: " + cid);
-                    referenceLockedCids.add(cid);
-                }
+                synchronizeReferencedLockedCids(cid);
 
                 try {
                     // Get paths to reference files to work on
@@ -1899,13 +1705,7 @@ public class FileHashStore implements HashStore {
                     logFileHashStore.info("Untagged pid: " + pid + " with cid: " + cid);
 
                 } finally {
-                    // Release lock
-                    synchronized (referenceLockedCids) {
-                        logFileHashStore.debug(
-                            "Releasing referenceLockedCids for pid: " + pid + " with cid: " + cid);
-                        referenceLockedCids.remove(cid);
-                        referenceLockedCids.notify();
-                    }
+                    releaseReferencedLockedCids(cid);
                 }
 
             } catch (OrphanPidRefsFileException oprfe) {
@@ -1925,25 +1725,7 @@ public class FileHashStore implements HashStore {
                 Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
                 String cidRead = new String(Files.readAllBytes(absPidRefsPath));
                 // Since we must access the cid reference file, the `cid` must be synchronized
-                synchronized (referenceLockedCids) {
-                    while (referenceLockedCids.contains(cidRead)) {
-                        try {
-                            referenceLockedCids.wait(TIME_OUT_MILLISEC);
-
-                        } catch (InterruptedException ie) {
-                            String errMsg =
-                                "referenceLockedCids lock was interrupted while waiting to delete"
-                                    + " objects for pid: " + pid + ". InterruptedException: "
-                                    + ie.getMessage();
-                            logFileHashStore.error(errMsg);
-                            throw new InterruptedException(errMsg);
-                        }
-                    }
-                    logFileHashStore.debug(
-                        "Synchronizing referenceLockedCids for " + "pid: " + pid + " with cid: "
-                            + cidRead);
-                    referenceLockedCids.add(cidRead);
-                }
+                synchronizeReferencedLockedCids(cidRead);
 
                 try {
                     Path absCidRefsPath =
@@ -1961,14 +1743,7 @@ public class FileHashStore implements HashStore {
                     logFileHashStore.warn(warnMsg);
 
                 } finally {
-                    // Release lock
-                    synchronized (referenceLockedCids) {
-                        logFileHashStore.debug(
-                            "Releasing referenceLockedCids for pid: " + pid + " with cid: "
-                                + cidRead);
-                        referenceLockedCids.remove(cidRead);
-                        referenceLockedCids.notify();
-                    }
+                    releaseReferencedLockedCids(cidRead);
                 }
             } catch (PidNotFoundInCidRefsFileException pnficrfe) {
                 // `findObject` throws this exception when both the pid and cid refs file exists
@@ -1995,12 +1770,7 @@ public class FileHashStore implements HashStore {
                 }
             }
         } finally {
-            // Release lock on the pid
-            synchronized (objectLockedIds) {
-                logFileHashStore.debug("Releasing objectLockedIds for pid: " + pid);
-                objectLockedIds.remove(pid);
-                objectLockedIds.notify();
-            }
+            releaseObjectLockedIds(pid);
         }
     }
 
@@ -2358,5 +2128,126 @@ public class FileHashStore implements HashStore {
             throw new IllegalArgumentException(errMsg);
         }
         return realPath;
+    }
+
+    /**
+     * Storing, deleting and untagging objects are synchronized together. Duplicate store object
+     * requests for a pid are rejected, but deleting an object will wait for a pid to be released
+     * if it's found to be in use before proceeding.
+     *
+     * @param pid Persistent or authority-based identifier
+     * @throws InterruptedException When an issue occurs when attempting to sync the pid
+     */
+    private static void synchronizeObjectLockedIds(String pid)
+        throws InterruptedException {
+        synchronized (objectLockedIds) {
+            while (objectLockedIds.contains(pid)) {
+                try {
+                    objectLockedIds.wait(TIME_OUT_MILLISEC);
+
+                } catch (InterruptedException ie) {
+                    String errMsg =
+                        "Synchronization has been interrupted while trying to sync pid: " + pid;
+                    logFileHashStore.warn(errMsg);
+                    throw new InterruptedException(errMsg);
+                }
+            }
+            logFileHashStore.debug("Synchronizing objectLockedIds for pid: " + pid);
+            objectLockedIds.add(pid);
+        }
+    }
+
+    /**
+     * Remove the given pid from 'objectLockedIds' and notify other threads
+     *
+     * @param pid Content identifier
+     */
+    private static void releaseObjectLockedIds(String pid) {
+        synchronized (objectLockedIds) {
+            logFileHashStore.debug("Releasing objectLockedIds for pid: " + pid);
+            objectLockedIds.remove(pid);
+            objectLockedIds.notify();
+        }
+    }
+
+    /**
+     * All requests to store/delete metadata will be accepted but must be executed serially
+     *
+     * @param metadataDocId Metadata document id hash(pid+formatId)
+     * @throws InterruptedException When an issue occurs when attempting to sync the metadata doc
+     */
+    private static void synchronizeMetadataLockedIds(String metadataDocId)
+        throws InterruptedException {
+        synchronized (metadataLockedIds) {
+            while (metadataLockedIds.contains(metadataDocId)) {
+                try {
+                    metadataLockedIds.wait(TIME_OUT_MILLISEC);
+
+                } catch (InterruptedException ie) {
+                    String errMsg =
+                        "Synchronization has been interrupted while trying to sync metadata doc: "
+                            + metadataDocId;
+                    logFileHashStore.error(errMsg);
+                    throw new InterruptedException(errMsg);
+                }
+            }
+            logFileHashStore.debug(
+                "Synchronizing metadataLockedIds for metadata doc: " + metadataDocId);
+            metadataLockedIds.add(metadataDocId);
+        }
+    }
+
+    /**
+     * Remove the given metadata doc from 'metadataLockedIds' and notify other threads
+     *
+     * @param metadataDocId Metadata document id hash(pid+formatId)
+     */
+    private static void releaseMetadataLockedIds(String metadataDocId) {
+        synchronized (metadataLockedIds) {
+            logFileHashStore.debug(
+                "Releasing metadataLockedIds for metadata doc: " + metadataDocId);
+            metadataLockedIds.remove(metadataDocId);
+            metadataLockedIds.notify();
+        }
+    }
+
+    /**
+     * Multiple threads may access the cid reference file (which contains a list of `pid`s that
+     * reference a `cid`) and this needs to be coordinated. Otherwise, we will run into a
+     * `OverlappingFileLockException`
+     *
+     * @param cid Content identifier
+     * @throws InterruptedException When an issue occurs when attempting to sync the pid
+     */
+    private static void synchronizeReferencedLockedCids(String cid) throws InterruptedException {
+        synchronized (referenceLockedCids) {
+            while (referenceLockedCids.contains(cid)) {
+                try {
+                    referenceLockedCids.wait(TIME_OUT_MILLISEC);
+
+                } catch (InterruptedException ie) {
+                    String errMsg =
+                        "Synchronization has been interrupted while trying to sync cid: " + cid;
+                    logFileHashStore.error(errMsg);
+                    throw new InterruptedException(errMsg);
+                }
+            }
+            logFileHashStore.debug(
+                "Synchronizing referenceLockedCids for cid: " + cid);
+            referenceLockedCids.add(cid);
+        }
+    }
+
+    /**
+     * Remove the given cid from 'referenceLockedCids' and notify other threads
+     *
+     * @param cid Content identifier
+     */
+    private static void releaseReferencedLockedCids(String cid) {
+        synchronized (referenceLockedCids) {
+            logFileHashStore.debug("Releasing referenceLockedCids for cid: " + cid);
+            referenceLockedCids.remove(cid);
+            referenceLockedCids.notify();
+        }
     }
 }
