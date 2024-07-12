@@ -892,7 +892,7 @@ public class FileHashStore implements HashStore {
         String metadataDocId = FileHashStoreUtility.getPidHexDigest(pid + formatId,
                                                                     OBJECT_STORE_ALGORITHM);
         Path metadataDocPath = getHashStoreMetadataPath(pid, formatId);
-        syncRenameMetadataDocForDeletion(pid, deleteList, metadataDocPath, metadataDocId);
+        syncRenameMetadataDocForDeletion(deleteList, metadataDocPath, metadataDocId);
         // Delete all items in the list
         FileHashStoreUtility.deleteListItems(deleteList);
         logFileHashStore.info(
@@ -921,7 +921,7 @@ public class FileHashStore implements HashStore {
             FileHashStoreUtility.getFilesFromDir(expectedPidMetadataDirectory);
         for (Path metadataDoc : metadataDocPaths) {
             String metadataDocId = metadataDoc.getFileName().toString();
-            syncRenameMetadataDocForDeletion(pid, deleteList, metadataDoc, metadataDocId);
+            syncRenameMetadataDocForDeletion(deleteList, metadataDoc, metadataDocId);
         }
         // Delete all items in the list
         FileHashStoreUtility.deleteListItems(deleteList);
@@ -929,21 +929,17 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Synchronize deleting a metadata doc for deletion by renaming it and adding it to the supplied
-     * List.
+     * Synchronize deleting a metadata doc by renaming it and adding it to the supplied List.
      *
-     * @param pid                Persistent or authority-based identifier
      * @param deleteList         List to add the renamed metadata document
      * @param metadataDocAbsPath Absolute path to the metadata document
      * @param metadataDocId      Metadata document name
      * @throws InterruptedException When an issue with synchronization occurs
      * @throws IOException          If there is an issue renaming a document
      */
-    protected static void syncRenameMetadataDocForDeletion(
-        String pid, Collection<Path> deleteList, Path metadataDocAbsPath, String metadataDocId)
+    protected static void syncRenameMetadataDocForDeletion(Collection<Path> deleteList, Path metadataDocAbsPath, String metadataDocId)
         throws InterruptedException, IOException {
         synchronizeMetadataLockedIds(metadataDocId);
-
         try {
             if (Files.exists(metadataDocAbsPath)) {
                 deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDocAbsPath));
