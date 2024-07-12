@@ -700,7 +700,9 @@ public class FileHashStoreInterfaceTest {
             pidModifiedList.add(pid + ".dou.test." + i);
         }
 
-        ExecutorService executorService = Executors.newFixedThreadPool(5);
+        Runtime runtime = Runtime.getRuntime();
+        int numCores = runtime.availableProcessors();
+        ExecutorService executorService = Executors.newFixedThreadPool(numCores);
 
         for (String pidAdjusted : pidModifiedList) {
             InputStream dataStream = Files.newInputStream(testDataFile);
