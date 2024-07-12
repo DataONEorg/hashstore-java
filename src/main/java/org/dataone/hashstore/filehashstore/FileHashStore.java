@@ -1644,7 +1644,6 @@ public class FileHashStore implements HashStore {
             "Object with cid: " + cid + " has been tagged successfully with pid: " + pid);
     }
 
-    // TODO: Review to see if this can be more DRY or make use of existing methods
     /**
      * Untags a data object in HashStore by deleting the 'pid reference file' and removing the 'pid'
      * from the 'cid reference file'. This method will never delete a data object.

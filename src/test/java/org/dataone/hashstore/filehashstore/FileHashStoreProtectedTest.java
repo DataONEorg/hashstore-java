@@ -2,6 +2,7 @@ package org.dataone.hashstore.filehashstore;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -836,7 +837,7 @@ public class FileHashStoreProtectedTest {
      * Confirm that exceptions are not thrown when move is called on an object that already exists
      */
     @Test
-    public void testMove_targetExists() throws Exception {
+    public void move_targetExists() throws Exception {
         File newTmpFile = generateTemporaryFile();
         String targetString = tempFolder.toString() + "/testmove/test_tmp_object.tmp";
         File targetFile = new File(targetString);
@@ -850,7 +851,7 @@ public class FileHashStoreProtectedTest {
      * Confirm that NullPointerException is thrown when entity is null
      */
     @Test
-    public void testMove_entityNull() {
+    public void move_entityNull() {
         assertThrows(IllegalArgumentException.class, () -> {
             File newTmpFile = generateTemporaryFile();
             String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
@@ -863,7 +864,7 @@ public class FileHashStoreProtectedTest {
      * Confirm that FileAlreadyExistsException is thrown entity is empty
      */
     @Test
-    public void testMove_entityEmpty() {
+    public void move_entityEmpty() {
         assertThrows(IllegalArgumentException.class, () -> {
             File newTmpFile = generateTemporaryFile();
             String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
@@ -876,7 +877,7 @@ public class FileHashStoreProtectedTest {
      * Confirm that FileAlreadyExistsException is thrown when entity is empty spaces
      */
     @Test
-    public void testMove_entityEmptySpaces() {
+    public void move_entityEmptySpaces() {
         assertThrows(IllegalArgumentException.class, () -> {
             File newTmpFile = generateTemporaryFile();
             String targetString = tempFolder.getRoot().toString() + "/testmove/test_tmp_object.tmp";
@@ -1236,6 +1237,43 @@ public class FileHashStoreProtectedTest {
                 fileHashStore.getHashStoreMetadataPath(pid, storeFormatId);
 
             assertEquals(expectedMetadataPidPath, calculatedMetadataRealPath);
+        }
+    }
+
+    /**
+     * Check that getHashStoreMetadataInputStream returns an InputStream
+     */
+    @Test
+    public void getHashStoreMetadataInputStream() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            fileHashStore.storeMetadata(metadataStream, pid, null);
+            metadataStream.close();
+
+            String storeFormatId = (String) fhsProperties.get("storeMetadataNamespace");
+
+            InputStream metadataCidInputStream = fileHashStore.getHashStoreMetadataInputStream(pid, storeFormatId);
+            assertNotNull(metadataCidInputStream);
+        }
+    }
+
+    /**
+     * Check that getHashStoreMetadataInputStream throws FileNotFoundException when there is no
+     * metadata to retrieve
+     */
+    @Test
+    public void getHashStoreMetadataInputStream_fileNotFound() {
+        for (String pid : testData.pidList) {
+            String storeFormatId = (String) fhsProperties.get("storeMetadataNamespace");
+
+            assertThrows(
+                FileNotFoundException.class,
+                () -> fileHashStore.getHashStoreMetadataInputStream(pid, storeFormatId));
         }
     }
 
