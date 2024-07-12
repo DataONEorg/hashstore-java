@@ -838,8 +838,7 @@ public class FileHashStoreInterfaceTest {
             long expectedSize = Long.parseLong(testData.pidData.get(pid).get("size"));
 
             fileHashStore.verifyObject(
-                objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize, true
-            );
+                objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize);
 
             int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
             int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
@@ -871,9 +870,7 @@ public class FileHashStoreInterfaceTest {
             String expectedChecksum = testData.pidData.get(pid).get("md2");
             long expectedSize = Long.parseLong(testData.pidData.get(pid).get("size"));
 
-            fileHashStore.verifyObject(
-                objInfo, expectedChecksum, "MD2", expectedSize, true
-            );
+            fileHashStore.verifyObject(objInfo, expectedChecksum, "MD2", expectedSize);
 
             int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
             int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
@@ -903,8 +900,7 @@ public class FileHashStoreInterfaceTest {
 
             assertThrows(
                 UnsupportedHashAlgorithmException.class,
-                () -> fileHashStore.verifyObject(objInfo, "ValueNotRelevant", "BLAKE2S", 1000,
-                                                 false));
+                () -> fileHashStore.verifyObject(objInfo, "ValueNotRelevant", "BLAKE2S", 1000));
 
             int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
             int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
@@ -940,7 +936,7 @@ public class FileHashStoreInterfaceTest {
             assertThrows(
                 NonMatchingObjSizeException.class,
                 () -> fileHashStore.verifyObject(objInfo, expectedChecksum, defaultStoreAlgorithm,
-                                                 expectedSize, false));
+                                                 expectedSize));
 
             int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
             int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
@@ -949,7 +945,7 @@ public class FileHashStoreInterfaceTest {
                 storeDepth, storeWidth, objInfo.getCid()
             );
             // Real path to the data object
-            assertTrue(Files.exists(Paths.get(fhsProperties.getProperty("storePath")).resolve(
+            assertFalse(Files.exists(Paths.get(fhsProperties.getProperty("storePath")).resolve(
                 "objects").resolve(objRelativePath)));
         }
     }
@@ -976,7 +972,7 @@ public class FileHashStoreInterfaceTest {
             assertThrows(
                 NonMatchingChecksumException.class,
                 () -> fileHashStore.verifyObject(objInfo, expectedChecksum, defaultStoreAlgorithm,
-                                                 expectedSize, false));
+                                                 expectedSize));
 
             int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
             int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
@@ -985,7 +981,7 @@ public class FileHashStoreInterfaceTest {
                 storeDepth, storeWidth, objInfo.getCid()
             );
             // Real path to the data object
-            assertTrue(Files.exists(Paths.get(fhsProperties.getProperty("storePath")).resolve(
+            assertFalse(Files.exists(Paths.get(fhsProperties.getProperty("storePath")).resolve(
                 "objects").resolve(objRelativePath)));
         }
     }
@@ -1012,7 +1008,7 @@ public class FileHashStoreInterfaceTest {
             assertThrows(
                 NonMatchingObjSizeException.class,
                 () -> fileHashStore.verifyObject(objInfo, expectedChecksum, defaultStoreAlgorithm,
-                                                 expectedSize, true));
+                                                 expectedSize));
 
 
             int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
@@ -1047,7 +1043,7 @@ public class FileHashStoreInterfaceTest {
             long expectedSize = Long.parseLong(testData.pidData.get(pid).get("size"));
 
             assertThrows(NonMatchingChecksumException.class, () -> fileHashStore.verifyObject(
-                objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize, true
+                objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize
             ));
 
             int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));

@@ -101,15 +101,14 @@ public interface HashStore {
                 InterruptedException;
 
         /**
-         * Confirms that an ObjectMetadata's content is equal to the given values. If it is not
-         * equal, it will return False - otherwise True.
+         * Confirms that an ObjectMetadata's content is equal to the given values. This method
+         * throws an exception if there are any issues, and attempts to remove the data object
+         * if it is determined to be invalid.
          *
          * @param objectInfo          ObjectMetadata object with values
          * @param checksum            Value of checksum to validate against
          * @param checksumAlgorithm   Algorithm of checksum submitted
          * @param objSize             Expected size of object to validate after storing
-         * @param deleteInvalidObject If true, HashStore will attempt to remove the data object
-         *                            given to verify
          * @throws NonMatchingObjSizeException       Given size =/= objMeta size value
          * @throws NonMatchingChecksumException      Given checksum =/= objMeta checksum value
          * @throws UnsupportedHashAlgorithmException Given algo is not found or supported
@@ -121,8 +120,7 @@ public interface HashStore {
          *                                           checksum not found
          */
         void verifyObject(
-            ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize,
-            boolean deleteInvalidObject)
+            ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize)
             throws NonMatchingObjSizeException, NonMatchingChecksumException,
             UnsupportedHashAlgorithmException, InterruptedException, NoSuchAlgorithmException,
             IOException;
