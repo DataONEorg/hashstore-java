@@ -33,7 +33,6 @@ import java.util.stream.Stream;
 
 import javax.xml.bind.DatatypeConverter;
 
-import jdk.nashorn.internal.ir.annotations.Ignore;
 import org.dataone.hashstore.HashStoreRunnable;
 import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.exceptions.HashStoreRefsAlreadyExistException;
@@ -43,6 +42,7 @@ import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 import org.dataone.hashstore.exceptions.UnsupportedHashAlgorithmException;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -1960,7 +1960,7 @@ public class FileHashStoreInterfaceTest {
      * Test deleteObject synchronization using a Runnable class
      * TODO: Reactivate with @Test once bug has been investigated
      */
-    @Ignore
+    @Disabled
     public void deleteObject_1000Pids_1Obj_viaRunnable() throws Exception {
         // Get single test file to "upload"
         String pid = "jtao.1700.1";
