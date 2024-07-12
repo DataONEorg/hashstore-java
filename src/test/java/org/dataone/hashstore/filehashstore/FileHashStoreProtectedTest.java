@@ -16,6 +16,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -26,6 +27,8 @@ import javax.xml.bind.DatatypeConverter;
 import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.exceptions.CidNotFoundInPidRefsFileException;
 import org.dataone.hashstore.exceptions.HashStoreRefsAlreadyExistException;
+import org.dataone.hashstore.exceptions.NonMatchingChecksumException;
+import org.dataone.hashstore.exceptions.NonMatchingObjSizeException;
 import org.dataone.hashstore.exceptions.OrphanPidRefsFileException;
 import org.dataone.hashstore.exceptions.OrphanRefsFilesException;
 import org.dataone.hashstore.exceptions.PidNotFoundInCidRefsFileException;
@@ -566,6 +569,96 @@ public class FileHashStoreProtectedTest {
             fileHashStore.putObject(dataStream, pid, "   ", null, null, -1);
             dataStream.close();
         });
+    }
+
+    /**
+     * Confirm validateTmpObject does nothing when requestValidation is false and does not throw
+     * any exceptions
+     */
+    @Test
+    public void validateTmpObject() throws Exception {
+        Map<String, String> hexDigests = new HashMap<>();
+        hexDigests.put("MD5", "md5Digest");
+        hexDigests.put("SHA-256", "sha256Digest");
+        Path tmpFilePath = generateTemporaryFile().toPath();
+        fileHashStore.validateTmpObject(false, "checksum.string", "SHA-256", tmpFilePath,
+                                        hexDigests, -1, 1);
+    }
+
+    /**
+     * Confirm validateTmpObject does not throw exception when expected sie matches store size
+     */
+    @Test
+    public void validateTmpObject_sizeMatches() throws Exception {
+        Map<String, String> hexDigests = new HashMap<>();
+        hexDigests.put("MD5", "md5Digest");
+        hexDigests.put("SHA-256", "sha256Digest");
+        Path tmpFilePath = generateTemporaryFile().toPath();
+        fileHashStore.validateTmpObject(false, "checksum.string", "SHA-256", tmpFilePath,
+                                        hexDigests, 10, 10);
+    }
+
+    /**
+     * Confirm validateTmpObject does not throw exception when expected sie matches store size
+     */
+    @Test
+    public void validateTmpObject_sizeMismatch() throws Exception {
+        Map<String, String> hexDigests = new HashMap<>();
+        hexDigests.put("MD5", "md5Digest");
+        hexDigests.put("SHA-256", "sha256Digest");
+        Path tmpFilePath = generateTemporaryFile().toPath();
+
+        assertThrows(NonMatchingObjSizeException.class,
+                     () -> fileHashStore.validateTmpObject(false, "checksum.string", "SHA-256",
+                                                           tmpFilePath, hexDigests, 10, 20));
+    }
+
+    /**
+     * Confirm validateTmpObject does not throw exception when requested to validate checksums
+     * with good values
+     */
+    @Test
+    public void validateTmpObject_validationRequested_matchingChecksum() throws Exception {
+        Map<String, String> hexDigests = new HashMap<>();
+        hexDigests.put("MD5", "md5Digest");
+        hexDigests.put("SHA-256", "sha256Digest");
+        Path tmpFilePath = generateTemporaryFile().toPath();
+        fileHashStore.validateTmpObject(true, "sha256Digest", "SHA-256", tmpFilePath,
+                                        hexDigests, -1, 1);
+    }
+
+    /**
+     * Confirm validateTmpObject does not throw exception when requested to validate checksums
+     * with good values, and that the tmpFile passed is deleted.
+     */
+    @Test
+    public void validateTmpObject_validationRequested_nonMatchingChecksum() throws Exception {
+        Map<String, String> hexDigests = new HashMap<>();
+        hexDigests.put("MD5", "md5Digest");
+        hexDigests.put("SHA-256", "sha256Digest");
+        Path tmpFilePath = generateTemporaryFile().toPath();
+
+        assertThrows(NonMatchingChecksumException.class,
+                     () -> fileHashStore.validateTmpObject(true, "checksum.string", "SHA-256",
+                                                           tmpFilePath, hexDigests, -1, -1));
+        assertFalse(Files.exists(tmpFilePath));
+    }
+
+    /**
+     * Confirm validateTmpObject throws exception when requested to validate but algo is not found
+     * in hex digests passed.
+     */
+    @Test
+    public void validateTmpObject_validationRequested_algoNotFound() throws Exception {
+        Map<String, String> hexDigests = new HashMap<>();
+        hexDigests.put("MD5", "md5Digest");
+        hexDigests.put("SHA-256", "sha256Digest");
+        Path tmpFilePath = generateTemporaryFile().toPath();
+
+        assertThrows(NoSuchAlgorithmException.class,
+                     () -> fileHashStore.validateTmpObject(true, "md2Digest", "MD2",
+                                                           tmpFilePath, hexDigests, -1, -1));
+        assertFalse(Files.exists(tmpFilePath));
     }
 
     /**
