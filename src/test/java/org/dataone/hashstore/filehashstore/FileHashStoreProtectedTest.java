@@ -1374,7 +1374,44 @@ public class FileHashStoreProtectedTest {
         assertEquals(cidRead, cidToWrite);
     }
 
-    // TODO: Add test for 'isStringInRefsFile'
+    /**
+     * Check isStringInRefsFile returns true when value is found
+     */
+    @Test
+    public void isStringInRefsFile_found() throws Exception {
+        String cidToWrite = "test_cid_123";
+        File pidRefsTmpFile = fileHashStore.writeRefsFile(cidToWrite, "pid");
+
+        assertTrue(fileHashStore.isStringInRefsFile(cidToWrite, pidRefsTmpFile.toPath()));
+    }
+
+    /**
+     * Check isStringInRefsFile returns false when value is not found
+     */
+    @Test
+    public void isStringInRefsFile_notFound() throws Exception {
+        String cidToWrite = "test_cid_123";
+        File pidRefsTmpFile = fileHashStore.writeRefsFile(cidToWrite, "pid");
+
+        assertFalse(fileHashStore.isStringInRefsFile("not.found.in.ref", pidRefsTmpFile.toPath()));
+    }
+
+    /**
+     * Check isStringInRefsFile returns true when value is found in a refs file with multiple values
+     * and returns false when a value isn't found
+     */
+    @Test
+    public void isStringInRefsFile_cidRefsMultipleVals() throws Exception {
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject("dou.test.1", cid);
+        fileHashStore.tagObject("dou.test.2", cid);
+        fileHashStore.tagObject("dou.test.3", cid);
+        // Get path of the cid refs file
+        Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(cid, "cid");
+
+        assertTrue(fileHashStore.isStringInRefsFile("dou.test.1", cidRefsFilePath));
+        assertFalse(fileHashStore.isStringInRefsFile("wont.be.found", cidRefsFilePath));
+    }
 
     /**
      * Confirm that cid refs file has been updated successfully
