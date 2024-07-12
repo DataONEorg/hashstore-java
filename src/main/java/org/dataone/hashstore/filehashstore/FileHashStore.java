@@ -824,7 +824,7 @@ public class FileHashStore implements HashStore {
         // Validate input parameters
         FileHashStoreUtility.ensureNotNull(pid, "id", "deleteObject");
         FileHashStoreUtility.checkForEmptyString(pid, "id", "deleteObject");
-        List<Path> deleteList = new ArrayList<>();
+        Collection<Path> deleteList = new ArrayList<>();
 
         // Storing, deleting and untagging objects are synchronized together
         // Duplicate store object requests for a pid are rejected, but deleting an object
@@ -1002,7 +1002,7 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(formatId, "formatId", "deleteMetadata");
         FileHashStoreUtility.checkForEmptyString(formatId, "formatId", "deleteMetadata");
 
-        List<Path> deleteList = new ArrayList<>();
+        Collection<Path> deleteList = new ArrayList<>();
         // Get the path to the metadata document and metadata document name/id
         String metadataDocId = FileHashStoreUtility.getPidHexDigest(pid + formatId,
                                                                     OBJECT_STORE_ALGORITHM);
@@ -1024,7 +1024,7 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(pid, "pid", "deleteMetadata");
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "deleteMetadata");
 
-        List<Path> deleteList = new ArrayList<>();
+        Collection<Path> deleteList = new ArrayList<>();
         // Get the path to the pid metadata document directory
         String pidHexDigest = FileHashStoreUtility.getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
         String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
@@ -1828,7 +1828,7 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(cid, "cid", "unTagObject");
         FileHashStoreUtility.checkForEmptyString(cid, "cid", "unTagObject");
 
-        List<Path> deleteList = new ArrayList<>();
+        Collection<Path> deleteList = new ArrayList<>();
 
         // Storing, deleting and untagging objects are synchronized together
         // Duplicate store object requests for a pid are rejected, but deleting an object
