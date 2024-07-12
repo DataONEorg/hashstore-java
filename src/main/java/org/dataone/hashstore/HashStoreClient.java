@@ -34,9 +34,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 /**
- * HashStoreClient is a command line interface is a development tool to create a new
- * HashStore or interact directly with an existing HashStore through the command line.
- * See 'README.md' for usage examples.
+ * HashStoreClient is a development tool used to create a new HashStore or interact directly with
+ * an existing HashStore through the command line. See 'README.md' for usage examples.
  */
 public class HashStoreClient {
     private static HashStore hashStore;
