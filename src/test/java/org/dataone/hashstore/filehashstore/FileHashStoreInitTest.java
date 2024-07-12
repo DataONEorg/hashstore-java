@@ -23,7 +23,7 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * Test class for FileHashStore constructor
  */
-public class FileHashStorePublicTest {
+public class FileHashStoreInitTest {
     private static Path rootDirectory;
     private static Path objStringFull;
     private static Path objTmpStringFull;
