@@ -1259,7 +1259,7 @@ public class FileHashStore implements HashStore {
      */
     protected boolean validateAlgorithm(String algorithm) throws NullPointerException,
         IllegalArgumentException, NoSuchAlgorithmException {
-        FileHashStoreUtility.ensureNotNull(algorithm, "algorithm", "putObject");
+        FileHashStoreUtility.ensureNotNull(algorithm, "algorithm", "validateAlgorithm");
         FileHashStoreUtility.checkForEmptyString(algorithm, "algorithm", "validateAlgorithm");
 
         boolean algorithmSupported = Arrays.asList(SUPPORTED_HASH_ALGORITHMS).contains(algorithm);
@@ -1280,7 +1280,9 @@ public class FileHashStore implements HashStore {
      * @param algorithm Algorithm to check
      * @return Boolean
      */
-    private boolean shouldCalculateAlgorithm(String algorithm) {
+    protected boolean shouldCalculateAlgorithm(String algorithm) {
+        FileHashStoreUtility.ensureNotNull(algorithm, "algorithm", "shouldCalculateAlgorithm");
+        FileHashStoreUtility.checkForEmptyString(algorithm, "algorithm", "shouldCalculateAlgorithm");
         boolean shouldCalculateAlgorithm = true;
         for (DefaultHashAlgorithms defAlgo : DefaultHashAlgorithms.values()) {
             if (algorithm.equals(defAlgo.getName())) {

@@ -156,6 +156,24 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
+     * Confirm shouldCalculateAlgorithm returns false if algorithm not part of default list
+     */
+    @Test
+    public void shouldCalculateAlgorithm_algoIncluded() {
+        boolean shouldCalculate = fileHashStore.shouldCalculateAlgorithm("SHA-256");
+        assertFalse(shouldCalculate);
+    }
+
+    /**
+     * Confirm shouldCalculateAlgorithm returns false if algorithm not part of default list
+     */
+    @Test
+    public void shouldCalculateAlgorithm_algoNotIncluded() {
+        boolean shouldCalculate = fileHashStore.shouldCalculateAlgorithm("SHA-DOU");
+        assertTrue(shouldCalculate);
+    }
+
+    /**
      * Confirm that a temporary file has been generated.
      */
     @Test
