@@ -1960,7 +1960,6 @@ public class FileHashStoreInterfaceTest {
      * Test deleteObject synchronization using a Runnable class
      * TODO: Reactivate with @Test once bug has been investigated
      */
-//    @Disabled
     @Test
     public void deleteObject_1000Pids_1Obj_viaRunnable() throws Exception {
         // Get single test file to "upload"

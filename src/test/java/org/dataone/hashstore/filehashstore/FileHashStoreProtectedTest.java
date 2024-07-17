@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -580,9 +581,9 @@ public class FileHashStoreProtectedTest {
         Map<String, String> hexDigests = new HashMap<>();
         hexDigests.put("MD5", "md5Digest");
         hexDigests.put("SHA-256", "sha256Digest");
-        Path tmpFilePath = generateTemporaryFile().toPath();
-        fileHashStore.validateTmpObject(false, "checksum.string", "SHA-256", tmpFilePath,
-                                        hexDigests, -1, 1);
+        File tmpFile = generateTemporaryFile();
+        fileHashStore.validateTmpObject(false, "checksum.string", "SHA-256", tmpFile,
+                                        hexDigests, -1);
     }
 
     /**
@@ -593,9 +594,17 @@ public class FileHashStoreProtectedTest {
         Map<String, String> hexDigests = new HashMap<>();
         hexDigests.put("MD5", "md5Digest");
         hexDigests.put("SHA-256", "sha256Digest");
-        Path tmpFilePath = generateTemporaryFile().toPath();
-        fileHashStore.validateTmpObject(false, "checksum.string", "SHA-256", tmpFilePath,
-                                        hexDigests, 10, 10);
+        File tmpFile = generateTemporaryFile();
+
+        // Write the byte to the file
+        try (FileOutputStream fos = new FileOutputStream(tmpFile)) {
+            fos.write(0x41);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        fileHashStore.validateTmpObject(false, "sha256Digest", "SHA-256", tmpFile,
+                                        hexDigests, 1);
     }
 
     /**
@@ -606,14 +615,14 @@ public class FileHashStoreProtectedTest {
         Map<String, String> hexDigests = new HashMap<>();
         hexDigests.put("MD5", "md5Digest");
         hexDigests.put("SHA-256", "sha256Digest");
-        Path tmpFilePath = generateTemporaryFile().toPath();
+        File tmpFile = generateTemporaryFile();
 
         assertThrows(NonMatchingObjSizeException.class,
                      () -> fileHashStore.validateTmpObject(false, "checksum.string", "SHA-256",
-                                                           tmpFilePath, hexDigests, 10, 20));
+                                                           tmpFile, hexDigests, 10));
     }
 
-    /**
+    /**GG
      * Confirm validateTmpObject does not throw exception when requested to validate checksums
      * with good values
      */
@@ -622,9 +631,9 @@ public class FileHashStoreProtectedTest {
         Map<String, String> hexDigests = new HashMap<>();
         hexDigests.put("MD5", "md5Digest");
         hexDigests.put("SHA-256", "sha256Digest");
-        Path tmpFilePath = generateTemporaryFile().toPath();
-        fileHashStore.validateTmpObject(true, "sha256Digest", "SHA-256", tmpFilePath,
-                                        hexDigests, -1, 1);
+        File tmpFile = generateTemporaryFile();
+        fileHashStore.validateTmpObject(true, "sha256Digest", "SHA-256", tmpFile,
+                                        hexDigests, -1);
     }
 
     /**
@@ -636,12 +645,12 @@ public class FileHashStoreProtectedTest {
         Map<String, String> hexDigests = new HashMap<>();
         hexDigests.put("MD5", "md5Digest");
         hexDigests.put("SHA-256", "sha256Digest");
-        Path tmpFilePath = generateTemporaryFile().toPath();
+        File tmpFile = generateTemporaryFile();
 
         assertThrows(NonMatchingChecksumException.class,
                      () -> fileHashStore.validateTmpObject(true, "checksum.string", "SHA-256",
-                                                           tmpFilePath, hexDigests, -1, -1));
-        assertFalse(Files.exists(tmpFilePath));
+                                                           tmpFile, hexDigests, -1));
+        assertFalse(Files.exists(tmpFile.toPath()));
     }
 
     /**
@@ -653,12 +662,12 @@ public class FileHashStoreProtectedTest {
         Map<String, String> hexDigests = new HashMap<>();
         hexDigests.put("MD5", "md5Digest");
         hexDigests.put("SHA-256", "sha256Digest");
-        Path tmpFilePath = generateTemporaryFile().toPath();
+        File tmpFile = generateTemporaryFile();
 
         assertThrows(NoSuchAlgorithmException.class,
                      () -> fileHashStore.validateTmpObject(true, "md2Digest", "MD2",
-                                                           tmpFilePath, hexDigests, -1, -1));
-        assertFalse(Files.exists(tmpFilePath));
+                                                           tmpFile, hexDigests, -1));
+        assertFalse(Files.exists(tmpFile.toPath()));
     }
 
     /**
