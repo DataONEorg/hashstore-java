@@ -1157,11 +1157,11 @@ public class FileHashStore implements HashStore {
 
         // Confirm that the object does not yet exist, delete tmpFile if so
         if (Files.exists(objRealPath)) {
+            Files.delete(tmpFilePath);
             String errMsg =
                 "File already exists for pid: " + pid + ". Object address: " + objRealPath
                     + ". Deleting temporary file.";
             logFileHashStore.warn(errMsg);
-            Files.delete(tmpFilePath);
         } else {
             // Move object
             File permFile = objRealPath.toFile();
