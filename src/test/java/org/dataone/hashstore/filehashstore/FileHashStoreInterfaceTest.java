@@ -1958,7 +1958,6 @@ public class FileHashStoreInterfaceTest {
 
     /**
      * Test deleteObject synchronization using a Runnable class
-     * TODO: Reactivate with @Test once bug has been investigated
      */
     @Test
     public void deleteObject_1000Pids_1Obj_viaRunnable() throws Exception {
@@ -1968,7 +1967,7 @@ public class FileHashStoreInterfaceTest {
 
         Collection<String> pidModifiedList = new ArrayList<>();
         for (int i = 1; i <= 1000; i++) {
-            pidModifiedList.add(pid + ".dou.test." + i);
+            pidModifiedList.add(pid + ".dou.delobj1k." + i);
         }
 
         Runtime runtime = Runtime.getRuntime();
