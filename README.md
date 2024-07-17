@@ -40,12 +40,12 @@ the expected usage of HashStore.
 ###### Public API Methods
 
 - storeObject
-- verifyObject
 - tagObject
 - storeMetadata
 - retrieveObject
 - retrieveMetadata
 - deleteObject
+- deleteInvalidObject
 - deleteMetadata
 - getHexDigest
 
@@ -95,8 +95,8 @@ once and only once.
 By calling the various interface methods for  `storeObject`, the calling app/client can validate,
 store and tag an object simultaneously if the relevant data is available. In the absence of an
 identifier (ex. persistent identifier (pid)), `storeObject` can be called to solely store an object.
-The client is then expected to call `verifyObject` when the relevant metadata is available to
-confirm that the object has been stored as expected. And to finalize the process (to make the object
+The client is then expected to call `deleteInvalidObject` when the relevant metadata is available to
+confirm that the object is what is expected. And to finalize the process (to make the object
 discoverable), the client calls `tagObject``. In summary, there are two expected paths to store an
 object:
 
@@ -107,8 +107,9 @@ objectMetadata objInfo = storeObject(InputStream, pid, additionalAlgorithm, chec
 // Manual Process
 // Store object
 objectMetadata objInfo = storeObject(InputStream)
-// Validate object, returns False if there is a mismatch and deletes the associated file
-verifyObject(objInfo, checksum, checksumAlgorithn, objSize, true)
+// Validate object, if the parameters do not match, the data object associated with the objInfo
+// supplied will be deleted
+- deleteInvalidObject(objInfo, checksum, checksumAlgorithn, objSize)
 // Tag object, makes the object discoverable (find, retrieve, delete)
 tagObject(pid, cid)
 ```
