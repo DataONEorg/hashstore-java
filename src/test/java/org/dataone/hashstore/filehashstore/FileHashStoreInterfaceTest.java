@@ -819,10 +819,10 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Check that verifyObject does not throw exception with matching values
+     * Check that deleteInvalidObject does not throw exception with matching values
      */
     @Test
-    public void verifyObject_correctValues() throws Exception {
+    public void deleteInvalidObject_correctValues() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -833,11 +833,11 @@ public class FileHashStoreInterfaceTest {
 
             String defaultStoreAlgorithm = fhsProperties.getProperty("storeAlgorithm");
 
-            // Get verifyObject args
+            // Get deleteInvalidObject args
             String expectedChecksum = testData.pidData.get(pid).get("sha256");
             long expectedSize = Long.parseLong(testData.pidData.get(pid).get("size"));
 
-            fileHashStore.verifyObject(
+            fileHashStore.deleteInvalidObject(
                 objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize);
 
             int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
@@ -853,11 +853,11 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Check that verifyObject calculates and verifies a checksum with a supported algorithm that is
+     * Check that deleteInvalidObject calculates and verifies a checksum with a supported algorithm that is
      * not included in the default list
      */
     @Test
-    public void verifyObject_supportedAlgoNotInDefaultList() throws Exception {
+    public void deleteInvalidObject_supportedAlgoNotInDefaultList() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -866,11 +866,11 @@ public class FileHashStoreInterfaceTest {
             ObjectMetadata objInfo = fileHashStore.storeObject(dataStream);
             dataStream.close();
 
-            // Get verifyObject args
+            // Get deleteInvalidObject args
             String expectedChecksum = testData.pidData.get(pid).get("md2");
             long expectedSize = Long.parseLong(testData.pidData.get(pid).get("size"));
 
-            fileHashStore.verifyObject(objInfo, expectedChecksum, "MD2", expectedSize);
+            fileHashStore.deleteInvalidObject(objInfo, expectedChecksum, "MD2", expectedSize);
 
             int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
             int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
@@ -885,11 +885,11 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Check that verifyObject calculates throws exception when given a checksumAlgorithm that is
+     * Check that deleteInvalidObject calculates throws exception when given a checksumAlgorithm that is
      * not supported
      */
     @Test
-    public void verifyObject_unsupportedAlgo() throws Exception {
+    public void deleteInvalidObject_unsupportedAlgo() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -900,7 +900,7 @@ public class FileHashStoreInterfaceTest {
 
             assertThrows(
                 UnsupportedHashAlgorithmException.class,
-                () -> fileHashStore.verifyObject(objInfo, "ValueNotRelevant", "BLAKE2S", 1000));
+                () -> fileHashStore.deleteInvalidObject(objInfo, "ValueNotRelevant", "BLAKE2S", 1000));
 
             int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
             int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
@@ -915,10 +915,10 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Check that verifyObject throws exception when non-matching size value provided
+     * Check that deleteInvalidObject throws exception when non-matching size value provided
      */
     @Test
-    public void verifyObject_mismatchedSize() throws Exception {
+    public void deleteInvalidObject_mismatchedSize() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -929,13 +929,13 @@ public class FileHashStoreInterfaceTest {
 
             String defaultStoreAlgorithm = fhsProperties.getProperty("storeAlgorithm");
 
-            // Get verifyObject args
+            // Get deleteInvalidObject args
             String expectedChecksum = testData.pidData.get(pid).get("sha256");
             long expectedSize = 123456789;
 
             assertThrows(
                 NonMatchingObjSizeException.class,
-                () -> fileHashStore.verifyObject(objInfo, expectedChecksum, defaultStoreAlgorithm,
+                () -> fileHashStore.deleteInvalidObject(objInfo, expectedChecksum, defaultStoreAlgorithm,
                                                  expectedSize));
 
             int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
@@ -951,10 +951,10 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Check that verifyObject throws exception with non-matching checksum value
+     * Check that deleteInvalidObject throws exception with non-matching checksum value
      */
     @Test
-    public void verifyObject_mismatchedChecksum() throws Exception {
+    public void deleteInvalidObject_mismatchedChecksum() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -965,13 +965,13 @@ public class FileHashStoreInterfaceTest {
 
             String defaultStoreAlgorithm = fhsProperties.getProperty("storeAlgorithm");
 
-            // Get verifyObject args
+            // Get deleteInvalidObject args
             String expectedChecksum = "intentionallyWrongValue";
             long expectedSize = Long.parseLong(testData.pidData.get(pid).get("size"));
 
             assertThrows(
                 NonMatchingChecksumException.class,
-                () -> fileHashStore.verifyObject(objInfo, expectedChecksum, defaultStoreAlgorithm,
+                () -> fileHashStore.deleteInvalidObject(objInfo, expectedChecksum, defaultStoreAlgorithm,
                                                  expectedSize));
 
             int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
@@ -987,10 +987,10 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Check that verifyObject throws exception when non-matching size value provided
+     * Check that deleteInvalidObject throws exception when non-matching size value provided
      */
     @Test
-    public void verifyObject_mismatchedSize_deleteInvalidObject_true() throws Exception {
+    public void deleteInvalidObject_mismatchedSize_deleteInvalidObject_true() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -1001,13 +1001,13 @@ public class FileHashStoreInterfaceTest {
 
             String defaultStoreAlgorithm = fhsProperties.getProperty("storeAlgorithm");
 
-            // Get verifyObject args
+            // Get deleteInvalidObject args
             String expectedChecksum = testData.pidData.get(pid).get("sha256");
             long expectedSize = 123456789;
 
             assertThrows(
                 NonMatchingObjSizeException.class,
-                () -> fileHashStore.verifyObject(objInfo, expectedChecksum, defaultStoreAlgorithm,
+                () -> fileHashStore.deleteInvalidObject(objInfo, expectedChecksum, defaultStoreAlgorithm,
                                                  expectedSize));
 
 
@@ -1024,10 +1024,10 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Check that verifyObject throws exception with non-matching checksum value
+     * Check that deleteInvalidObject throws exception with non-matching checksum value
      */
     @Test
-    public void verifyObject_mismatchedChecksum_deleteInvalidObject_true() throws Exception {
+    public void deleteInvalidObject_mismatchedChecksum_deleteInvalidObject_true() throws Exception {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -1038,11 +1038,11 @@ public class FileHashStoreInterfaceTest {
 
             String defaultStoreAlgorithm = fhsProperties.getProperty("storeAlgorithm");
 
-            // Get verifyObject args
+            // Get deleteInvalidObject args
             String expectedChecksum = "intentionallyWrongValue";
             long expectedSize = Long.parseLong(testData.pidData.get(pid).get("size"));
 
-            assertThrows(NonMatchingChecksumException.class, () -> fileHashStore.verifyObject(
+            assertThrows(NonMatchingChecksumException.class, () -> fileHashStore.deleteInvalidObject(
                 objInfo, expectedChecksum, defaultStoreAlgorithm, expectedSize
             ));
 

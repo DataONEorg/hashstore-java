@@ -119,7 +119,7 @@ public interface HashStore {
          * @throws IOException                       Issue with recalculating supported algo for
          *                                           checksum not found
          */
-        void verifyObject(
+        void deleteInvalidObject(
             ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize)
             throws NonMatchingObjSizeException, NonMatchingChecksumException,
             UnsupportedHashAlgorithmException, InterruptedException, NoSuchAlgorithmException,
