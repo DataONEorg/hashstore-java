@@ -1105,7 +1105,7 @@ public class FileHashStore implements HashStore {
         AtomicMoveNotSupportedException {
         logFileHashStore.debug("Begin writing data object for pid: " + pid);
         // If validation is desired, checksumAlgorithm and checksum must both be present
-        boolean requestValidation = verifyChecksumParameters(checksum, checksumAlgorithm);
+        boolean compareChecksum = verifyChecksumParameters(checksum, checksumAlgorithm);
         // Validate additional algorithm if not null or empty, throws exception if not supported
         if (additionalAlgorithm != null) {
             FileHashStoreUtility.checkForEmptyString(
@@ -1118,9 +1118,7 @@ public class FileHashStore implements HashStore {
         }
 
         // Generate tmp file and write to it
-        logFileHashStore.debug("Generating tmpFile");
         File tmpFile = FileHashStoreUtility.generateTmpFile("tmp", OBJECT_TMP_FILE_DIRECTORY);
-        Path tmpFilePath = tmpFile.toPath();
         Map<String, String> hexDigests;
         try {
             hexDigests = writeToTmpFileAndGenerateChecksums(
@@ -1128,25 +1126,17 @@ public class FileHashStore implements HashStore {
             );
         } catch (Exception ge) {
             // If the process to write to the tmpFile is interrupted for any reason,
-            // we will delete the tmpFile. 
-            boolean deleteStatus = tmpFile.delete();
-            String errMsg = "Unexpected Exception while storing object for: " + pid;
-            if (deleteStatus) {
-                errMsg = errMsg + ". Deleting temp file: " + tmpFile + ". Aborting request.";
-            } else {
-                errMsg =
-                    errMsg + ". Failed to delete temp file: " + tmpFile + ". Aborting request.";
-            }
+            // we will delete the tmpFile.
+            Files.delete(tmpFile.toPath());
+            String errMsg =
+                "Unexpected Exception while storing object for pid: " + pid + ". " + ge.getMessage();
             logFileHashStore.error(errMsg);
             throw new IOException(errMsg);
         }
-        long storedObjFileSize = Files.size(Paths.get(tmpFile.toString()));
 
         // Validate object if checksum and checksum algorithm is passed
         validateTmpObject(
-            requestValidation, checksum, checksumAlgorithm, tmpFilePath, hexDigests, objSize,
-            storedObjFileSize
-        );
+            compareChecksum, checksum, checksumAlgorithm, tmpFile, hexDigests, objSize);
 
         // Gather the elements to form the permanent address
         String objectCid = hexDigests.get(OBJECT_STORE_ALGORITHM);
@@ -1157,27 +1147,28 @@ public class FileHashStore implements HashStore {
 
         // Confirm that the object does not yet exist, delete tmpFile if so
         if (Files.exists(objRealPath)) {
+            Files.delete(tmpFile.toPath());
             String errMsg =
                 "File already exists for pid: " + pid + ". Object address: " + objRealPath
-                    + ". Deleting temporary file.";
+                    + ". Deleting temporary file: " + tmpFile;
             logFileHashStore.warn(errMsg);
-            Files.delete(tmpFilePath);
         } else {
             // Move object
             File permFile = objRealPath.toFile();
             move(tmpFile, permFile, "object");
             logFileHashStore.debug("Successfully moved data object: " + objRealPath);
         }
+        long storedObjFileSize = Files.size(objRealPath);
 
         return new ObjectMetadata(pid, objectCid, storedObjFileSize, hexDigests);
     }
 
     /**
-     * If requestValidation is true, determines the integrity of an object with a given checksum &
+     * If compareChecksum is true, determines the integrity of an object with a given checksum &
      * algorithm against a list of hex digests. If there is a mismatch, the tmpFile will be deleted
      * and exceptions will be thrown.
      *
-     * @param requestValidation Boolean to decide whether to proceed with validation
+     * @param compareChecksum Decide whether to proceed with comparing checksums
      * @param checksum          Expected checksum value of object
      * @param checksumAlgorithm Hash algorithm of checksum value
      * @param tmpFile           Path to the file that is being evaluated
@@ -1187,14 +1178,16 @@ public class FileHashStore implements HashStore {
      * @throws NoSuchAlgorithmException If algorithm requested to validate against is absent
      */
     protected void validateTmpObject(
-        boolean requestValidation, String checksum, String checksumAlgorithm, Path tmpFile,
-        Map<String, String> hexDigests, long expectedSize, long storedObjFileSize
-    ) throws NoSuchAlgorithmException, NonMatchingChecksumException, NonMatchingObjSizeException {
+        boolean compareChecksum, String checksum, String checksumAlgorithm, File tmpFile,
+        Map<String, String> hexDigests, long expectedSize
+    ) throws NoSuchAlgorithmException, NonMatchingChecksumException, NonMatchingObjSizeException,
+        IOException {
         if (expectedSize > 0) {
+            long storedObjFileSize = Files.size(Paths.get(tmpFile.toString()));
             if (expectedSize != storedObjFileSize) {
                 // Delete tmp File
                 try {
-                    Files.delete(tmpFile);
+                    Files.delete(tmpFile.toPath());
 
                 } catch (Exception ge) {
                     String errMsg =
@@ -1214,14 +1207,14 @@ public class FileHashStore implements HashStore {
             }
         }
 
-        if (requestValidation) {
+        if (compareChecksum) {
             logFileHashStore.info("Validating object, checksum arguments supplied and valid.");
             String digestFromHexDigests = hexDigests.get(checksumAlgorithm);
             if (digestFromHexDigests == null) {
                 String baseErrMsg = "Object cannot be validated. Algorithm not found in given "
                     + "hexDigests map. Algorithm requested: " + checksumAlgorithm;
                 try {
-                    Files.delete(tmpFile);
+                    Files.delete(tmpFile.toPath());
                 } catch (Exception ge) {
                     String errMsg = baseErrMsg + ". Failed to delete tmpFile: " + tmpFile + ". "
                         + ge.getMessage();
@@ -1237,7 +1230,7 @@ public class FileHashStore implements HashStore {
                 String baseErrMsg = "Checksum given is not equal to the calculated hex digest: "
                     + digestFromHexDigests + ". Checksum" + " provided: " + checksum;
                 try {
-                    Files.delete(tmpFile);
+                    Files.delete(tmpFile.toPath());
                 } catch (Exception ge) {
                     String errMsg = baseErrMsg + ". Failed to delete tmpFile: " + tmpFile + ". "
                         + ge.getMessage();
