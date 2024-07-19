@@ -2070,10 +2070,61 @@ public class FileHashStoreProtectedTest {
      * exist
      */
     @Test
-    public void fileHashStoreUtility_checkForEmptyString() {
+    public void fileHashStoreUtility_checkForEmptyAndValidString() {
         assertThrows(
             IllegalArgumentException.class,
             () -> FileHashStoreUtility.checkForEmptyAndValidString("dou.test.1\n", "pid",
                                                                    "storeObject"));
+    }
+
+    /**
+     * Confirm that renamePathForDeletion adds '_delete' to the given path
+     */
+    @Test
+    public void fileHashStoreUtility_renamePathForDeletion() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            String pathToMetadata = fileHashStore.putMetadata(metadataStream, pid, null);
+            metadataStream.close();
+
+            Path metadataPath = Paths.get(pathToMetadata);
+            FileHashStoreUtility.renamePathForDeletion(metadataPath);
+
+            Path expectedMetadataPathRenamed = Paths.get(pathToMetadata + "_delete");
+            assertTrue(Files.exists(expectedMetadataPathRenamed));
+        }
+    }
+
+    /**
+     * Confirm that renamePathForDeletion adds '_delete' to the given path
+     */
+    @Test
+    public void fileHashStoreUtility_renamePathForRestoration() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
+            String pathToMetadata = fileHashStore.putMetadata(metadataStream, pid, null);
+            metadataStream.close();
+
+            Path metadataPath = Paths.get(pathToMetadata);
+            FileHashStoreUtility.renamePathForDeletion(metadataPath);
+
+            Path expectedMetadataPathRenamed = Paths.get(pathToMetadata + "_delete");
+            assertFalse(Files.exists(metadataPath));
+            assertTrue(Files.exists(expectedMetadataPathRenamed));
+
+            FileHashStoreUtility.renamePathForRestoration(expectedMetadataPathRenamed);
+            assertFalse(Files.exists(expectedMetadataPathRenamed));
+            assertTrue(Files.exists(metadataPath));
+        }
     }
 }

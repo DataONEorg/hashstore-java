@@ -166,6 +166,27 @@ public class FileHashStoreUtility {
     }
 
     /**
+     * Rename the given path slated for deletion by replacing '_delete' with ""
+     *
+     * @param pathToRename The path to the file to revert deletion
+     * @throws IOException Issue with renaming the given file path
+     */
+    public static void renamePathForRestoration(Path pathToRename) throws IOException {
+        ensureNotNull(pathToRename, "pathToRename", "renamePathForRestoration");
+        if (!Files.exists(pathToRename)) {
+            String errMsg = "FileHashStoreUtility.renamePathForRestoration - Given path to file: "
+                + pathToRename + " does not exist.";
+            throw new FileNotFoundException(errMsg);
+        }
+        Path parentPath = pathToRename.getParent();
+        Path fileName = pathToRename.getFileName();
+        String newFileName = fileName.toString().replace("_delete", "");
+
+        Path restorePath = parentPath.resolve(newFileName);
+        Files.move(pathToRename, restorePath, StandardCopyOption.ATOMIC_MOVE);
+    }
+
+    /**
      * Delete all paths found in the given List<Path> object.
      *
      * @param deleteList Directory to check
