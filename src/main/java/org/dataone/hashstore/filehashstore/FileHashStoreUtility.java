@@ -1,5 +1,8 @@
 package org.dataone.hashstore.filehashstore;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -24,6 +27,8 @@ import javax.xml.bind.DatatypeConverter;
  * in FileHashStore and/or related classes.
  */
 public class FileHashStoreUtility {
+
+    private static final Log logFHSU = LogFactory.getLog(FileHashStoreUtility.class);
 
     /**
      * Checks whether a given object is null and throws an exception if so
@@ -88,9 +93,9 @@ public class FileHashStoreUtility {
     public static String getPidHexDigest(String pid, String algorithm)
         throws NoSuchAlgorithmException, IllegalArgumentException {
         FileHashStoreUtility.ensureNotNull(pid, "pid", "getPidHexDigest");
-        FileHashStoreUtility.checkForEmptyString(pid, "pid", "getPidHexDigest");
+        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "getPidHexDigest");
         FileHashStoreUtility.ensureNotNull(algorithm, "algorithm", "getPidHexDigest");
-        FileHashStoreUtility.checkForEmptyString(algorithm, "algorithm", "getPidHexDigest");
+        FileHashStoreUtility.checkForEmptyAndValidString(algorithm, "algorithm", "getPidHexDigest");
 
         MessageDigest stringMessageDigest = MessageDigest.getInstance(algorithm);
         byte[] bytes = pid.getBytes(StandardCharsets.UTF_8);
@@ -161,17 +166,45 @@ public class FileHashStoreUtility {
     }
 
     /**
+     * Rename the given path slated for deletion by replacing '_delete' with ""
+     *
+     * @param pathToRename The path to the file to revert deletion
+     * @throws IOException Issue with renaming the given file path
+     */
+    public static void renamePathForRestoration(Path pathToRename) throws IOException {
+        ensureNotNull(pathToRename, "pathToRename", "renamePathForRestoration");
+        if (!Files.exists(pathToRename)) {
+            String errMsg = "FileHashStoreUtility.renamePathForRestoration - Given path to file: "
+                + pathToRename + " does not exist.";
+            throw new FileNotFoundException(errMsg);
+        }
+        Path parentPath = pathToRename.getParent();
+        Path fileName = pathToRename.getFileName();
+        String newFileName = fileName.toString().replace("_delete", "");
+
+        Path restorePath = parentPath.resolve(newFileName);
+        Files.move(pathToRename, restorePath, StandardCopyOption.ATOMIC_MOVE);
+    }
+
+    /**
      * Delete all paths found in the given List<Path> object.
      *
      * @param deleteList Directory to check
-     * @throws IOException Unexpected I/O error when deleting files
      */
-    public static void deleteListItems(Collection<Path> deleteList) throws IOException {
+    public static void deleteListItems(Collection<Path> deleteList) {
         ensureNotNull(deleteList, "deleteList", "deleteListItems");
         if (!deleteList.isEmpty()) {
             for (Path deleteItem : deleteList) {
                 if (Files.exists(deleteItem)) {
-                    Files.delete(deleteItem);
+                    try {
+                        Files.delete(deleteItem);
+                    } catch (Exception ge) {
+                        String warnMsg =
+                            "Attempted to delete metadata document: " + deleteItem + " but failed."
+                                + " Additional Details: " + ge.getMessage();
+                        logFHSU.warn(warnMsg);
+                    }
+
                 }
             }
         }
@@ -186,7 +219,7 @@ public class FileHashStoreUtility {
      * @param method   Calling method
      * @throws IllegalArgumentException If the string is empty or contains illegal characters
      */
-    public static void checkForEmptyString(String string, String argument, String method)
+    public static void checkForEmptyAndValidString(String string, String argument, String method)
         throws IllegalArgumentException {
         ensureNotNull(string, "string", "checkForEmptyString");
         if (string.trim().isEmpty()) {

@@ -21,6 +21,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,7 @@ import javax.xml.bind.DatatypeConverter;
 import org.dataone.hashstore.HashStoreRunnable;
 import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.exceptions.HashStoreRefsAlreadyExistException;
+import org.dataone.hashstore.exceptions.MissingHexDigestsException;
 import org.dataone.hashstore.exceptions.NonMatchingChecksumException;
 import org.dataone.hashstore.exceptions.NonMatchingObjSizeException;
 import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
@@ -850,6 +852,39 @@ public class FileHashStoreInterfaceTest {
             assertTrue(Files.exists(Paths.get(fhsProperties.getProperty("storePath")).resolve(
                 "objects").resolve(objRelativePath)));
         }
+    }
+
+    /**
+     * Check that deleteInvalidObject throws MissingHexDigestsException when objInfo hexDigests
+     * is empty.
+     */
+    @Test
+    public void deleteInvalidObject_objInfoEmptyHexDigests() {
+        String id = "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
+        long size = 1999999;
+        Map<String, String> hexDigests = new HashMap<>();
+
+        ObjectMetadata objInfo = new ObjectMetadata(null, id, size, hexDigests);
+
+        assertThrows(
+            MissingHexDigestsException.class,
+            () -> fileHashStore.deleteInvalidObject(objInfo, id, "MD2", size));
+    }
+
+    /**
+     * Check that deleteInvalidObject throws MissingHexDigestsException when objInfo hexDigests
+     * is null.
+     */
+    @Test
+    public void deleteInvalidObject_objInfoNullHexDigests() {
+        String id = "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
+        long size = 1999999;
+        Map<String, String> hexDigests = null;
+        ObjectMetadata objInfo = new ObjectMetadata(null, id, size, null);
+
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> fileHashStore.deleteInvalidObject(objInfo, id, "MD2", size));
     }
 
     /**
