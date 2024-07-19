@@ -908,23 +908,12 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(formatId, "formatId", "deleteMetadata");
         FileHashStoreUtility.checkForEmptyAndValidString(formatId, "formatId", "deleteMetadata");
 
-        Collection<Path> deleteList = new ArrayList<>();
         // Get the path to the metadata document and add it to a list
         Path metadataDocPath = getHashStoreMetadataPath(pid, formatId);
         Collection<Path> metadataDocPaths = new ArrayList<>();
         metadataDocPaths.add(metadataDocPath);
 
-        try {
-            syncRenameMetadataDocForDeletion(metadataDocPaths);
-        } catch (Exception ge) {
-            // Revert process if there is any exception
-            syncRenameMetadataDocForRestoration(deleteList);
-            String errMsg = "Unexpected issue when trying to delete metadata for pid: " + pid +
-                ". Metadata has not been deleted. Additional Details: " + ge.getMessage();
-            logFileHashStore.error(errMsg);
-            throw ge;
-        }
-
+        Collection<Path> deleteList = syncRenameMetadataDocForDeletion(metadataDocPaths);
         // Delete all items in the list
         FileHashStoreUtility.deleteListItems(deleteList);
         logFileHashStore.info(
@@ -941,7 +930,6 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(pid, "pid", "deleteMetadata");
         FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "deleteMetadata");
 
-        Collection<Path> deleteList = new ArrayList<>();
         // Get the path to the pid metadata document directory
         String pidHexDigest = FileHashStoreUtility.getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
         String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
@@ -952,18 +940,7 @@ public class FileHashStore implements HashStore {
         List<Path> metadataDocPaths =
             FileHashStoreUtility.getFilesFromDir(expectedPidMetadataDirectory);
 
-        try {
-            syncRenameMetadataDocForDeletion(metadataDocPaths);
-        } catch (Exception ge) {
-            // Revert process if there is any exception
-            syncRenameMetadataDocForRestoration(deleteList);
-            String errMsg = "Unexpected issue when trying to delete metadata for pid: " + pid
-                + ". An attempt to restore metadata has been made. Additional details: "
-                + ge.getMessage();
-            logFileHashStore.error(errMsg);
-            throw ge;
-        }
-
+        Collection<Path> deleteList = syncRenameMetadataDocForDeletion(metadataDocPaths);
         // Delete all items in the list
         FileHashStoreUtility.deleteListItems(deleteList);
         logFileHashStore.info("All metadata documents deleted for: " + pid);
@@ -976,44 +953,28 @@ public class FileHashStore implements HashStore {
      * @throws IOException          If there is an issue renaming paths
      * @throws InterruptedException If there is an issue with synchronization metadata calls
      */
-    protected static void syncRenameMetadataDocForDeletion(
+    protected static Collection<Path> syncRenameMetadataDocForDeletion(
         Collection<Path> metadataDocPaths) throws IOException, InterruptedException {
+        // Rename paths and add to a List
+        Collection<Path> metadataDocsToDelete = new ArrayList<>();
         for (Path metadataDocToDelete : metadataDocPaths) {
             String metadataDocId = metadataDocToDelete.getFileName().toString();
-
             try {
                 synchronizeMetadataLockedDocIds(metadataDocId);
                 if (Files.exists(metadataDocToDelete)) {
-                    FileHashStoreUtility.renamePathForDeletion(metadataDocToDelete);
+                    try {
+                        metadataDocsToDelete.add(FileHashStoreUtility.renamePathForDeletion(metadataDocToDelete));
+                    } catch (Exception ge) {
+                        String warnMsg = "Unexpected error renaming metadata doc path for "
+                            + "deletion: " + metadataDocToDelete;
+                        logFileHashStore.warn(warnMsg);
+                    }
                 }
             } finally {
                 releaseMetadataLockedDocIds(metadataDocId);
             }
         }
-    }
-
-    /**
-     * Synchronize restoring metadata documents renamed for deletion back to what they were.
-     *
-     * @param deleteList Array of items that have been marked for deletion
-     * @throws IOException          If there is an issue renaming paths
-     * @throws InterruptedException If there is an issue with synchronization metadata calls
-     */
-    protected static void syncRenameMetadataDocForRestoration(Collection<Path> deleteList)
-        throws IOException, InterruptedException {
-        for (Path metadataDocToPlaceBack : deleteList) {
-            Path fileNameWithDeleted = metadataDocToPlaceBack.getFileName();
-            String metadataDocId = fileNameWithDeleted.toString().replace("_delete", "");
-
-            try {
-                synchronizeMetadataLockedDocIds(metadataDocId);
-                if (Files.exists(metadataDocToPlaceBack)) {
-                    FileHashStoreUtility.renamePathForRestoration(metadataDocToPlaceBack);
-                }
-            } finally {
-                releaseMetadataLockedDocIds(metadataDocId);
-            }
-        }
+        return metadataDocsToDelete;
     }
 
     @Override
