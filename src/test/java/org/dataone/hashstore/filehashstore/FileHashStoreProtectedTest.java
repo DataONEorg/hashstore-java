@@ -17,6 +17,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -773,9 +775,9 @@ public class FileHashStoreProtectedTest {
      */
     @Test
     public void verifyChecksumParameters_emptyChecksum() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            fileHashStore.verifyChecksumParameters("     ","SHA-256");
-        });
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> fileHashStore.verifyChecksumParameters("     ", "SHA-256"));
     }
 
     /**
@@ -783,9 +785,9 @@ public class FileHashStoreProtectedTest {
      */
     @Test
     public void verifyChecksumParameters_emptyAlgorithm() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            fileHashStore.verifyChecksumParameters("abc123","     ");
-        });
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> fileHashStore.verifyChecksumParameters("abc123", "     "));
     }
 
     /**
@@ -793,9 +795,9 @@ public class FileHashStoreProtectedTest {
      */
     @Test
     public void verifyChecksumParameters_unsupportedAlgorithm() {
-        assertThrows(NoSuchAlgorithmException.class, () -> {
-            fileHashStore.verifyChecksumParameters("abc123","SHA-DOU");
-        });
+        assertThrows(
+            NoSuchAlgorithmException.class,
+            () -> fileHashStore.verifyChecksumParameters("abc123", "SHA-DOU"));
     }
 
     /**
@@ -1830,6 +1832,74 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
+     * Confirm that syncRenameMetadataDocForDeletion adds '_delete' to the given paths
+     */
+    @Test
+    public void syncRenameMetadataDocForDeletion_renamesAsExpected() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+
+            // Get test metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+
+            InputStream metaStream = Files.newInputStream(testMetaDataFile);
+            String pathToMetadata = fileHashStore.putMetadata(metaStream, pid, null);
+            String pathToMetadataTwo = fileHashStore.putMetadata(metaStream, pid, "ns.test.1");
+            String pathToMetadataThree =
+                fileHashStore.putMetadata(metaStream, pid, "ns.test" + ".3");
+            metaStream.close();
+
+            // Confirm that metadata documents are present
+            Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+            String storeAlgo = fhsProperties.getProperty("storeAlgorithm");
+            int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
+            int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
+            String pidHexDigest = FileHashStoreUtility.getPidHexDigest(pid, storeAlgo);
+            String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+                storeDepth, storeWidth, pidHexDigest
+            );
+            Path expectedPidMetadataDirectory =
+                storePath.resolve("metadata").resolve(pidRelativePath);
+            List<Path> metadataDocPaths =
+                FileHashStoreUtility.getFilesFromDir(expectedPidMetadataDirectory);
+
+            assertEquals(3, metadataDocPaths.size());
+
+            Collection<Path> deleteList =
+                fileHashStore.syncRenameMetadataDocForDeletion(metadataDocPaths);
+
+            Collection<String> renamedDocStrings = new ArrayList<>();
+            for (Path renamedDoc : deleteList) {
+                renamedDocStrings.add(renamedDoc.toString());
+            }
+            assertTrue(renamedDocStrings.contains(pathToMetadata + "_delete"));
+            assertTrue(renamedDocStrings.contains(pathToMetadataTwo + "_delete"));
+            assertTrue(renamedDocStrings.contains(pathToMetadataThree + "_delete"));
+        }
+    }
+
+    /**
+     * Confirm that syncRenameMetadataDocForDeletion throws exception when supplied list is empty.
+     */
+    @Test
+    public void syncRenameMetadataDocForDeletion_emptyList() {
+        Collection<Path> metadataDocPaths = new ArrayList<>();
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> fileHashStore.syncRenameMetadataDocForDeletion(metadataDocPaths));
+    }
+
+    /**
+     * Confirm that syncRenameMetadataDocForDeletion throws exception when supplied list is null.
+     */
+    @Test
+    public void syncRenameMetadataDocForDeletion_nullList() {
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> fileHashStore.syncRenameMetadataDocForDeletion(null));
+    }
+
+    /**
      * Confirm that isStringInRefsFile returns true when pid is found
      */
     @Test
@@ -1871,8 +1941,6 @@ public class FileHashStoreProtectedTest {
             assertFalse(fileHashStore.isStringInRefsFile("pid.not.found", absCidRefsPath));
         }
     }
-
-
 
     /**
      * Confirm getHashStoreDataObjectPath returns correct object path

@@ -913,9 +913,11 @@ public class FileHashStore implements HashStore {
         Collection<Path> metadataDocPaths = new ArrayList<>();
         metadataDocPaths.add(metadataDocPath);
 
-        Collection<Path> deleteList = syncRenameMetadataDocForDeletion(metadataDocPaths);
-        // Delete all items in the list
-        FileHashStoreUtility.deleteListItems(deleteList);
+        if (!metadataDocPaths.isEmpty()) {
+            Collection<Path> deleteList = syncRenameMetadataDocForDeletion(metadataDocPaths);
+            // Delete all items in the list
+            FileHashStoreUtility.deleteListItems(deleteList);
+        }
         logFileHashStore.info(
             "Metadata document deleted for: " + pid + " with metadata address: " + metadataDocPath);
     }
@@ -940,21 +942,30 @@ public class FileHashStore implements HashStore {
         List<Path> metadataDocPaths =
             FileHashStoreUtility.getFilesFromDir(expectedPidMetadataDirectory);
 
-        Collection<Path> deleteList = syncRenameMetadataDocForDeletion(metadataDocPaths);
-        // Delete all items in the list
-        FileHashStoreUtility.deleteListItems(deleteList);
+        if (!metadataDocPaths.isEmpty()) {
+            Collection<Path> deleteList = syncRenameMetadataDocForDeletion(metadataDocPaths);
+            // Delete all items in the list
+            FileHashStoreUtility.deleteListItems(deleteList);
+        }
         logFileHashStore.info("All metadata documents deleted for: " + pid);
     }
 
     /**
-     * Synchronize rename metadata documents for deletion
+     * Synchronize renaming metadata documents for deletion
      *
      * @param metadataDocPaths List of metadata document paths
      * @throws IOException          If there is an issue renaming paths
      * @throws InterruptedException If there is an issue with synchronization metadata calls
      */
-    protected static Collection<Path> syncRenameMetadataDocForDeletion(
+    protected Collection<Path> syncRenameMetadataDocForDeletion(
         Collection<Path> metadataDocPaths) throws IOException, InterruptedException {
+        FileHashStoreUtility.ensureNotNull(
+            metadataDocPaths, "metadataDocPaths", "syncRenameMetadataDocForDeletion");
+        if (metadataDocPaths.isEmpty()) {
+            String errMsg = "metadataDocPaths supplied cannot be empty.";
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
+        }
         // Rename paths and add to a List
         Collection<Path> metadataDocsToDelete = new ArrayList<>();
         try {
@@ -963,24 +974,27 @@ public class FileHashStore implements HashStore {
                 try {
                     synchronizeMetadataLockedDocIds(metadataDocId);
                     if (Files.exists(metadataDocToDelete)) {
-                        metadataDocsToDelete.add(FileHashStoreUtility.renamePathForDeletion(metadataDocToDelete));
+                        metadataDocsToDelete.add(
+                            FileHashStoreUtility.renamePathForDeletion(metadataDocToDelete));
                     }
                 } finally {
                     releaseMetadataLockedDocIds(metadataDocId);
                 }
             }
         } catch (Exception ge) {
-            // If there is any exception, revert the process and throw an exception
-            for (Path metadataDocToPlaceBack : metadataDocsToDelete) {
-                Path fileNameWithDeleted = metadataDocToPlaceBack.getFileName();
-                String metadataDocId = fileNameWithDeleted.toString().replace("_delete", "");
-                try {
-                    synchronizeMetadataLockedDocIds(metadataDocId);
-                    if (Files.exists(metadataDocToPlaceBack)) {
-                        FileHashStoreUtility.renamePathForRestoration(metadataDocToPlaceBack);
+            // If there is any exception, attempt to revert the process and throw an exception
+            if (!metadataDocsToDelete.isEmpty()) {
+                for (Path metadataDocToPlaceBack : metadataDocsToDelete) {
+                    Path fileNameWithDeleted = metadataDocToPlaceBack.getFileName();
+                    String metadataDocId = fileNameWithDeleted.toString().replace("_delete", "");
+                    try {
+                        synchronizeMetadataLockedDocIds(metadataDocId);
+                        if (Files.exists(metadataDocToPlaceBack)) {
+                            FileHashStoreUtility.renamePathForRestoration(metadataDocToPlaceBack);
+                        }
+                    } finally {
+                        releaseMetadataLockedDocIds(metadataDocId);
                     }
-                } finally {
-                    releaseMetadataLockedDocIds(metadataDocId);
                 }
             }
             String errMsg = "An unexpected exception has occurred when deleting metadata "
