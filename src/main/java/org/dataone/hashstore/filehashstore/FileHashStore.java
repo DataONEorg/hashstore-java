@@ -506,7 +506,7 @@ public class FileHashStore implements HashStore {
      */
     @Override
     public ObjectMetadata storeObject(InputStream object) throws NoSuchAlgorithmException,
-        IOException, PidRefsFileExistsException, RuntimeException {
+        IOException, PidRefsFileExistsException, RuntimeException, InterruptedException {
         // 'putObject' is called directly to bypass the pid synchronization implemented to
         // efficiently handle object store requests without a pid. This scenario occurs when
         // metadata about the object (ex. form data including the pid, checksum, checksum
@@ -1097,13 +1097,14 @@ public class FileHashStore implements HashStore {
      *                                         etc.)
      * @throws NullPointerException            Arguments are null for pid or object
      * @throws AtomicMoveNotSupportedException When attempting to move files across file systems
+     * @throws InterruptedException            An issue synchronizing the cid when moving object
      */
     protected ObjectMetadata putObject(
         InputStream object, String pid, String additionalAlgorithm, String checksum,
         String checksumAlgorithm, long objSize
     ) throws IOException, NoSuchAlgorithmException, SecurityException, FileNotFoundException,
         PidRefsFileExistsException, IllegalArgumentException, NullPointerException,
-        AtomicMoveNotSupportedException {
+        AtomicMoveNotSupportedException, InterruptedException {
         logFileHashStore.debug("Begin writing data object for pid: " + pid);
         // If validation is desired, checksumAlgorithm and checksum must both be present
         boolean compareChecksum = verifyChecksumParameters(checksum, checksumAlgorithm);
@@ -1146,22 +1147,33 @@ public class FileHashStore implements HashStore {
         );
         Path objRealPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
 
-        // Confirm that the object does not yet exist, delete tmpFile if so
-        if (Files.exists(objRealPath)) {
-            Files.delete(tmpFile.toPath());
+        try {
+            synchronizeReferencedLockedCids(objectCid);
+            // Confirm that the object does not yet exist, delete tmpFile if so
+            if (!Files.exists(objRealPath)) {
+                logFileHashStore.info("Storing tmpFile: " + tmpFile);
+                // Move object
+                File permFile = objRealPath.toFile();
+                move(tmpFile, permFile, "object");
+                logFileHashStore.debug("Successfully moved data object: " + objRealPath);
+            } else {
+                Files.delete(tmpFile.toPath());
+                String errMsg =
+                    "File already exists for pid: " + pid + ". Object address: " + objRealPath
+                        + ". Deleting temporary file: " + tmpFile;
+                logFileHashStore.warn(errMsg);
+            }
+        } catch (Exception e) {
             String errMsg =
-                "File already exists for pid: " + pid + ". Object address: " + objRealPath
-                    + ". Deleting temporary file: " + tmpFile;
-            logFileHashStore.warn(errMsg);
-        } else {
-            // Move object
-            File permFile = objRealPath.toFile();
-            move(tmpFile, permFile, "object");
-            logFileHashStore.debug("Successfully moved data object: " + objRealPath);
+                "Unexpected exception when moving object with cid: " + objectCid + " for pid:"
+                    + pid + ". Additional Details: " + e.getMessage();
+            logFileHashStore.error(errMsg);
+            throw e;
+        } finally {
+            releaseReferencedLockedCids(objectCid);
         }
-        long storedObjFileSize = Files.size(objRealPath);
 
-        return new ObjectMetadata(pid, objectCid, storedObjFileSize, hexDigests);
+        return new ObjectMetadata(pid, objectCid, Files.size(objRealPath), hexDigests);
     }
 
     /**
@@ -2203,9 +2215,9 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Multiple threads may access the cid reference file (which contains a list of `pid`s that
-     * reference a `cid`) and this needs to be coordinated. Otherwise, we will run into a
-     * `OverlappingFileLockException`
+     * Multiple threads may access a data object or the respective  cid reference file (which
+     * contains a list of `pid`s that reference a `cid`) and this needs to be coordinated.
+     * Otherwise, we may run into unexpected exceptions (ex. `OverlappingFileLockException`)
      *
      * @param cid Content identifier
      * @throws InterruptedException When an issue occurs when attempting to sync the pid
