@@ -38,6 +38,7 @@ import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.HashStore;
 import org.dataone.hashstore.exceptions.CidNotFoundInPidRefsFileException;
 import org.dataone.hashstore.exceptions.HashStoreRefsAlreadyExistException;
+import org.dataone.hashstore.exceptions.MissingHexDigestsException;
 import org.dataone.hashstore.exceptions.NonMatchingChecksumException;
 import org.dataone.hashstore.exceptions.NonMatchingObjSizeException;
 import org.dataone.hashstore.exceptions.OrphanPidRefsFileException;
@@ -816,6 +817,11 @@ public class FileHashStore implements HashStore {
         logFileHashStore.debug("Verifying data object for cid: " + objectInfo.getCid());
         // Validate input parameters
         FileHashStoreUtility.ensureNotNull(objectInfo, "objectInfo", "deleteInvalidObject");
+        FileHashStoreUtility.ensureNotNull(
+            objectInfo.getHexDigests(), "objectInfo.getHexDigests()", "deleteInvalidObject");
+        if (objectInfo.getHexDigests().isEmpty()) {
+            throw new MissingHexDigestsException("Missing hexDigests in supplied ObjectMetadata");
+        }
         FileHashStoreUtility.ensureNotNull(checksum, "checksum", "deleteInvalidObject");
         FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm", "deleteInvalidObject");
         FileHashStoreUtility.checkNotNegativeOrZero(objSize, "deleteInvalidObject");
