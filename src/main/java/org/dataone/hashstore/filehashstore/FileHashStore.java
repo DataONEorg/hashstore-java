@@ -909,10 +909,11 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyAndValidString(formatId, "formatId", "deleteMetadata");
 
         Collection<Path> deleteList = new ArrayList<>();
-        // Get the path to the metadata document
+        // Get the path to the metadata document and add it to a list
         Path metadataDocPath = getHashStoreMetadataPath(pid, formatId);
         Collection<Path> metadataDocPaths = new ArrayList<>();
         metadataDocPaths.add(metadataDocPath);
+
         try {
             syncRenameMetadataDocForDeletion(metadataDocPaths);
         } catch (Exception ge) {
@@ -950,13 +951,15 @@ public class FileHashStore implements HashStore {
         // Add all metadata docs found in the metadata doc directory to a list to iterate over
         List<Path> metadataDocPaths =
             FileHashStoreUtility.getFilesFromDir(expectedPidMetadataDirectory);
+
         try {
             syncRenameMetadataDocForDeletion(metadataDocPaths);
         } catch (Exception ge) {
             // Revert process if there is any exception
             syncRenameMetadataDocForRestoration(deleteList);
-            String errMsg = "Unexpected issue when trying to delete metadata for pid: " + pid +
-                ". Metadata has not been deleted. Additional Details: " + ge.getMessage();
+            String errMsg = "Unexpected issue when trying to delete metadata for pid: " + pid
+                + ". An attempt to restore metadata has been made. Additional details: "
+                + ge.getMessage();
             logFileHashStore.error(errMsg);
             throw ge;
         }
