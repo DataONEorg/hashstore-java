@@ -437,20 +437,20 @@ public class FileHashStore implements HashStore {
         String checksumAlgorithm, long objSize
     ) throws NoSuchAlgorithmException, PidRefsFileExistsException, IOException, RuntimeException,
         InterruptedException {
-        // Lock pid for thread safety, transaction control and atomic writing
-        // An object is stored once and only once
-        synchronized (objectLockedIds) {
-            if (objectLockedIds.contains(pid)) {
-                String errMsg = "Duplicate object request encountered for pid: " + pid
-                    + ". Already in progress.";
-                logFileHashStore.warn(errMsg);
-                throw new RuntimeException(errMsg);
-            }
-            logFileHashStore.debug("Synchronizing objectLockedIds for pid: " + pid);
-            objectLockedIds.add(pid);
-        }
-
         try {
+            // Lock pid for thread safety, transaction control and atomic writing
+            // An object is stored once and only once
+            synchronized (objectLockedIds) {
+                if (objectLockedIds.contains(pid)) {
+                    String errMsg = "Duplicate object request encountered for pid: " + pid
+                        + ". Already in progress.";
+                    logFileHashStore.warn(errMsg);
+                    throw new RuntimeException(errMsg);
+                }
+                logFileHashStore.debug("Synchronizing objectLockedIds for pid: " + pid);
+                objectLockedIds.add(pid);
+            }
+
             logFileHashStore.debug(
                 "putObject() called to store pid: " + pid + ". additionalAlgorithm: "
                     + additionalAlgorithm + ". checksum: " + checksum + ". checksumAlgorithm: "
@@ -530,10 +530,9 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(pid, "pid", "tagObject");
         FileHashStoreUtility.checkForEmptyString(cid, "cid", "tagObject");
 
-        // tagObject is synchronized with deleteObject based on a `cid`
-        synchronizeReferencedLockedCids(cid);
-
         try {
+            // tagObject is synchronized with deleteObject based on a `cid`
+            synchronizeReferencedLockedCids(cid);
             storeHashStoreRefsFiles(pid, cid);
 
         } catch (HashStoreRefsAlreadyExistException hsrfae) {
@@ -589,12 +588,11 @@ public class FileHashStore implements HashStore {
         String pidFormatId = pid + checkedFormatId;
         String metadataDocId = FileHashStoreUtility.getPidHexDigest(pidFormatId,
                                                                 OBJECT_STORE_ALGORITHM);
-        synchronizeMetadataLockedIds(metadataDocId);
-
+        logFileHashStore.debug(
+            "putMetadata() called to store metadata for pid: " + pid + ", with formatId: "
+                + checkedFormatId + " for metadata document: " + metadataDocId);
         try {
-            logFileHashStore.debug(
-                "putMetadata() called to store metadata for pid: " + pid + ", with formatId: "
-                    + checkedFormatId + " for metadata document: " + metadataDocId);
+            synchronizeMetadataLockedIds(metadataDocId);
             // Store metadata
             String pathToStoredMetadata = putMetadata(metadata, pid, checkedFormatId);
             logFileHashStore.info(
@@ -701,12 +699,12 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(pid, "id", "deleteObject");
         Collection<Path> deleteList = new ArrayList<>();
 
-        // Storing, deleting and untagging objects are synchronized together
-        // Duplicate store object requests for a pid are rejected, but deleting an object
-        // will wait for a pid to be released if it's found to be in use before proceeding.
-        synchronizeObjectLockedIds(pid);
-
         try {
+            // Storing, deleting and untagging objects are synchronized together
+            // Duplicate store object requests for a pid are rejected, but deleting an object
+            // will wait for a pid to be released if it's found to be in use before proceeding.
+            synchronizeObjectLockedIds(pid);
+
             // Before we begin deletion process, we look for the `cid` by calling
             // `findObject` which will throw custom exceptions if there is an issue with
             // the reference files, which help us determine the path to proceed with.
@@ -761,10 +759,11 @@ public class FileHashStore implements HashStore {
                 // but the actual object being referenced by the pid does not exist
                 Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
                 String cidRead = new String(Files.readAllBytes(absPidRefsPath));
-                // Since we must access the cid reference file, the `cid` must be synchronized
-                synchronizeReferencedLockedCids(cidRead);
 
                 try {
+                    // Since we must access the cid reference file, the `cid` must be synchronized
+                    synchronizeReferencedLockedCids(cidRead);
+
                     Path absCidRefsPath =
                         getHashStoreRefsPath(cidRead, HashStoreIdTypes.cid.getName());
                     updateRefsFile(pid, absCidRefsPath, "remove");
@@ -936,8 +935,8 @@ public class FileHashStore implements HashStore {
      */
     protected static void syncRenameMetadataDocForDeletion(Collection<Path> deleteList, Path metadataDocAbsPath, String metadataDocId)
         throws InterruptedException, IOException {
-        synchronizeMetadataLockedIds(metadataDocId);
         try {
+            synchronizeMetadataLockedIds(metadataDocId);
             if (Files.exists(metadataDocAbsPath)) {
                 deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDocAbsPath));
             }
@@ -1540,9 +1539,8 @@ public class FileHashStore implements HashStore {
             FileHashStoreUtility.getHierarchicalPathString(DIRECTORY_DEPTH, DIRECTORY_WIDTH, cid);
         Path expectedRealPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
 
-        synchronizeReferencedLockedCids(cid);
-
         try {
+            synchronizeReferencedLockedCids(cid);
             if (Files.exists(absCidRefsPath)) {
                 // The cid refs file exists, so the cid object cannot be deleted.
                 String warnMsg = "cid refs file still contains references, skipping deletion.";
@@ -1665,9 +1663,9 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(cid, "cid", "unTagObject");
 
         Collection<Path> deleteList = new ArrayList<>();
-        synchronizeObjectLockedIds(pid);
 
         try {
+            synchronizeObjectLockedIds(pid);
             // Before we begin untagging process, we look for the `cid` by calling
             // `findObject` which will throw custom exceptions if there is an issue with
             // the reference files, which help us determine the path to proceed with.
@@ -1716,10 +1714,11 @@ public class FileHashStore implements HashStore {
                 // but the actual object being referenced by the pid does not exist
                 Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
                 String cidRead = new String(Files.readAllBytes(absPidRefsPath));
-                // Since we must access the cid reference file, the `cid` must be synchronized
-                synchronizeReferencedLockedCids(cidRead);
 
                 try {
+                    // Since we must access the cid reference file, the `cid` must be synchronized
+                    synchronizeReferencedLockedCids(cidRead);
+
                     Path absCidRefsPath =
                         getHashStoreRefsPath(cidRead, HashStoreIdTypes.cid.getName());
                     updateRefsFile(pid, absCidRefsPath, "remove");
