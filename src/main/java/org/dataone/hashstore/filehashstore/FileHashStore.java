@@ -957,23 +957,39 @@ public class FileHashStore implements HashStore {
         Collection<Path> metadataDocPaths) throws IOException, InterruptedException {
         // Rename paths and add to a List
         Collection<Path> metadataDocsToDelete = new ArrayList<>();
-        for (Path metadataDocToDelete : metadataDocPaths) {
-            String metadataDocId = metadataDocToDelete.getFileName().toString();
-            try {
-                synchronizeMetadataLockedDocIds(metadataDocId);
-                if (Files.exists(metadataDocToDelete)) {
-                    try {
+        try {
+            for (Path metadataDocToDelete : metadataDocPaths) {
+                String metadataDocId = metadataDocToDelete.getFileName().toString();
+                try {
+                    synchronizeMetadataLockedDocIds(metadataDocId);
+                    if (Files.exists(metadataDocToDelete)) {
                         metadataDocsToDelete.add(FileHashStoreUtility.renamePathForDeletion(metadataDocToDelete));
-                    } catch (Exception ge) {
-                        String warnMsg = "Unexpected error renaming metadata doc path for "
-                            + "deletion: " + metadataDocToDelete;
-                        logFileHashStore.warn(warnMsg);
                     }
+                } finally {
+                    releaseMetadataLockedDocIds(metadataDocId);
                 }
-            } finally {
-                releaseMetadataLockedDocIds(metadataDocId);
             }
+        } catch (Exception ge) {
+            // If there is any exception, revert the process and throw an exception
+            for (Path metadataDocToPlaceBack : metadataDocsToDelete) {
+                Path fileNameWithDeleted = metadataDocToPlaceBack.getFileName();
+                String metadataDocId = fileNameWithDeleted.toString().replace("_delete", "");
+                try {
+                    synchronizeMetadataLockedDocIds(metadataDocId);
+                    if (Files.exists(metadataDocToPlaceBack)) {
+                        FileHashStoreUtility.renamePathForRestoration(metadataDocToPlaceBack);
+                    }
+                } finally {
+                    releaseMetadataLockedDocIds(metadataDocId);
+                }
+            }
+            String errMsg = "An unexpected exception has occurred when deleting metadata "
+                + "documents. Attempts to restore all affected metadata documents have "
+                + "been made. Additional details: " + ge.getMessage();
+            logFileHashStore.error(errMsg);
+            throw ge;
         }
+
         return metadataDocsToDelete;
     }
 
