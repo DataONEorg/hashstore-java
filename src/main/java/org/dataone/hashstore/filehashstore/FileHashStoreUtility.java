@@ -88,9 +88,9 @@ public class FileHashStoreUtility {
     public static String getPidHexDigest(String pid, String algorithm)
         throws NoSuchAlgorithmException, IllegalArgumentException {
         FileHashStoreUtility.ensureNotNull(pid, "pid", "getPidHexDigest");
-        FileHashStoreUtility.checkForEmptyString(pid, "pid", "getPidHexDigest");
+        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "getPidHexDigest");
         FileHashStoreUtility.ensureNotNull(algorithm, "algorithm", "getPidHexDigest");
-        FileHashStoreUtility.checkForEmptyString(algorithm, "algorithm", "getPidHexDigest");
+        FileHashStoreUtility.checkForEmptyAndValidString(algorithm, "algorithm", "getPidHexDigest");
 
         MessageDigest stringMessageDigest = MessageDigest.getInstance(algorithm);
         byte[] bytes = pid.getBytes(StandardCharsets.UTF_8);
@@ -186,7 +186,7 @@ public class FileHashStoreUtility {
      * @param method   Calling method
      * @throws IllegalArgumentException If the string is empty or contains illegal characters
      */
-    public static void checkForEmptyString(String string, String argument, String method)
+    public static void checkForEmptyAndValidString(String string, String argument, String method)
         throws IllegalArgumentException {
         ensureNotNull(string, "string", "checkForEmptyString");
         if (string.trim().isEmpty()) {

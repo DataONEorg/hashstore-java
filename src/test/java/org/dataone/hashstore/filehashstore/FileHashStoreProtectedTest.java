@@ -2073,6 +2073,7 @@ public class FileHashStoreProtectedTest {
     public void fileHashStoreUtility_checkForEmptyString() {
         assertThrows(
             IllegalArgumentException.class,
-            () -> FileHashStoreUtility.checkForEmptyString("dou.test.1\n", "pid", "storeObject"));
+            () -> FileHashStoreUtility.checkForEmptyAndValidString("dou.test.1\n", "pid",
+                                                                   "storeObject"));
     }
 }
