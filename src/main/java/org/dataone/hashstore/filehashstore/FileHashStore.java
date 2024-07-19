@@ -549,6 +549,10 @@ public class FileHashStore implements HashStore {
 
         } catch (Exception e) {
             // Revert the process for all other exceptions
+            // We must first release the cid and pid since 'unTagObject' is synchronized
+            // If not, we will run into a deadlock.
+            releaseObjectLockedCids(cid);
+            releaseReferenceLockedPids(pid);
             unTagObject(pid, cid);
             throw e;
 
