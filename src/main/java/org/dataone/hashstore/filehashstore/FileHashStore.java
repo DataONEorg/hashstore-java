@@ -56,7 +56,7 @@ public class FileHashStore implements HashStore {
     private static final Log logFileHashStore = LogFactory.getLog(FileHashStore.class);
     private static final int TIME_OUT_MILLISEC = 1000;
     private static final Collection<String> objectLockedPids = new ArrayList<>(100);
-    private static final Collection<String> metadataLockedIds = new ArrayList<>(100);
+    private static final Collection<String> metadataLockedDocIds = new ArrayList<>(100);
     private static final Collection<String> referenceLockedCids = new ArrayList<>(100);
     private final Path STORE_ROOT;
     private final int DIRECTORY_DEPTH;
@@ -592,7 +592,7 @@ public class FileHashStore implements HashStore {
             "putMetadata() called to store metadata for pid: " + pid + ", with formatId: "
                 + checkedFormatId + " for metadata document: " + metadataDocId);
         try {
-            synchronizeMetadataLockedIds(metadataDocId);
+            synchronizeMetadataLockedDocIds(metadataDocId);
             // Store metadata
             String pathToStoredMetadata = putMetadata(metadata, pid, checkedFormatId);
             logFileHashStore.info(
@@ -612,7 +612,7 @@ public class FileHashStore implements HashStore {
             throw nsae;
 
         } finally {
-            releaseMetadataLockedIds(metadataDocId);
+            releaseMetadataLockedDocIds(metadataDocId);
         }
     }
 
@@ -936,12 +936,12 @@ public class FileHashStore implements HashStore {
     protected static void syncRenameMetadataDocForDeletion(Collection<Path> deleteList, Path metadataDocAbsPath, String metadataDocId)
         throws InterruptedException, IOException {
         try {
-            synchronizeMetadataLockedIds(metadataDocId);
+            synchronizeMetadataLockedDocIds(metadataDocId);
             if (Files.exists(metadataDocAbsPath)) {
                 deleteList.add(FileHashStoreUtility.renamePathForDeletion(metadataDocAbsPath));
             }
         } finally {
-            releaseMetadataLockedIds(metadataDocId);
+            releaseMetadataLockedDocIds(metadataDocId);
         }
     }
 
@@ -2179,12 +2179,12 @@ public class FileHashStore implements HashStore {
      * @param metadataDocId Metadata document id hash(pid+formatId)
      * @throws InterruptedException When an issue occurs when attempting to sync the metadata doc
      */
-    private static void synchronizeMetadataLockedIds(String metadataDocId)
+    private static void synchronizeMetadataLockedDocIds(String metadataDocId)
         throws InterruptedException {
-        synchronized (metadataLockedIds) {
-            while (metadataLockedIds.contains(metadataDocId)) {
+        synchronized (metadataLockedDocIds) {
+            while (metadataLockedDocIds.contains(metadataDocId)) {
                 try {
-                    metadataLockedIds.wait(TIME_OUT_MILLISEC);
+                    metadataLockedDocIds.wait(TIME_OUT_MILLISEC);
 
                 } catch (InterruptedException ie) {
                     String errMsg =
@@ -2195,22 +2195,22 @@ public class FileHashStore implements HashStore {
                 }
             }
             logFileHashStore.debug(
-                "Synchronizing metadataLockedIds for metadata doc: " + metadataDocId);
-            metadataLockedIds.add(metadataDocId);
+                "Synchronizing metadataLockedDocIds for metadata doc: " + metadataDocId);
+            metadataLockedDocIds.add(metadataDocId);
         }
     }
 
     /**
-     * Remove the given metadata doc from 'metadataLockedIds' and notify other threads
+     * Remove the given metadata doc from 'metadataLockedDocIds' and notify other threads
      *
      * @param metadataDocId Metadata document id hash(pid+formatId)
      */
-    private static void releaseMetadataLockedIds(String metadataDocId) {
-        synchronized (metadataLockedIds) {
+    private static void releaseMetadataLockedDocIds(String metadataDocId) {
+        synchronized (metadataLockedDocIds) {
             logFileHashStore.debug(
-                "Releasing metadataLockedIds for metadata doc: " + metadataDocId);
-            metadataLockedIds.remove(metadataDocId);
-            metadataLockedIds.notify();
+                "Releasing metadataLockedDocIds for metadata doc: " + metadataDocId);
+            metadataLockedDocIds.remove(metadataDocId);
+            metadataLockedDocIds.notify();
         }
     }
 
