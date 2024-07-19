@@ -412,23 +412,26 @@ public class FileHashStore implements HashStore {
         // Validate algorithms if not null or empty, throws exception if not supported
         if (additionalAlgorithm != null) {
             FileHashStoreUtility.checkForEmptyAndValidString(
-                additionalAlgorithm, "additionalAlgorithm", "storeObject"
-            );
+                additionalAlgorithm, "additionalAlgorithm", "storeObject");
             validateAlgorithm(additionalAlgorithm);
         }
         if (checksumAlgorithm != null) {
             FileHashStoreUtility.checkForEmptyAndValidString(
-                checksumAlgorithm, "checksumAlgorithm", "storeObject"
-            );
+                checksumAlgorithm, "checksumAlgorithm", "storeObject");
             validateAlgorithm(checksumAlgorithm);
         }
         if (objSize != -1) {
             FileHashStoreUtility.checkNotNegativeOrZero(objSize, "storeObject");
         }
 
-        return syncPutObject(
-            object, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize
-        );
+        try {
+            return syncPutObject(
+                object, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize
+            );
+        } finally {
+            // Close stream
+            object.close();
+        }
     }
 
     /**
@@ -518,7 +521,12 @@ public class FileHashStore implements HashStore {
         // call 'deleteInvalidObject' (optional) to check that the object is valid, and then
         // 'tagObject' (required) to create the reference files needed to associate the
         // respective pids/cids.
-        return putObject(object, "HashStoreNoPid", null, null, null, -1);
+        try {
+            return putObject(object, "HashStoreNoPid", null, null, null, -1);
+        } finally {
+            // Close stream
+            object.close();
+        }
     }
 
 
@@ -583,7 +591,12 @@ public class FileHashStore implements HashStore {
             checkedFormatId = formatId;
         }
 
-        return syncPutMetadata(metadata, pid, checkedFormatId);
+        try {
+            return syncPutMetadata(metadata, pid, checkedFormatId);
+        } finally {
+            // Close stream
+            metadata.close();
+        }
     }
 
     /**
