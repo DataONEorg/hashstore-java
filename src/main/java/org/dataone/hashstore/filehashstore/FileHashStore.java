@@ -55,7 +55,7 @@ import org.dataone.hashstore.exceptions.UnsupportedHashAlgorithmException;
 public class FileHashStore implements HashStore {
     private static final Log logFileHashStore = LogFactory.getLog(FileHashStore.class);
     private static final int TIME_OUT_MILLISEC = 1000;
-    private static final Collection<String> objectLockedIds = new ArrayList<>(100);
+    private static final Collection<String> objectLockedPids = new ArrayList<>(100);
     private static final Collection<String> metadataLockedIds = new ArrayList<>(100);
     private static final Collection<String> referenceLockedCids = new ArrayList<>(100);
     private final Path STORE_ROOT;
@@ -440,15 +440,15 @@ public class FileHashStore implements HashStore {
         try {
             // Lock pid for thread safety, transaction control and atomic writing
             // An object is stored once and only once
-            synchronized (objectLockedIds) {
-                if (objectLockedIds.contains(pid)) {
+            synchronized (objectLockedPids) {
+                if (objectLockedPids.contains(pid)) {
                     String errMsg = "Duplicate object request encountered for pid: " + pid
                         + ". Already in progress.";
                     logFileHashStore.warn(errMsg);
                     throw new RuntimeException(errMsg);
                 }
-                logFileHashStore.debug("Synchronizing objectLockedIds for pid: " + pid);
-                objectLockedIds.add(pid);
+                logFileHashStore.debug("Synchronizing objectLockedPids for pid: " + pid);
+                objectLockedPids.add(pid);
             }
 
             logFileHashStore.debug(
@@ -497,7 +497,7 @@ public class FileHashStore implements HashStore {
 
         } finally {
             // Release lock
-            releaseObjectLockedIds(pid);
+            releaseObjectLockedPids(pid);
         }
     }
 
@@ -703,7 +703,7 @@ public class FileHashStore implements HashStore {
             // Storing, deleting and untagging objects are synchronized together
             // Duplicate store object requests for a pid are rejected, but deleting an object
             // will wait for a pid to be released if it's found to be in use before proceeding.
-            synchronizeObjectLockedIds(pid);
+            synchronizeObjectLockedPids(pid);
 
             // Before we begin deletion process, we look for the `cid` by calling
             // `findObject` which will throw custom exceptions if there is an issue with
@@ -796,7 +796,7 @@ public class FileHashStore implements HashStore {
             }
         } finally {
             // Release lock
-            releaseObjectLockedIds(pid);
+            releaseObjectLockedPids(pid);
         }
     }
 
@@ -1677,7 +1677,7 @@ public class FileHashStore implements HashStore {
         Collection<Path> deleteList = new ArrayList<>();
 
         try {
-            synchronizeObjectLockedIds(pid);
+            synchronizeObjectLockedPids(pid);
             // Before we begin untagging process, we look for the `cid` by calling
             // `findObject` which will throw custom exceptions if there is an issue with
             // the reference files, which help us determine the path to proceed with.
@@ -1773,7 +1773,7 @@ public class FileHashStore implements HashStore {
                 }
             }
         } finally {
-            releaseObjectLockedIds(pid);
+            releaseObjectLockedPids(pid);
         }
     }
 
@@ -2141,12 +2141,12 @@ public class FileHashStore implements HashStore {
      * @param pid Persistent or authority-based identifier
      * @throws InterruptedException When an issue occurs when attempting to sync the pid
      */
-    private static void synchronizeObjectLockedIds(String pid)
+    private static void synchronizeObjectLockedPids(String pid)
         throws InterruptedException {
-        synchronized (objectLockedIds) {
-            while (objectLockedIds.contains(pid)) {
+        synchronized (objectLockedPids) {
+            while (objectLockedPids.contains(pid)) {
                 try {
-                    objectLockedIds.wait(TIME_OUT_MILLISEC);
+                    objectLockedPids.wait(TIME_OUT_MILLISEC);
 
                 } catch (InterruptedException ie) {
                     String errMsg =
@@ -2155,21 +2155,21 @@ public class FileHashStore implements HashStore {
                     throw new InterruptedException(errMsg);
                 }
             }
-            logFileHashStore.debug("Synchronizing objectLockedIds for pid: " + pid);
-            objectLockedIds.add(pid);
+            logFileHashStore.debug("Synchronizing objectLockedPids for pid: " + pid);
+            objectLockedPids.add(pid);
         }
     }
 
     /**
-     * Remove the given pid from 'objectLockedIds' and notify other threads
+     * Remove the given pid from 'objectLockedPids' and notify other threads
      *
      * @param pid Content identifier
      */
-    private static void releaseObjectLockedIds(String pid) {
-        synchronized (objectLockedIds) {
-            logFileHashStore.debug("Releasing objectLockedIds for pid: " + pid);
-            objectLockedIds.remove(pid);
-            objectLockedIds.notify();
+    private static void releaseObjectLockedPids(String pid) {
+        synchronized (objectLockedPids) {
+            logFileHashStore.debug("Releasing objectLockedPids for pid: " + pid);
+            objectLockedPids.remove(pid);
+            objectLockedPids.notify();
         }
     }
 
