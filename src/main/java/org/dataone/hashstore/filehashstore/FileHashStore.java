@@ -55,9 +55,10 @@ import org.dataone.hashstore.exceptions.UnsupportedHashAlgorithmException;
 public class FileHashStore implements HashStore {
     private static final Log logFileHashStore = LogFactory.getLog(FileHashStore.class);
     private static final int TIME_OUT_MILLISEC = 1000;
+    private static final Collection<String> objectLockedCids = new ArrayList<>(100);
     private static final Collection<String> objectLockedPids = new ArrayList<>(100);
     private static final Collection<String> metadataLockedDocIds = new ArrayList<>(100);
-    private static final Collection<String> objectLockedCids = new ArrayList<>(100);
+    private static final Collection<String> referenceLockedPids = new ArrayList<>(100);
     private final Path STORE_ROOT;
     private final int DIRECTORY_DEPTH;
     private final int DIRECTORY_WIDTH;
@@ -531,8 +532,8 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForEmptyString(cid, "cid", "tagObject");
 
         try {
-            // tagObject is synchronized with deleteObject based on a `cid`
             synchronizeObjectLockedCids(cid);
+            synchronizeReferenceLockedPids(pid);
             storeHashStoreRefsFiles(pid, cid);
 
         } catch (HashStoreRefsAlreadyExistException hsrfae) {
@@ -552,8 +553,9 @@ public class FileHashStore implements HashStore {
             throw e;
 
         } finally {
-            // Release lock
+            // Release locks
             releaseObjectLockedCids(cid);
+            releaseReferenceLockedPids(pid);
         }
     }
 
@@ -2250,6 +2252,46 @@ public class FileHashStore implements HashStore {
             logFileHashStore.debug("Releasing objectLockedCids for cid: " + cid);
             objectLockedCids.remove(cid);
             objectLockedCids.notify();
+        }
+    }
+
+    /**
+     * Synchronize the pid tagging process since `tagObject` is a Public API method that can be
+     * called directly. This is used in the scenario when the client is missing metadata but must
+     * store the data object first.
+     *
+     * @param pid Persistent or authority-based identifier
+     * @throws InterruptedException When an issue occurs when attempting to sync the pid
+     */
+    private static void synchronizeReferenceLockedPids(String pid) throws InterruptedException {
+        synchronized (referenceLockedPids) {
+            while (referenceLockedPids.contains(pid)) {
+                try {
+                    referenceLockedPids.wait(TIME_OUT_MILLISEC);
+
+                } catch (InterruptedException ie) {
+                    String errMsg =
+                        "Synchronization has been interrupted while trying to sync pid: " + pid;
+                    logFileHashStore.error(errMsg);
+                    throw new InterruptedException(errMsg);
+                }
+            }
+            logFileHashStore.debug(
+                "Synchronizing referenceLockedPids for pid: " + pid);
+            referenceLockedPids.add(pid);
+        }
+    }
+
+    /**
+     * Remove the given pid from 'referenceLockedPids' and notify other threads
+     *
+     * @param pid Persistent or authority-based identifier
+     */
+    private static void releaseReferenceLockedPids(String pid) {
+        synchronized (referenceLockedPids) {
+            logFileHashStore.debug("Releasing referenceLockedPids for pid: " + pid);
+            referenceLockedPids.remove(pid);
+            referenceLockedPids.notify();
         }
     }
 }
