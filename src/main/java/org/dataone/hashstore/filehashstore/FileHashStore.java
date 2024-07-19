@@ -57,7 +57,7 @@ public class FileHashStore implements HashStore {
     private static final int TIME_OUT_MILLISEC = 1000;
     private static final Collection<String> objectLockedPids = new ArrayList<>(100);
     private static final Collection<String> metadataLockedDocIds = new ArrayList<>(100);
-    private static final Collection<String> referenceLockedCids = new ArrayList<>(100);
+    private static final Collection<String> objectLockedCids = new ArrayList<>(100);
     private final Path STORE_ROOT;
     private final int DIRECTORY_DEPTH;
     private final int DIRECTORY_WIDTH;
@@ -532,7 +532,7 @@ public class FileHashStore implements HashStore {
 
         try {
             // tagObject is synchronized with deleteObject based on a `cid`
-            synchronizeReferencedLockedCids(cid);
+            synchronizeObjectLockedCids(cid);
             storeHashStoreRefsFiles(pid, cid);
 
         } catch (HashStoreRefsAlreadyExistException hsrfae) {
@@ -553,7 +553,7 @@ public class FileHashStore implements HashStore {
 
         } finally {
             // Release lock
-            releaseReferencedLockedCids(cid);
+            releaseObjectLockedCids(cid);
         }
     }
 
@@ -713,7 +713,7 @@ public class FileHashStore implements HashStore {
                 String cid = objInfoMap.get("cid");
 
                 // If no exceptions are thrown, we proceed to synchronization based on the `cid`
-                synchronizeReferencedLockedCids(cid);
+                synchronizeObjectLockedCids(cid);
 
                 try {
                     // Proceed with comprehensive deletion - cid exists, nothing out of place
@@ -739,7 +739,7 @@ public class FileHashStore implements HashStore {
 
                 } finally {
                     // Release lock
-                    releaseReferencedLockedCids(cid);
+                    releaseObjectLockedCids(cid);
                 }
 
             } catch (OrphanPidRefsFileException oprfe) {
@@ -762,7 +762,7 @@ public class FileHashStore implements HashStore {
 
                 try {
                     // Since we must access the cid reference file, the `cid` must be synchronized
-                    synchronizeReferencedLockedCids(cidRead);
+                    synchronizeObjectLockedCids(cidRead);
 
                     Path absCidRefsPath =
                         getHashStoreRefsPath(cidRead, HashStoreIdTypes.cid.getName());
@@ -781,7 +781,7 @@ public class FileHashStore implements HashStore {
 
                 } finally {
                     // Release lock
-                    releaseReferencedLockedCids(cidRead);
+                    releaseObjectLockedCids(cidRead);
                 }
             } catch (PidNotFoundInCidRefsFileException pnficrfe) {
                 // `findObject` throws this exception when both the pid and cid refs file exists
@@ -1148,7 +1148,7 @@ public class FileHashStore implements HashStore {
         Path objRealPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
 
         try {
-            synchronizeReferencedLockedCids(objectCid);
+            synchronizeObjectLockedCids(objectCid);
             // Confirm that the object does not yet exist, delete tmpFile if so
             if (!Files.exists(objRealPath)) {
                 logFileHashStore.info("Storing tmpFile: " + tmpFile);
@@ -1170,7 +1170,7 @@ public class FileHashStore implements HashStore {
             logFileHashStore.error(errMsg);
             throw e;
         } finally {
-            releaseReferencedLockedCids(objectCid);
+            releaseObjectLockedCids(objectCid);
         }
 
         return new ObjectMetadata(pid, objectCid, Files.size(objRealPath), hexDigests);
@@ -1187,7 +1187,6 @@ public class FileHashStore implements HashStore {
      * @param tmpFile           Path to the file that is being evaluated
      * @param hexDigests        Map of the hex digests to parse data from
      * @param expectedSize      Expected size of object
-     * @param storedObjFileSize Actual size of object stored
      * @throws NoSuchAlgorithmException If algorithm requested to validate against is absent
      */
     protected void validateTmpObject(
@@ -1552,7 +1551,7 @@ public class FileHashStore implements HashStore {
         Path expectedRealPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
 
         try {
-            synchronizeReferencedLockedCids(cid);
+            synchronizeObjectLockedCids(cid);
             if (Files.exists(absCidRefsPath)) {
                 // The cid refs file exists, so the cid object cannot be deleted.
                 String warnMsg = "cid refs file still contains references, skipping deletion.";
@@ -1567,7 +1566,7 @@ public class FileHashStore implements HashStore {
             }
         } finally {
             // Release lock
-            releaseReferencedLockedCids(cid);
+            releaseObjectLockedCids(cid);
         }
     }
 
@@ -1685,7 +1684,7 @@ public class FileHashStore implements HashStore {
                 Map<String, String> objInfoMap = findObject(pid);
                 cid = objInfoMap.get("cid");
                 // If no exceptions are thrown, we proceed to synchronization based on the `cid`
-                synchronizeReferencedLockedCids(cid);
+                synchronizeObjectLockedCids(cid);
 
                 try {
                     // Get paths to reference files to work on
@@ -1707,7 +1706,7 @@ public class FileHashStore implements HashStore {
                     logFileHashStore.info("Untagged pid: " + pid + " with cid: " + cid);
 
                 } finally {
-                    releaseReferencedLockedCids(cid);
+                    releaseObjectLockedCids(cid);
                 }
 
             } catch (OrphanPidRefsFileException oprfe) {
@@ -1729,7 +1728,7 @@ public class FileHashStore implements HashStore {
 
                 try {
                     // Since we must access the cid reference file, the `cid` must be synchronized
-                    synchronizeReferencedLockedCids(cidRead);
+                    synchronizeObjectLockedCids(cidRead);
 
                     Path absCidRefsPath =
                         getHashStoreRefsPath(cidRead, HashStoreIdTypes.cid.getName());
@@ -1746,7 +1745,7 @@ public class FileHashStore implements HashStore {
                     logFileHashStore.warn(warnMsg);
 
                 } finally {
-                    releaseReferencedLockedCids(cidRead);
+                    releaseObjectLockedCids(cidRead);
                 }
             } catch (PidNotFoundInCidRefsFileException pnficrfe) {
                 // `findObject` throws this exception when both the pid and cid refs file exists
@@ -2215,18 +2214,18 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Multiple threads may access a data object or the respective  cid reference file (which
-     * contains a list of `pid`s that reference a `cid`) and this needs to be coordinated.
-     * Otherwise, we may run into unexpected exceptions (ex. `OverlappingFileLockException`)
+     * Multiple threads may access a data object via its 'cid' or the respective 'cid reference
+     * file' (which contains a list of 'pid's that reference a 'cid') and this needs to be
+     * coordinated.
      *
      * @param cid Content identifier
      * @throws InterruptedException When an issue occurs when attempting to sync the pid
      */
-    private static void synchronizeReferencedLockedCids(String cid) throws InterruptedException {
-        synchronized (referenceLockedCids) {
-            while (referenceLockedCids.contains(cid)) {
+    private static void synchronizeObjectLockedCids(String cid) throws InterruptedException {
+        synchronized (objectLockedCids) {
+            while (objectLockedCids.contains(cid)) {
                 try {
-                    referenceLockedCids.wait(TIME_OUT_MILLISEC);
+                    objectLockedCids.wait(TIME_OUT_MILLISEC);
 
                 } catch (InterruptedException ie) {
                     String errMsg =
@@ -2236,21 +2235,21 @@ public class FileHashStore implements HashStore {
                 }
             }
             logFileHashStore.debug(
-                "Synchronizing referenceLockedCids for cid: " + cid);
-            referenceLockedCids.add(cid);
+                "Synchronizing objectLockedCids for cid: " + cid);
+            objectLockedCids.add(cid);
         }
     }
 
     /**
-     * Remove the given cid from 'referenceLockedCids' and notify other threads
+     * Remove the given cid from 'objectLockedCids' and notify other threads
      *
      * @param cid Content identifier
      */
-    private static void releaseReferencedLockedCids(String cid) {
-        synchronized (referenceLockedCids) {
-            logFileHashStore.debug("Releasing referenceLockedCids for cid: " + cid);
-            referenceLockedCids.remove(cid);
-            referenceLockedCids.notify();
+    private static void releaseObjectLockedCids(String cid) {
+        synchronized (objectLockedCids) {
+            logFileHashStore.debug("Releasing objectLockedCids for cid: " + cid);
+            objectLockedCids.remove(cid);
+            objectLockedCids.notify();
         }
     }
 }
