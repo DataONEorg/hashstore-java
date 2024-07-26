@@ -24,12 +24,10 @@ import java.util.Properties;
 public class FileHashStoreLinks extends FileHashStore {
 
     private static final Log logFileHashStoreLinks = LogFactory.getLog(FileHashStore.class);
-    private final Path STORE_ROOT;
     private final int DIRECTORY_DEPTH;
     private final int DIRECTORY_WIDTH;
     private final String OBJECT_STORE_ALGORITHM;
     private final Path OBJECT_STORE_DIRECTORY;
-    private final String DEFAULT_METADATA_NAMESPACE;
 
     public FileHashStoreLinks(Properties hashstoreProperties) throws IllegalArgumentException,
         IOException, NoSuchAlgorithmException {
@@ -47,15 +45,9 @@ public class FileHashStoreLinks extends FileHashStore {
         String storeAlgorithm = hashstoreProperties.getProperty(
             HashStoreProperties.storeAlgorithm.name()
         );
-        String storeMetadataNamespace = hashstoreProperties.getProperty(
-            HashStoreProperties.storeMetadataNamespace.name()
-        );
-        //
-        STORE_ROOT = storePath;
         DIRECTORY_DEPTH = storeDepth;
         DIRECTORY_WIDTH = storeWidth;
         OBJECT_STORE_ALGORITHM = storeAlgorithm;
-        DEFAULT_METADATA_NAMESPACE = storeMetadataNamespace;
         OBJECT_STORE_DIRECTORY = storePath.resolve("objects");
         logFileHashStoreLinks.info("FileHashStoreLinks initialized");
     }
