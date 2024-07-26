@@ -101,6 +101,9 @@ public class FileHashStoreLinks extends FileHashStore {
             Files.createLink(objHardLinkPath, filePath);
             // This method is thread safe and synchronized
             tagObject(pid, objectCid);
+            logFileHashStoreLinks.info(
+                "Hard link has been created for pid:" + pid + " with cid: " + objectCid
+                    + " has been tagged");
 
             return new ObjectMetadata(pid, objectCid, Files.size(objHardLinkPath), hexDigests);
 
