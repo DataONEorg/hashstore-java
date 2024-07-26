@@ -2,21 +2,13 @@ package org.dataone.hashstore.hashstoreconverter;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.dataone.hashstore.ObjectMetadata;
-import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 import org.dataone.hashstore.filehashstore.FileHashStore;
 import org.dataone.hashstore.filehashstore.FileHashStoreUtility;
 
 import javax.xml.bind.DatatypeConverter;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.AtomicMoveNotSupportedException;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
