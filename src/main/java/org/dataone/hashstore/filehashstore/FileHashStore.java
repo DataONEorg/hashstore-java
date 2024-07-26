@@ -108,7 +108,7 @@ public class FileHashStore implements HashStore {
         }
     }
 
-    enum HashStoreProperties {
+    public enum HashStoreProperties {
         storePath, storeDepth, storeWidth, storeAlgorithm, storeMetadataNamespace
     }
 

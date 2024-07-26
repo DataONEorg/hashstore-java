@@ -2,13 +2,19 @@ package org.dataone.hashstore.hashstoreconverter;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.filehashstore.FileHashStore;
 import org.dataone.hashstore.filehashstore.FileHashStoreUtility;
 
 import javax.xml.bind.DatatypeConverter;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
@@ -18,11 +24,111 @@ import java.util.Properties;
 public class FileHashStoreLinks extends FileHashStore {
 
     private static final Log logFileHashStoreLinks = LogFactory.getLog(FileHashStore.class);
+    private final Path STORE_ROOT;
+    private final int DIRECTORY_DEPTH;
+    private final int DIRECTORY_WIDTH;
+    private final String OBJECT_STORE_ALGORITHM;
+    private final Path OBJECT_STORE_DIRECTORY;
+    private final String DEFAULT_METADATA_NAMESPACE;
 
     public FileHashStoreLinks(Properties hashstoreProperties) throws IllegalArgumentException,
         IOException, NoSuchAlgorithmException {
         super(hashstoreProperties);
+        // If configuration matches, set FileHashStoreLinks private variables
+        Path storePath = Paths.get(
+            hashstoreProperties.getProperty(HashStoreProperties.storePath.name())
+        );
+        int storeDepth = Integer.parseInt(
+            hashstoreProperties.getProperty(HashStoreProperties.storeDepth.name())
+        );
+        int storeWidth = Integer.parseInt(
+            hashstoreProperties.getProperty(HashStoreProperties.storeWidth.name())
+        );
+        String storeAlgorithm = hashstoreProperties.getProperty(
+            HashStoreProperties.storeAlgorithm.name()
+        );
+        String storeMetadataNamespace = hashstoreProperties.getProperty(
+            HashStoreProperties.storeMetadataNamespace.name()
+        );
+        //
+        STORE_ROOT = storePath;
+        DIRECTORY_DEPTH = storeDepth;
+        DIRECTORY_WIDTH = storeWidth;
+        OBJECT_STORE_ALGORITHM = storeAlgorithm;
+        DEFAULT_METADATA_NAMESPACE = storeMetadataNamespace;
+        OBJECT_STORE_DIRECTORY = storePath.resolve("objects");
         logFileHashStoreLinks.info("FileHashStoreLinks initialized");
+    }
+
+    /**
+     * Creates a hard link to a data file and return a ObjectMetadata of the given data object.
+     *
+     * @param filePath   Path to the source file which a hard link will be created for
+     * @param fileStream Stream to the source file to calculate checksums for
+     * @param pid        Persistent or authority-based identifier for tagging
+     * @return ObjectMetadata encapsulating information about the data file
+     * @throws NoSuchAlgorithmException Issue with one of the hashing algorithms to calculate
+     * @throws IOException              An issue with reading from the given file stream
+     * @throws InterruptedException Sync issue when tagging pid and cid
+     */
+    public ObjectMetadata storeHardLink(Path filePath, InputStream fileStream, String pid)
+        throws NoSuchAlgorithmException, IOException, InterruptedException {
+        // Validate input parameters
+        FileHashStoreUtility.ensureNotNull(filePath, "filePath", "storeHardLink");
+        FileHashStoreUtility.ensureNotNull(fileStream, "fileStream", "storeHardLink");
+        FileHashStoreUtility.ensureNotNull(pid, "pid", "storeHardLink");
+        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "storeHardLink");
+        if (!Files.exists(filePath)) {
+            String errMsg = "Given file path: " + filePath + " does not exist.";
+            throw new FileNotFoundException(errMsg);
+        }
+
+        try {
+            Map<String, String> hexDigests = generateChecksums(fileStream, null, null);
+            // Gather the elements to form the permanent address
+            String objectCid = hexDigests.get(OBJECT_STORE_ALGORITHM);
+            String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
+                DIRECTORY_DEPTH, DIRECTORY_WIDTH, objectCid
+            );
+            Path objHardLinkPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
+            // Create parent directories to the hard link, otherwise
+            // Files.createLink will throw a NoSuchFileException
+            File destinationDirectory = new File(objHardLinkPath.toFile().getParent());
+            if (!destinationDirectory.exists()) {
+                Path destinationDirectoryPath = destinationDirectory.toPath();
+                try {
+                    Files.createDirectories(destinationDirectoryPath);
+
+                } catch (FileAlreadyExistsException faee) {
+                    logFileHashStoreLinks.warn(
+                        "Directory already exists at: " + destinationDirectoryPath
+                            + " - Skipping directory creation");
+                }
+            }
+            // Finish the contract
+            Files.createLink(objHardLinkPath, filePath);
+            // This method is thread safe and synchronized
+            tagObject(pid, objectCid);
+
+            return new ObjectMetadata(pid, objectCid, Files.size(objHardLinkPath), hexDigests);
+
+        } finally {
+            // Close stream
+            fileStream.close();
+        }
+    }
+
+    /**
+     * Get a HashStore data object path
+     *
+     * @param pid Persistent or authority-based identifier
+     * @return Path to a HashStore data object
+     * @throws NoSuchAlgorithmException Conflicting algorithm preventing calculation of the path
+     * @throws IOException              If there is an issue with reading from the pid refs file
+     */
+    protected Path getHashStoreLinksDataObjectPath(String pid)
+        throws NoSuchAlgorithmException, IOException {
+        return getHashStoreDataObjectPath(pid);
     }
 
     /**

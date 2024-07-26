@@ -1,15 +1,16 @@
 package org.dataone.hashstore.hashstoreconverter;
 
+import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.filehashstore.FileHashStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.Properties;
@@ -121,6 +122,35 @@ public class FileHashStoreLinksTest {
         );
 
         new FileHashStore(storeProperties);
+    }
+
+    /**
+     * Check that store hard link creates hard link and returns the correct ObjectMetadata cid
+     */
+    @Test
+    public void storeHardLink() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+            assertTrue(Files.exists(testDataFile));
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            ObjectMetadata objInfo =
+                fileHashStoreLinks.storeHardLink(testDataFile, dataStream, pid);
+            dataStream.close();
+
+            // Check id (content identifier based on the store algorithm)
+            String objectCid = testData.pidData.get(pid).get("sha256");
+            assertEquals(objectCid, objInfo.getCid());
+            assertEquals(pid, objInfo.getPid());
+
+            Path objPath = fileHashStoreLinks.getHashStoreLinksDataObjectPath(pid);
+
+            // Verify that a hard link has been created
+            BasicFileAttributes fileAttributes = Files.readAttributes(objPath, BasicFileAttributes.class);
+            BasicFileAttributes originalFileAttributes = Files.readAttributes(testDataFile, BasicFileAttributes.class);
+            assertEquals(fileAttributes.fileKey(), originalFileAttributes.fileKey());
+        }
     }
 
     /**
