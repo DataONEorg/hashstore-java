@@ -1,30 +1,32 @@
 package org.dataone.hashstore.hashstoreconverter;
 
 import org.dataone.hashstore.filehashstore.FileHashStore;
-import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import org.dataone.hashstore.testdata.TestDataHarness;
 
-public class FileHashStoreLinksInitTest {
+public class FileHashStoreLinksTest {
 
     private static Path rootDirectory;
     private static Path objStringFull;
     private static Path objTmpStringFull;
     private static Path metadataStringFull;
     private static Path metadataTmpStringFull;
+    private static final TestDataHarness testData = new TestDataHarness();
     private static FileHashStoreLinks fileHashStoreLinks;
 
     /**
@@ -119,5 +121,34 @@ public class FileHashStoreLinksInitTest {
         );
 
         new FileHashStore(storeProperties);
+    }
+
+    /**
+     * Confirm that generateChecksums calculates checksums as expected
+     */
+    @Test
+    public void testGenerateChecksums() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            // Get test file
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            Map<String, String> hexDigests =
+                fileHashStoreLinks.generateChecksums(dataStream, null, null);
+            dataStream.close();
+
+            // Validate checksum values
+            String md5 = testData.pidData.get(pid).get("md5");
+            String sha1 = testData.pidData.get(pid).get("sha1");
+            String sha256 = testData.pidData.get(pid).get("sha256");
+            String sha384 = testData.pidData.get(pid).get("sha384");
+            String sha512 = testData.pidData.get(pid).get("sha512");
+            assertEquals(md5, hexDigests.get("MD5"));
+            assertEquals(sha1, hexDigests.get("SHA-1"));
+            assertEquals(sha256, hexDigests.get("SHA-256"));
+            assertEquals(sha384, hexDigests.get("SHA-384"));
+            assertEquals(sha512, hexDigests.get("SHA-512"));
+        }
     }
 }

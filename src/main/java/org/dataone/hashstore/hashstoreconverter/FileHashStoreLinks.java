@@ -34,12 +34,11 @@ public class FileHashStoreLinks extends FileHashStore {
     }
 
     /**
-     * Write the input stream into a given file (tmpFile) and return a HashMap consisting of
-     * algorithms and their respective hex digests. If an additional algorithm is supplied and
-     * supported, it and its checksum value will be included in the hex digests map. Default
-     * algorithms: MD5, SHA-1, SHA-256, SHA-384, SHA-512
+     * Get a HashMap consisting of algorithms and their respective hex digests for a given
+     * data stream. If an additional algorithm is supplied and supported, it and its checksum
+     * value will be included in the hex digests map. Default algorithms: MD5, SHA-1, SHA-256,
+     * SHA-384, SHA-512
      *
-     * @param tmpFile             file to write input stream data into
      * @param dataStream          input stream of data to store
      * @param additionalAlgorithm additional algorithm to include in hex digest map
      * @param checksumAlgorithm   checksum algorithm to calculate hex digest for to verifying
