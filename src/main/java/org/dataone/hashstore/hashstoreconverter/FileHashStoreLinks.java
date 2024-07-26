@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- * FileHashStoreLinks is an extension of FileHashStore that provides the client the ability
+ * FileHashStoreLinks is an extension of FileHashStore that provides the client with the ability
  * to store a hard link instead of storing a data object.
  */
 public class FileHashStoreLinks extends FileHashStore {
