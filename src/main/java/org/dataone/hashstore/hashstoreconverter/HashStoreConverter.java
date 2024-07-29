@@ -33,7 +33,7 @@ public class HashStoreConverter {
         throws IOException, NoSuchAlgorithmException {
         try {
             fileHashStoreLinks = new FileHashStoreLinks(hashstoreProperties);
-            logHashStoreConverter.info("FileHashStoreLinks initialized");
+            logHashStoreConverter.info("HashStoreConverter initialized");
 
         } catch (IOException ioe) {
             String errMsg = "Unexpected IOException encountered: " + ioe.getMessage();

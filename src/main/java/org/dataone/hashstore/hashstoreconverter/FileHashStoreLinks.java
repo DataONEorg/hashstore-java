@@ -23,7 +23,9 @@ import java.util.Properties;
 
 /**
  * FileHashStoreLinks is an extension of FileHashStore that provides the client with the ability
- * to store a hard link instead of storing a data object.
+ * to store a hard link instead of storing a data object. This is desirable when a directory with
+ * data objects already exists to optimize disk usage, and is more performant since there is no
+ * write operation.
  */
 public class FileHashStoreLinks extends FileHashStore {
 
@@ -101,7 +103,7 @@ public class FileHashStoreLinks extends FileHashStore {
                             + " - Skipping directory creation");
                 }
             }
-            // Finish the contract
+
             try {
                 Files.createLink(objHardLinkPath, filePath);
 
