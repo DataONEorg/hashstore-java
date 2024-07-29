@@ -1,16 +1,21 @@
 package org.dataone.hashstore.hashstoreconverter;
 
+import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.security.NoSuchAlgorithmException;
+import java.util.Map;
 import java.util.Properties;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -109,6 +114,43 @@ public class HashStoreConverterTest {
         } catch (NoSuchAlgorithmException nsae) {
             fail("NoSuchAlgorithmException encountered: " + nsae.getMessage());
 
+        }
+    }
+
+    /**
+     * Check that convert creates hard link, stores sysmeta and returns the correct ObjectMetadata
+     */
+    @Test
+    public void convert() throws Exception {
+        for (String pid : testData.pidList) {
+            // Path to test harness data file
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+            // Path to metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+            InputStream sysmetaStream = Files.newInputStream(testMetaDataFile);
+
+            ObjectMetadata objInfo =
+                hashstoreConverter.convert(testDataFile, pid, sysmetaStream);
+            sysmetaStream.close();
+
+            // Check checksums
+            Map<String, String> hexDigests = objInfo.getHexDigests();
+            String md5 = testData.pidData.get(pid).get("md5");
+            String sha1 = testData.pidData.get(pid).get("sha1");
+            String sha256 = testData.pidData.get(pid).get("sha256");
+            String sha384 = testData.pidData.get(pid).get("sha384");
+            String sha512 = testData.pidData.get(pid).get("sha512");
+            assertEquals(md5, hexDigests.get("MD5"));
+            assertEquals(sha1, hexDigests.get("SHA-1"));
+            assertEquals(sha256, hexDigests.get("SHA-256"));
+            assertEquals(sha384, hexDigests.get("SHA-384"));
+            assertEquals(sha512, hexDigests.get("SHA-512"));
+            assertEquals(sha256, objInfo.getCid());
+            assertEquals(pid, objInfo.getPid());
+
+            // Metadata is stored directly through 'FileHashStore'
+            // Creation of hard links is confirmed via 'FileHashStoreLinks'
         }
     }
 
