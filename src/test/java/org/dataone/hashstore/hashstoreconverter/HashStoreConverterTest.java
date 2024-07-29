@@ -100,7 +100,7 @@ public class HashStoreConverterTest {
         );
 
         try {
-            HashStoreConverter hashstoreConverterTwo = new HashStoreConverter(storeProperties);
+            new HashStoreConverter(storeProperties);
 
         } catch (IOException e) {
             e.printStackTrace();

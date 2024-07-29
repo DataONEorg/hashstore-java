@@ -36,7 +36,7 @@ public class FileHashStoreLinksTest {
      * Initialize FileHashStore
      */
     @BeforeEach
-    public void initializeFileHashStore() {
+    public void initializeFileHashStoreLinks() {
         Path root = tempFolder;
         rootDirectory = root.resolve("hashstore");
         objStringFull = rootDirectory.resolve("objects");
@@ -127,7 +127,7 @@ public class FileHashStoreLinksTest {
     }
 
     /**
-     * Check that store hard link creates hard link and returns the correct ObjectMetadata cid
+     * Check that storeHardLink creates hard link and returns the correct ObjectMetadata cid
      */
     @Test
     public void storeHardLink() throws Exception {
@@ -152,6 +152,25 @@ public class FileHashStoreLinksTest {
             BasicFileAttributes fileAttributes = Files.readAttributes(objPath, BasicFileAttributes.class);
             BasicFileAttributes originalFileAttributes = Files.readAttributes(testDataFile, BasicFileAttributes.class);
             assertEquals(fileAttributes.fileKey(), originalFileAttributes.fileKey());
+        }
+    }
+
+    /**
+     * Check that storeHardLink does not throw exception when a hard link already exists
+     */
+    @Test
+    public void storeHardLink_alreadyExists() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+            assertTrue(Files.exists(testDataFile));
+
+            InputStream dataStream = Files.newInputStream(testDataFile);
+            fileHashStoreLinks.storeHardLink(testDataFile, dataStream, pid);
+            dataStream.close();
+            InputStream dataStreamTwo = Files.newInputStream(testDataFile);
+            fileHashStoreLinks.storeHardLink(testDataFile, dataStreamTwo, pid+".test.pid");
+            dataStreamTwo.close();
         }
     }
 

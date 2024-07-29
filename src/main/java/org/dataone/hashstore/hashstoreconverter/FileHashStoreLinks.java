@@ -102,12 +102,19 @@ public class FileHashStoreLinks extends FileHashStore {
                 }
             }
             // Finish the contract
-            Files.createLink(objHardLinkPath, filePath);
+            try {
+                Files.createLink(objHardLinkPath, filePath);
+
+            } catch (FileAlreadyExistsException faee) {
+                logFileHashStoreLinks.warn(
+                    "Data object already exists at: " + objHardLinkPath);
+            }
+
             // This method is thread safe and synchronized
             tagObject(pid, objectCid);
             logFileHashStoreLinks.info(
                 "Hard link has been created for pid:" + pid + " with cid: " + objectCid
-                    + " has been tagged");
+                    + ", and has been tagged");
 
             return new ObjectMetadata(pid, objectCid, Files.size(objHardLinkPath), hexDigests);
 
