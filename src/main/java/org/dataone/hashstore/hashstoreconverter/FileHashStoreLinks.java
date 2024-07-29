@@ -35,6 +35,16 @@ public class FileHashStoreLinks extends FileHashStore {
     private final String OBJECT_STORE_ALGORITHM;
     private final Path OBJECT_STORE_DIRECTORY;
 
+    /**
+     * Constructor for FireHashStoreLinks. HashStore properties are required.
+     *
+     * @param hashstoreProperties Properties object with the following keys: storePath, storeDepth,
+     *                            storeWidth, storeAlgorithm, storeMetadataNamespace
+     * @throws IllegalArgumentException If there is an issue with one of the properties supplied
+     * @throws IOException              An issue with reading or writing a hashstore.yaml
+     *                                  configuration file
+     * @throws NoSuchAlgorithmException If an algorithm in the properties is not supported
+     */
     public FileHashStoreLinks(Properties hashstoreProperties) throws IllegalArgumentException,
         IOException, NoSuchAlgorithmException {
         super(hashstoreProperties);

@@ -29,6 +29,9 @@ public class FileHashStoreLinksTest {
     private static Path objTmpStringFull;
     private static Path metadataStringFull;
     private static Path metadataTmpStringFull;
+    private static Path refStringFull;
+    private static Path refPidsStringFull;
+    private static Path refCidsStringFull;
     private static final TestDataHarness testData = new TestDataHarness();
     private FileHashStoreLinks fileHashStoreLinks;
 
@@ -43,6 +46,9 @@ public class FileHashStoreLinksTest {
         objTmpStringFull = rootDirectory.resolve("objects/tmp");
         metadataStringFull = rootDirectory.resolve("metadata");
         metadataTmpStringFull = rootDirectory.resolve("metadata/tmp");
+        refStringFull = rootDirectory.resolve("refs");
+        refPidsStringFull = rootDirectory.resolve("refs/pids");
+        refCidsStringFull = rootDirectory.resolve("refs/cids");
 
         Properties storeProperties = new Properties();
         storeProperties.setProperty("storePath", rootDirectory.toString());

@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
@@ -23,10 +22,6 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 public class HashStoreConverterTest {
     private static Path rootDirectory;
-    private static Path objStringFull;
-    private static Path objTmpStringFull;
-    private static Path metadataStringFull;
-    private static Path metadataTmpStringFull;
     private static final TestDataHarness testData = new TestDataHarness();
     private HashStoreConverter hashstoreConverter;
 
@@ -37,10 +32,6 @@ public class HashStoreConverterTest {
     public void initializeFileHashStore() {
         Path root = tempFolder;
         rootDirectory = root.resolve("hashstore");
-        objStringFull = rootDirectory.resolve("objects");
-        objTmpStringFull = rootDirectory.resolve("objects/tmp");
-        metadataStringFull = rootDirectory.resolve("metadata");
-        metadataTmpStringFull = rootDirectory.resolve("metadata/tmp");
 
         Properties storeProperties = new Properties();
         storeProperties.setProperty("storePath", rootDirectory.toString());
@@ -71,17 +62,6 @@ public class HashStoreConverterTest {
     public Path tempFolder;
 
     /**
-     * Check object store and tmp directories exist after initialization
-     */
-    @Test
-    public void initObjDirectories() {
-        Path checkObjectStorePath = objStringFull;
-        assertTrue(Files.isDirectory(checkObjectStorePath));
-        Path checkTmpPath = objTmpStringFull;
-        assertTrue(Files.isDirectory(checkTmpPath));
-    }
-
-    /**
      * Check HashStoreConverter initializes with existing HashStore directory, does not throw
      * exception
      */
@@ -89,10 +69,6 @@ public class HashStoreConverterTest {
     public void hashStoreConverter_hashStoreExists() {
         Path root = tempFolder;
         rootDirectory = root.resolve("hashstore");
-        objStringFull = rootDirectory.resolve("objects");
-        objTmpStringFull = rootDirectory.resolve("objects/tmp");
-        metadataStringFull = rootDirectory.resolve("metadata");
-        metadataTmpStringFull = rootDirectory.resolve("metadata/tmp");
 
         Properties storeProperties = new Properties();
         storeProperties.setProperty("storePath", rootDirectory.toString());
