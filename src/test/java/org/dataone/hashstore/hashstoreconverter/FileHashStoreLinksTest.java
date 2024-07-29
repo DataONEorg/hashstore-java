@@ -20,15 +20,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import org.dataone.hashstore.testdata.TestDataHarness;
 
+/**
+ * Test class for 'FileHashStoreLinks'
+ */
 public class FileHashStoreLinksTest {
-
     private static Path rootDirectory;
     private static Path objStringFull;
     private static Path objTmpStringFull;
     private static Path metadataStringFull;
     private static Path metadataTmpStringFull;
     private static final TestDataHarness testData = new TestDataHarness();
-    private static FileHashStoreLinks fileHashStoreLinks;
+    private FileHashStoreLinks fileHashStoreLinks;
 
     /**
      * Initialize FileHashStore
