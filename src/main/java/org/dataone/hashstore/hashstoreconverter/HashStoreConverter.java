@@ -13,8 +13,8 @@ import java.util.Properties;
 
 /**
  * HashStoreConverter is a utility tool to assist with ingesting existing data objects and their
- * respective system metadata into a HashStore by creating hard links instead of duplicating for
- * the data object.
+ * respective system metadata into a HashStore. Instead of duplicating data objects and writing
+ * ObjectMetadata.
  */
 public class HashStoreConverter {
     private static final Log logHashStoreConverter = LogFactory.getLog(HashStoreConverter.class);
