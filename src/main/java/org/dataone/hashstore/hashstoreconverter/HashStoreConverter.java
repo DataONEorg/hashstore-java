@@ -16,8 +16,10 @@ public class HashStoreConverter {
     private FileHashStoreLinks fileHashStoreLinks;
 
     /**
-     * Properties to an existing HashStore are required to initialize HashStoreConverter.
-     * HashStoreConverter is a utility tool to assist clients to convert
+     * HashStoreConverter is a utility tool to assist with ingesting existing data objects and
+     * their respective system metadata into HashStore directory by creating hard links instead of
+     * duplicating a data object. Properties to an existing or desired HashStore are required to
+     * initialize HashStoreConverter.
      *
      * @param hashstoreProperties Properties object with the following keys: storePath, storeDepth,
      *                            storeWidth, storeAlgorithm, storeMetadataNamespace
@@ -36,44 +38,52 @@ public class HashStoreConverter {
             throw ioe;
 
         } catch (NoSuchAlgorithmException nsae) {
-            String errMsg = "Unexpected issue with an algorithm encountered: " + nsae.getMessage();
+            String errMsg = "A supplied algorithm is not supported: " + nsae.getMessage();
             logHashStoreConverter.error(errMsg);
             throw nsae;
 
         }
     }
 
-    // TODO Finish Javadocs
     /**
-     * Create a hard link in the specified hashstore for an existing data object.
+     * Create a hard link in the specified hashstore directoryfor an existing data object.
      *
-     * @param filePath Path to existing data object
-     * @param pid Persistent or authority-based identifier
+     * @param filePath      Path to existing data object
+     * @param pid           Persistent or authority-based identifier
      * @param sysmetaStream Stream to sysmeta content to store
-     * @return
-     * @throws IOException
-     * @throws NoSuchAlgorithmException
-     * @throws InterruptedException
+     * @return ObjectMetadata for the given pid
+     * @throws IOException              An issue with calculating checksums or storing sysmeta
+     * @throws NoSuchAlgorithmException An algorithm defined is not supported
+     * @throws InterruptedException     Issue with synchronizing storing metadata
      */
     public ObjectMetadata convert(Path filePath, String pid, InputStream sysmetaStream)
         throws IOException, NoSuchAlgorithmException, InterruptedException {
-        // TODO Review flow
-        // TODO Add junit tests
+        logHashStoreConverter.info("Begin converting data object and sysmeta for pid: " + pid);
 
-        try {
-            InputStream fileStream = Files.newInputStream(filePath);
+        try (InputStream fileStream = Files.newInputStream(filePath)) {
             ObjectMetadata objInfo = fileHashStoreLinks.storeHardLink(filePath, fileStream, pid);
             fileHashStoreLinks.storeMetadata(sysmetaStream, pid);
             return objInfo;
+
         } catch (IOException ioe) {
+            String errMsg = "Unexpected IOException encountered: " + ioe.getMessage();
+            logHashStoreConverter.error(errMsg);
             throw ioe;
-            // TODO
+
         } catch (NoSuchAlgorithmException nsae) {
+            String errMsg = "A supplied algorithm is not supported: " + nsae.getMessage();
+            logHashStoreConverter.error(errMsg);
             throw nsae;
-            // TODO
+
         } catch (InterruptedException ie) {
+            String errMsg =
+                "Unexpected issue with synchronizing storing data objects or metadata: "
+                    + ie.getMessage();
+            logHashStoreConverter.error(errMsg);
             throw ie;
-            // TODO
+
+        } finally {
+            sysmetaStream.close();
         }
     }
 }
