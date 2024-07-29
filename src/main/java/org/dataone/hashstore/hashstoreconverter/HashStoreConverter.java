@@ -11,15 +11,18 @@ import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.Properties;
 
+/**
+ * HashStoreConverter is a utility tool to assist with ingesting existing data objects and their
+ * respective system metadata into a HashStore by creating hard links instead of duplicating for
+ * the data object.
+ */
 public class HashStoreConverter {
     private static final Log logHashStoreConverter = LogFactory.getLog(HashStoreConverter.class);
     private FileHashStoreLinks fileHashStoreLinks;
 
     /**
-     * HashStoreConverter is a utility tool to assist with ingesting existing data objects and
-     * their respective system metadata into HashStore directory by creating hard links instead of
-     * duplicating a data object. Properties to an existing or desired HashStore are required to
-     * initialize HashStoreConverter.
+     * Constructor to initialize HashStoreConverter. Properties to an existing or desired HashStore
+     * are required.
      *
      * @param hashstoreProperties Properties object with the following keys: storePath, storeDepth,
      *                            storeWidth, storeAlgorithm, storeMetadataNamespace
@@ -46,7 +49,9 @@ public class HashStoreConverter {
     }
 
     /**
-     * Create a hard link in the specified hashstore directoryfor an existing data object.
+     * Take an existing path to a data object, store it into a new or existing HashStore via a
+     * hard link (to save disk space), store the supplied system metadata and return the
+     * ObjectMetadata for the data object.
      *
      * @param filePath      Path to existing data object
      * @param pid           Persistent or authority-based identifier
