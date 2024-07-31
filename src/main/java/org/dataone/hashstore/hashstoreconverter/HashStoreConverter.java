@@ -69,10 +69,11 @@ public class HashStoreConverter {
     public ObjectMetadata convert(Path filePath, String pid, InputStream sysmetaStream)
         throws IOException, NoSuchAlgorithmException, InterruptedException {
         logHashStoreConverter.info("Begin converting data object and sysmeta for pid: " + pid);
+        FileHashStoreUtility.ensureNotNull(sysmetaStream, "sysmetaStream", "convert");
         FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "convert");
-        boolean storeHardlink = filePath != null;
-        boolean storeSysmeta = sysmetaStream != null;
+
         ObjectMetadata objInfo = null;
+        boolean storeHardlink = filePath != null;
 
         if (storeHardlink) {
             try (InputStream fileStream = Files.newInputStream(filePath)) {
@@ -101,15 +102,10 @@ public class HashStoreConverter {
             logHashStoreConverter.warn(warnMsg);
         }
 
-        if (storeSysmeta) {
-            try {
-                fileHashStoreLinks.storeMetadata(sysmetaStream, pid);
-            } finally {
-                sysmetaStream.close();
-            }
-        } else {
-            String warnMsg = "Supplied sysmeta Stream is null, not storing sysmeta for pid: " + pid;
-            logHashStoreConverter.warn(warnMsg);
+        try {
+            fileHashStoreLinks.storeMetadata(sysmetaStream, pid);
+        } finally {
+            sysmetaStream.close();
         }
 
         return objInfo;

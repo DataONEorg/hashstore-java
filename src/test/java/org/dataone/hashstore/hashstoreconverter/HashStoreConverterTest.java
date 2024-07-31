@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
@@ -129,4 +130,19 @@ public class HashStoreConverterTest {
         }
     }
 
+    /**
+     * Check that convert throws exception when sysmeta stream is null
+     */
+    @Test
+    public void convert_nullSysmetaStream() {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+            InputStream sysmetaStream = null;
+
+            assertThrows(
+                IllegalArgumentException.class, () -> hashstoreConverter.convert(testDataFile, pid, sysmetaStream)
+            );
+        }
+    }
 }
