@@ -68,6 +68,7 @@ public class HashStoreConverter {
         throws IOException, NoSuchAlgorithmException, InterruptedException {
         logHashStoreConverter.info("Begin converting data object and sysmeta for pid: " + pid);
         FileHashStoreUtility.ensureNotNull(sysmetaStream, "sysmetaStream", "convert");
+        FileHashStoreUtility.ensureNotNull(pid, "pid", "convert");
         FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "convert");
 
         // Store the sysmeta first - this can never be null and is always required.
