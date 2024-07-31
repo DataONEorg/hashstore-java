@@ -1,6 +1,7 @@
 package org.dataone.hashstore.hashstoreconverter;
 
 import org.dataone.hashstore.ObjectMetadata;
+import org.dataone.hashstore.exceptions.HashStoreRefsAlreadyExistException;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -127,6 +129,48 @@ public class HashStoreConverterTest {
 
             // Metadata is stored directly through 'FileHashStore'
             // Creation of hard links is confirmed via 'FileHashStoreLinks'
+        }
+    }
+
+    /**
+     * Check that convert throws 'HashStoreRefsAlreadyExistException' when called to store a
+     * data object with a pid that has already been accounted for
+     */
+    @Test
+    public void convert_duplicatePid() throws Exception {
+        for (String pid : testData.pidList) {
+            // Path to test harness data file
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+            // Path to metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+            InputStream sysmetaStream = Files.newInputStream(testMetaDataFile);
+            hashstoreConverter.convert(testDataFile, pid, sysmetaStream);
+
+            InputStream sysmetaStreamTwo = Files.newInputStream(testMetaDataFile);
+            assertThrows(
+                HashStoreRefsAlreadyExistException.class,
+                () -> hashstoreConverter.convert(testDataFile, pid, sysmetaStreamTwo));
+        }
+    }
+
+    /**
+     * Confirm that convert still executes when filePath is null and stores the sysmeta
+     */
+    @Test
+    public void convert_nullFilePath() throws Exception {
+        for (String pid : testData.pidList) {
+            // Path to test harness data file
+            String pidFormatted = pid.replace("/", "_");
+            // Path to metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+            InputStream sysmetaStream = Files.newInputStream(testMetaDataFile);
+
+            ObjectMetadata objInfo =
+                hashstoreConverter.convert(null, pid, sysmetaStream);
+            sysmetaStream.close();
+
+            assertNull(objInfo);
         }
     }
 
