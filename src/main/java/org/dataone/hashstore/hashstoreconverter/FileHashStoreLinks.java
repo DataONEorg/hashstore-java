@@ -8,7 +8,6 @@ import org.dataone.hashstore.filehashstore.FileHashStore;
 import org.dataone.hashstore.filehashstore.FileHashStoreUtility;
 
 import javax.xml.bind.DatatypeConverter;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -99,7 +98,7 @@ public class FileHashStoreLinks extends FileHashStore {
         }
 
         try {
-            Map<String, String> hexDigests = generateChecksums(fileStream, null, checksumAlgorithm);
+            Map<String, String> hexDigests = generateChecksums(fileStream, checksumAlgorithm);
             String checksumToMatch = hexDigests.get(checksumAlgorithm);
             if (!checksum.equalsIgnoreCase(checksumToMatch)) {
                 String errMsg = "Checksum supplied: " + checksum + " does not match what has been"
@@ -162,8 +161,6 @@ public class FileHashStoreLinks extends FileHashStore {
      *
      * @param dataStream          input stream of data to store
      * @param additionalAlgorithm additional algorithm to include in hex digest map
-     * @param checksumAlgorithm   checksum algorithm to calculate hex digest for to verifying
-     *                            object
      * @return A map containing the hex digests of the default algorithms
      * @throws NoSuchAlgorithmException Unable to generate new instance of supplied algorithm
      * @throws IOException              Issue with writing file from InputStream
@@ -171,18 +168,13 @@ public class FileHashStoreLinks extends FileHashStore {
      * @throws FileNotFoundException    tmpFile cannot be found
      */
     protected Map<String, String> generateChecksums(
-        InputStream dataStream, String additionalAlgorithm, String checksumAlgorithm)
+        InputStream dataStream, String additionalAlgorithm)
         throws NoSuchAlgorithmException, IOException, SecurityException {
         // Determine whether to calculate additional or checksum algorithms
         boolean generateAddAlgo = false;
         if (additionalAlgorithm != null) {
             validateAlgorithm(additionalAlgorithm);
             generateAddAlgo = shouldCalculateAlgorithm(additionalAlgorithm);
-        }
-        boolean generateCsAlgo = false;
-        if (checksumAlgorithm != null && !checksumAlgorithm.equals(additionalAlgorithm)) {
-            validateAlgorithm(checksumAlgorithm);
-            generateCsAlgo = shouldCalculateAlgorithm(checksumAlgorithm);
         }
 
         MessageDigest md5 = MessageDigest.getInstance(DefaultHashAlgorithms.MD5.getName());
@@ -191,16 +183,10 @@ public class FileHashStoreLinks extends FileHashStore {
         MessageDigest sha384 = MessageDigest.getInstance(DefaultHashAlgorithms.SHA_384.getName());
         MessageDigest sha512 = MessageDigest.getInstance(DefaultHashAlgorithms.SHA_512.getName());
         MessageDigest additionalAlgo = null;
-        MessageDigest checksumAlgo = null;
         if (generateAddAlgo) {
             logFileHashStoreLinks.debug(
                 "Adding additional algorithm to hex digest map, algorithm: " + additionalAlgorithm);
             additionalAlgo = MessageDigest.getInstance(additionalAlgorithm);
-        }
-        if (generateCsAlgo) {
-            logFileHashStoreLinks.debug(
-                "Adding checksum algorithm to hex digest map, algorithm: " + checksumAlgorithm);
-            checksumAlgo = MessageDigest.getInstance(checksumAlgorithm);
         }
 
         // Calculate hex digests
@@ -215,9 +201,6 @@ public class FileHashStoreLinks extends FileHashStore {
                 sha512.update(buffer, 0, bytesRead);
                 if (generateAddAlgo) {
                     additionalAlgo.update(buffer, 0, bytesRead);
-                }
-                if (generateCsAlgo) {
-                    checksumAlgo.update(buffer, 0, bytesRead);
                 }
             }
 
@@ -246,11 +229,6 @@ public class FileHashStoreLinks extends FileHashStore {
             String extraAlgoDigest = DatatypeConverter.printHexBinary(additionalAlgo.digest())
                 .toLowerCase();
             hexDigests.put(additionalAlgorithm, extraAlgoDigest);
-        }
-        if (generateCsAlgo) {
-            String extraChecksumDigest = DatatypeConverter.printHexBinary(checksumAlgo.digest())
-                .toLowerCase();
-            hexDigests.put(checksumAlgorithm, extraChecksumDigest);
         }
 
         return hexDigests;

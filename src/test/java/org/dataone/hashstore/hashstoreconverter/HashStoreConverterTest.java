@@ -259,10 +259,9 @@ public class HashStoreConverterTest {
             String sha256 = testData.pidData.get(pid).get("sha256");
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
-            InputStream sysmetaStream = null;
 
             assertThrows(IllegalArgumentException.class,
-                         () -> hashstoreConverter.convert(testDataFile, pid, sysmetaStream, sha256,
+                         () -> hashstoreConverter.convert(testDataFile, pid, null, sha256,
                                                           "SHA-256"));
         }
     }

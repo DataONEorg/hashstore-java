@@ -20,7 +20,7 @@ import java.util.Properties;
  */
 public class HashStoreConverter {
     private static final Log logHashStoreConverter = LogFactory.getLog(HashStoreConverter.class);
-    private FileHashStoreLinks fileHashStoreLinks;
+    private final FileHashStoreLinks fileHashStoreLinks;
 
     /**
      * Constructor to initialize HashStoreConverter. Properties to an existing or desired HashStore
