@@ -69,7 +69,7 @@ public class FileHashStoreLinks extends FileHashStore {
     }
 
     /**
-     * Store a hard link to an existing data object in HashStore.
+     * Store a hard link to HashStore from an existing data object in the filesystem.
      *
      * @param filePath   Path to the source file which a hard link will be created for
      * @param fileStream Stream to the source file to calculate checksums for

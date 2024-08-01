@@ -134,8 +134,7 @@ public class HashStoreConverterTest {
     }
 
     /**
-     * Check that convert created additional checksum algorithm that is not included in the
-     * default list
+     * Check that convert creates additional checksum algorithm that is included in the default list
      */
     @Test
     public void convert_checksumAlgorithmIncluded() throws Exception {
@@ -159,8 +158,8 @@ public class HashStoreConverterTest {
     }
 
     /**
-     * Check that convert created additional checksum algorithm that is not included in the
-     * default list
+     * Check that convert creates additional checksum that is not included in the default list but
+     * is supported.
      */
     @Test
     public void convert_checksumAlgorithmSupportedButNotFound() throws Exception {
@@ -184,8 +183,7 @@ public class HashStoreConverterTest {
     }
 
     /**
-     * Check that convert created additional checksum algorithm that is not included in the
-     * default list
+     * Check that convert throws exception when supplied with an unsupported algorithm.
      */
     @Test
     public void convert_checksumAlgorithmNotSupported() throws Exception {

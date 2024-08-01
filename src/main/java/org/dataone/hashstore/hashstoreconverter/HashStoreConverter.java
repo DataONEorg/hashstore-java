@@ -15,8 +15,8 @@ import java.util.Properties;
 /**
  * HashStoreConverter is a utility tool to assist with ingesting existing data objects and their
  * respective system metadata into a HashStore. Instead of duplicating data objects (that already
- * exists), HashStoreConverter provide a simple API to create a hard link to the data object with
- * the expected HashStore object path.
+ * exist), HashStoreConverter provides a simple API to create a hard link to a data object with
+ * its expected HashStore object path.
  */
 public class HashStoreConverter {
     private static final Log logHashStoreConverter = LogFactory.getLog(HashStoreConverter.class);
@@ -52,9 +52,9 @@ public class HashStoreConverter {
 
     /**
      * Take an existing path to a data object, store it into a new or existing HashStore via a
-     * hard link (to save disk space), store the supplied system metadata and return the
-     * ObjectMetadata for the data object. The 'sysMetaStream' given may never be null.
-     * A 'filePath' may be null, in which case a data object will not be stored.
+     * hard link, store the supplied system metadata and return the ObjectMetadata for the data
+     * object. The 'sysMetaStream' given may never be null. A 'filePath' may be null, in which
+     * case a data object will not be stored.
      *
      * @param filePath      Path to existing data object
      * @param pid           Persistent or authority-based identifier
