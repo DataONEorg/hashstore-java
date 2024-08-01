@@ -101,18 +101,7 @@ public class FileHashStoreLinks extends FileHashStore {
             Path objHardLinkPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
             // Create parent directories to the hard link, otherwise
             // Files.createLink will throw a NoSuchFileException
-            File destinationDirectory = new File(objHardLinkPath.toFile().getParent());
-            if (!destinationDirectory.exists()) {
-                Path destinationDirectoryPath = destinationDirectory.toPath();
-                try {
-                    Files.createDirectories(destinationDirectoryPath);
-
-                } catch (FileAlreadyExistsException faee) {
-                    logFileHashStoreLinks.warn(
-                        "Directory already exists at: " + destinationDirectoryPath
-                            + " - Skipping directory creation");
-                }
-            }
+            FileHashStoreUtility.createParentDirectories(objHardLinkPath);
 
             try {
                 Files.createLink(objHardLinkPath, filePath);
@@ -165,9 +154,9 @@ public class FileHashStoreLinks extends FileHashStore {
      * @throws SecurityException        Unable to write to tmpFile
      * @throws FileNotFoundException    tmpFile cannot be found
      */
-    protected Map<String, String> generateChecksums(InputStream dataStream,
-                                                  String additionalAlgorithm, String checksumAlgorithm
-    ) throws NoSuchAlgorithmException, IOException, SecurityException {
+    protected Map<String, String> generateChecksums(
+        InputStream dataStream, String additionalAlgorithm, String checksumAlgorithm)
+        throws NoSuchAlgorithmException, IOException, SecurityException {
         // Determine whether to calculate additional or checksum algorithms
         boolean generateAddAlgo = false;
         if (additionalAlgorithm != null) {
