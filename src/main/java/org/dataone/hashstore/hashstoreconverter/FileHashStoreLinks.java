@@ -3,6 +3,7 @@ package org.dataone.hashstore.hashstoreconverter;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.dataone.hashstore.ObjectMetadata;
+import org.dataone.hashstore.exceptions.NonMatchingChecksumException;
 import org.dataone.hashstore.filehashstore.FileHashStore;
 import org.dataone.hashstore.filehashstore.FileHashStoreUtility;
 
@@ -74,25 +75,41 @@ public class FileHashStoreLinks extends FileHashStore {
      * @param filePath   Path to the source file which a hard link will be created for
      * @param fileStream Stream to the source file to calculate checksums for
      * @param pid        Persistent or authority-based identifier for tagging
+     * @param checksum   Value of checksum
+     * @param checksumAlgorithm Ex. "SHA-256"
      * @return ObjectMetadata encapsulating information about the data file
      * @throws NoSuchAlgorithmException Issue with one of the hashing algorithms to calculate
      * @throws IOException              An issue with reading from the given file stream
      * @throws InterruptedException Sync issue when tagging pid and cid
      */
-    public ObjectMetadata storeHardLink(Path filePath, InputStream fileStream, String pid)
+    public ObjectMetadata storeHardLink(Path filePath, InputStream fileStream, String pid,
+                                        String checksum, String checksumAlgorithm)
         throws NoSuchAlgorithmException, IOException, InterruptedException {
         // Validate input parameters
         FileHashStoreUtility.ensureNotNull(filePath, "filePath", "storeHardLink");
         FileHashStoreUtility.ensureNotNull(fileStream, "fileStream", "storeHardLink");
         FileHashStoreUtility.ensureNotNull(pid, "pid", "storeHardLink");
         FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "storeHardLink");
+        FileHashStoreUtility.ensureNotNull(checksum, "checksum", "storeHardLink");
+        FileHashStoreUtility.checkForEmptyAndValidString(checksum, "checksum", "storeHardLink");
+        validateAlgorithm(checksumAlgorithm);
         if (!Files.exists(filePath)) {
             String errMsg = "Given file path: " + filePath + " does not exist.";
             throw new FileNotFoundException(errMsg);
         }
 
         try {
-            Map<String, String> hexDigests = generateChecksums(fileStream, null, null);
+            Map<String, String> hexDigests = generateChecksums(fileStream, null, checksumAlgorithm);
+            String checksumToMatch = hexDigests.get(checksumAlgorithm);
+            // TODO: Add junit test
+            if (!checksum.equalsIgnoreCase(checksumToMatch)) {
+                String errMsg = "Checksum supplied: " + checksum + " does not match what has been"
+                    + " calculated: " + checksumToMatch + " for pid: " + pid + " and checksum"
+                    + " algorithm: " + checksumAlgorithm;
+                logFileHashStoreLinks.error(errMsg);
+                throw new NonMatchingChecksumException(errMsg);
+            }
+
             // Gather the elements to form the permanent address
             String objectCid = hexDigests.get(OBJECT_STORE_ALGORITHM);
             String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
@@ -160,17 +177,11 @@ public class FileHashStoreLinks extends FileHashStore {
         // Determine whether to calculate additional or checksum algorithms
         boolean generateAddAlgo = false;
         if (additionalAlgorithm != null) {
-            FileHashStoreUtility.checkForEmptyAndValidString(
-                additionalAlgorithm, "additionalAlgorithm", "writeToTmpFileAndGenerateChecksums"
-            );
             validateAlgorithm(additionalAlgorithm);
             generateAddAlgo = shouldCalculateAlgorithm(additionalAlgorithm);
         }
         boolean generateCsAlgo = false;
         if (checksumAlgorithm != null && !checksumAlgorithm.equals(additionalAlgorithm)) {
-            FileHashStoreUtility.checkForEmptyAndValidString(
-                checksumAlgorithm, "checksumAlgorithm", "writeToTmpFileAndGenerateChecksums"
-            );
             validateAlgorithm(checksumAlgorithm);
             generateCsAlgo = shouldCalculateAlgorithm(checksumAlgorithm);
         }

@@ -101,6 +101,11 @@ public class HashStoreConverterTest {
     @Test
     public void convert() throws Exception {
         for (String pid : testData.pidList) {
+            String md5 = testData.pidData.get(pid).get("md5");
+            String sha1 = testData.pidData.get(pid).get("sha1");
+            String sha256 = testData.pidData.get(pid).get("sha256");
+            String sha384 = testData.pidData.get(pid).get("sha384");
+            String sha512 = testData.pidData.get(pid).get("sha512");
             // Path to test harness data file
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
@@ -109,16 +114,11 @@ public class HashStoreConverterTest {
             InputStream sysmetaStream = Files.newInputStream(testMetaDataFile);
 
             ObjectMetadata objInfo =
-                hashstoreConverter.convert(testDataFile, pid, sysmetaStream);
+                hashstoreConverter.convert(testDataFile, pid, sysmetaStream, sha256, "SHA-256");
             sysmetaStream.close();
 
             // Check checksums
             Map<String, String> hexDigests = objInfo.getHexDigests();
-            String md5 = testData.pidData.get(pid).get("md5");
-            String sha1 = testData.pidData.get(pid).get("sha1");
-            String sha256 = testData.pidData.get(pid).get("sha256");
-            String sha384 = testData.pidData.get(pid).get("sha384");
-            String sha512 = testData.pidData.get(pid).get("sha512");
             assertEquals(md5, hexDigests.get("MD5"));
             assertEquals(sha1, hexDigests.get("SHA-1"));
             assertEquals(sha256, hexDigests.get("SHA-256"));
@@ -139,18 +139,19 @@ public class HashStoreConverterTest {
     @Test
     public void convert_duplicatePid() throws Exception {
         for (String pid : testData.pidList) {
+            String sha256 = testData.pidData.get(pid).get("sha256");
             // Path to test harness data file
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
             // Path to metadata file
             Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
             InputStream sysmetaStream = Files.newInputStream(testMetaDataFile);
-            hashstoreConverter.convert(testDataFile, pid, sysmetaStream);
+            hashstoreConverter.convert(testDataFile, pid, sysmetaStream, sha256, "SHA-256");
 
             InputStream sysmetaStreamTwo = Files.newInputStream(testMetaDataFile);
-            assertThrows(
-                HashStoreRefsAlreadyExistException.class,
-                () -> hashstoreConverter.convert(testDataFile, pid, sysmetaStreamTwo));
+            assertThrows(HashStoreRefsAlreadyExistException.class,
+                         () -> hashstoreConverter.convert(testDataFile, pid, sysmetaStreamTwo,
+                                                          sha256, "SHA-256"));
         }
     }
 
@@ -160,6 +161,7 @@ public class HashStoreConverterTest {
     @Test
     public void convert_nullFilePath() throws Exception {
         for (String pid : testData.pidList) {
+            String sha256 = testData.pidData.get(pid).get("sha256");
             // Path to test harness data file
             String pidFormatted = pid.replace("/", "_");
             // Path to metadata file
@@ -167,7 +169,7 @@ public class HashStoreConverterTest {
             InputStream sysmetaStream = Files.newInputStream(testMetaDataFile);
 
             ObjectMetadata objInfo =
-                hashstoreConverter.convert(null, pid, sysmetaStream);
+                hashstoreConverter.convert(null, pid, sysmetaStream, sha256, "SHA-256");
             sysmetaStream.close();
 
             assertNull(objInfo);
@@ -180,13 +182,14 @@ public class HashStoreConverterTest {
     @Test
     public void convert_nullSysmetaStream() {
         for (String pid : testData.pidList) {
+            String sha256 = testData.pidData.get(pid).get("sha256");
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
             InputStream sysmetaStream = null;
 
-            assertThrows(
-                IllegalArgumentException.class, () -> hashstoreConverter.convert(testDataFile, pid, sysmetaStream)
-            );
+            assertThrows(IllegalArgumentException.class,
+                         () -> hashstoreConverter.convert(testDataFile, pid, sysmetaStream, sha256,
+                                                          "SHA-256"));
         }
     }
 }

@@ -59,17 +59,25 @@ public class HashStoreConverter {
      * @param filePath      Path to existing data object
      * @param pid           Persistent or authority-based identifier
      * @param sysmetaStream Stream to sysmeta content to store.
+     * @param checksum   Value of checksum
+     * @param checksumAlgorithm Ex. "SHA-256"
      * @return ObjectMetadata for the given pid
      * @throws IOException              An issue with calculating checksums or storing sysmeta
      * @throws NoSuchAlgorithmException An algorithm defined is not supported
      * @throws InterruptedException     Issue with synchronizing storing metadata
      */
-    public ObjectMetadata convert(Path filePath, String pid, InputStream sysmetaStream)
+    public ObjectMetadata convert(Path filePath, String pid, InputStream sysmetaStream,
+                                  String checksum, String checksumAlgorithm)
         throws IOException, NoSuchAlgorithmException, InterruptedException {
         logHashStoreConverter.info("Begin converting data object and sysmeta for pid: " + pid);
         FileHashStoreUtility.ensureNotNull(sysmetaStream, "sysmetaStream", "convert");
         FileHashStoreUtility.ensureNotNull(pid, "pid", "convert");
         FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "convert");
+        FileHashStoreUtility.ensureNotNull(checksum, "checksum", "convert");
+        FileHashStoreUtility.checkForEmptyAndValidString(checksum, "checksum", "convert");
+        FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm", "convert");
+        FileHashStoreUtility.checkForEmptyAndValidString(
+            checksumAlgorithm, "checksumAlgorithm", "convert");
 
         // Store the sysmeta first - this can never be null and is always required.
         try {
@@ -82,7 +90,8 @@ public class HashStoreConverter {
         ObjectMetadata objInfo = null;
         if (filePath != null) {
             try (InputStream fileStream = Files.newInputStream(filePath)) {
-                objInfo = fileHashStoreLinks.storeHardLink(filePath, fileStream, pid);
+                objInfo = fileHashStoreLinks.storeHardLink(filePath, fileStream, pid, checksum,
+                                                           checksumAlgorithm);
                 logHashStoreConverter.info("Stored data object for pid: " + pid);
 
             } catch (IOException ioe) {

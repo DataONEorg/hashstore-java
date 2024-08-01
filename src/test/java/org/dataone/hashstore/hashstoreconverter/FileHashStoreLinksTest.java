@@ -138,13 +138,14 @@ public class FileHashStoreLinksTest {
     @Test
     public void storeHardLink() throws Exception {
         for (String pid : testData.pidList) {
+            String sha256 = testData.pidData.get(pid).get("sha256");
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
             assertTrue(Files.exists(testDataFile));
 
             InputStream dataStream = Files.newInputStream(testDataFile);
             ObjectMetadata objInfo =
-                fileHashStoreLinks.storeHardLink(testDataFile, dataStream, pid);
+                fileHashStoreLinks.storeHardLink(testDataFile, dataStream, pid, sha256, "SHA-256");
             dataStream.close();
 
             // Check id (content identifier based on the store algorithm)
@@ -167,15 +168,17 @@ public class FileHashStoreLinksTest {
     @Test
     public void storeHardLink_alreadyExists() throws Exception {
         for (String pid : testData.pidList) {
+            String sha256 = testData.pidData.get(pid).get("sha256");
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
             assertTrue(Files.exists(testDataFile));
 
             InputStream dataStream = Files.newInputStream(testDataFile);
-            fileHashStoreLinks.storeHardLink(testDataFile, dataStream, pid);
+            fileHashStoreLinks.storeHardLink(testDataFile, dataStream, pid, sha256, "SHA-256");
             dataStream.close();
             InputStream dataStreamTwo = Files.newInputStream(testDataFile);
-            fileHashStoreLinks.storeHardLink(testDataFile, dataStreamTwo, pid+".test.pid");
+            fileHashStoreLinks.storeHardLink(testDataFile, dataStreamTwo, pid + ".test.pid", sha256,
+                                             "SHA-256");
             dataStreamTwo.close();
         }
     }
