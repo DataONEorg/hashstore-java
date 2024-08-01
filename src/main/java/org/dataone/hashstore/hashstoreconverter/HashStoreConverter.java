@@ -73,11 +73,6 @@ public class HashStoreConverter {
         FileHashStoreUtility.ensureNotNull(sysmetaStream, "sysmetaStream", "convert");
         FileHashStoreUtility.ensureNotNull(pid, "pid", "convert");
         FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "convert");
-        FileHashStoreUtility.ensureNotNull(checksum, "checksum", "convert");
-        FileHashStoreUtility.checkForEmptyAndValidString(checksum, "checksum", "convert");
-        FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm", "convert");
-        FileHashStoreUtility.checkForEmptyAndValidString(
-            checksumAlgorithm, "checksumAlgorithm", "convert");
 
         // Store the sysmeta first - this can never be null and is always required.
         try {
@@ -89,6 +84,12 @@ public class HashStoreConverter {
         // Now store the hard link, which is optional
         ObjectMetadata objInfo = null;
         if (filePath != null) {
+            FileHashStoreUtility.ensureNotNull(checksum, "checksum", "convert");
+            FileHashStoreUtility.checkForEmptyAndValidString(checksum, "checksum", "convert");
+            FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm", "convert");
+            FileHashStoreUtility.checkForEmptyAndValidString(
+                checksumAlgorithm, "checksumAlgorithm", "convert");
+
             try (InputStream fileStream = Files.newInputStream(filePath)) {
                 objInfo = fileHashStoreLinks.storeHardLink(filePath, fileStream, pid, checksum,
                                                            checksumAlgorithm);

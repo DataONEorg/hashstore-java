@@ -2,6 +2,7 @@ package org.dataone.hashstore.hashstoreconverter;
 
 import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.exceptions.HashStoreRefsAlreadyExistException;
+import org.dataone.hashstore.exceptions.NonMatchingChecksumException;
 import org.dataone.hashstore.testdata.TestDataHarness;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -133,6 +134,78 @@ public class HashStoreConverterTest {
     }
 
     /**
+     * Check that convert created additional checksum algorithm that is not included in the
+     * default list
+     */
+    @Test
+    public void convert_checksumAlgorithmIncluded() throws Exception {
+        for (String pid : testData.pidList) {
+            String sha256 = testData.pidData.get(pid).get("sha256");
+            // Path to test harness data file
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+            // Path to metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+            InputStream sysmetaStream = Files.newInputStream(testMetaDataFile);
+
+            ObjectMetadata objInfo =
+                hashstoreConverter.convert(testDataFile, pid, sysmetaStream, sha256, "SHA-256");
+            sysmetaStream.close();
+
+            // Check checksums
+            Map<String, String> hexDigests = objInfo.getHexDigests();
+            assertEquals(sha256, hexDigests.get("SHA-256"));
+        }
+    }
+
+    /**
+     * Check that convert created additional checksum algorithm that is not included in the
+     * default list
+     */
+    @Test
+    public void convert_checksumAlgorithmSupportedButNotFound() throws Exception {
+        for (String pid : testData.pidList) {
+            String md2 = testData.pidData.get(pid).get("md2");
+            // Path to test harness data file
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+            // Path to metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+            InputStream sysmetaStream = Files.newInputStream(testMetaDataFile);
+
+            ObjectMetadata objInfo =
+                hashstoreConverter.convert(testDataFile, pid, sysmetaStream, md2, "MD2");
+            sysmetaStream.close();
+
+            // Check checksums
+            Map<String, String> hexDigests = objInfo.getHexDigests();
+            assertEquals(md2, hexDigests.get("MD2"));
+        }
+    }
+
+    /**
+     * Check that convert created additional checksum algorithm that is not included in the
+     * default list
+     */
+    @Test
+    public void convert_checksumAlgorithmNotSupported() throws Exception {
+        for (String pid : testData.pidList) {
+            String md2 = testData.pidData.get(pid).get("md2");
+            // Path to test harness data file
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+            // Path to metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+            InputStream sysmetaStream = Files.newInputStream(testMetaDataFile);
+
+            assertThrows(NoSuchAlgorithmException.class,
+                         () -> hashstoreConverter.convert(testDataFile, pid, sysmetaStream,
+                                                          md2, "blake2s"));
+            sysmetaStream.close();
+        }
+    }
+
+    /**
      * Check that convert throws 'HashStoreRefsAlreadyExistException' when called to store a
      * data object with a pid that has already been accounted for
      */
@@ -152,6 +225,7 @@ public class HashStoreConverterTest {
             assertThrows(HashStoreRefsAlreadyExistException.class,
                          () -> hashstoreConverter.convert(testDataFile, pid, sysmetaStreamTwo,
                                                           sha256, "SHA-256"));
+            sysmetaStreamTwo.close();
         }
     }
 
@@ -190,6 +264,28 @@ public class HashStoreConverterTest {
             assertThrows(IllegalArgumentException.class,
                          () -> hashstoreConverter.convert(testDataFile, pid, sysmetaStream, sha256,
                                                           "SHA-256"));
+        }
+    }
+
+    /**
+     * Check that convert throws exception when checksum doesn't match
+     */
+    @Test
+    public void convert_nonMatchingChecksum() throws Exception {
+        for (String pid : testData.pidList) {
+            // Incorrect checksum to compare against
+            String md5 = testData.pidData.get(pid).get("md5");
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+            // Path to metadata file
+            Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
+            InputStream sysmetaStream = Files.newInputStream(testMetaDataFile);
+
+            assertThrows(
+                NonMatchingChecksumException.class,
+                () -> hashstoreConverter.convert(testDataFile, pid, sysmetaStream, md5,
+                                                          "SHA-256"));
+            sysmetaStream.close();
         }
     }
 }

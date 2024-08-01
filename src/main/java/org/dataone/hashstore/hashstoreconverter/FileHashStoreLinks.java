@@ -70,7 +70,7 @@ public class FileHashStoreLinks extends FileHashStore {
     }
 
     /**
-     * Creates a hard link to a data file and return a ObjectMetadata of the given data object.
+     * Store a hard link to an existing data object in HashStore.
      *
      * @param filePath   Path to the source file which a hard link will be created for
      * @param fileStream Stream to the source file to calculate checksums for
@@ -101,7 +101,6 @@ public class FileHashStoreLinks extends FileHashStore {
         try {
             Map<String, String> hexDigests = generateChecksums(fileStream, null, checksumAlgorithm);
             String checksumToMatch = hexDigests.get(checksumAlgorithm);
-            // TODO: Add junit test
             if (!checksum.equalsIgnoreCase(checksumToMatch)) {
                 String errMsg = "Checksum supplied: " + checksum + " does not match what has been"
                     + " calculated: " + checksumToMatch + " for pid: " + pid + " and checksum"
