@@ -80,8 +80,7 @@ public class HashStoreConverter {
 
         // Now store the hard link, which is optional
         ObjectMetadata objInfo = null;
-        boolean storeHardlink = filePath != null;
-        if (storeHardlink) {
+        if (filePath != null) {
             try (InputStream fileStream = Files.newInputStream(filePath)) {
                 objInfo = fileHashStoreLinks.storeHardLink(filePath, fileStream, pid);
                 logHashStoreConverter.info("Stored data object for pid: " + pid);
