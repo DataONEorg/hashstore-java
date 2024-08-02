@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -32,6 +33,7 @@ import org.dataone.hashstore.exceptions.PidRefsFileExistsException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.dataone.hashstore.hashstoreconverter.FileHashStoreLinks;
 
 /**
  * HashStoreClient is a development tool used to create a new HashStore or interact directly with
@@ -39,6 +41,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
  */
 public class HashStoreClient {
     private static HashStore hashStore;
+    private static FileHashStoreLinks hashStoreLinks;
     private static Path storePath;
 
     /**
@@ -415,7 +418,7 @@ public class HashStoreClient {
      * @throws FileNotFoundException     When 'hashstore.yaml' is missing.
      */
     private static void initializeHashStore(Path storePath) throws HashStoreFactoryException,
-        IOException {
+        NoSuchAlgorithmException, IOException {
         // Load properties and get HashStore
         HashMap<String, Object> hsProperties = loadHashStoreYaml(storePath);
         Properties storeProperties = new Properties();
@@ -432,6 +435,7 @@ public class HashStoreClient {
         // Get HashStore
         String classPackage = "org.dataone.hashstore.filehashstore.FileHashStore";
         hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
+        hashStoreLinks = new FileHashStoreLinks(storeProperties);
     }
 
 
@@ -576,8 +580,11 @@ public class HashStoreClient {
                 String checksum = item.get("checksum");
 
                 // Store object
-                System.out.println("Storing object for guid: " + guid);
-                hashStore.storeObject(objStream, guid, null, checksum, algorithm, -1);
+//                System.out.println("Storing object for guid: " + guid);
+//                hashStore.storeObject(objStream, guid, null, checksum, algorithm, -1);
+                Path objPath = Paths.get(item.get("path"));
+                System.out.println("Creating hard link for guid: " + guid);
+                hashStoreLinks.storeHardLink(objPath, objStream, guid, checksum, algorithm);
 
             } catch (PidRefsFileExistsException poee) {
                 String errMsg = "Unexpected Error: " + poee.fillInStackTrace();
