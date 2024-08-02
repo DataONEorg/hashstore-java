@@ -53,8 +53,8 @@ public class HashStoreConverter {
     /**
      * Take an existing path to a data object, store it into a new or existing HashStore via a
      * hard link, store the supplied system metadata and return the ObjectMetadata for the data
-     * object. The 'sysMetaStream' given may never be null. A 'filePath' may be null, in which
-     * case a data object will not be stored.
+     * object. A 'filePath' may be null, in which case a hard link will not be created, and only
+     * the sysmeta will be stored.
      *
      * @param filePath      Path to existing data object
      * @param pid           Persistent or authority-based identifier
@@ -74,14 +74,7 @@ public class HashStoreConverter {
         FileHashStoreUtility.ensureNotNull(pid, "pid", "convert");
         FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "convert");
 
-        // Store the sysmeta first - this can never be null and is always required.
-        try {
-            fileHashStoreLinks.storeMetadata(sysmetaStream, pid);
-        } finally {
-            sysmetaStream.close();
-        }
-
-        // Now store the hard link, which is optional
+        // Store the hard link first if it's available
         ObjectMetadata objInfo = null;
         if (filePath != null) {
             FileHashStoreUtility.ensureNotNull(checksum, "checksum", "convert");
@@ -115,6 +108,13 @@ public class HashStoreConverter {
         } else {
             String warnMsg = "Supplied filePath is null, not storing data object.";
             logHashStoreConverter.warn(warnMsg);
+        }
+
+        // Now the sysmeta
+        try {
+            fileHashStoreLinks.storeMetadata(sysmetaStream, pid);
+        } finally {
+            sysmetaStream.close();
         }
 
         return objInfo;
