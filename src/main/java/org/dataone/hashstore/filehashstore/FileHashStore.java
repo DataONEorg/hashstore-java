@@ -366,34 +366,39 @@ public class FileHashStore implements HashStore {
     protected String buildHashStoreYamlString(
         int storeDepth, int storeWidth, String storeAlgorithm, String storeMetadataNamespace
     ) {
-        return String.format(
-            "# Default configuration variables for HashStore\n\n"
-                + "############### Directory Structure ###############\n"
-                + "# Desired amount of directories when sharding an object to "
-                + "form the permanent address\n"
-                + "store_depth: %d  # WARNING: DO NOT CHANGE UNLESS SETTING UP " + "NEW HASHSTORE\n"
-                + "# Width of directories created when sharding an object to "
-                + "form the permanent address\n"
-                + "store_width: %d  # WARNING: DO NOT CHANGE UNLESS SETTING UP " + "NEW HASHSTORE\n"
-                + "# Example:\n" + "# Below, objects are shown listed in directories that are # "
-                + "levels deep (DIR_DEPTH=3),\n"
-                + "# with each directory consisting of 2 characters " + "(DIR_WIDTH=2).\n"
-                + "#    /var/filehashstore/objects\n" + "#    ├── 7f\n" + "#    │   └── 5c\n"
-                + "#    │       └── c1\n" + "#    │           └── "
-                + "8f0b04e812a3b4c8f686ce34e6fec558804bf61e54b176742a7f6368d6\n\n"
-                + "############### Format of the Metadata ###############\n"
-                + "store_metadata_namespace: \"%s\"\n"
-                + "############### Hash Algorithms ###############\n"
-                + "# Hash algorithm to use when calculating object's hex digest "
-                + "for the permanent address\n" + "store_algorithm: \"%s\"\n"
-                + "############### Hash Algorithms ###############\n"
-                + "# Hash algorithm to use when calculating object's hex digest "
-                + "for the permanent address\n"
-                + "# The default algorithm list includes the hash algorithms "
-                + "calculated when storing an\n"
-                + "# object to disk and returned to the caller after successful " + "storage.\n"
-                + "store_default_algo_list:\n" + "- \"MD5\"\n" + "- \"SHA-1\"\n" + "- \"SHA-256\"\n"
-                + "- \"SHA-384\"\n" + "- \"SHA-512\"\n", storeDepth, storeWidth, storeMetadataNamespace, storeAlgorithm
+        return String.format("""
+             # Default configuration variables for HashStore
+
+             ############### Directory Structure ###############
+             # Desired amount of directories when sharding an object to form the permanent address
+             store_depth: %d  # WARNING: DO NOT CHANGE UNLESS SETTING UP NEW HASHSTORE
+             # Width of directories created when sharding an object to form the permanent address
+             store_width: %d  # WARNING: DO NOT CHANGE UNLESS SETTING UP NEW HASHSTORE
+             # Example:
+             # Below, objects are shown listed in directories that are # levels deep (DIR_DEPTH=3),
+             # with each directory consisting of 2 characters (DIR_WIDTH=2).
+             #    /var/filehashstore/objects
+             #    ├── 7f
+             #    │   └── 5c
+             #    │       └── c1
+             #    │           └── 8f0b04e812a3b4c8f686ce34e6fec558804bf61e54b176742a7f6368d6
+
+             ############### Format of the Metadata ###############
+             store_metadata_namespace: "%s"
+             ############### Hash Algorithms ###############
+             # Hash algorithm to use when calculating object's hex digest for the permanent address
+             store_algorithm: "%s"
+             ############### Hash Algorithms ###############
+             # Hash algorithm to use when calculating object's hex digest for the permanent address
+             # The default algorithm list includes the hash algorithms calculated when storing an
+             # object to disk and returned to the caller after successful storage.
+             store_default_algo_list:
+             - "MD5"
+             - "SHA-1"
+             - "SHA-256"
+             - "SHA-384"
+             - "SHA-512"
+             """, storeDepth, storeWidth, storeMetadataNamespace, storeAlgorithm
         );
     }
 
@@ -425,14 +430,11 @@ public class FileHashStore implements HashStore {
             FileHashStoreUtility.checkPositive(objSize, "storeObject");
         }
 
-        try {
+        try (object) {
             return syncPutObject(
-                object, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize
-            );
-        } finally {
-            // Close stream
-            object.close();
+                object, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize);
         }
+        // Close stream
     }
 
     /**
@@ -522,12 +524,10 @@ public class FileHashStore implements HashStore {
         // call 'deleteInvalidObject' (optional) to check that the object is valid, and then
         // 'tagObject' (required) to create the reference files needed to associate the
         // respective pids/cids.
-        try {
+        try (object) {
             return putObject(object, "HashStoreNoPid", null, null, null, -1);
-        } finally {
-            // Close stream
-            object.close();
         }
+        // Close stream
     }
 
 
@@ -592,12 +592,10 @@ public class FileHashStore implements HashStore {
             checkedFormatId = formatId;
         }
 
-        try {
+        try (metadata) {
             return syncPutMetadata(metadata, pid, checkedFormatId);
-        } finally {
-            // Close stream
-            metadata.close();
         }
+        // Close stream
     }
 
     /**
