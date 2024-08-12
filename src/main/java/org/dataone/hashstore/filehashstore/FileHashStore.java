@@ -822,7 +822,7 @@ public class FileHashStore implements HashStore {
 
 
     @Override
-    public void deleteInvalidObject(
+    public void deleteIfInvalidObject(
         ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize)
         throws NonMatchingObjSizeException, NonMatchingChecksumException,
         UnsupportedHashAlgorithmException, InterruptedException, NoSuchAlgorithmException,
