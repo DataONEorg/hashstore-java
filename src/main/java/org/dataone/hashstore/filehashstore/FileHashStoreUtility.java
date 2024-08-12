@@ -58,7 +58,7 @@ public class FileHashStoreUtility {
     public static String calculateHexDigest(InputStream dataStream, String algorithm)
         throws IOException, NoSuchAlgorithmException {
         MessageDigest mdObject = MessageDigest.getInstance(algorithm);
-        try {
+        try (dataStream) {
             byte[] buffer = new byte[8192];
             int bytesRead;
             while ((bytesRead = dataStream.read(buffer)) != -1) {
@@ -70,9 +70,6 @@ public class FileHashStoreUtility {
             String errMsg = "Unexpected IOException encountered: " + ioe.getMessage();
             throw new IOException(errMsg);
 
-        } finally {
-            // Close dataStream
-            dataStream.close();
         }
         // mdObjectHexDigest
         return DatatypeConverter.printHexBinary(mdObject.digest()).toLowerCase();
