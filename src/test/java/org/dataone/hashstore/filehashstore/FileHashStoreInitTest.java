@@ -433,9 +433,9 @@ public class FileHashStoreInitTest {
                 String pidFormatted = pid.replace("/", "_");
                 Path testDataFile = testData.getTestFile(pidFormatted);
 
-                InputStream dataStream = Files.newInputStream(testDataFile);
-                secondHashStore.storeObject(dataStream, pid, null, null, null, -1);
-                dataStream.close();
+                try (InputStream dataStream = Files.newInputStream(testDataFile)) {
+                    secondHashStore.storeObject(dataStream, pid, null, null, null, -1);
+                }
             }
 
             // Delete configuration
