@@ -139,7 +139,7 @@ retrieved with a given identifier.
 By calling the various interface methods for  `storeObject`, the calling app/client can validate,
 store and tag an object simultaneously if the relevant data is available. In the absence of an
 identifier (ex. persistent identifier (pid)), `storeObject` can be called to solely store an object.
-The client is then expected to call `deleteInvalidObject` when the relevant metadata is available to
+The client is then expected to call `deleteIfInvalidObject` when the relevant metadata is available to
 confirm that the object is what is expected. And to finalize the process (to make the object
 discoverable), the client calls `tagObject``. In summary, there are two expected paths to store an
 object:
