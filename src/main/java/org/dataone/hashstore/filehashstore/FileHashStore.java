@@ -422,7 +422,7 @@ public class FileHashStore implements HashStore {
             validateAlgorithm(checksumAlgorithm);
         }
         if (objSize != -1) {
-            FileHashStoreUtility.checkNotNegativeOrZero(objSize, "storeObject");
+            FileHashStoreUtility.checkPositive(objSize, "storeObject");
         }
 
         try {
@@ -838,7 +838,7 @@ public class FileHashStore implements HashStore {
         }
         FileHashStoreUtility.ensureNotNull(checksum, "checksum", "deleteInvalidObject");
         FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm", "deleteInvalidObject");
-        FileHashStoreUtility.checkNotNegativeOrZero(objSize, "deleteInvalidObject");
+        FileHashStoreUtility.checkPositive(objSize, "deleteInvalidObject");
 
         String objCid = objectInfo.getCid();
         long objInfoRetrievedSize = objectInfo.getSize();
@@ -1179,7 +1179,7 @@ public class FileHashStore implements HashStore {
             validateAlgorithm(additionalAlgorithm);
         }
         if (objSize != -1) {
-            FileHashStoreUtility.checkNotNegativeOrZero(objSize, "putObject");
+            FileHashStoreUtility.checkPositive(objSize, "putObject");
         }
 
         // Generate tmp file and write to it
