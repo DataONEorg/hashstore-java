@@ -28,7 +28,7 @@ import javax.xml.bind.DatatypeConverter;
  */
 public class FileHashStoreUtility {
 
-    private static final Log logFHSU = LogFactory.getLog(FileHashStoreUtility.class);
+    private static final Log log = LogFactory.getLog(FileHashStoreUtility.class);
 
     /**
      * Checks whether a given object is null and throws an exception if so
@@ -41,8 +41,7 @@ public class FileHashStoreUtility {
     public static void ensureNotNull(Object object, String argument, String method)
         throws IllegalArgumentException {
         if (object == null) {
-            String errMsg = "FileHashStoreUtility.ensureNotNull - Calling Method: " + method
-                + "(): " + argument + " cannot be null.";
+            String errMsg = "Calling Method: " + method + "(): " + argument + " cannot be null.";
             throw new IllegalArgumentException(errMsg);
         }
     }
@@ -68,9 +67,7 @@ public class FileHashStoreUtility {
             }
 
         } catch (IOException ioe) {
-            String errMsg =
-                "FileHashStoreUtility.calculateHexDigest - Unexpected IOException encountered: "
-                    + ioe.getMessage();
+            String errMsg = "Unexpected IOException encountered: " + ioe.getMessage();
             throw new IOException(errMsg);
 
         } finally {
@@ -152,8 +149,7 @@ public class FileHashStoreUtility {
     public static Path renamePathForDeletion(Path pathToRename) throws IOException {
         ensureNotNull(pathToRename, "pathToRename", "renamePathForDeletion");
         if (!Files.exists(pathToRename)) {
-            String errMsg = "FileHashStoreUtility.renamePathForDeletion - Given path to file: "
-                + pathToRename + " does not exist.";
+            String errMsg = "Given path to file: " + pathToRename + " does not exist.";
             throw new FileNotFoundException(errMsg);
         }
         Path parentPath = pathToRename.getParent();
@@ -174,8 +170,7 @@ public class FileHashStoreUtility {
     public static void renamePathForRestoration(Path pathToRename) throws IOException {
         ensureNotNull(pathToRename, "pathToRename", "renamePathForRestoration");
         if (!Files.exists(pathToRename)) {
-            String errMsg = "FileHashStoreUtility.renamePathForRestoration - Given path to file: "
-                + pathToRename + " does not exist.";
+            String errMsg = "Given path to file: " + pathToRename + " does not exist.";
             throw new FileNotFoundException(errMsg);
         }
         Path parentPath = pathToRename.getParent();
@@ -202,7 +197,7 @@ public class FileHashStoreUtility {
                         String warnMsg =
                             "Attempted to delete metadata document: " + deleteItem + " but failed."
                                 + " Additional Details: " + ge.getMessage();
-                        logFHSU.warn(warnMsg);
+                        log.warn(warnMsg);
                     }
 
                 }
@@ -221,15 +216,14 @@ public class FileHashStoreUtility {
      */
     public static void checkForEmptyAndValidString(String string, String argument, String method)
         throws IllegalArgumentException {
-        ensureNotNull(string, "string", "checkForEmptyString");
+        ensureNotNull(string, "string", "checkForEmptyAndValidString");
         if (string.trim().isEmpty()) {
-            String errMsg = "FileHashStoreUtility.checkForEmptyString - Calling Method: " + method
-                + "(): " + argument + " cannot be empty.";
+            String errMsg = "Calling Method: " + method + "(): " + argument + " cannot be empty.";
             throw new IllegalArgumentException(errMsg);
         }
         if (!isValidString(string)) {
-            String errMsg = "FileHashStoreUtility.checkForEmptyString - Calling Method: " + method
-                + "(): " + argument + " contains empty white spaces, tabs or newlines.";
+            String errMsg = "Calling Method: " + method + "(): " + argument
+                + " contains empty white spaces, tabs or newlines.";
             throw new IllegalArgumentException(errMsg);
         }
     }
@@ -262,8 +256,8 @@ public class FileHashStoreUtility {
     public static void checkPositive(long longInt, String method)
         throws IllegalArgumentException {
         if (longInt <= 0) {
-            String errMsg = "FileHashStoreUtility.checkNotNegative - Calling Method: " + method
-                + "(): objSize cannot be less than or equal to 0.";
+            String errMsg =
+                "Calling Method: " + method + "(): objSize cannot be less than or equal to 0.";
             throw new IllegalArgumentException(errMsg);
         }
     }
