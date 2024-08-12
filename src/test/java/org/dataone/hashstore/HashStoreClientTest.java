@@ -275,9 +275,10 @@ public class HashStoreClientTest {
 
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
-            InputStream dataStream = Files.newInputStream(testDataFile);
-            hashStore.storeObject(dataStream, pid, null, null, null, -1);
-            dataStream.close();
+
+            try (InputStream dataStream = Files.newInputStream(testDataFile)) {
+                hashStore.storeObject(dataStream, pid, null, null, null, -1);
+            }
 
             // Call client
             String optRetrieveObject = "-retrieveobject";
@@ -311,9 +312,10 @@ public class HashStoreClientTest {
 
             String pidFormatted = pid.replace("/", "_");
             Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
-            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
-            hashStore.storeMetadata(metadataStream, pid);
-            metadataStream.close();
+
+            try (InputStream metadataStream = Files.newInputStream(testMetaDataFile)) {
+                hashStore.storeMetadata(metadataStream, pid);
+            }
 
             // Call client
             String optRetrieveMetadata = "-retrievemetadata";
@@ -350,9 +352,10 @@ public class HashStoreClientTest {
 
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
-            InputStream dataStream = Files.newInputStream(testDataFile);
-            hashStore.storeObject(dataStream, pid, null, null, null, -1);
-            dataStream.close();
+
+            try (InputStream dataStream = Files.newInputStream(testDataFile)) {
+                hashStore.storeObject(dataStream, pid, null, null, null, -1);;
+            }
 
             // Call client
             String optDeleteObject = "-deleteobject";
@@ -390,9 +393,10 @@ public class HashStoreClientTest {
 
             String pidFormatted = pid.replace("/", "_");
             Path testMetaDataFile = testData.getTestFile(pidFormatted + ".xml");
-            InputStream metadataStream = Files.newInputStream(testMetaDataFile);
-            hashStore.storeMetadata(metadataStream, pid);
-            metadataStream.close();
+
+            try (InputStream metadataStream = Files.newInputStream(testMetaDataFile)) {
+                hashStore.storeMetadata(metadataStream, pid);
+            }
 
             // Call client
             String optDeleteMetadata = "-deletemetadata";
@@ -433,9 +437,10 @@ public class HashStoreClientTest {
 
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
-            InputStream dataStream = Files.newInputStream(testDataFile);
-            hashStore.storeObject(dataStream, pid, null, null, null, -1);
-            dataStream.close();
+
+            try (InputStream dataStream = Files.newInputStream(testDataFile)) {
+                hashStore.storeObject(dataStream, pid, null, null, null, -1);
+            }
 
             // Call client
             String optGetChecksum = "-getchecksum";
