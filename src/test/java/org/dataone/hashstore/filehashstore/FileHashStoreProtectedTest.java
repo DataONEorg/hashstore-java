@@ -2146,6 +2146,18 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
+     * Confirm getExpectedPath throws exception when requesting path for an object that does not
+     * exist
+     */
+    @Test
+    public void fileHashStoreUtility_checkForEmptyAndValidString_newLine() {
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> FileHashStoreUtility.checkForEmptyAndValidString("\n", "pid",
+                                                                   "storeObject"));
+    }
+
+    /**
      * Confirm that renamePathForDeletion adds '_delete' to the given path
      */
     @Test
