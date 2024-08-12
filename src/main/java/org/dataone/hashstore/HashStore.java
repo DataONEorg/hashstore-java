@@ -14,42 +14,42 @@ import org.dataone.hashstore.exceptions.UnsupportedHashAlgorithmException;
  * HashStore is a content-addressable file management system that utilizes the content identifier of
  * an object to address files. The system stores both objects, references (refs) and metadata in its
  * respective directories and provides an API for interacting with the store. HashStore storage
- * classes (like `FileHashStore`) must implement the HashStore interface to ensure the expected
- * usage of the system.
+ * classes (like {@code FileHashStore}) must implement the HashStore interface to ensure the
+ * expected usage of the system.
  */
 public interface HashStore {
         /**
-         * The `storeObject` method is responsible for the atomic storage of objects to disk using a
-         * given InputStream. Upon successful storage, the method returns a (ObjectMetadata) object
-         * containing relevant file information, such as the file's id (which can be used to locate
-         * the object on disk), the file's size, and a hex digest dict of algorithms and checksums.
-         * Storing an object with `store_object` also tags an object (creating references) which
-         * allow the object to be discoverable.
-         * 
-         * `storeObject` also ensures that an object is stored only once by synchronizing multiple
-         * calls and rejecting calls to store duplicate objects. Note, calling `storeObject` without
-         * a pid is a possibility, but should only store the object without tagging the object. It
-         * is then the caller's responsibility to finalize the process by calling `tagObject` after
-         * verifying the correct object is stored.
-         * 
+         * The {@code storeObject} method is responsible for the atomic storage of objects to
+         * disk using a given InputStream. Upon successful storage, the method returns a
+         * (ObjectMetadata) object containing relevant file information, such as the file's id
+         * (which can be used to locate the object on disk), the file's size, and a hex digest
+         * dict of algorithms and checksums. Storing an object with {@code store_object} also
+         * tags an object (creating references) which allow the object to be discoverable.
+         *
+         * {@code storeObject} also ensures that an object is stored only once by synchronizing
+         * multiple calls and rejecting calls to store duplicate objects. Note, calling {@code
+         * storeObject} without a pid is a possibility, but should only store the object without
+         * tagging the object. It is then the caller's responsibility to finalize the process by
+         * calling {@code tagObject} after verifying the correct object is stored.
+         *
          * The file's id is determined by calculating the object's content identifier based on the
          * store's default algorithm, which is also used as the permanent address of the file. The
          * file's identifier is then sharded using the store's configured depth and width, delimited
          * by '/' and concatenated to produce the final permanent address and is stored in the
-         * `./[storePath]/objects/` directory.
-         * 
+         * {@code ./[storePath]/objects/} directory.
+         *
          * By default, the hex digest map includes the following hash algorithms: MD5, SHA-1,
          * SHA-256, SHA-384, SHA-512 - which are the most commonly used algorithms in dataset
          * submissions to DataONE and the Arctic Data Center. If an additional algorithm is
-         * provided, the `storeObject` method checks if it is supported and adds it to the hex
+         * provided, the {@code storeObject} method checks if it is supported and adds it to the hex
          * digests dict along with its corresponding hex digest. An algorithm is considered
-         * "supported" if it is recognized as a valid hash algorithm in
-         * `java.security.MessageDigest` class.
-         * 
+         * "supported" if it is recognized as a valid hash algorithm in {@code java.security
+         * .MessageDigest} class.
+         *
          * Similarly, if a file size and/or checksum & checksumAlgorithm value are provided,
-         * `storeObject` validates the object to ensure it matches the given arguments before moving
-         * the file to its permanent address.
-         * 
+         * {@code storeObject} validates the object to ensure it matches the given arguments
+         * before moving the file to its permanent address.
+         *
          * @param object              Input stream to file
          * @param pid                 Authority-based identifier
          * @param additionalAlgorithm Additional hex digest to include in hexDigests
@@ -126,11 +126,11 @@ public interface HashStore {
             IOException;
 
         /**
-         * Adds/updates metadata (ex. `sysmeta`) to the HashStore by using a given InputStream, a
-         * persistent identifier (`pid`) and metadata format (`formatId`). All metadata documents
-         * for a given pid will be stored in the directory (under ../metadata) that is determined
-         * by calculating the hash of the given pid, with the document name being the hash of the
-         * metadata format (`formatId`).
+         * Adds/updates metadata (ex. {@code sysmeta}) to the HashStore by using a given
+         * InputStream, a persistent identifier ({@code pid}) and metadata format ({@code
+         * formatId}). All metadata documents for a given pid will be stored in the directory
+         * (under ../metadata) that is determined by calculating the hash of the given pid, with
+         * the document name being the hash of the metadata format ({@code formatId}).
          * 
          * Note, multiple calls to store the same metadata content will all be accepted, but is not
          * guaranteed to execute sequentially.
@@ -155,7 +155,7 @@ public interface HashStore {
          * @see #storeMetadata(InputStream, String, String)
          * 
          *      If the '(InputStream metadata, String pid)' signature is used, the metadata format
-         *      stored will default to `sysmeta`.
+         *      stored will default to {@code sysmeta}.
          */
         String storeMetadata(InputStream metadata, String pid) throws IOException,
                 IllegalArgumentException, FileNotFoundException, InterruptedException,
@@ -194,8 +194,8 @@ public interface HashStore {
 
         /**
          * @see #retrieveMetadata(String, String)
-         * 
-         *      If `retrieveMetadata` is called with signature (String pid), the metadata
+         *
+         *      If {@code retrieveMetadata} is called with signature (String pid), the metadata
          *      document retrieved will be the given pid's 'sysmeta'
          */
         InputStream retrieveMetadata(String pid) throws IllegalArgumentException,
@@ -218,8 +218,8 @@ public interface HashStore {
                 NoSuchAlgorithmException, InterruptedException;
 
         /**
-         * Deletes a metadata document (ex. `sysmeta`) permanently from HashStore using a given
-         * persistent identifier and its respective metadata namespace.
+         * Deletes a metadata document (ex. {@code sysmeta}) permanently from HashStore using a
+         * given persistent identifier and its respective metadata namespace.
          * 
          * @param pid      Authority-based identifier
          * @param formatId Metadata namespace/format

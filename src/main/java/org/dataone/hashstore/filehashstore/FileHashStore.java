@@ -208,19 +208,20 @@ public class FileHashStore implements HashStore {
 
     /**
      * Determines whether FileHashStore can instantiate by validating a set of arguments and
-     * throwing exceptions. If HashStore configuration file (`hashstore.yaml`) exists, it will
-     * retrieve its properties and compare them with the given values; and if there is a
-     * mismatch, an exception will be thrown. If not, it will look to see if any relevant
-     * HashStore directories exist (i.e. '/objects', '/metadata', '/refs') in the given store
-     * path and throw an exception if any of those directories exist.
+     * throwing exceptions. If HashStore configuration file ({@code hashstore.yaml}) exists, it will
+     * retrieve its properties and compare them with the given values; and if there is a mismatch,
+     * an exception will be thrown. If not, it will look to see if any relevant HashStore
+     * directories exist (i.e. '/objects', '/metadata', '/refs') in the given store path and throw
+     * an exception if any of those directories exist.
      *
      * @param storePath              Path where HashStore will store objects
      * @param storeDepth             Depth of directories
      * @param storeWidth             Width of directories
      * @param storeAlgorithm         Algorithm to use when calculating object addresses
-     * @param storeMetadataNamespace Default metadata namespace (`formatId`)
+     * @param storeMetadataNamespace Default metadata namespace ({@code formatId})
      * @throws NoSuchAlgorithmException If algorithm supplied is not supported
-     * @throws IOException              If `hashstore.yaml` config file cannot be retrieved/opened
+     * @throws IOException              If {@code hashstore.yaml} config file cannot be
+     *                                  retrieved/opened
      * @throws IllegalArgumentException If depth or width is less than 0
      * @throws IllegalStateException    If dirs/objects exist, but HashStore config is missing
      */
@@ -295,7 +296,7 @@ public class FileHashStore implements HashStore {
      *
      * @param storePath Path to root of store
      * @return HashMap of the properties
-     * @throws IOException If `hashstore.yaml` doesn't exist
+     * @throws IOException If {@code hashstore.yaml} doesn't exist
      */
     protected HashMap<String, Object> loadHashStoreYaml(Path storePath) throws IOException {
         Path hashStoreYamlPath = storePath.resolve(HASHSTORE_YAML);
@@ -335,7 +336,7 @@ public class FileHashStore implements HashStore {
      * Write a 'hashstore.yaml' file to STORE_ROOT
      *
      * @param yamlString Content of the HashStore configuration
-     * @throws IOException If unable to write `hashstore.yaml`
+     * @throws IOException If unable to write {@code hashstore.yaml}
      */
     protected void writeHashStoreYaml(String yamlString) throws IOException {
         Path hashstoreYaml = STORE_ROOT.resolve(HASHSTORE_YAML);
@@ -1987,7 +1988,7 @@ public class FileHashStore implements HashStore {
     /**
      * Takes a given input stream and writes it to its permanent address on disk based on the
      * SHA-256 hex digest of the given pid + formatId. If no formatId is supplied, it will use the
-     * default store namespace as defined by `hashstore.yaml`
+     * default store namespace as defined by {@code hashstore.yaml}.
      *
      * @param metadata InputStream to metadata
      * @param pid      Authority-based identifier
@@ -2316,9 +2317,9 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Synchronize the pid tagging process since `tagObject` is a Public API method that can be
-     * called directly. This is used in the scenario when the client is missing metadata but must
-     * store the data object first.
+     * Synchronize the pid tagging process since {@code tagObject} is a Public API method that
+     * can be called directly. This is used in the scenario when the client is missing metadata
+     * but must store the data object first.
      *
      * @param pid Persistent or authority-based identifier
      * @throws InterruptedException When an issue occurs when attempting to sync the pid
