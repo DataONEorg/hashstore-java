@@ -14,7 +14,7 @@ import java.io.InputStream;
  * provided by the Executor service.
  */
 public class HashStoreRunnable implements Runnable {
-    private static final Log logHashStoreRunnable = LogFactory.getLog(HashStoreRunnable.class);
+    private static final Log log = LogFactory.getLog(HashStoreRunnable.class);
     public static final int storeObject = 1;
     public static final int deleteObject = 2;
     private final HashStore hashstore;
@@ -43,7 +43,7 @@ public class HashStoreRunnable implements Runnable {
     }
 
     public void run() {
-        logHashStoreRunnable.debug("HashStoreServiceRequest - Called to: " + publicAPIMethod);
+        log.debug("HashStoreServiceRequest - Called to: " + publicAPIMethod);
         try {
             switch (publicAPIMethod) {
                 case storeObject:
@@ -53,7 +53,7 @@ public class HashStoreRunnable implements Runnable {
                         String errMsg =
                             "HashStoreRunnable ~ UnexpectedError - storeObject: " + e.getCause();
                         System.out.println(errMsg);
-                        logHashStoreRunnable.error(errMsg);
+                        log.error(errMsg);
                         throw new HashStoreServiceException(errMsg);
                     }
                     objStream.close();
@@ -65,13 +65,13 @@ public class HashStoreRunnable implements Runnable {
                         String errMsg =
                             "HashStoreRunnable ~ UnexpectedError - deleteObject: " + e.getCause();
                         System.out.println(errMsg);
-                        logHashStoreRunnable.error(errMsg);
+                        log.error(errMsg);
                         throw new HashStoreServiceException(errMsg);
                     }
                     break;
             }
         } catch (HashStoreServiceException | IOException hse) {
-            logHashStoreRunnable.error(
+            log.error(
                 "HashStoreServiceRequest ~ Unexpected Error: " + hse.getMessage());
         }
     }
