@@ -354,7 +354,7 @@ public class HashStoreClientTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             try (InputStream dataStream = Files.newInputStream(testDataFile)) {
-                hashStore.storeObject(dataStream, pid, null, null, null, -1);;
+                hashStore.storeObject(dataStream, pid, null, null, null, -1);
             }
 
             // Call client
