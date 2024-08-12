@@ -22,28 +22,50 @@ public class HashStoreRunnable implements Runnable {
     private final String pid;
     private InputStream objStream;
 
+    /**
+     * Constructor for HashStoreRunnable to store a data object with a given pid
+     *
+     * @param hashstore       HashStore object to interact with
+     * @param publicAPIMethod Integer representing action/Public API method (ex. 1 for storeObject)
+     * @param objStream       Stream to data object
+     * @param pid             Persistent or authority-based identifier
+     */
     public HashStoreRunnable(HashStore hashstore, int publicAPIMethod, InputStream objStream,
                              String pid) {
         FileHashStoreUtility.ensureNotNull(hashstore, "hashstore",
-                                           "HashStoreServiceRequestConstructor");
-        FileHashStoreUtility.checkPositive(publicAPIMethod, "HashStoreServiceRequestConstructor");
+                                           "HashStoreRunnableConstructor ~ HashStore object is"
+                                               + " null.");
+        FileHashStoreUtility.checkPositive(
+            publicAPIMethod, "HashStoreRunnableConstructor ~ Must" + " supply an integer.");
         this.hashstore = hashstore;
         this.publicAPIMethod = publicAPIMethod;
         this.objStream = objStream;
         this.pid = pid;
     }
 
+    /**
+     * Constructor for HashStoreRunnable where only a pid is necessary (ex. to delete an object).
+     *
+     * @param hashstore       HashStore object to interact with
+     * @param publicAPIMethod Integer representing action/Public API method (ex. 2 for deleteObject)
+     * @param pid             Persistent or authority-based identifier
+     */
     public HashStoreRunnable(HashStore hashstore, int publicAPIMethod, String pid) {
         FileHashStoreUtility.ensureNotNull(hashstore, "hashstore",
-                                           "HashStoreServiceRequestConstructor");
-        FileHashStoreUtility.checkPositive(publicAPIMethod, "HashStoreServiceRequestConstructor");
+                                           "HashStoreRunnableConstructor ~ HashStore object is"
+                                               + " null.");
+        FileHashStoreUtility.checkPositive(
+            publicAPIMethod, "HashStoreRunnableConstructor ~ Must" + " supply an integer.");
         this.hashstore = hashstore;
         this.publicAPIMethod = publicAPIMethod;
         this.pid = pid;
     }
 
+    /**
+     * Executes a HashStore action (ex. storeObject, deleteObject)
+     */
     public void run() {
-        log.debug("HashStoreServiceRequest - Called to: " + publicAPIMethod);
+        log.debug("HashStoreRunnable - Called to: " + publicAPIMethod);
         try {
             switch (publicAPIMethod) {
                 case storeObject:
@@ -72,7 +94,7 @@ public class HashStoreRunnable implements Runnable {
             }
         } catch (HashStoreServiceException | IOException hse) {
             log.error(
-                "HashStoreServiceRequest ~ Unexpected Error: " + hse.getMessage());
+                "HashStoreRunnable ~ Unexpected Error: " + hse.getMessage());
         }
     }
 }
