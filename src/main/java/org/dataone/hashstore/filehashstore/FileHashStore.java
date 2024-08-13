@@ -1077,9 +1077,9 @@ public class FileHashStore implements HashStore {
      * @throws PidNotFoundInCidRefsFileException When pid and cid ref files exists but the
      *                                           expected pid is not found in the cid refs file.
      */
-    protected Map<String, String> findObject(String pid) throws NoSuchAlgorithmException,
-        IOException,
-        OrphanPidRefsFileException, PidNotFoundInCidRefsFileException, OrphanRefsFilesException {
+    protected Map<String, String> findObject(String pid)
+        throws NoSuchAlgorithmException, IOException, OrphanPidRefsFileException,
+        PidNotFoundInCidRefsFileException, OrphanRefsFilesException {
         logFileHashStore.debug("Finding object for pid: " + pid);
         FileHashStoreUtility.ensureNotNull(pid, "pid", "findObject");
         FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid", "findObject");
@@ -1102,9 +1102,9 @@ public class FileHashStore implements HashStore {
             if (isStringInRefsFile(pid, absCidRefsPath)) {
                 logFileHashStore.info("cid (" + cid + ") found for pid: " + pid);
 
-                String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
-                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, cid
-                );
+                String objRelativePath =
+                    FileHashStoreUtility.getHierarchicalPathString(DIRECTORY_DEPTH, DIRECTORY_WIDTH,
+                                                                   cid);
                 Path realPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
                 if (Files.exists(realPath)) {
                     Map<String, String> objInfoMap = new HashMap<>();
