@@ -1178,8 +1178,8 @@ public class FileHashStore implements HashStore {
      */
     protected ObjectMetadata putObject(
         InputStream object, String pid, String additionalAlgorithm, String checksum,
-        String checksumAlgorithm, long objSize
-    ) throws IOException, NoSuchAlgorithmException, SecurityException, FileNotFoundException,
+        String checksumAlgorithm, long objSize)
+        throws IOException, NoSuchAlgorithmException, SecurityException, FileNotFoundException,
         PidRefsFileExistsException, IllegalArgumentException, NullPointerException,
         AtomicMoveNotSupportedException, InterruptedException {
         logFileHashStore.debug("Begin writing data object for pid: " + pid);
@@ -1188,8 +1188,7 @@ public class FileHashStore implements HashStore {
         // Validate additional algorithm if not null or empty, throws exception if not supported
         if (additionalAlgorithm != null) {
             FileHashStoreUtility.checkForNotEmptyAndValidString(
-                additionalAlgorithm, "additionalAlgorithm", "putObject"
-            );
+                additionalAlgorithm, "additionalAlgorithm", "putObject");
             validateAlgorithm(additionalAlgorithm);
         }
         if (objSize != -1) {
@@ -1200,15 +1199,14 @@ public class FileHashStore implements HashStore {
         File tmpFile = FileHashStoreUtility.generateTmpFile("tmp", OBJECT_TMP_FILE_DIRECTORY);
         Map<String, String> hexDigests;
         try {
-            hexDigests = writeToTmpFileAndGenerateChecksums(
-                tmpFile, object, additionalAlgorithm, checksumAlgorithm
-            );
+            hexDigests = writeToTmpFileAndGenerateChecksums(tmpFile, object, additionalAlgorithm,
+                                                            checksumAlgorithm);
         } catch (Exception ge) {
             // If the process to write to the tmpFile is interrupted for any reason,
             // we will delete the tmpFile.
             Files.delete(tmpFile.toPath());
-            String errMsg =
-                "Unexpected Exception while storing object for pid: " + pid + ". " + ge.getMessage();
+            String errMsg = "Unexpected Exception while storing object for pid: " + pid + ". "
+                + ge.getMessage();
             logFileHashStore.error(errMsg);
             throw new IOException(errMsg);
         }
@@ -1219,9 +1217,9 @@ public class FileHashStore implements HashStore {
 
         // Gather the elements to form the permanent address
         String objectCid = hexDigests.get(OBJECT_STORE_ALGORITHM);
-        String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
-            DIRECTORY_DEPTH, DIRECTORY_WIDTH, objectCid
-        );
+        String objRelativePath =
+            FileHashStoreUtility.getHierarchicalPathString(DIRECTORY_DEPTH, DIRECTORY_WIDTH,
+                                                           objectCid);
         Path objRealPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
 
         try {
@@ -1242,8 +1240,8 @@ public class FileHashStore implements HashStore {
             }
         } catch (Exception e) {
             String errMsg =
-                "Unexpected exception when moving object with cid: " + objectCid + " for pid:"
-                    + pid + ". Additional Details: " + e.getMessage();
+                "Unexpected exception when moving object with cid: " + objectCid + " for pid:" + pid
+                    + ". Additional Details: " + e.getMessage();
             logFileHashStore.error(errMsg);
             throw e;
         } finally {
