@@ -112,6 +112,21 @@ public class FileHashStore implements HashStore {
         storePath, storeDepth, storeWidth, storeAlgorithm, storeMetadataNamespace
     }
 
+    enum HashStoreRefUpdateTypes {
+
+        add("add"), remove("remove");
+
+        final String refUpdateType;
+
+        HashStoreRefUpdateTypes(String updateType) {
+            refUpdateType = updateType;
+        }
+
+        public String getName() {
+            return refUpdateType;
+        }
+    }
+
     /**
      * Constructor to initialize FileHashStore, properties are required. FileHashStore is not
      * responsible for ensuring that the given store path is accurate. Upon initialization, if
@@ -740,7 +755,7 @@ public class FileHashStore implements HashStore {
                     Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
 
                     // Begin deletion process
-                    updateRefsFile(pid, absCidRefsPath, "remove");
+                    updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.remove.getName());
                     if (Files.size(absCidRefsPath) == 0) {
                         Path objRealPath = getHashStoreDataObjectPath(pid);
                         deleteList.add(FileHashStoreUtility.renamePathForDeletion(objRealPath));
@@ -785,7 +800,7 @@ public class FileHashStore implements HashStore {
 
                     Path absCidRefsPath =
                         getHashStoreRefsPath(cidRead, HashStoreIdTypes.cid.getName());
-                    updateRefsFile(pid, absCidRefsPath, "remove");
+                    updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.remove.getName());
                     if (Files.size(absCidRefsPath) == 0) {
                         deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
                     }
@@ -1689,7 +1704,7 @@ public class FileHashStore implements HashStore {
         } else if (!Files.exists(absPidRefsPath) && Files.exists(absCidRefsPath)) {
             // Only update cid refs file if pid is not in the file
             if (!isStringInRefsFile(pid, absCidRefsPath)) {
-                updateRefsFile(pid, absCidRefsPath, "add");
+                updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.add.getName());
             }
             // Get the pid refs file and verify tagging process
             File pidRefsTmpFile = writeRefsFile(cid, HashStoreIdTypes.pid.getName());
@@ -1753,7 +1768,7 @@ public class FileHashStore implements HashStore {
                     Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
 
                     // Begin deletion process
-                    updateRefsFile(pid, absCidRefsPath, "remove");
+                    updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.remove.getName());
                     if (Files.size(absCidRefsPath) == 0) {
                         deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
                     } else {
@@ -1793,7 +1808,7 @@ public class FileHashStore implements HashStore {
 
                     Path absCidRefsPath =
                         getHashStoreRefsPath(cidRead, HashStoreIdTypes.cid.getName());
-                    updateRefsFile(pid, absCidRefsPath, "remove");
+                    updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.remove.getName());
                     if (Files.size(absCidRefsPath) == 0) {
                         deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
                     }
@@ -1826,7 +1841,7 @@ public class FileHashStore implements HashStore {
                 Path absCidRefsPath =
                     getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
                 if (Files.exists(absCidRefsPath) && isStringInRefsFile(pid, absCidRefsPath)) {
-                    updateRefsFile(pid, absCidRefsPath, "remove");
+                    updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.remove.getName());
                     String errMsg = "Pid refs file not found, removed pid found in cid refs file: "
                         + absCidRefsPath;
                     logFileHashStore.warn(errMsg);
@@ -1943,7 +1958,7 @@ public class FileHashStore implements HashStore {
      *
      * @param ref         Authority-based or persistent identifier
      * @param absRefsPath Path to the refs file to update
-     * @param updateType  "add" or "remove"
+     * @param updateType  enum HashStoreRefUpdateType (add, remove)
      * @throws IOException Issue with updating or accessing a refs file
      */
     protected void updateRefsFile(String ref, Path absRefsPath, String updateType)
@@ -1960,7 +1975,7 @@ public class FileHashStore implements HashStore {
             ); FileLock ignored = channel.lock()) {
                 Collection<String> lines = new ArrayList<>(Files.readAllLines(absRefsPath));
 
-                if (updateType.equals("add")) {
+                if (updateType.equals(HashStoreRefUpdateTypes.add.getName())) {
                     lines.add(ref);
                     Files.write(tmpFilePath, lines, StandardOpenOption.WRITE);
                     move(tmpFile, absRefsPath.toFile(), "refs");
@@ -1968,7 +1983,7 @@ public class FileHashStore implements HashStore {
                         "Ref: " + ref + " has been added to refs file: " + absRefsPath);
                 }
 
-                if (updateType.equals("remove")) {
+                if (updateType.equals(HashStoreRefUpdateTypes.remove.getName())) {
                     lines.remove(ref);
                     Files.write(tmpFilePath, lines, StandardOpenOption.WRITE);
                     move(tmpFile, absRefsPath.toFile(), "refs");
