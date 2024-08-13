@@ -940,17 +940,18 @@ public class FileHashStore implements HashStore {
      * Overload method for deleteMetadata with default metadata namespace
      */
     @Override
-    public void deleteMetadata(String pid) throws IllegalArgumentException, IOException,
-        NoSuchAlgorithmException, InterruptedException {
+    public void deleteMetadata(String pid)
+        throws IllegalArgumentException, IOException, NoSuchAlgorithmException,
+        InterruptedException {
         logFileHashStore.debug("Deleting all metadata documents for pid: " + pid);
         FileHashStoreUtility.ensureNotNull(pid, "pid", "deleteMetadata");
         FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid", "deleteMetadata");
 
         // Get the path to the pid metadata document directory
         String pidHexDigest = FileHashStoreUtility.getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
-        String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
-            DIRECTORY_DEPTH, DIRECTORY_WIDTH, pidHexDigest
-        );
+        String pidRelativePath =
+            FileHashStoreUtility.getHierarchicalPathString(DIRECTORY_DEPTH, DIRECTORY_WIDTH,
+                                                           pidHexDigest);
         Path expectedPidMetadataDirectory = METADATA_STORE_DIRECTORY.resolve(pidRelativePath);
         // Add all metadata docs found in the metadata doc directory to a list to iterate over
         List<Path> metadataDocPaths =
