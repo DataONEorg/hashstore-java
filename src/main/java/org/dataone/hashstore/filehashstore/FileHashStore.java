@@ -2126,16 +2126,14 @@ public class FileHashStore implements HashStore {
         throws NoSuchAlgorithmException {
         // Get the pid metadata directory
         String hashedId = FileHashStoreUtility.getPidHexDigest(abpId, OBJECT_STORE_ALGORITHM);
-        String pidMetadataDirRelPath = FileHashStoreUtility.getHierarchicalPathString(
-            DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashedId
-        );
+        String pidMetadataDirRelPath =
+            FileHashStoreUtility.getHierarchicalPathString(DIRECTORY_DEPTH, DIRECTORY_WIDTH,
+                                                           hashedId);
         // The file name for the metadata document is the hash of the supplied 'pid + 'formatId'
         String metadataDocHash =
             FileHashStoreUtility.getPidHexDigest(abpId + formatId, OBJECT_STORE_ALGORITHM);
         // Real path to metadata doc
-        return METADATA_STORE_DIRECTORY.resolve(pidMetadataDirRelPath).resolve(
-            metadataDocHash
-        );
+        return METADATA_STORE_DIRECTORY.resolve(pidMetadataDirRelPath).resolve(metadataDocHash);
     }
 
     /**
