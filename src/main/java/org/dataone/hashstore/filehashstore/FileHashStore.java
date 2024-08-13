@@ -254,7 +254,7 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.ensureNotNull(
             storeMetadataNamespace, "storeMetadataNamespace", "FileHashStore - constructor"
         );
-        FileHashStoreUtility.checkForEmptyAndValidString(
+        FileHashStoreUtility.checkForNotEmptyAndValidString(
             storeMetadataNamespace, "storeMetadataNamespace", "FileHashStore - constructor"
         );
 
@@ -429,15 +429,15 @@ public class FileHashStore implements HashStore {
         // Validate input parameters
         FileHashStoreUtility.ensureNotNull(object, "object", "storeObject");
         FileHashStoreUtility.ensureNotNull(pid, "pid", "storeObject");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "storeObject");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid", "storeObject");
         // Validate algorithms if not null or empty, throws exception if not supported
         if (additionalAlgorithm != null) {
-            FileHashStoreUtility.checkForEmptyAndValidString(
+            FileHashStoreUtility.checkForNotEmptyAndValidString(
                 additionalAlgorithm, "additionalAlgorithm", "storeObject");
             validateAlgorithm(additionalAlgorithm);
         }
         if (checksumAlgorithm != null) {
-            FileHashStoreUtility.checkForEmptyAndValidString(
+            FileHashStoreUtility.checkForNotEmptyAndValidString(
                 checksumAlgorithm, "checksumAlgorithm", "storeObject");
             validateAlgorithm(checksumAlgorithm);
         }
@@ -553,8 +553,8 @@ public class FileHashStore implements HashStore {
         // Validate input parameters
         FileHashStoreUtility.ensureNotNull(pid, "pid", "tagObject");
         FileHashStoreUtility.ensureNotNull(cid, "cid", "tagObject");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "tagObject");
-        FileHashStoreUtility.checkForEmptyAndValidString(cid, "cid", "tagObject");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid", "tagObject");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(cid, "cid", "tagObject");
 
         try {
             synchronizeObjectLockedCids(cid);
@@ -596,14 +596,14 @@ public class FileHashStore implements HashStore {
         // Validate input parameters
         FileHashStoreUtility.ensureNotNull(metadata, "metadata", "storeMetadata");
         FileHashStoreUtility.ensureNotNull(pid, "pid", "storeMetadata");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "storeMetadata");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid", "storeMetadata");
 
         // If no formatId is supplied, use the default namespace to store metadata
         String checkedFormatId;
         if (formatId == null) {
             checkedFormatId = DEFAULT_METADATA_NAMESPACE;
         } else {
-            FileHashStoreUtility.checkForEmptyAndValidString(formatId, "formatId", "storeMetadata");
+            FileHashStoreUtility.checkForNotEmptyAndValidString(formatId, "formatId", "storeMetadata");
             checkedFormatId = formatId;
         }
 
@@ -666,7 +666,7 @@ public class FileHashStore implements HashStore {
         logFileHashStore.debug("Retrieving InputStream to data object for pid: " + pid);
         // Validate input parameters
         FileHashStoreUtility.ensureNotNull(pid, "pid", "retrieveObject");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "retrieveObject");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid", "retrieveObject");
 
         // Check to see if object exists
         Path objRealPath = getHashStoreDataObjectPath(pid);
@@ -701,9 +701,9 @@ public class FileHashStore implements HashStore {
             "Retrieving metadata document for pid: " + pid + " with formatId: " + formatId);
         // Validate input parameters
         FileHashStoreUtility.ensureNotNull(pid, "pid", "retrieveMetadata");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "retrieveMetadata");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid", "retrieveMetadata");
         FileHashStoreUtility.ensureNotNull(formatId, "formatId", "retrieveMetadata");
-        FileHashStoreUtility.checkForEmptyAndValidString(formatId, "formatId", "retrieveMetadata");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(formatId, "formatId", "retrieveMetadata");
 
         return getHashStoreMetadataInputStream(pid, formatId);
     }
@@ -718,7 +718,7 @@ public class FileHashStore implements HashStore {
             "Retrieving metadata for pid: " + pid + " with default metadata namespace: ");
         // Validate input parameters
         FileHashStoreUtility.ensureNotNull(pid, "pid", "retrieveMetadata");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "retrieveMetadata");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid", "retrieveMetadata");
 
         return getHashStoreMetadataInputStream(pid, DEFAULT_METADATA_NAMESPACE);
     }
@@ -730,7 +730,7 @@ public class FileHashStore implements HashStore {
         logFileHashStore.debug("Deleting object for pid: " + pid);
         // Validate input parameters
         FileHashStoreUtility.ensureNotNull(pid, "id", "deleteObject");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "id", "deleteObject");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "id", "deleteObject");
         Collection<Path> deleteList = new ArrayList<>();
 
         try {
@@ -918,9 +918,9 @@ public class FileHashStore implements HashStore {
             "Deleting metadata document for pid: " + pid + " with formatId: " + formatId);
         // Validate input parameters
         FileHashStoreUtility.ensureNotNull(pid, "pid", "deleteMetadata");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "deleteMetadata");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid", "deleteMetadata");
         FileHashStoreUtility.ensureNotNull(formatId, "formatId", "deleteMetadata");
-        FileHashStoreUtility.checkForEmptyAndValidString(formatId, "formatId", "deleteMetadata");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(formatId, "formatId", "deleteMetadata");
 
         // Get the path to the metadata document and add it to a list
         Path metadataDocPath = getHashStoreMetadataPath(pid, formatId);
@@ -944,7 +944,7 @@ public class FileHashStore implements HashStore {
         NoSuchAlgorithmException, InterruptedException {
         logFileHashStore.debug("Deleting all metadata documents for pid: " + pid);
         FileHashStoreUtility.ensureNotNull(pid, "pid", "deleteMetadata");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "deleteMetadata");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid", "deleteMetadata");
 
         // Get the path to the pid metadata document directory
         String pidHexDigest = FileHashStoreUtility.getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
@@ -1026,7 +1026,7 @@ public class FileHashStore implements HashStore {
         FileNotFoundException, IOException, NoSuchAlgorithmException {
         logFileHashStore.debug("Calculating hex digest for pid: " + pid);
         FileHashStoreUtility.ensureNotNull(pid, "pid", "getHexDigest");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "getHexDigest");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid", "getHexDigest");
         validateAlgorithm(algorithm);
 
         // Find the content identifier
@@ -1081,7 +1081,7 @@ public class FileHashStore implements HashStore {
         OrphanPidRefsFileException, PidNotFoundInCidRefsFileException, OrphanRefsFilesException {
         logFileHashStore.debug("Finding object for pid: " + pid);
         FileHashStoreUtility.ensureNotNull(pid, "pid", "findObject");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "findObject");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid", "findObject");
 
         // Get path of the pid references file
         Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
@@ -1186,7 +1186,7 @@ public class FileHashStore implements HashStore {
         boolean compareChecksum = verifyChecksumParameters(checksum, checksumAlgorithm);
         // Validate additional algorithm if not null or empty, throws exception if not supported
         if (additionalAlgorithm != null) {
-            FileHashStoreUtility.checkForEmptyAndValidString(
+            FileHashStoreUtility.checkForNotEmptyAndValidString(
                 additionalAlgorithm, "additionalAlgorithm", "putObject"
             );
             validateAlgorithm(additionalAlgorithm);
@@ -1346,7 +1346,7 @@ public class FileHashStore implements HashStore {
     protected boolean validateAlgorithm(String algorithm) throws NullPointerException,
         IllegalArgumentException, NoSuchAlgorithmException {
         FileHashStoreUtility.ensureNotNull(algorithm, "algorithm", "validateAlgorithm");
-        FileHashStoreUtility.checkForEmptyAndValidString(algorithm, "algorithm", "validateAlgorithm");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(algorithm, "algorithm", "validateAlgorithm");
 
         boolean algorithmSupported = Arrays.asList(SUPPORTED_HASH_ALGORITHMS).contains(algorithm);
         if (!algorithmSupported) {
@@ -1368,7 +1368,7 @@ public class FileHashStore implements HashStore {
      */
     protected boolean shouldCalculateAlgorithm(String algorithm) {
         FileHashStoreUtility.ensureNotNull(algorithm, "algorithm", "shouldCalculateAlgorithm");
-        FileHashStoreUtility.checkForEmptyAndValidString(algorithm, "algorithm", "shouldCalculateAlgorithm");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(algorithm, "algorithm", "shouldCalculateAlgorithm");
         boolean shouldCalculateAlgorithm = true;
         for (DefaultHashAlgorithms defAlgo : DefaultHashAlgorithms.values()) {
             if (algorithm.equals(defAlgo.getName())) {
@@ -1391,12 +1391,12 @@ public class FileHashStore implements HashStore {
         throws NoSuchAlgorithmException {
         // First ensure algorithm is compatible and values are valid if they aren't null
         if (checksumAlgorithm != null) {
-            FileHashStoreUtility.checkForEmptyAndValidString(
+            FileHashStoreUtility.checkForNotEmptyAndValidString(
                 checksumAlgorithm, "checksumAlgorithm", "verifyChecksumParameters");
             validateAlgorithm(checksumAlgorithm);
         }
         if (checksum != null) {
-            FileHashStoreUtility.checkForEmptyAndValidString(
+            FileHashStoreUtility.checkForNotEmptyAndValidString(
                 checksum, "checksum", "verifyChecksumParameters");
         }
         // If checksum is supplied, checksumAlgorithm cannot be empty
@@ -1404,7 +1404,7 @@ public class FileHashStore implements HashStore {
             FileHashStoreUtility.ensureNotNull(
                 checksumAlgorithm, "checksumAlgorithm", "verifyChecksumParameters"
             );
-            FileHashStoreUtility.checkForEmptyAndValidString(
+            FileHashStoreUtility.checkForNotEmptyAndValidString(
                 checksumAlgorithm, "algorithm", "verifyChecksumParameters"
             );
         }
@@ -1417,7 +1417,7 @@ public class FileHashStore implements HashStore {
                 FileHashStoreUtility.ensureNotNull(
                     checksum, "checksum", "verifyChecksumParameters"
                 );
-                FileHashStoreUtility.checkForEmptyAndValidString(
+                FileHashStoreUtility.checkForNotEmptyAndValidString(
                     checksum, "checksum", "verifyChecksumParameters"
                 );
             }
@@ -1448,7 +1448,7 @@ public class FileHashStore implements HashStore {
         // Determine whether to calculate additional or checksum algorithms
         boolean generateAddAlgo = false;
         if (additionalAlgorithm != null) {
-            FileHashStoreUtility.checkForEmptyAndValidString(
+            FileHashStoreUtility.checkForNotEmptyAndValidString(
                 additionalAlgorithm, "additionalAlgorithm", "writeToTmpFileAndGenerateChecksums"
             );
             validateAlgorithm(additionalAlgorithm);
@@ -1456,7 +1456,7 @@ public class FileHashStore implements HashStore {
         }
         boolean generateCsAlgo = false;
         if (checksumAlgorithm != null && !checksumAlgorithm.equals(additionalAlgorithm)) {
-            FileHashStoreUtility.checkForEmptyAndValidString(
+            FileHashStoreUtility.checkForNotEmptyAndValidString(
                 checksumAlgorithm, "checksumAlgorithm", "writeToTmpFileAndGenerateChecksums"
             );
             validateAlgorithm(checksumAlgorithm);
@@ -1561,7 +1561,7 @@ public class FileHashStore implements HashStore {
             "Moving " + entity + ", from source: " + source + ", to target: " + target);
         // Validate input parameters
         FileHashStoreUtility.ensureNotNull(entity, "entity", "move");
-        FileHashStoreUtility.checkForEmptyAndValidString(entity, "entity", "move");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(entity, "entity", "move");
         if (entity.equals("object") && target.exists()) {
             String errMsg = "File already exists for target: " + target;
             logFileHashStore.warn(errMsg);
@@ -1744,9 +1744,9 @@ public class FileHashStore implements HashStore {
         NoSuchAlgorithmException, IOException {
         // Validate input parameters
         FileHashStoreUtility.ensureNotNull(pid, "pid", "unTagObject");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "unTagObject");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid", "unTagObject");
         FileHashStoreUtility.ensureNotNull(cid, "cid", "unTagObject");
-        FileHashStoreUtility.checkForEmptyAndValidString(cid, "cid", "unTagObject");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(cid, "cid", "unTagObject");
 
         Collection<Path> deleteList = new ArrayList<>();
 
@@ -1907,7 +1907,7 @@ public class FileHashStore implements HashStore {
      * where it belongs otherwise it will be removed during garbage collection.
      *
      * @param ref     Authority-based or persistent identifier to write
-     * @param refType Type of reference 'pid' or 'cid'
+     * @param refType Type of reference 'pid' or 'cid' to include in the log
      * @throws IOException Failure to write refs file
      * @return File object with single reference
      */
@@ -2017,14 +2017,14 @@ public class FileHashStore implements HashStore {
         // Validate input parameters
         FileHashStoreUtility.ensureNotNull(metadata, "metadata", "putMetadata");
         FileHashStoreUtility.ensureNotNull(pid, "pid", "putMetadata");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "putMetadata");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid", "putMetadata");
 
         // If no formatId is supplied, use the default namespace to store metadata
         String checkedFormatId;
         if (formatId == null) {
             checkedFormatId = DEFAULT_METADATA_NAMESPACE;
         } else {
-            FileHashStoreUtility.checkForEmptyAndValidString(formatId, "formatId", "putMetadata");
+            FileHashStoreUtility.checkForNotEmptyAndValidString(formatId, "formatId", "putMetadata");
             checkedFormatId = formatId;
         }
 

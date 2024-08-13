@@ -2134,8 +2134,8 @@ public class FileHashStoreProtectedTest {
     public void fileHashStoreUtility_checkForEmptyAndValidString() {
         assertThrows(
             IllegalArgumentException.class,
-            () -> FileHashStoreUtility.checkForEmptyAndValidString("dou.test.1\n", "pid",
-                                                                   "storeObject"));
+            () -> FileHashStoreUtility.checkForNotEmptyAndValidString("dou.test.1\n", "pid",
+                                                                      "storeObject"));
     }
 
     /**
@@ -2146,8 +2146,8 @@ public class FileHashStoreProtectedTest {
     public void fileHashStoreUtility_checkForEmptyAndValidString_newLine() {
         assertThrows(
             IllegalArgumentException.class,
-            () -> FileHashStoreUtility.checkForEmptyAndValidString("\n", "pid",
-                                                                   "storeObject"));
+            () -> FileHashStoreUtility.checkForNotEmptyAndValidString("\n", "pid",
+                                                                      "storeObject"));
     }
 
     /**
