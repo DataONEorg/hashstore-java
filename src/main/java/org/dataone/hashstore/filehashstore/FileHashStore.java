@@ -457,8 +457,8 @@ public class FileHashStore implements HashStore {
      */
     private ObjectMetadata syncPutObject(
         InputStream object, String pid, String additionalAlgorithm, String checksum,
-        String checksumAlgorithm, long objSize
-    ) throws NoSuchAlgorithmException, PidRefsFileExistsException, IOException, RuntimeException,
+        String checksumAlgorithm, long objSize)
+        throws NoSuchAlgorithmException, IOException, RuntimeException,
         InterruptedException {
         try {
             // Lock pid for thread safety, transaction control and atomic writing
