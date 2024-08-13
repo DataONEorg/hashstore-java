@@ -68,7 +68,7 @@ public class HashStoreRunnable implements Runnable {
         log.debug("HashStoreRunnable - Called to: " + publicAPIMethod);
         try {
             switch (publicAPIMethod) {
-                case storeObject:
+                case storeObject -> {
                     try {
                         hashstore.storeObject(objStream, pid, null, null, null, -1);
                     } catch (Exception e) {
@@ -79,8 +79,8 @@ public class HashStoreRunnable implements Runnable {
                         throw new HashStoreServiceException(errMsg);
                     }
                     objStream.close();
-                    break;
-                case deleteObject:
+                }
+                case deleteObject -> {
                     try {
                         hashstore.deleteObject(pid);
                     } catch (Exception e) {
@@ -90,7 +90,7 @@ public class HashStoreRunnable implements Runnable {
                         log.error(errMsg);
                         throw new HashStoreServiceException(errMsg);
                     }
-                    break;
+                }
             }
         } catch (HashStoreServiceException | IOException hse) {
             log.error(
