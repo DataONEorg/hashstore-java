@@ -56,7 +56,7 @@ public class ObjectMetadataTest {
     @Test
     public void testObjectMetadataGetPid() {
         ObjectMetadata objInfo = new ObjectMetadata(null, id, size, hexDigests);
-        String pid = objInfo.getPid();
+        String pid = objInfo.pid();
         assertNull(pid);
     }
 
@@ -65,11 +65,10 @@ public class ObjectMetadataTest {
      */
     @Test
     public void testObjectMetadataSetPid() {
-        ObjectMetadata objInfo = new ObjectMetadata(null, id, size, hexDigests);
         String pidToSet = "dou.test.1";
-        objInfo.setPid(pidToSet);
+        ObjectMetadata objInfo = new ObjectMetadata(pidToSet, id, size, hexDigests);
 
-        String pidFromObjectMetadata = objInfo.getPid();
+        String pidFromObjectMetadata = objInfo.pid();
         assertEquals(pidFromObjectMetadata, pidToSet);
     }
 
@@ -79,7 +78,7 @@ public class ObjectMetadataTest {
     @Test
     public void testObjectMetadataGetId() {
         ObjectMetadata objInfo = new ObjectMetadata(null, id, size, hexDigests);
-        String objId = objInfo.getCid();
+        String objId = objInfo.cid();
         assertEquals(objId, id);
     }
 
@@ -89,7 +88,7 @@ public class ObjectMetadataTest {
     @Test
     public void testHashAddressGetSize() {
         ObjectMetadata objInfo = new ObjectMetadata(null, id, size, hexDigests);
-        long objSize = objInfo.getSize();
+        long objSize = objInfo.size();
         assertEquals(objSize, size);
     }
 
@@ -99,7 +98,7 @@ public class ObjectMetadataTest {
     @Test
     public void testObjectMetadataGetHexDigests() {
         ObjectMetadata objInfo = new ObjectMetadata(null, id, size, hexDigests);
-        Map<String, String> objInfoMap = objInfo.getHexDigests();
+        Map<String, String> objInfoMap = objInfo.hexDigests();
         assertEquals(objInfoMap, hexDigests);
     }
 }

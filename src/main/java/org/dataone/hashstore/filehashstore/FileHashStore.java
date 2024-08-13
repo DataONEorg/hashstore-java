@@ -483,9 +483,8 @@ public class FileHashStore implements HashStore {
                 object, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize
             );
             // Tag object
-            String cid = objInfo.getCid();
+            String cid = objInfo.cid();
             tagObject(pid, cid);
-            objInfo.setPid(pid);
             logFileHashStore.info(
                 "Object stored for pid: " + pid + " at " + getHashStoreDataObjectPath(pid));
             return objInfo;
@@ -841,21 +840,21 @@ public class FileHashStore implements HashStore {
         throws NonMatchingObjSizeException, NonMatchingChecksumException,
         UnsupportedHashAlgorithmException, InterruptedException, NoSuchAlgorithmException,
         IOException {
-        logFileHashStore.debug("Verifying data object for cid: " + objectInfo.getCid());
+        logFileHashStore.debug("Verifying data object for cid: " + objectInfo.cid());
         // Validate input parameters
         FileHashStoreUtility.ensureNotNull(objectInfo, "objectInfo", "deleteInvalidObject");
         FileHashStoreUtility.ensureNotNull(
-            objectInfo.getHexDigests(), "objectInfo.getHexDigests()", "deleteInvalidObject");
-        if (objectInfo.getHexDigests().isEmpty()) {
+            objectInfo.hexDigests(), "objectInfo.getHexDigests()", "deleteInvalidObject");
+        if (objectInfo.hexDigests().isEmpty()) {
             throw new MissingHexDigestsException("Missing hexDigests in supplied ObjectMetadata");
         }
         FileHashStoreUtility.ensureNotNull(checksum, "checksum", "deleteInvalidObject");
         FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm", "deleteInvalidObject");
         FileHashStoreUtility.checkPositive(objSize, "deleteInvalidObject");
 
-        String objCid = objectInfo.getCid();
-        long objInfoRetrievedSize = objectInfo.getSize();
-        Map<String, String> hexDigests = objectInfo.getHexDigests();
+        String objCid = objectInfo.cid();
+        long objInfoRetrievedSize = objectInfo.size();
+        Map<String, String> hexDigests = objectInfo.hexDigests();
         String digestFromHexDigests = hexDigests.get(checksumAlgorithm);
 
         // Confirm that requested checksum to verify against is available
@@ -2184,7 +2183,7 @@ public class FileHashStore implements HashStore {
      */
     protected Path getHashStoreRefsPath(String abpcId, HashStoreIdTypes refType)
         throws NoSuchAlgorithmException {
-        Path realPath = null;
+        Path realPath;
 
         switch (refType) {
             case pid -> {

@@ -173,7 +173,7 @@ public class HashStoreClient {
                     );
                     pidObjStream.close();
                     System.out.println("Object Info for pid (" + pid + "):");
-                    System.out.println(objInfo.getHexDigests());
+                    System.out.println(objInfo.hexDigests());
 
                 } else if (cmd.hasOption("storemetadata")) {
                     String pid = cmd.getOptionValue("pid");
