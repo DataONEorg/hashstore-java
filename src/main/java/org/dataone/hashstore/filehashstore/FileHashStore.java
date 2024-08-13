@@ -2200,13 +2200,7 @@ public class FileHashStore implements HashStore {
                     FileHashStoreUtility.getHierarchicalPathString(DIRECTORY_DEPTH, DIRECTORY_WIDTH,
                                                                    abpcId);
                 realPath = REFS_CID_FILE_DIRECTORY.resolve(cidRelativePath);
-                realPath = REFS_CID_FILE_DIRECTORY.resolve(cidRelativePath);
             }
-        }
-        if (realPath == null) {
-            String errMsg = "formatId must be 'pid' or 'cid'";
-            logFileHashStore.error(errMsg);
-            throw new IllegalArgumentException(errMsg);
         }
         return realPath;
     }
