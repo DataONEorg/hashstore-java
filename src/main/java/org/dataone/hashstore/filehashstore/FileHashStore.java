@@ -2201,6 +2201,9 @@ public class FileHashStore implements HashStore {
                                                                    abpcId);
                 realPath = REFS_CID_FILE_DIRECTORY.resolve(cidRelativePath);
             }
+            default ->
+                throw new IllegalArgumentException("Ref type must be a type of HashStoreIdTypes "
+                                                       + "(pid or cid)");
         }
         return realPath;
     }
