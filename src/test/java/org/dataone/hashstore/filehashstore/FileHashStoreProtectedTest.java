@@ -104,12 +104,12 @@ public class FileHashStoreProtectedTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             try (InputStream dataStream = Files.newInputStream(testDataFile)) {
-                ObjectMetadata objInfo = fileHashStore.storeObject(
+                ObjectMetadata objMeta = fileHashStore.storeObject(
                     dataStream, pid, null, null, null, -1
                 );
 
-                Map<String, String> objInfoMap = fileHashStore.findObject(pid);
-                assertEquals(objInfoMap.get("cid"), objInfo.cid());
+                FileHashStore.objectInfo findObjInfo = fileHashStore.findObject(pid);
+                assertEquals(findObjInfo.cid(), objMeta.cid());
             }
         }
     }
@@ -130,8 +130,8 @@ public class FileHashStoreProtectedTest {
 
                 int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
                 int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
-                Map<String, String> objInfoMap = fileHashStore.findObject(pid);
-                String objectPath = objInfoMap.get("cid_object_path");
+                FileHashStore.objectInfo findObjInfo = fileHashStore.findObject(pid);
+                String objectPath = findObjInfo.cidObjectPath();
 
                 String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
                     storeDepth, storeWidth, objInfo.cid()
@@ -157,9 +157,9 @@ public class FileHashStoreProtectedTest {
                     dataStream, pid, null, null, null, -1
                 );
 
-                Map<String, String> objInfoMap = fileHashStore.findObject(pid);
-                String cidRefsPath = objInfoMap.get("cid_refs_path");
-                String pidRefsPath = objInfoMap.get("pid_refs_path");
+                FileHashStore.objectInfo findObjInfo = fileHashStore.findObject(pid);
+                String cidRefsPath = findObjInfo.cidRefsPath();
+                String pidRefsPath = findObjInfo.pidRefsPath();
 
                 Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(objInfo.cid(), FileHashStore.HashStoreIdTypes.cid);
                 Path pidRefsFilePath = fileHashStore.getHashStoreRefsPath(pid,
@@ -188,8 +188,8 @@ public class FileHashStoreProtectedTest {
                 // Store Metadata
                 fileHashStore.storeMetadata(metadataStream, pid);
 
-                Map<String, String> objInfoMap = fileHashStore.findObject(pid);
-                String objInfoSysmetaPath = objInfoMap.get("sysmeta_path");
+                FileHashStore.objectInfo findObjInfo = fileHashStore.findObject(pid);
+                String objInfoSysmetaPath = findObjInfo.sysmetaPath();
 
                 String storeMetadataNamespace = fhsProperties.getProperty("storeMetadataNamespace");
                 Path sysmetaPath =
@@ -214,8 +214,8 @@ public class FileHashStoreProtectedTest {
                     dataStream, pid, null, null, null, -1
                 );
 
-                Map<String, String> objInfoMap = fileHashStore.findObject(pid);
-                String objInfoSysmetaPath = objInfoMap.get("sysmeta_path");
+                FileHashStore.objectInfo findObjInfo = fileHashStore.findObject(pid);
+                String objInfoSysmetaPath = findObjInfo.sysmetaPath();
 
                 assertEquals(objInfoSysmetaPath, "Does not exist");
             }
