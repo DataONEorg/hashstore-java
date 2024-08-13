@@ -161,8 +161,9 @@ public class FileHashStoreProtectedTest {
                 String cidRefsPath = objInfoMap.get("cid_refs_path");
                 String pidRefsPath = objInfoMap.get("pid_refs_path");
 
-                Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(objInfo.getCid(), "cid");
-                Path pidRefsFilePath = fileHashStore.getHashStoreRefsPath(pid, "pid");
+                Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(objInfo.getCid(), FileHashStore.HashStoreIdTypes.cid);
+                Path pidRefsFilePath = fileHashStore.getHashStoreRefsPath(pid,
+                                                                          FileHashStore.HashStoreIdTypes.pid);
 
                 assertEquals(cidRefsPath, cidRefsFilePath.toString());
                 assertEquals(pidRefsPath, pidRefsFilePath.toString());
@@ -244,7 +245,7 @@ public class FileHashStoreProtectedTest {
         String cid = "abcdef123456789";
         fileHashStore.tagObject(pid, cid);
 
-        Path cidRefsPath = fileHashStore.getHashStoreRefsPath(cid, "cid");
+        Path cidRefsPath = fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
         Files.delete(cidRefsPath);
 
         assertThrows(OrphanPidRefsFileException.class, () -> fileHashStore.findObject(pid));
@@ -261,8 +262,8 @@ public class FileHashStoreProtectedTest {
         String cid = "abcdef123456789";
         fileHashStore.tagObject(pid, cid);
 
-        Path cidRefsPath = fileHashStore.getHashStoreRefsPath(cid, "cid");
-        fileHashStore.updateRefsFile(pid, cidRefsPath, "remove");
+        Path cidRefsPath = fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
+        fileHashStore.updateRefsFile(pid, cidRefsPath, FileHashStore.HashStoreRefUpdateTypes.remove);
 
         assertThrows(PidNotFoundInCidRefsFileException.class, () -> fileHashStore.findObject(pid));
     }
@@ -1088,9 +1089,9 @@ public class FileHashStoreProtectedTest {
 
         // Confirm refs files exist
         Path absCidRefsPath =
-            fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid.getName());
+            fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
         Path absPidRefsPath =
-            fileHashStore.getHashStoreRefsPath(pid, FileHashStore.HashStoreIdTypes.pid.getName());
+            fileHashStore.getHashStoreRefsPath(pid, FileHashStore.HashStoreIdTypes.pid);
 
         assertTrue(Files.exists(absCidRefsPath));
         assertTrue(Files.exists(absPidRefsPath));
@@ -1116,7 +1117,8 @@ public class FileHashStoreProtectedTest {
         String cid = "abcdef123456789";
         fileHashStore.storeHashStoreRefsFiles(pid, cid);
 
-        Path pidRefsFilePath = fileHashStore.getHashStoreRefsPath(pid, "pid");
+        Path pidRefsFilePath = fileHashStore.getHashStoreRefsPath(pid,
+                                                                  FileHashStore.HashStoreIdTypes.pid);
         assertTrue(Files.exists(pidRefsFilePath));
 
         String retrievedCid = new String(Files.readAllBytes(pidRefsFilePath));
@@ -1133,7 +1135,7 @@ public class FileHashStoreProtectedTest {
         String cid = "abcdef123456789";
         fileHashStore.storeHashStoreRefsFiles(pid, cid);
 
-        Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(cid, "cid");
+        Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
         assertTrue(Files.exists(cidRefsFilePath));
 
         String retrievedPid = new String(Files.readAllBytes(cidRefsFilePath));
@@ -1197,7 +1199,7 @@ public class FileHashStoreProtectedTest {
 
         // Create orphaned pid refs file
         Path absPidRefsPath =
-            fileHashStore.getHashStoreRefsPath(pid, FileHashStore.HashStoreIdTypes.pid.getName());
+            fileHashStore.getHashStoreRefsPath(pid, FileHashStore.HashStoreIdTypes.pid);
         File pidRefsTmpFile = fileHashStore.writeRefsFile(
             cidForOrphanPidRef, FileHashStore.HashStoreIdTypes.pid.getName()
         );
@@ -1230,11 +1232,12 @@ public class FileHashStoreProtectedTest {
         fileHashStore.storeHashStoreRefsFiles(pidAdditional, cid);
 
         // Confirm missing pid refs file has been created
-        Path pidAdditionalRefsFilePath = fileHashStore.getHashStoreRefsPath(pidAdditional, "pid");
+        Path pidAdditionalRefsFilePath = fileHashStore.getHashStoreRefsPath(pidAdditional,
+                                                                            FileHashStore.HashStoreIdTypes.pid);
         assertTrue(Files.exists(pidAdditionalRefsFilePath));
 
         // Check cid refs file
-        Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(cid, "cid");
+        Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
         boolean pidFoundInCidRefFiles = fileHashStore.isStringInRefsFile(
             pidAdditional, cidRefsFilePath
         );
@@ -1264,9 +1267,9 @@ public class FileHashStoreProtectedTest {
 
         // Confirm refs files do not exist
         Path absCidRefsPath =
-            fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid.getName());
+            fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
         Path absPidRefsPath =
-            fileHashStore.getHashStoreRefsPath(pid, FileHashStore.HashStoreIdTypes.pid.getName());
+            fileHashStore.getHashStoreRefsPath(pid, FileHashStore.HashStoreIdTypes.pid);
         assertFalse(Files.exists(absCidRefsPath));
         assertFalse(Files.exists(absPidRefsPath));
     }
@@ -1291,9 +1294,9 @@ public class FileHashStoreProtectedTest {
 
         // Confirm refs files state
         Path absCidRefsPath =
-            fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid.getName());
+            fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
         Path absPidRefsPath =
-            fileHashStore.getHashStoreRefsPath(pid, FileHashStore.HashStoreIdTypes.pid.getName());
+            fileHashStore.getHashStoreRefsPath(pid, FileHashStore.HashStoreIdTypes.pid);
 
         assertFalse(Files.exists(absPidRefsPath));
         assertTrue(Files.exists(absCidRefsPath));
@@ -1320,7 +1323,7 @@ public class FileHashStoreProtectedTest {
 
         // Delete cid refs file to create orphaned pid refs file
         Path absCidRefsPath =
-            fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid.getName());
+            fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
         Files.delete(absCidRefsPath);
         assertFalse(Files.exists(absCidRefsPath));
 
@@ -1328,7 +1331,7 @@ public class FileHashStoreProtectedTest {
 
         // Confirm pid refs is deleted
         Path absPidRefsPath =
-            fileHashStore.getHashStoreRefsPath(pid, FileHashStore.HashStoreIdTypes.pid.getName());
+            fileHashStore.getHashStoreRefsPath(pid, FileHashStore.HashStoreIdTypes.pid);
         assertFalse(Files.exists(absPidRefsPath));
 
         // Confirm number of reference files
@@ -1370,14 +1373,14 @@ public class FileHashStoreProtectedTest {
 
         // Delete pid refs to create scenario
         Path absPidRefsPath =
-            fileHashStore.getHashStoreRefsPath(pid, FileHashStore.HashStoreIdTypes.pid.getName());
+            fileHashStore.getHashStoreRefsPath(pid, FileHashStore.HashStoreIdTypes.pid);
         Files.delete(absPidRefsPath);
         assertFalse(Files.exists(absPidRefsPath));
 
         fileHashStore.unTagObject(pid, cid);
 
         Path absCidRefsPath =
-            fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid.getName());
+            fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
         assertFalse(fileHashStore.isStringInRefsFile(pid, absCidRefsPath));
     }
 
@@ -1391,8 +1394,10 @@ public class FileHashStoreProtectedTest {
         fileHashStore.tagObject(pid, cid);
 
         // Create a pid refs file with the incorrect cid
-        Path pidRefsFilePath = fileHashStore.getHashStoreRefsPath(pid, "pid");
-        Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(cid, "cid");
+        Path pidRefsFilePath =
+            fileHashStore.getHashStoreRefsPath(pid, FileHashStore.HashStoreIdTypes.pid);
+        Path cidRefsFilePath =
+            fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
 
         fileHashStore.verifyHashStoreRefsFiles(pid, cid, pidRefsFilePath, cidRefsFilePath);
     }
@@ -1406,8 +1411,10 @@ public class FileHashStoreProtectedTest {
         String cid = "abcdef123456789";
 
         // Create a pid refs file with the incorrect cid
-        Path pidRefsFilePath = fileHashStore.getHashStoreRefsPath(pid, "pid");
-        Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(cid, "cid");
+        Path pidRefsFilePath =
+            fileHashStore.getHashStoreRefsPath(pid, FileHashStore.HashStoreIdTypes.pid);
+        Path cidRefsFilePath =
+            fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
 
         assertThrows(FileNotFoundException.class,
                      () -> fileHashStore.verifyHashStoreRefsFiles(pid, cid, pidRefsFilePath,
@@ -1429,7 +1436,7 @@ public class FileHashStoreProtectedTest {
         Path pidRefsTmpFilePath = pidRefsTmpFile.toPath();
 
         // Get path of the cid refs file
-        Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(cid, "cid");
+        Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
 
         assertThrows(
             CidNotFoundInPidRefsFileException.class,
@@ -1452,7 +1459,8 @@ public class FileHashStoreProtectedTest {
         Path cidRefsTmpFilePath = cidRefsTmpFile.toPath();
 
         // Get path of the pid refs file
-        Path pidRefsFilePath = fileHashStore.getHashStoreRefsPath(pid, "pid");
+        Path pidRefsFilePath =
+            fileHashStore.getHashStoreRefsPath(pid, FileHashStore.HashStoreIdTypes.pid);
 
         assertThrows(
             PidNotFoundInCidRefsFileException.class,
@@ -1505,7 +1513,8 @@ public class FileHashStoreProtectedTest {
         fileHashStore.tagObject("dou.test.2", cid);
         fileHashStore.tagObject("dou.test.3", cid);
         // Get path of the cid refs file
-        Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(cid, "cid");
+        Path cidRefsFilePath =
+            fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
 
         assertTrue(fileHashStore.isStringInRefsFile("dou.test.1", cidRefsFilePath));
         assertFalse(fileHashStore.isStringInRefsFile("wont.be.found", cidRefsFilePath));
@@ -1521,10 +1530,12 @@ public class FileHashStoreProtectedTest {
         fileHashStore.tagObject(pid, cid);
 
         // Get path of the cid refs file
-        Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(cid, "cid");
+        Path cidRefsFilePath =
+            fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
 
         String pidAdditional = "dou.test.2";
-        fileHashStore.updateRefsFile(pidAdditional, cidRefsFilePath, "add");
+        fileHashStore.updateRefsFile(
+            pidAdditional, cidRefsFilePath, FileHashStore.HashStoreRefUpdateTypes.add);
 
         List<String> lines = Files.readAllLines(cidRefsFilePath);
         boolean pidOriginal_foundInCidRefFiles = false;
@@ -1552,8 +1563,10 @@ public class FileHashStoreProtectedTest {
         String pidAdditional = "dou.test.2";
         fileHashStore.tagObject(pidAdditional, cid);
 
-        Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(cid, "cid");
-        fileHashStore.updateRefsFile(pid, cidRefsFilePath, "remove");
+        Path cidRefsFilePath =
+            fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
+        fileHashStore.updateRefsFile(
+            pid, cidRefsFilePath, FileHashStore.HashStoreRefUpdateTypes.remove);
 
         assertFalse(fileHashStore.isStringInRefsFile(pid, cidRefsFilePath));
     }
@@ -1568,10 +1581,13 @@ public class FileHashStoreProtectedTest {
         fileHashStore.tagObject(pid, cid);
         String pidAdditional = "dou.test.2";
         fileHashStore.tagObject(pidAdditional, cid);
-        Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(cid, "cid");
+        Path cidRefsFilePath =
+            fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
 
-        fileHashStore.updateRefsFile(pid, cidRefsFilePath, "remove");
-        fileHashStore.updateRefsFile(pidAdditional, cidRefsFilePath, "remove");
+        fileHashStore.updateRefsFile(
+            pid, cidRefsFilePath, FileHashStore.HashStoreRefUpdateTypes.remove);
+        fileHashStore.updateRefsFile(
+            pidAdditional, cidRefsFilePath, FileHashStore.HashStoreRefUpdateTypes.remove);
 
         assertTrue(Files.exists(cidRefsFilePath));
         assertEquals(0, Files.size(cidRefsFilePath));
@@ -1588,8 +1604,10 @@ public class FileHashStoreProtectedTest {
         fileHashStore.tagObject(pid, cid);
 
         // Get path of the cid refs file
-        Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(cid, "cid");
-        fileHashStore.updateRefsFile("dou.test.2", cidRefsFilePath, "remove");
+        Path cidRefsFilePath =
+            fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
+        fileHashStore.updateRefsFile(
+            "dou.test.2", cidRefsFilePath, FileHashStore.HashStoreRefUpdateTypes.remove);
 
         List<String> lines = Files.readAllLines(cidRefsFilePath);
         boolean pidOriginal_foundInCidRefFiles = false;
@@ -1615,8 +1633,10 @@ public class FileHashStoreProtectedTest {
         fileHashStore.tagObject(pid, cid);
 
         // Get path of the cid refs file
-        Path cidRefsFilePath = fileHashStore.getHashStoreRefsPath(cid, "cid");
-        fileHashStore.updateRefsFile(pid, cidRefsFilePath, "remove");
+        Path cidRefsFilePath =
+            fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
+        fileHashStore.updateRefsFile(
+            pid, cidRefsFilePath, FileHashStore.HashStoreRefUpdateTypes.remove);
 
         List<String> lines = Files.readAllLines(cidRefsFilePath);
         boolean pidOriginal_foundInCidRefFiles = false;
@@ -1631,7 +1651,7 @@ public class FileHashStoreProtectedTest {
         assertEquals(0, pidsFound);
 
         // Confirm that no exception is thrown and that the cid refs still exists
-        fileHashStore.updateRefsFile(pid, cidRefsFilePath, "remove");
+        fileHashStore.updateRefsFile(pid, cidRefsFilePath, FileHashStore.HashStoreRefUpdateTypes.remove);
         assertTrue(Files.exists(cidRefsFilePath));
     }
 
@@ -1896,7 +1916,8 @@ public class FileHashStoreProtectedTest {
                 ObjectMetadata objInfo = fileHashStore.storeObject(dataStreamDup, pidTwo, null, null, null, -1);
 
                 String cid = objInfo.getCid();
-                Path absCidRefsPath = fileHashStore.getHashStoreRefsPath(cid, "cid");
+                Path absCidRefsPath =
+                    fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
                 assertTrue(fileHashStore.isStringInRefsFile(pidTwo, absCidRefsPath));
             }
         }
@@ -1915,7 +1936,8 @@ public class FileHashStoreProtectedTest {
                 ObjectMetadata objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
 
                 String cid = objInfo.getCid();
-                Path absCidRefsPath = fileHashStore.getHashStoreRefsPath(cid, "cid");
+                Path absCidRefsPath =
+                    fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
                 assertFalse(fileHashStore.isStringInRefsFile("pid.not.found", absCidRefsPath));
             }
         }
@@ -2052,7 +2074,8 @@ public class FileHashStoreProtectedTest {
                 Path calculatedPidRefsRealPath =
                     storePath.resolve("refs/pids").resolve(metadataPidHashSharded);
 
-                Path expectedPidRefsPath = fileHashStore.getHashStoreRefsPath(pid, "pid");
+                Path expectedPidRefsPath =
+                    fileHashStore.getHashStoreRefsPath(pid, FileHashStore.HashStoreIdTypes.pid);
 
                 assertEquals(expectedPidRefsPath, calculatedPidRefsRealPath);
             }
@@ -2078,26 +2101,17 @@ public class FileHashStoreProtectedTest {
                 int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
 
                 // Cid refs file
-                String objShardString = FileHashStoreUtility.getHierarchicalPathString(storeDepth, storeWidth, cid);
-                Path calculatedCidRefsRealPath = storePath.resolve("refs/cids").resolve(objShardString);
+                String objShardString =
+                    FileHashStoreUtility.getHierarchicalPathString(storeDepth, storeWidth, cid);
+                Path calculatedCidRefsRealPath =
+                    storePath.resolve("refs/cids").resolve(objShardString);
 
-                Path expectedCidRefsPath = fileHashStore.getHashStoreRefsPath(cid, "cid");
+                Path expectedCidRefsPath =
+                    fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
 
                 assertEquals(expectedCidRefsPath, calculatedCidRefsRealPath);
             }
         }
-    }
-
-    /**
-     * Confirm getHashStoreRefsPath throws exception when requesting the path to a refs file with a
-     * formatId arg that is not "cid" or "pid"
-     */
-    @Test
-    public void getHashStoreRefsPath_incorrectRefsType() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            String cid = "testcid";
-            fileHashStore.getHashStoreRefsPath(cid, "not_cid_or_pid");
-        });
     }
 
     /**
