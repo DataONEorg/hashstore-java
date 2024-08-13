@@ -214,8 +214,9 @@ public class FileHashStoreUtility {
     public static void checkForNotEmptyAndValidString(String string, String argument, String method)
         throws IllegalArgumentException {
         ensureNotNull(string, "string", "checkForNotEmptyAndValidString");
-        if (string.trim().isEmpty()) {
-            String errMsg = "Calling Method: " + method + "(): " + argument + " cannot be empty.";
+        if (string.isBlank()) {
+            String errMsg = "Calling Method: " + method + "(): " + argument
+                + " cannot be empty or contain empty white spaces, tabs or newlines.";
             throw new IllegalArgumentException(errMsg);
         }
         if (!isValidString(string)) {
