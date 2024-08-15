@@ -128,7 +128,7 @@ public class FileHashStore implements HashStore {
      * @param pidRefsPath Path to the pid's that references the data object
      * @param sysmetaPath Path to the pid's system metadata if available
      */
-    record objectInfo(String cid, String cidObjectPath, String cidRefsPath, String pidRefsPath,
+    record ObjectInfo(String cid, String cidObjectPath, String cidRefsPath, String pidRefsPath,
                       String sysmetaPath) {
     }
 
@@ -747,7 +747,7 @@ public class FileHashStore implements HashStore {
             // `findObject` which will throw custom exceptions if there is an issue with
             // the reference files, which help us determine the path to proceed with.
             try {
-                objectInfo objInfoMap = findObject(pid);
+                ObjectInfo objInfoMap = findObject(pid);
                 String cid = objInfoMap.cid();
 
                 // If no exceptions are thrown, we proceed to synchronization based on the `cid`
@@ -1036,7 +1036,7 @@ public class FileHashStore implements HashStore {
 
         // Find the content identifier
         if (algorithm.equals(OBJECT_STORE_ALGORITHM)) {
-            objectInfo objInfo = findObject(pid);
+            ObjectInfo objInfo = findObject(pid);
             return objInfo.cid();
 
         } else {
@@ -1081,7 +1081,7 @@ public class FileHashStore implements HashStore {
      * @throws PidNotFoundInCidRefsFileException When pid and cid ref files exists but the
      *                                           expected pid is not found in the cid refs file.
      */
-    protected objectInfo findObject(String pid)
+    protected ObjectInfo findObject(String pid)
         throws NoSuchAlgorithmException, IOException, OrphanPidRefsFileException,
         PidNotFoundInCidRefsFileException, OrphanRefsFilesException {
         logFileHashStore.debug("Finding object for pid: " + pid);
@@ -1115,11 +1115,11 @@ public class FileHashStore implements HashStore {
                     Path metadataPidExpectedPath =
                         getHashStoreMetadataPath(pid, DEFAULT_METADATA_NAMESPACE);
                     if (Files.exists(metadataPidExpectedPath)) {
-                        return new objectInfo(
+                        return new ObjectInfo(
                             cid, realPath.toString(), absCidRefsPath.toString(),
                             absPidRefsPath.toString(), metadataPidExpectedPath.toString());
                     } else {
-                        return new objectInfo(cid, realPath.toString(), absCidRefsPath.toString(),
+                        return new ObjectInfo(cid, realPath.toString(), absCidRefsPath.toString(),
                                               absPidRefsPath.toString(), "Does not exist");
                     }
 
@@ -1756,7 +1756,7 @@ public class FileHashStore implements HashStore {
             // `findObject` which will throw custom exceptions if there is an issue with
             // the reference files, which help us determine the path to proceed with.
             try {
-                objectInfo objInfo= findObject(pid);
+                ObjectInfo objInfo = findObject(pid);
                 cid = objInfo.cid();
                 // If no exceptions are thrown, we proceed to synchronization based on the `cid`
                 synchronizeObjectLockedCids(cid);

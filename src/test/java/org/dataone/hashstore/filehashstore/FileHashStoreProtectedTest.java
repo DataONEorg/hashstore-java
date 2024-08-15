@@ -108,7 +108,7 @@ public class FileHashStoreProtectedTest {
                     dataStream, pid, null, null, null, -1
                 );
 
-                FileHashStore.objectInfo findObjInfo = fileHashStore.findObject(pid);
+                FileHashStore.ObjectInfo findObjInfo = fileHashStore.findObject(pid);
                 assertEquals(findObjInfo.cid(), objMeta.cid());
             }
         }
@@ -130,7 +130,7 @@ public class FileHashStoreProtectedTest {
 
                 int storeDepth = Integer.parseInt(fhsProperties.getProperty("storeDepth"));
                 int storeWidth = Integer.parseInt(fhsProperties.getProperty("storeWidth"));
-                FileHashStore.objectInfo findObjInfo = fileHashStore.findObject(pid);
+                FileHashStore.ObjectInfo findObjInfo = fileHashStore.findObject(pid);
                 String objectPath = findObjInfo.cidObjectPath();
 
                 String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
@@ -157,7 +157,7 @@ public class FileHashStoreProtectedTest {
                     dataStream, pid, null, null, null, -1
                 );
 
-                FileHashStore.objectInfo findObjInfo = fileHashStore.findObject(pid);
+                FileHashStore.ObjectInfo findObjInfo = fileHashStore.findObject(pid);
                 String cidRefsPath = findObjInfo.cidRefsPath();
                 String pidRefsPath = findObjInfo.pidRefsPath();
 
@@ -188,7 +188,7 @@ public class FileHashStoreProtectedTest {
                 // Store Metadata
                 fileHashStore.storeMetadata(metadataStream, pid);
 
-                FileHashStore.objectInfo findObjInfo = fileHashStore.findObject(pid);
+                FileHashStore.ObjectInfo findObjInfo = fileHashStore.findObject(pid);
                 String objInfoSysmetaPath = findObjInfo.sysmetaPath();
 
                 String storeMetadataNamespace = fhsProperties.getProperty("storeMetadataNamespace");
@@ -214,7 +214,7 @@ public class FileHashStoreProtectedTest {
                     dataStream, pid, null, null, null, -1
                 );
 
-                FileHashStore.objectInfo findObjInfo = fileHashStore.findObject(pid);
+                FileHashStore.ObjectInfo findObjInfo = fileHashStore.findObject(pid);
                 String objInfoSysmetaPath = findObjInfo.sysmetaPath();
 
                 assertEquals(objInfoSysmetaPath, "Does not exist");
