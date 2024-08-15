@@ -1743,10 +1743,9 @@ public class FileHashStore implements HashStore {
             try {
                 ObjectInfo objInfo = findObject(pid);
                 cid = objInfo.cid();
-                // If no exceptions are thrown, we proceed to synchronization based on the `cid`
-                synchronizeObjectLockedCids(cid);
-
                 try {
+                    // If no exceptions are thrown, we proceed to synchronization based on the `cid`
+                    synchronizeObjectLockedCids(cid);
                     // Get paths to reference files to work on
                     Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid);
                     Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
