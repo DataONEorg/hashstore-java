@@ -1200,9 +1200,8 @@ public class FileHashStoreProtectedTest {
         // Create orphaned pid refs file
         Path absPidRefsPath =
             fileHashStore.getHashStoreRefsPath(pid, FileHashStore.HashStoreIdTypes.pid);
-        File pidRefsTmpFile = fileHashStore.writeRefsFile(
-            cidForOrphanPidRef, FileHashStore.HashStoreIdTypes.pid.getName()
-        );
+        File pidRefsTmpFile = fileHashStore.writeRefsFile(cidForOrphanPidRef,
+                                                          FileHashStore.HashStoreIdTypes.pid.name());
         File absPathPidRefsFile = absPidRefsPath.toFile();
         fileHashStore.move(pidRefsTmpFile, absPathPidRefsFile, "refs");
 

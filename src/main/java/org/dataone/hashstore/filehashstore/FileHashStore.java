@@ -79,20 +79,6 @@ public class FileHashStore implements HashStore {
     public static final String[] SUPPORTED_HASH_ALGORITHMS = {"MD2", "MD5", "SHA-1", "SHA-256",
         "SHA-384", "SHA-512", "SHA-512/224", "SHA-512/256"};
 
-    public enum HashStoreIdTypes {
-
-        cid("cid"), pid("pid");
-
-        final String identifierType;
-
-        HashStoreIdTypes(String idType) {
-            identifierType = idType;
-        }
-
-        public String getName() {
-            return identifierType;
-        }
-    }
 
     enum DefaultHashAlgorithms {
         MD5("MD5"), SHA_1("SHA-1"), SHA_256("SHA-256"), SHA_384("SHA-384"), SHA_512("SHA-512");
@@ -108,23 +94,16 @@ public class FileHashStore implements HashStore {
         }
     }
 
+    public enum HashStoreIdTypes {
+        cid, pid
+    }
+
     enum HashStoreProperties {
         storePath, storeDepth, storeWidth, storeAlgorithm, storeMetadataNamespace
     }
 
     enum HashStoreRefUpdateTypes {
-
-        add("add"), remove("remove");
-
-        final String refUpdateType;
-
-        HashStoreRefUpdateTypes(String updateType) {
-            refUpdateType = updateType;
-        }
-
-        public String getName() {
-            return refUpdateType;
-        }
+        add, remove
     }
 
     record objectInfo(String cid, String cidObjectPath, String cidRefsPath, String pidRefsPath,
@@ -1675,7 +1654,7 @@ public class FileHashStore implements HashStore {
             if (retrievedCid.equalsIgnoreCase(cid)) {
                 // The pid correctly references the cid, but the cid refs file is missing
                 // Create the file and verify tagging process
-                File cidRefsTmpFile = writeRefsFile(pid, HashStoreIdTypes.cid.getName());
+                File cidRefsTmpFile = writeRefsFile(pid, HashStoreIdTypes.cid.name());
                 File absPathCidRefsFile = absCidRefsPath.toFile();
                 move(cidRefsTmpFile, absPathCidRefsFile, "refs");
                 verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
@@ -1705,7 +1684,7 @@ public class FileHashStore implements HashStore {
                 updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.add);
             }
             // Get the pid refs file and verify tagging process
-            File pidRefsTmpFile = writeRefsFile(cid, HashStoreIdTypes.pid.getName());
+            File pidRefsTmpFile = writeRefsFile(cid, HashStoreIdTypes.pid.name());
             File absPathPidRefsFile = absPidRefsPath.toFile();
             move(pidRefsTmpFile, absPathPidRefsFile, "refs");
             verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
@@ -1716,8 +1695,8 @@ public class FileHashStore implements HashStore {
         }
 
         // Get pid and cid refs files
-        File pidRefsTmpFile = writeRefsFile(cid, HashStoreIdTypes.pid.getName());
-        File cidRefsTmpFile = writeRefsFile(pid, HashStoreIdTypes.cid.getName());
+        File pidRefsTmpFile = writeRefsFile(cid, HashStoreIdTypes.pid.name());
+        File cidRefsTmpFile = writeRefsFile(pid, HashStoreIdTypes.cid.name());
         // Move refs files to permanent location
         File absPathPidRefsFile = absPidRefsPath.toFile();
         File absPathCidRefsFile = absCidRefsPath.toFile();
