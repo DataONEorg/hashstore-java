@@ -20,7 +20,7 @@ import org.dataone.hashstore.exceptions.UnsupportedHashAlgorithmException;
 public interface HashStore {
         /**
          * The {@code storeObject} method is responsible for the atomic storage of objects to
-         * disk using a given InputStream. Upon successful storage, the method returns a
+         * disk using a given InputStream. Upon successful storage, the method returns an
          * (@Code ObjectMetadata) object containing relevant file information, such as the file's
          * id (which can be used by a system administrator -- but not by an API client -- to locate
          * the object on disk), the file's size, and a hex digest dict of algorithms and
