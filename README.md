@@ -132,7 +132,7 @@ and the store width. Lastly, objects are 'tagged' with a given identifier (ex. p
 identifier (pid)). This process produces reference files, which allow objects to be found and
 retrieved with a given identifier.
 - Note 1: An identifier can only be used once
-- Note 2: Objects are stored once and only once using its content identifier (a checksum generated
+- Note 2: Each object is stored once and only once using its content identifier (a checksum generated
   from using a hashing algorithm). Clients that attempt to store duplicate objects will receive
   the expected ObjectMetadata - with HashStore handling the de-duplication process under the hood.
 
@@ -153,7 +153,7 @@ objectMetadata objInfo = storeObject(InputStream, pid, additionalAlgorithm, chec
 objectMetadata objInfo = storeObject(InputStream);
 // Validate object, if the parameters do not match, the data object associated with the objInfo
 // supplied will be deleted
-deleteInvalidObject(objInfo, checksum, checksumAlgorithn, objSize);
+deleteIfInvalidObject(objInfo, checksum, checksumAlgorithn, objSize);
 // Tag object, makes the object discoverable (find, retrieve, delete)
 tagObject(pid, cid);
 ```
