@@ -35,14 +35,16 @@ public class FileHashStoreUtility {
      *
      * @param object   Object to check
      * @param argument Value that is being checked
-     * @param method   Calling method or class
      * @throws IllegalArgumentException If the object is null
      */
-    public static void ensureNotNull(Object object, String argument, String method)
+    public static void ensureNotNull(Object object, String argument)
         throws IllegalArgumentException {
         if (object == null) {
-            String errMsg = "Calling Method: " + method + "(): " + argument + " cannot be null.";
-            throw new IllegalArgumentException(errMsg);
+            StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
+            String msg =
+                "Calling Method: " + stackTraceElements[2].getMethodName() + "()'s argument: "
+                    + argument + " cannot be null.";
+            throw new IllegalArgumentException(msg);
         }
     }
 
@@ -86,9 +88,9 @@ public class FileHashStoreUtility {
      */
     public static String getPidHexDigest(String pid, String algorithm)
         throws NoSuchAlgorithmException, IllegalArgumentException {
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "getPidHexDigest");
+        FileHashStoreUtility.ensureNotNull(pid, "pid");
         FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid");
-        FileHashStoreUtility.ensureNotNull(algorithm, "algorithm", "getPidHexDigest");
+        FileHashStoreUtility.ensureNotNull(algorithm, "algorithm");
         FileHashStoreUtility.checkForNotEmptyAndValidString(algorithm, "algorithm");
 
         MessageDigest stringMessageDigest = MessageDigest.getInstance(algorithm);
@@ -144,7 +146,7 @@ public class FileHashStoreUtility {
      * @throws IOException Issue with renaming the given file path
      */
     public static Path renamePathForDeletion(Path pathToRename) throws IOException {
-        ensureNotNull(pathToRename, "pathToRename", "renamePathForDeletion");
+        ensureNotNull(pathToRename, "pathToRename");
         if (!Files.exists(pathToRename)) {
             String errMsg = "Given path to file: " + pathToRename + " does not exist.";
             throw new FileNotFoundException(errMsg);
@@ -165,7 +167,7 @@ public class FileHashStoreUtility {
      * @throws IOException Issue with renaming the given file path
      */
     public static void renamePathForRestoration(Path pathToRename) throws IOException {
-        ensureNotNull(pathToRename, "pathToRename", "renamePathForRestoration");
+        ensureNotNull(pathToRename, "pathToRename");
         if (!Files.exists(pathToRename)) {
             String errMsg = "Given path to file: " + pathToRename + " does not exist.";
             throw new FileNotFoundException(errMsg);
@@ -184,7 +186,7 @@ public class FileHashStoreUtility {
      * @param deleteList Directory to check
      */
     public static void deleteListItems(Collection<Path> deleteList) {
-        ensureNotNull(deleteList, "deleteList", "deleteListItems");
+        ensureNotNull(deleteList, "deleteList");
         if (!deleteList.isEmpty()) {
             for (Path deleteItem : deleteList) {
                 if (Files.exists(deleteItem)) {
@@ -208,12 +210,11 @@ public class FileHashStoreUtility {
      *
      * @param string   String to check
      * @param argument Value that is being checked
-     * @param method   Calling method
      * @throws IllegalArgumentException If the string is empty or contains illegal characters
      */
     public static void checkForNotEmptyAndValidString(String string, String argument)
         throws IllegalArgumentException {
-        ensureNotNull(string, "string", "checkForNotEmptyAndValidString");
+        ensureNotNull(string, "string");
         if (string.isBlank()) {
             StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
             String msg =

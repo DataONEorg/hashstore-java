@@ -32,9 +32,7 @@ public class HashStoreRunnable implements Runnable {
      */
     public HashStoreRunnable(HashStore hashstore, int publicAPIMethod, InputStream objStream,
                              String pid) {
-        FileHashStoreUtility.ensureNotNull(hashstore, "hashstore",
-                                           "HashStoreRunnableConstructor ~ HashStore object is"
-                                               + " null.");
+        FileHashStoreUtility.ensureNotNull(hashstore, "hashstore");
         FileHashStoreUtility.checkPositive(
             publicAPIMethod, "HashStoreRunnableConstructor ~ Must" + " supply an integer.");
         this.hashstore = hashstore;
@@ -51,9 +49,7 @@ public class HashStoreRunnable implements Runnable {
      * @param pid             Persistent or authority-based identifier
      */
     public HashStoreRunnable(HashStore hashstore, int publicAPIMethod, String pid) {
-        FileHashStoreUtility.ensureNotNull(hashstore, "hashstore",
-                                           "HashStoreRunnableConstructor ~ HashStore object is"
-                                               + " null.");
+        FileHashStoreUtility.ensureNotNull(hashstore, "hashstore");
         FileHashStoreUtility.checkPositive(
             publicAPIMethod, "HashStoreRunnableConstructor ~ Must" + " supply an integer.");
         this.hashstore = hashstore;
