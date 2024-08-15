@@ -80,6 +80,9 @@ public class FileHashStore implements HashStore {
         "SHA-384", "SHA-512", "SHA-512/224", "SHA-512/256"};
 
 
+    /**
+     * The default hash algorithms included in the ObjectMetadata when storing objects.
+     */
     enum DefaultHashAlgorithms {
         MD5("MD5"), SHA_1("SHA-1"), SHA_256("SHA-256"), SHA_384("SHA-384"), SHA_512("SHA-512");
 
@@ -94,18 +97,37 @@ public class FileHashStore implements HashStore {
         }
     }
 
+    /**
+     * The two different type of HashStore identifiers
+     */
     public enum HashStoreIdTypes {
         cid, pid
     }
 
+    /**
+     * The configuration properties for a HashStore
+     */
     enum HashStoreProperties {
         storePath, storeDepth, storeWidth, storeAlgorithm, storeMetadataNamespace
     }
 
+    /**
+     * When working with refs files, we either add or remove values
+     */
     enum HashStoreRefUpdateTypes {
         add, remove
     }
 
+    /**
+     * Record object to encapsulate information when searching for an existing HashStore object
+     * based on a given persistent identifier {@code pid}
+     *
+     * @param cid Content identifier of the data object of a given pid
+     * @param cidObjectPath Path to the data object
+     * @param cidRefsPath Path to the data object's reference file
+     * @param pidRefsPath Path to the pid's that references the data object
+     * @param sysmetaPath Path to the pid's system metadata if available
+     */
     record objectInfo(String cid, String cidObjectPath, String cidRefsPath, String pidRefsPath,
                       String sysmetaPath) {
     }
