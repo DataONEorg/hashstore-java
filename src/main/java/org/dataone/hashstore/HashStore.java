@@ -21,10 +21,11 @@ public interface HashStore {
         /**
          * The {@code storeObject} method is responsible for the atomic storage of objects to
          * disk using a given InputStream. Upon successful storage, the method returns a
-         * (ObjectMetadata) object containing relevant file information, such as the file's id
-         * (which can be used to locate the object on disk), the file's size, and a hex digest
-         * dict of algorithms and checksums. Storing an object with {@code store_object} also
-         * tags an object (creating references) which allow the object to be discoverable.
+         * (@Code ObjectMetadata) object containing relevant file information, such as the file's
+         * id (which can be used by a system administrator -- but not by an API client -- to locate
+         * the object on disk), the file's size, and a hex digest dict of algorithms and
+         * checksums. Storing an object with {@code store_object} also tags an object (creating
+         * references) which allow the object to be discoverable.
          *
          * {@code storeObject} also ensures that an object is stored only once by synchronizing
          * multiple calls and rejecting calls to store duplicate objects. Note, calling {@code
