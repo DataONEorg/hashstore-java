@@ -256,12 +256,12 @@ public class FileHashStoreUtility {
      * @param method  Calling method
      * @throws IllegalArgumentException If longInt is less than or equal
      */
-    public static void checkPositive(long longInt, String method)
-        throws IllegalArgumentException {
+    public static void checkPositive(long longInt) throws IllegalArgumentException {
         if (longInt <= 0) {
-            String errMsg =
-                "Calling Method: " + method + "(): objSize cannot be less than or equal to 0.";
-            throw new IllegalArgumentException(errMsg);
+            StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
+            String msg = "Calling Method: " + stackTraceElements[2].getMethodName()
+                + "(): given objSize/long/runnableMethod/etc. object cannot be <= 0 ";
+            throw new IllegalArgumentException(msg);
         }
     }
 
