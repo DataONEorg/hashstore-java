@@ -540,7 +540,7 @@ public class FileHashStore implements HashStore {
         // algorithm, etc.) is unavailable.
         //
         // Note: This method does not tag the object to make it discoverable, so the client can
-        // call 'deleteInvalidObject' (optional) to check that the object is valid, and then
+        // call 'deleteIfInvalidObject' (optional) to check that the object is valid, and then
         // 'tagObject' (required) to create the reference files needed to associate the
         // respective pids/cids.
         try (object) {
@@ -847,15 +847,15 @@ public class FileHashStore implements HashStore {
         IOException {
         logFileHashStore.debug("Verifying data object for cid: " + objectInfo.cid());
         // Validate input parameters
-        FileHashStoreUtility.ensureNotNull(objectInfo, "objectInfo", "deleteInvalidObject");
+        FileHashStoreUtility.ensureNotNull(objectInfo, "objectInfo", "deleteIfInvalidObject");
         FileHashStoreUtility.ensureNotNull(
-            objectInfo.hexDigests(), "objectInfo.getHexDigests()", "deleteInvalidObject");
+            objectInfo.hexDigests(), "objectInfo.getHexDigests()", "deleteIfInvalidObject");
         if (objectInfo.hexDigests().isEmpty()) {
             throw new MissingHexDigestsException("Missing hexDigests in supplied ObjectMetadata");
         }
-        FileHashStoreUtility.ensureNotNull(checksum, "checksum", "deleteInvalidObject");
-        FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm", "deleteInvalidObject");
-        FileHashStoreUtility.checkPositive(objSize, "deleteInvalidObject");
+        FileHashStoreUtility.ensureNotNull(checksum, "checksum", "deleteIfInvalidObject");
+        FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm", "deleteIfInvalidObject");
+        FileHashStoreUtility.checkPositive(objSize, "deleteIfInvalidObject");
 
         String objCid = objectInfo.cid();
         long objInfoRetrievedSize = objectInfo.size();
