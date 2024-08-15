@@ -87,9 +87,9 @@ public class FileHashStoreUtility {
     public static String getPidHexDigest(String pid, String algorithm)
         throws NoSuchAlgorithmException, IllegalArgumentException {
         FileHashStoreUtility.ensureNotNull(pid, "pid", "getPidHexDigest");
-        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid", "getPidHexDigest");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid");
         FileHashStoreUtility.ensureNotNull(algorithm, "algorithm", "getPidHexDigest");
-        FileHashStoreUtility.checkForNotEmptyAndValidString(algorithm, "algorithm", "getPidHexDigest");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(algorithm, "algorithm");
 
         MessageDigest stringMessageDigest = MessageDigest.getInstance(algorithm);
         byte[] bytes = pid.getBytes(StandardCharsets.UTF_8);
@@ -211,18 +211,22 @@ public class FileHashStoreUtility {
      * @param method   Calling method
      * @throws IllegalArgumentException If the string is empty or contains illegal characters
      */
-    public static void checkForNotEmptyAndValidString(String string, String argument, String method)
+    public static void checkForNotEmptyAndValidString(String string, String argument)
         throws IllegalArgumentException {
         ensureNotNull(string, "string", "checkForNotEmptyAndValidString");
         if (string.isBlank()) {
-            String errMsg = "Calling Method: " + method + "(): " + argument
-                + " cannot be empty or contain empty white spaces, tabs or newlines.";
-            throw new IllegalArgumentException(errMsg);
+            StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
+            String msg =
+                "Calling Method: " + stackTraceElements[2].getMethodName() + "()'s argument: "
+                    + argument + " cannot be empty, contain empty white spaces, tabs or newlines.";
+            throw new IllegalArgumentException(msg);
         }
         if (!isValidString(string)) {
-            String errMsg = "Calling Method: " + method + "(): " + argument
-                + " contains empty white spaces, tabs or newlines.";
-            throw new IllegalArgumentException(errMsg);
+            StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
+            String msg =
+                "Calling Method: " + stackTraceElements[2].getMethodName() + "()'s argument: "
+                    + argument + " contains empty white spaces, tabs or newlines.";
+            throw new IllegalArgumentException(msg);
         }
     }
 
