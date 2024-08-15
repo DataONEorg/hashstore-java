@@ -556,23 +556,24 @@ public class FileHashStore implements HashStore {
         FileHashStoreUtility.checkForNotEmptyAndValidString(cid, "cid");
 
         try {
+            // This method synchronizes the pid and cid
             storeHashStoreRefsFiles(pid, cid);
 
         } catch (HashStoreRefsAlreadyExistException hsrfae) {
-            // *** cid and pid already released ***
+            // cid and pid has been released
             // This exception is thrown when the pid and cid are already tagged appropriately
             String errMsg =
                 "HashStore refs files already exist for pid " + pid + " and cid: " + cid;
             throw new HashStoreRefsAlreadyExistException(errMsg);
 
         } catch (PidRefsFileExistsException prfe) {
-            // *** cid and pid already released ***
+            // cid and pid has been released
             String errMsg = "pid: " + pid + " already references another cid."
                 + " A pid can only reference one cid.";
             throw new PidRefsFileExistsException(errMsg);
 
         } catch (Exception e) {
-            // *** cid and pid already released ***
+            // cid and pid has been released
             // Revert the process for all other exceptions
             unTagObject(pid, cid);
             throw e;
