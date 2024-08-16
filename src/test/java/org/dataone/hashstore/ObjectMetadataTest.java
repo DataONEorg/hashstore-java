@@ -29,16 +29,13 @@ public class ObjectMetadataTest {
         hexDigests.put("md5", "f4ea2d07db950873462a064937197b0f");
         hexDigests.put("sha1", "3d25436c4490b08a2646e283dada5c60e5c0539d");
         hexDigests.put(
-            "sha256", "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a"
-        );
+            "sha256", "94f9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a");
         hexDigests.put(
             "sha384",
-            "a204678330fcdc04980c9327d4e5daf01ab7541e8a351d49a7e9c5005439dce749ada39c4c35f573dd7d307cca11bea8"
-        );
+            "a204678330fcdc04980c9327d4e5daf01ab7541e8a351d49a7e9c5005439dce749ada39c4c35f573dd7d307cca11bea8");
         hexDigests.put(
             "sha512",
-            "bf9e7f4d4e66bd082817d87659d1d57c2220c376cd032ed97cadd481cf40d78dd479cbed14d34d98bae8cebc603b40c633d088751f07155a94468aa59e2ad109"
-        );
+            "bf9e7f4d4e66bd082817d87659d1d57c2220c376cd032ed97cadd481cf40d78dd479cbed14d34d98bae8cebc603b40c633d088751f07155a94468aa59e2ad109");
     }
 
     /**
@@ -56,7 +53,7 @@ public class ObjectMetadataTest {
     @Test
     public void testObjectMetadataGetPid() {
         ObjectMetadata objInfo = new ObjectMetadata(null, id, size, hexDigests);
-        String pid = objInfo.getPid();
+        String pid = objInfo.pid();
         assertNull(pid);
     }
 
@@ -65,11 +62,10 @@ public class ObjectMetadataTest {
      */
     @Test
     public void testObjectMetadataSetPid() {
-        ObjectMetadata objInfo = new ObjectMetadata(null, id, size, hexDigests);
         String pidToSet = "dou.test.1";
-        objInfo.setPid(pidToSet);
+        ObjectMetadata objInfo = new ObjectMetadata(pidToSet, id, size, hexDigests);
 
-        String pidFromObjectMetadata = objInfo.getPid();
+        String pidFromObjectMetadata = objInfo.pid();
         assertEquals(pidFromObjectMetadata, pidToSet);
     }
 
@@ -79,7 +75,7 @@ public class ObjectMetadataTest {
     @Test
     public void testObjectMetadataGetId() {
         ObjectMetadata objInfo = new ObjectMetadata(null, id, size, hexDigests);
-        String objId = objInfo.getCid();
+        String objId = objInfo.cid();
         assertEquals(objId, id);
     }
 
@@ -89,7 +85,7 @@ public class ObjectMetadataTest {
     @Test
     public void testHashAddressGetSize() {
         ObjectMetadata objInfo = new ObjectMetadata(null, id, size, hexDigests);
-        long objSize = objInfo.getSize();
+        long objSize = objInfo.size();
         assertEquals(objSize, size);
     }
 
@@ -99,7 +95,7 @@ public class ObjectMetadataTest {
     @Test
     public void testObjectMetadataGetHexDigests() {
         ObjectMetadata objInfo = new ObjectMetadata(null, id, size, hexDigests);
-        Map<String, String> objInfoMap = objInfo.getHexDigests();
+        Map<String, String> objInfoMap = objInfo.hexDigests();
         assertEquals(objInfoMap, hexDigests);
     }
 }

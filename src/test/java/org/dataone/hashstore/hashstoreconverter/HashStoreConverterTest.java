@@ -119,14 +119,14 @@ public class HashStoreConverterTest {
             sysmetaStream.close();
 
             // Check checksums
-            Map<String, String> hexDigests = objInfo.getHexDigests();
+            Map<String, String> hexDigests = objInfo.hexDigests();
             assertEquals(md5, hexDigests.get("MD5"));
             assertEquals(sha1, hexDigests.get("SHA-1"));
             assertEquals(sha256, hexDigests.get("SHA-256"));
             assertEquals(sha384, hexDigests.get("SHA-384"));
             assertEquals(sha512, hexDigests.get("SHA-512"));
-            assertEquals(sha256, objInfo.getCid());
-            assertEquals(pid, objInfo.getPid());
+            assertEquals(sha256, objInfo.cid());
+            assertEquals(pid, objInfo.pid());
 
             // Metadata is stored directly through 'FileHashStore'
             // Creation of hard links is confirmed via 'FileHashStoreLinks'
@@ -152,7 +152,7 @@ public class HashStoreConverterTest {
             sysmetaStream.close();
 
             // Check checksums
-            Map<String, String> hexDigests = objInfo.getHexDigests();
+            Map<String, String> hexDigests = objInfo.hexDigests();
             assertEquals(sha256, hexDigests.get("SHA-256"));
         }
     }
@@ -177,7 +177,7 @@ public class HashStoreConverterTest {
             sysmetaStream.close();
 
             // Check checksums
-            Map<String, String> hexDigests = objInfo.getHexDigests();
+            Map<String, String> hexDigests = objInfo.hexDigests();
             assertEquals(md2, hexDigests.get("MD2"));
         }
     }

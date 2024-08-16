@@ -18,12 +18,11 @@ public class HashStoreFactory {
 
     /**
      * Factory method to generate a HashStore
-     * 
+     *
      * @param classPackage    String of the package name, ex.
      *                        "org.dataone.hashstore.filehashstore.FileHashStore"
      * @param storeProperties Properties object with the following keys: storePath, storeDepth,
      *                        storeWidth, storeAlgorithm, storeMetadataNamespace
-     * 
      * @return HashStore instance ready to store objects and metadata
      * @throws HashStoreFactoryException When HashStore failÏs to initialize due to permissions or
      *                                   class-related issues
@@ -52,22 +51,23 @@ public class HashStoreFactory {
             hashstore = (HashStore) constructor.newInstance(storeProperties);
 
         } catch (ClassNotFoundException cnfe) {
-            String errMsg = "HashStoreFactory - Unable to find 'FileHashStore' classPackage: "
-                + classPackage + " - " + cnfe.getCause();
+            String errMsg =
+                "HashStoreFactory - Unable to find 'FileHashStore' classPackage: " + classPackage
+                    + " - " + cnfe.getCause();
             logHashStore.error(errMsg);
             throw new HashStoreFactoryException(errMsg);
 
         } catch (NoSuchMethodException nsme) {
-            String errMsg = "HashStoreFactory - Constructor not found for 'FileHashStore': "
-                + classPackage + " - " + nsme.getCause();
+            String errMsg =
+                "HashStoreFactory - Constructor not found for 'FileHashStore': " + classPackage
+                    + " - " + nsme.getCause();
             logHashStore.error(errMsg);
             throw new HashStoreFactoryException(errMsg);
 
         } catch (IllegalAccessException iae) {
             String errMsg =
                 "HashStoreFactory - Executing method does not have access to the definition of"
-                    + " the specified class , field, method or constructor. " + iae
-                        .getCause();
+                    + " the specified class , field, method or constructor. " + iae.getCause();
             logHashStore.error(errMsg);
             throw new HashStoreFactoryException(errMsg);
 
@@ -78,7 +78,8 @@ public class HashStoreFactory {
             throw new HashStoreFactoryException(errMsg);
 
         } catch (InvocationTargetException ite) {
-            String errMsg = "HashStoreFactory - Error creating 'FileHashStore' instance: " + ite.getCause();
+            String errMsg =
+                "HashStoreFactory - Error creating 'FileHashStore' instance: " + ite.getCause();
             logHashStore.error(errMsg);
             throw new HashStoreFactoryException(errMsg);
 
