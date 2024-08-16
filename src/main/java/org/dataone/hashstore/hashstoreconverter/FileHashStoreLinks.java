@@ -22,10 +22,10 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- * FileHashStoreLinks is an extension of FileHashStore that provides the client with the ability
- * to store a hard link instead of storing a data object. This is desirable when a directory with
- * data objects already exists to optimize disk usage, and is more performant since there is no
- * write operation.
+ * FileHashStoreLinks is an extension of FileHashStore that provides the client with the ability to
+ * store a hard link instead of storing a data object. This is desirable when a directory with data
+ * objects already exists to optimize disk usage, and is more performant since there is no write
+ * operation.
  */
 public class FileHashStoreLinks extends FileHashStore {
 
@@ -45,22 +45,18 @@ public class FileHashStoreLinks extends FileHashStore {
      *                                  configuration file
      * @throws NoSuchAlgorithmException If an algorithm in the properties is not supported
      */
-    public FileHashStoreLinks(Properties hashstoreProperties) throws IllegalArgumentException,
-        IOException, NoSuchAlgorithmException {
+    public FileHashStoreLinks(Properties hashstoreProperties)
+        throws IllegalArgumentException, IOException, NoSuchAlgorithmException {
         super(hashstoreProperties);
         // If configuration matches, set FileHashStoreLinks private variables
-        Path storePath = Paths.get(
-            hashstoreProperties.getProperty(HashStoreProperties.storePath.name())
-        );
+        Path storePath =
+            Paths.get(hashstoreProperties.getProperty(HashStoreProperties.storePath.name()));
         int storeDepth = Integer.parseInt(
-            hashstoreProperties.getProperty(HashStoreProperties.storeDepth.name())
-        );
+            hashstoreProperties.getProperty(HashStoreProperties.storeDepth.name()));
         int storeWidth = Integer.parseInt(
-            hashstoreProperties.getProperty(HashStoreProperties.storeWidth.name())
-        );
-        String storeAlgorithm = hashstoreProperties.getProperty(
-            HashStoreProperties.storeAlgorithm.name()
-        );
+            hashstoreProperties.getProperty(HashStoreProperties.storeWidth.name()));
+        String storeAlgorithm =
+            hashstoreProperties.getProperty(HashStoreProperties.storeAlgorithm.name());
         DIRECTORY_DEPTH = storeDepth;
         DIRECTORY_WIDTH = storeWidth;
         OBJECT_STORE_ALGORITHM = storeAlgorithm;
@@ -71,26 +67,27 @@ public class FileHashStoreLinks extends FileHashStore {
     /**
      * Store a hard link to HashStore from an existing data object in the filesystem.
      *
-     * @param filePath   Path to the source file which a hard link will be created for
-     * @param fileStream Stream to the source file to calculate checksums for
-     * @param pid        Persistent or authority-based identifier for tagging
-     * @param checksum   Value of checksum
+     * @param filePath          Path to the source file which a hard link will be created for
+     * @param fileStream        Stream to the source file to calculate checksums for
+     * @param pid               Persistent or authority-based identifier for tagging
+     * @param checksum          Value of checksum
      * @param checksumAlgorithm Ex. "SHA-256"
      * @return ObjectMetadata encapsulating information about the data file
      * @throws NoSuchAlgorithmException Issue with one of the hashing algorithms to calculate
      * @throws IOException              An issue with reading from the given file stream
-     * @throws InterruptedException Sync issue when tagging pid and cid
+     * @throws InterruptedException     Sync issue when tagging pid and cid
      */
-    public ObjectMetadata storeHardLink(Path filePath, InputStream fileStream, String pid,
-                                        String checksum, String checksumAlgorithm)
+    public ObjectMetadata storeHardLink(
+        Path filePath, InputStream fileStream, String pid, String checksum,
+        String checksumAlgorithm)
         throws NoSuchAlgorithmException, IOException, InterruptedException {
         // Validate input parameters
-        FileHashStoreUtility.ensureNotNull(filePath, "filePath", "storeHardLink");
-        FileHashStoreUtility.ensureNotNull(fileStream, "fileStream", "storeHardLink");
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "storeHardLink");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "storeHardLink");
-        FileHashStoreUtility.ensureNotNull(checksum, "checksum", "storeHardLink");
-        FileHashStoreUtility.checkForEmptyAndValidString(checksum, "checksum", "storeHardLink");
+        FileHashStoreUtility.ensureNotNull(filePath, "filePath");
+        FileHashStoreUtility.ensureNotNull(fileStream, "fileStream");
+        FileHashStoreUtility.ensureNotNull(pid, "pid");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid");
+        FileHashStoreUtility.ensureNotNull(checksum, "checksum");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(checksum, "checksum");
         validateAlgorithm(checksumAlgorithm);
         if (!Files.exists(filePath)) {
             String errMsg = "Given file path: " + filePath + " does not exist.";
@@ -110,9 +107,9 @@ public class FileHashStoreLinks extends FileHashStore {
 
             // Gather the elements to form the permanent address
             String objectCid = hexDigests.get(OBJECT_STORE_ALGORITHM);
-            String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
-                DIRECTORY_DEPTH, DIRECTORY_WIDTH, objectCid
-            );
+            String objRelativePath =
+                FileHashStoreUtility.getHierarchicalPathString(DIRECTORY_DEPTH, DIRECTORY_WIDTH,
+                                                               objectCid);
             Path objHardLinkPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
             // Create parent directories to the hard link, otherwise
             // Files.createLink will throw a NoSuchFileException
@@ -122,8 +119,7 @@ public class FileHashStoreLinks extends FileHashStore {
                 Files.createLink(objHardLinkPath, filePath);
 
             } catch (FileAlreadyExistsException faee) {
-                logFileHashStoreLinks.warn(
-                    "Data object already exists at: " + objHardLinkPath);
+                logFileHashStoreLinks.warn("Data object already exists at: " + objHardLinkPath);
             }
 
             // This method is thread safe and synchronized
@@ -154,10 +150,10 @@ public class FileHashStoreLinks extends FileHashStore {
     }
 
     /**
-     * Get a HashMap consisting of algorithms and their respective hex digests for a given
-     * data stream. If an additional algorithm is supplied and supported, it and its checksum
-     * value will be included in the hex digests map. Default algorithms: MD5, SHA-1, SHA-256,
-     * SHA-384, SHA-512
+     * Get a HashMap consisting of algorithms and their respective hex digests for a given data
+     * stream. If an additional algorithm is supplied and supported, it and its checksum value will
+     * be included in the hex digests map. Default algorithms: MD5, SHA-1, SHA-256, SHA-384,
+     * SHA-512
      *
      * @param dataStream          input stream of data to store
      * @param additionalAlgorithm additional algorithm to include in hex digest map
@@ -226,8 +222,8 @@ public class FileHashStoreLinks extends FileHashStore {
         hexDigests.put(DefaultHashAlgorithms.SHA_384.getName(), sha384Digest);
         hexDigests.put(DefaultHashAlgorithms.SHA_512.getName(), sha512Digest);
         if (generateAddAlgo) {
-            String extraAlgoDigest = DatatypeConverter.printHexBinary(additionalAlgo.digest())
-                .toLowerCase();
+            String extraAlgoDigest =
+                DatatypeConverter.printHexBinary(additionalAlgo.digest()).toLowerCase();
             hexDigests.put(additionalAlgorithm, extraAlgoDigest);
         }
 

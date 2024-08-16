@@ -15,8 +15,8 @@ import java.util.Properties;
 /**
  * HashStoreConverter is a utility tool to assist with ingesting existing data objects and their
  * respective system metadata into a HashStore. Instead of duplicating data objects (that already
- * exist), HashStoreConverter provides a simple API to create a hard link to a data object with
- * its expected HashStore object path.
+ * exist), HashStoreConverter provides a simple API to create a hard link to a data object with its
+ * expected HashStore object path.
  */
 public class HashStoreConverter {
     private static final Log logHashStoreConverter = LogFactory.getLog(HashStoreConverter.class);
@@ -51,37 +51,38 @@ public class HashStoreConverter {
     }
 
     /**
-     * Take an existing path to a data object, store it into a new or existing HashStore via a
-     * hard link, store the supplied system metadata and return the ObjectMetadata for the data
-     * object. A 'filePath' may be null, in which case a hard link will not be created, and only
-     * the sysmeta will be stored.
+     * Take an existing path to a data object, store it into a new or existing HashStore via a hard
+     * link, store the supplied system metadata and return the ObjectMetadata for the data object. A
+     * 'filePath' may be null, in which case a hard link will not be created, and only the sysmeta
+     * will be stored.
      *
-     * @param filePath      Path to existing data object
-     * @param pid           Persistent or authority-based identifier
-     * @param sysmetaStream Stream to sysmeta content to store.
-     * @param checksum   Value of checksum
+     * @param filePath          Path to existing data object
+     * @param pid               Persistent or authority-based identifier
+     * @param sysmetaStream     Stream to sysmeta content to store.
+     * @param checksum          Value of checksum
      * @param checksumAlgorithm Ex. "SHA-256"
      * @return ObjectMetadata for the given pid
      * @throws IOException              An issue with calculating checksums or storing sysmeta
      * @throws NoSuchAlgorithmException An algorithm defined is not supported
      * @throws InterruptedException     Issue with synchronizing storing metadata
      */
-    public ObjectMetadata convert(Path filePath, String pid, InputStream sysmetaStream,
-                                  String checksum, String checksumAlgorithm)
+    public ObjectMetadata convert(
+        Path filePath, String pid, InputStream sysmetaStream, String checksum,
+        String checksumAlgorithm)
         throws IOException, NoSuchAlgorithmException, InterruptedException {
         logHashStoreConverter.info("Begin converting data object and sysmeta for pid: " + pid);
-        FileHashStoreUtility.ensureNotNull(sysmetaStream, "sysmetaStream", "convert");
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "convert");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "convert");
+        FileHashStoreUtility.ensureNotNull(sysmetaStream, "sysmetaStream");
+        FileHashStoreUtility.ensureNotNull(pid, "pid");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid");
 
         // Store the hard link first if it's available
         ObjectMetadata objInfo = null;
         if (filePath != null) {
-            FileHashStoreUtility.ensureNotNull(checksum, "checksum", "convert");
-            FileHashStoreUtility.checkForEmptyAndValidString(checksum, "checksum", "convert");
-            FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm", "convert");
-            FileHashStoreUtility.checkForEmptyAndValidString(
-                checksumAlgorithm, "checksumAlgorithm", "convert");
+            FileHashStoreUtility.ensureNotNull(checksum, "checksum");
+            FileHashStoreUtility.checkForNotEmptyAndValidString(checksum, "checksum");
+            FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm");
+            FileHashStoreUtility.checkForNotEmptyAndValidString(
+                checksumAlgorithm, "checksumAlgorithm");
 
             try (InputStream fileStream = Files.newInputStream(filePath)) {
                 objInfo = fileHashStoreLinks.storeHardLink(filePath, fileStream, pid, checksum,

@@ -147,8 +147,8 @@ public class FileHashStoreLinksTest {
 
             // Check id (content identifier based on the store algorithm)
             String objectCid = testData.pidData.get(pid).get("sha256");
-            assertEquals(objectCid, objInfo.getCid());
-            assertEquals(pid, objInfo.getPid());
+            assertEquals(objectCid, objInfo.cid());
+            assertEquals(pid, objInfo.pid());
 
             Path objPath = fileHashStoreLinks.getHashStoreLinksDataObjectPath(pid);
 
