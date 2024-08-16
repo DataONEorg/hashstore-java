@@ -115,8 +115,8 @@ start work on the next release.
 
 ## Testing
 
-**Unit and integration tests**. HashStore has a full suite of `pytest` tests in the `tests` subdirectory.
-Any new code developed should include a robust set of tests for each public
+**Unit and integration tests**. HashStore has a full suite of `JUnit` tests in the `tests`
+subdirectory. Any new code developed should include a robust set of tests for each public
 method, as well as integration tests from new feature sets.  Tests should fully
 exercise the feature to ensure that it responds correctly to both good data inputs
 and various classes of corrupt or bad data.  All tests should pass before submitting a PR
@@ -130,9 +130,9 @@ for this GitHub Actions status badge and make sure it says "Passing":
 Code should be written to professional standards to enable clean, well-documented,
 readable, and maintainable software.  While there has been significant variability
 in the coding styles applied historically, new contributions should strive for
-clean code formatting.  We generally follow PEP8 guidelines for Python code formatting,
-typically enforced through the `black` code formatting package. For Java, we typically 
-follow the [Google Style](https://raw.githubusercontent.com/google/styleguide/gh-pages/eclipse-java-google-style.xml), enforced through the VS Code formatting extensions.
+clean code formatting. For Java, we generally follow the [Google
+Style](https://raw.githubusercontent.com/google/styleguide/gh-pages/eclipse-java-google-style.xml),
+enforced through the VS Code formatting extensions.
 
 ## Contributor license agreement
 
