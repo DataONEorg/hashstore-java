@@ -9,9 +9,9 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * A HashStoreRunnable represents the data needed for a single request to HashStore
- * packaged as a Runnable task that can be executed within a thread pool, typically
- * provided by the Executor service.
+ * A HashStoreRunnable represents the data needed for a single request to HashStore packaged as a
+ * Runnable task that can be executed within a thread pool, typically provided by the Executor
+ * service.
  */
 public class HashStoreRunnable implements Runnable {
     private static final Log log = LogFactory.getLog(HashStoreRunnable.class);
@@ -30,8 +30,8 @@ public class HashStoreRunnable implements Runnable {
      * @param objStream       Stream to data object
      * @param pid             Persistent or authority-based identifier
      */
-    public HashStoreRunnable(HashStore hashstore, int publicAPIMethod, InputStream objStream,
-                             String pid) {
+    public HashStoreRunnable(
+        HashStore hashstore, int publicAPIMethod, InputStream objStream, String pid) {
         FileHashStoreUtility.ensureNotNull(hashstore, "hashstore");
         FileHashStoreUtility.checkPositive(publicAPIMethod);
         this.hashstore = hashstore;
@@ -44,7 +44,8 @@ public class HashStoreRunnable implements Runnable {
      * Constructor for HashStoreRunnable where only a pid is necessary (ex. to delete an object).
      *
      * @param hashstore       HashStore object to interact with
-     * @param publicAPIMethod Integer representing action/Public API method (ex. 2 for deleteObject)
+     * @param publicAPIMethod Integer representing action/Public API method (ex. 2 for
+     *                        deleteObject)
      * @param pid             Persistent or authority-based identifier
      */
     public HashStoreRunnable(HashStore hashstore, int publicAPIMethod, String pid) {
@@ -87,8 +88,7 @@ public class HashStoreRunnable implements Runnable {
                 }
             }
         } catch (HashStoreServiceException | IOException hse) {
-            log.error(
-                "HashStoreRunnable ~ Unexpected Error: " + hse.getMessage());
+            log.error("HashStoreRunnable ~ Unexpected Error: " + hse.getMessage());
         }
     }
 }

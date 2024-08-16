@@ -43,8 +43,7 @@ public class HashStoreClientTest {
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
         storeProperties.setProperty(
-            "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
-        );
+            "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata");
 
         try {
             hsProperties = storeProperties;
@@ -90,8 +89,8 @@ public class HashStoreClientTest {
     }
 
     /**
-     * Utility method to get absolute path of a given object and objType
-     * ("objects", "metadata", "cid", or "pid").
+     * Utility method to get absolute path of a given object and objType ("objects", "metadata",
+     * "cid", or "pid").
      */
     public Path getObjectAbsPath(String id, String objType) throws Exception {
         String storeAlgo = hsProperties.getProperty("storeAlgorithm");
@@ -108,24 +107,23 @@ public class HashStoreClientTest {
         if (objType.equals("metadata")) {
             // Get pid metadata directory hash(pid)
             String pidHash = FileHashStoreUtility.getPidHexDigest(id, storeAlgo);
-            String pidMetadataDirectory = getHierarchicalPathString(shardDepth, shardWidth, pidHash);
+            String pidMetadataDirectory =
+                getHierarchicalPathString(shardDepth, shardWidth, pidHash);
             // Get sysmeta name hash(pid+default_formatId)
-            String metadataDocHash =
-                FileHashStoreUtility.getPidHexDigest(id + hsProperties.getProperty(
-                    "storeMetadataNamespace"), storeAlgo);
-            absPath = storePath.resolve("metadata").resolve(pidMetadataDirectory).resolve(metadataDocHash);
+            String metadataDocHash = FileHashStoreUtility.getPidHexDigest(
+                id + hsProperties.getProperty("storeMetadataNamespace"), storeAlgo);
+            absPath = storePath.resolve("metadata").resolve(pidMetadataDirectory)
+                .resolve(metadataDocHash);
         }
         if (objType.equals("cid")) {
-            String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
-                shardDepth, shardWidth, id
-            );
+            String pidRelativePath =
+                FileHashStoreUtility.getHierarchicalPathString(shardDepth, shardWidth, id);
             absPath = storePath.resolve("refs/cids").resolve(pidRelativePath);
         }
         if (objType.equals("pid")) {
             String hashId = FileHashStoreUtility.getPidHexDigest(id, storeAlgo);
-            String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
-                shardDepth, shardWidth, hashId
-            );
+            String pidRelativePath =
+                FileHashStoreUtility.getHierarchicalPathString(shardDepth, shardWidth, hashId);
             absPath = storePath.resolve("refs/pids").resolve(pidRelativePath);
         }
         return absPath;
@@ -147,9 +145,10 @@ public class HashStoreClientTest {
         String optAlgoValue = "SHA-256";
         String optFormatId = "-nsp";
         String optFormatIdValue = "https://ns.dataone.org/service/types/v2.0#SystemMetadata";
-        String[] args = {optCreateHashstore, optStore, optStorePath, optStoreDepth,
-            optStoreDepthValue, optStoreWidth, optStoreWidthValue, optAlgo, optAlgoValue,
-            optFormatId, optFormatIdValue};
+        String[] args =
+            {optCreateHashstore, optStore, optStorePath, optStoreDepth, optStoreDepthValue,
+                optStoreWidth, optStoreWidthValue, optAlgo, optAlgoValue, optFormatId,
+                optFormatIdValue};
         HashStoreClient.main(args);
 
         Path storePath = Paths.get(optStorePath);
@@ -184,8 +183,8 @@ public class HashStoreClientTest {
             String optPath = "-path";
             String optObjectPath = testDataFile.toString();
             String optPid = "-pid";
-            String[] args = {optStoreObject, optStore, optStorePath, optPath, optObjectPath, optPid,
-                pid};
+            String[] args =
+                {optStoreObject, optStore, optStorePath, optPath, optObjectPath, optPid, pid};
             HashStoreClient.main(args);
 
             // Confirm object was stored
@@ -226,8 +225,9 @@ public class HashStoreClientTest {
             String optPid = "-pid";
             String optFormatId = "-format_id";
             String optFormatIdValue = hsProperties.getProperty("storeMetadataNamespace");
-            String[] args = {optStoreMetadata, optStore, optStorePath, optPath, optObjectPath,
-                optPid, pid, optFormatId, optFormatIdValue};
+            String[] args =
+                {optStoreMetadata, optStore, optStorePath, optPath, optObjectPath, optPid, pid,
+                    optFormatId, optFormatIdValue};
             HashStoreClient.main(args);
 
             // Confirm metadata was stored
@@ -235,20 +235,17 @@ public class HashStoreClientTest {
             String storeAlgorithm = hsProperties.getProperty("storeAlgorithm");
             int storeDepth = Integer.parseInt(hsProperties.getProperty("storeDepth"));
             int storeWidth = Integer.parseInt(hsProperties.getProperty("storeWidth"));
-            Path metadataDirectory = Paths.get(hsProperties.getProperty("storePath")).resolve(
-                "metadata"
-            );
+            Path metadataDirectory =
+                Paths.get(hsProperties.getProperty("storePath")).resolve("metadata");
             String metadataCidPartOne = FileHashStoreUtility.getPidHexDigest(pid, storeAlgorithm);
-            String pidMetadataDirectory = FileHashStoreUtility.getHierarchicalPathString(
-                storeDepth, storeWidth, metadataCidPartOne
-            );
+            String pidMetadataDirectory =
+                FileHashStoreUtility.getHierarchicalPathString(storeDepth, storeWidth,
+                                                               metadataCidPartOne);
             // The file name for the metadata document is the hash of the supplied 'formatId'
-            String metadataCidPartTwo = FileHashStoreUtility.getPidHexDigest(
-                pid + optFormatIdValue, storeAlgorithm
-            );
-            Path expectedMetadataPath = metadataDirectory.resolve(pidMetadataDirectory).resolve(
-                metadataCidPartTwo
-            );
+            String metadataCidPartTwo =
+                FileHashStoreUtility.getPidHexDigest(pid + optFormatIdValue, storeAlgorithm);
+            Path expectedMetadataPath =
+                metadataDirectory.resolve(pidMetadataDirectory).resolve(metadataCidPartTwo);
             assertTrue(Files.exists(expectedMetadataPath));
 
             // Put things back
@@ -324,8 +321,8 @@ public class HashStoreClientTest {
             String optPid = "-pid";
             String optFormatId = "-format_id";
             String optFormatIdValue = hsProperties.getProperty("storeMetadataNamespace");
-            String[] args = {optRetrieveMetadata, optStore, optStorePath, optPid, pid,
-                optFormatId, optFormatIdValue};
+            String[] args = {optRetrieveMetadata, optStore, optStorePath, optPid, pid, optFormatId,
+                optFormatIdValue};
             HashStoreClient.main(args);
 
             // Put things back
@@ -405,8 +402,8 @@ public class HashStoreClientTest {
             String optPid = "-pid";
             String optFormatId = "-format_id";
             String optFormatIdValue = hsProperties.getProperty("storeMetadataNamespace");
-            String[] args = {optDeleteMetadata, optStore, optStorePath, optPid, pid,
-                optFormatId, optFormatIdValue};
+            String[] args = {optDeleteMetadata, optStore, optStorePath, optPid, pid, optFormatId,
+                optFormatIdValue};
             HashStoreClient.main(args);
 
             // Confirm metadata was deleted
@@ -449,8 +446,8 @@ public class HashStoreClientTest {
             String optPid = "-pid";
             String optAlgo = "-algo";
             String optAlgoValue = "SHA-256";
-            String[] args = {optGetChecksum, optStore, optStorePath, optPid, pid, optAlgo,
-                optAlgoValue};
+            String[] args =
+                {optGetChecksum, optStore, optStorePath, optPid, pid, optAlgo, optAlgoValue};
             HashStoreClient.main(args);
 
 

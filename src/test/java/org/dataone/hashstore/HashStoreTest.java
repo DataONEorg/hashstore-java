@@ -36,8 +36,7 @@ public class HashStoreTest {
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
         storeProperties.setProperty(
-            "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
-        );
+            "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata");
 
         try {
             hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
@@ -77,8 +76,8 @@ public class HashStoreTest {
             storeProperties.setProperty("storeWidth", "2");
             storeProperties.setProperty("storeAlgorithm", "SHA-256");
             storeProperties.setProperty(
-                "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
-            );
+                "storeMetadataNamespace",
+                "https://ns.dataone.org/service/types/v2.0#SystemMetadata");
 
             hashStore = HashStoreFactory.getHashStore(null, storeProperties);
         });
@@ -98,8 +97,8 @@ public class HashStoreTest {
             storeProperties.setProperty("storeWidth", "2");
             storeProperties.setProperty("storeAlgorithm", "SHA-256");
             storeProperties.setProperty(
-                "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
-            );
+                "storeMetadataNamespace",
+                "https://ns.dataone.org/service/types/v2.0#SystemMetadata");
 
             hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
 
@@ -127,7 +126,8 @@ public class HashStoreTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             try (InputStream dataStream = Files.newInputStream(testDataFile)) {
-                ObjectMetadata objInfo = hashStore.storeObject(dataStream, pid, null, null, null, -1);
+                ObjectMetadata objInfo =
+                    hashStore.storeObject(dataStream, pid, null, null, null, -1);
 
                 // Check id (sha-256 hex digest of the ab_id, aka object_cid)
                 String objContentId = testData.pidData.get(pid).get("sha256");
@@ -154,11 +154,11 @@ public class HashStoreTest {
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
         storeProperties.setProperty(
-            "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
-        );
+            "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata");
 
-        assertThrows(HashStoreFactoryException.class, () -> hashStore =
-            HashStoreFactory.getHashStore(classPackage, storeProperties));
+        assertThrows(
+            HashStoreFactoryException.class, () -> hashStore =
+                HashStoreFactory.getHashStore(classPackage, storeProperties));
     }
 
     /**
@@ -179,11 +179,11 @@ public class HashStoreTest {
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
         storeProperties.setProperty(
-            "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
-        );
+            "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata");
 
-        assertThrows(HashStoreFactoryException.class, () -> hashStore =
-            HashStoreFactory.getHashStore(classPackage, storeProperties));
+        assertThrows(
+            HashStoreFactoryException.class, () -> hashStore =
+                HashStoreFactory.getHashStore(classPackage, storeProperties));
     }
 
     /**
@@ -204,10 +204,10 @@ public class HashStoreTest {
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
         storeProperties.setProperty(
-            "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
-        );
+            "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata");
 
-        assertThrows(HashStoreFactoryException.class, () -> hashStore =
-            HashStoreFactory.getHashStore(classPackage, storeProperties));
+        assertThrows(
+            HashStoreFactoryException.class, () -> hashStore =
+                HashStoreFactory.getHashStore(classPackage, storeProperties));
     }
 }

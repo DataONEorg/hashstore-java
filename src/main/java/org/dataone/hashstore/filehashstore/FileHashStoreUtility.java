@@ -23,8 +23,8 @@ import java.util.stream.Stream;
 import javax.xml.bind.DatatypeConverter;
 
 /**
- * FileHashStoreUtility is a utility class that encapsulates generic or shared functionality
- * in FileHashStore and/or related classes.
+ * FileHashStoreUtility is a utility class that encapsulates generic or shared functionality in
+ * FileHashStore and/or related classes.
  */
 public class FileHashStoreUtility {
 
@@ -140,7 +140,7 @@ public class FileHashStoreUtility {
 
     /**
      * Rename the given path to the 'file name' + '_delete'
-     * 
+     *
      * @param pathToRename The path to the file to be renamed with '_delete'
      * @return Path to the file with '_delete' appended
      * @throws IOException Issue with renaming the given file path
@@ -234,6 +234,7 @@ public class FileHashStoreUtility {
     /**
      * Iterates over a given string and checks each character to make sure that there are no
      * whitespaces, tabs, new lines or other illegal characters.
+     *
      * @param string String to check
      * @return True if valid, False if illegal characters found.
      */
@@ -298,8 +299,8 @@ public class FileHashStoreUtility {
     }
 
     /**
-     * Creates an empty/temporary file in a given location. If this file is not moved, it will
-     * be deleted upon JVM gracefully exiting or shutting down.
+     * Creates an empty/temporary file in a given location. If this file is not moved, it will be
+     * deleted upon JVM gracefully exiting or shutting down.
      *
      * @param prefix    string to prepend before tmp file
      * @param directory location to create tmp file
@@ -307,8 +308,8 @@ public class FileHashStoreUtility {
      * @throws IOException       Issues with generating tmpFile
      * @throws SecurityException Insufficient permissions to create tmpFile
      */
-    public static File generateTmpFile(String prefix, Path directory) throws IOException,
-        SecurityException {
+    public static File generateTmpFile(String prefix, Path directory)
+        throws IOException, SecurityException {
         Random rand = new Random();
         int randomNumber = rand.nextInt(1000000);
         String newPrefix = prefix + "-" + System.currentTimeMillis() + randomNumber;
@@ -322,7 +323,7 @@ public class FileHashStoreUtility {
     /**
      * Ensures that two objects are equal. If not, throws an IllegalArgumentException.
      *
-     * @param nameValue  The name of the object being checked
+     * @param nameValue     The name of the object being checked
      * @param suppliedValue The value supplied to compare
      * @param existingValue The existing value to compare with
      * @throws IllegalArgumentException If the supplied value is not equal to the existing value
