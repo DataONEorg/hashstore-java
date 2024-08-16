@@ -28,7 +28,7 @@ public class HashStoreTest {
     @BeforeEach
     public void getHashStore() {
         String classPackage = "org.dataone.hashstore.filehashstore.FileHashStore";
-        Path rootDirectory = tempFolder.resolve("metacat");
+        Path rootDirectory = tempFolder.resolve("hashstore");
 
         Properties storeProperties = new Properties();
         storeProperties.setProperty("storePath", rootDirectory.toString());
@@ -36,8 +36,7 @@ public class HashStoreTest {
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
         storeProperties.setProperty(
-            "storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0"
-        );
+            "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata");
 
         try {
             hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
@@ -72,13 +71,13 @@ public class HashStoreTest {
     public void hashStore_classPackageNull() {
         assertThrows(HashStoreFactoryException.class, () -> {
             Properties storeProperties = new Properties();
-            storeProperties.setProperty("storePath", "/test");
+            storeProperties.setProperty("storePath", "/hashstore");
             storeProperties.setProperty("storeDepth", "3");
             storeProperties.setProperty("storeWidth", "2");
             storeProperties.setProperty("storeAlgorithm", "SHA-256");
             storeProperties.setProperty(
-                "storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0"
-            );
+                "storeMetadataNamespace",
+                "https://ns.dataone.org/service/types/v2.0#SystemMetadata");
 
             hashStore = HashStoreFactory.getHashStore(null, storeProperties);
         });
@@ -98,8 +97,8 @@ public class HashStoreTest {
             storeProperties.setProperty("storeWidth", "2");
             storeProperties.setProperty("storeAlgorithm", "SHA-256");
             storeProperties.setProperty(
-                "storeMetadataNamespace", "http://ns.dataone.org/service/types/v2.0"
-            );
+                "storeMetadataNamespace",
+                "https://ns.dataone.org/service/types/v2.0#SystemMetadata");
 
             hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
 
@@ -126,12 +125,89 @@ public class HashStoreTest {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
 
-            InputStream dataStream = Files.newInputStream(testDataFile);
-            ObjectMetadata objInfo = hashStore.storeObject(dataStream, pid, null, null, null, -1);
+            try (InputStream dataStream = Files.newInputStream(testDataFile)) {
+                ObjectMetadata objInfo =
+                    hashStore.storeObject(dataStream, pid, null, null, null, -1);
 
-            // Check id (sha-256 hex digest of the ab_id, aka object_cid)
-            String objContentId = testData.pidData.get(pid).get("sha256");
-            assertEquals(objContentId, objInfo.getCid());
+                // Check id (sha-256 hex digest of the ab_id, aka object_cid)
+                String objContentId = testData.pidData.get(pid).get("sha256");
+                assertEquals(objContentId, objInfo.cid());
+            }
         }
+    }
+
+    /**
+     * Confirm factory throws exception when a given folder is empty but an objects folder exists
+     */
+    @Test
+    public void getHashStore_objFolderExists() throws Exception {
+        String classPackage = "org.dataone.hashstore.filehashstore.FileHashStore";
+        Path rootDirectory = tempFolder.resolve("doutest/hashstore");
+
+        Path conflictingObjDirectory = rootDirectory.resolve("objects");
+        Files.createDirectories(rootDirectory.resolve("objects"));
+        assertTrue(Files.exists(conflictingObjDirectory));
+
+        Properties storeProperties = new Properties();
+        storeProperties.setProperty("storePath", rootDirectory.toString());
+        storeProperties.setProperty("storeDepth", "3");
+        storeProperties.setProperty("storeWidth", "2");
+        storeProperties.setProperty("storeAlgorithm", "SHA-256");
+        storeProperties.setProperty(
+            "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata");
+
+        assertThrows(
+            HashStoreFactoryException.class, () -> hashStore =
+                HashStoreFactory.getHashStore(classPackage, storeProperties));
+    }
+
+    /**
+     * Confirm factory throws exception when a given folder is empty but an objects folder exists
+     */
+    @Test
+    public void getHashStore_metadataFolderExists() throws Exception {
+        String classPackage = "org.dataone.hashstore.filehashstore.FileHashStore";
+        Path rootDirectory = tempFolder.resolve("doutest/hashstore");
+
+        Path conflictingObjDirectory = rootDirectory.resolve("metadata");
+        Files.createDirectories(rootDirectory.resolve("metadata"));
+        assertTrue(Files.exists(conflictingObjDirectory));
+
+        Properties storeProperties = new Properties();
+        storeProperties.setProperty("storePath", rootDirectory.toString());
+        storeProperties.setProperty("storeDepth", "3");
+        storeProperties.setProperty("storeWidth", "2");
+        storeProperties.setProperty("storeAlgorithm", "SHA-256");
+        storeProperties.setProperty(
+            "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata");
+
+        assertThrows(
+            HashStoreFactoryException.class, () -> hashStore =
+                HashStoreFactory.getHashStore(classPackage, storeProperties));
+    }
+
+    /**
+     * Confirm factory throws exception when a given folder is empty but an objects folder exists
+     */
+    @Test
+    public void getHashStore_refsFolderExists() throws Exception {
+        String classPackage = "org.dataone.hashstore.filehashstore.FileHashStore";
+        Path rootDirectory = tempFolder.resolve("doutest/hashstore");
+
+        Path conflictingObjDirectory = rootDirectory.resolve("refs");
+        Files.createDirectories(rootDirectory.resolve("refs"));
+        assertTrue(Files.exists(conflictingObjDirectory));
+
+        Properties storeProperties = new Properties();
+        storeProperties.setProperty("storePath", rootDirectory.toString());
+        storeProperties.setProperty("storeDepth", "3");
+        storeProperties.setProperty("storeWidth", "2");
+        storeProperties.setProperty("storeAlgorithm", "SHA-256");
+        storeProperties.setProperty(
+            "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata");
+
+        assertThrows(
+            HashStoreFactoryException.class, () -> hashStore =
+                HashStoreFactory.getHashStore(classPackage, storeProperties));
     }
 }

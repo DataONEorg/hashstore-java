@@ -1,40 +1,50 @@
 package org.dataone.hashstore.filehashstore;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.stream.Stream;
 
 import javax.xml.bind.DatatypeConverter;
 
 /**
- * FileHashStoreUtility is a utility class that encapsulates generic or shared functionality
- * in FileHashStore and/or related classes.
+ * FileHashStoreUtility is a utility class that encapsulates generic or shared functionality in
+ * FileHashStore and/or related classes.
  */
 public class FileHashStoreUtility {
+
+    private static final Log log = LogFactory.getLog(FileHashStoreUtility.class);
 
     /**
      * Checks whether a given object is null and throws an exception if so
      *
      * @param object   Object to check
      * @param argument Value that is being checked
-     * @param method   Calling method or class
      * @throws IllegalArgumentException If the object is null
      */
-    public static void ensureNotNull(Object object, String argument, String method)
+    public static void ensureNotNull(Object object, String argument)
         throws IllegalArgumentException {
         if (object == null) {
-            String errMsg = "FileHashStoreUtility.ensureNotNull - Calling Method: " + method
-                + "(): " + argument + " cannot be null.";
-            throw new IllegalArgumentException(errMsg);
+            StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
+            String msg =
+                "Calling Method: " + stackTraceElements[2].getMethodName() + "()'s argument: "
+                    + argument + " cannot be null.";
+            throw new IllegalArgumentException(msg);
         }
     }
 
@@ -50,7 +60,7 @@ public class FileHashStoreUtility {
     public static String calculateHexDigest(InputStream dataStream, String algorithm)
         throws IOException, NoSuchAlgorithmException {
         MessageDigest mdObject = MessageDigest.getInstance(algorithm);
-        try {
+        try (dataStream) {
             byte[] buffer = new byte[8192];
             int bytesRead;
             while ((bytesRead = dataStream.read(buffer)) != -1) {
@@ -59,14 +69,9 @@ public class FileHashStoreUtility {
             }
 
         } catch (IOException ioe) {
-            String errMsg =
-                "FileHashStoreUtility.calculateHexDigest - Unexpected IOException encountered: "
-                    + ioe.getMessage();
+            String errMsg = "Unexpected IOException encountered: " + ioe.getMessage();
             throw new IOException(errMsg);
 
-        } finally {
-            // Close dataStream
-            dataStream.close();
         }
         // mdObjectHexDigest
         return DatatypeConverter.printHexBinary(mdObject.digest()).toLowerCase();
@@ -83,10 +88,10 @@ public class FileHashStoreUtility {
      */
     public static String getPidHexDigest(String pid, String algorithm)
         throws NoSuchAlgorithmException, IllegalArgumentException {
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "getPidHexDigest");
-        FileHashStoreUtility.checkForEmptyString(pid, "pid", "getPidHexDigest");
-        FileHashStoreUtility.ensureNotNull(algorithm, "algorithm", "getPidHexDigest");
-        FileHashStoreUtility.checkForEmptyString(algorithm, "algorithm", "getPidHexDigest");
+        FileHashStoreUtility.ensureNotNull(pid, "pid");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid");
+        FileHashStoreUtility.ensureNotNull(algorithm, "algorithm");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(algorithm, "algorithm");
 
         MessageDigest stringMessageDigest = MessageDigest.getInstance(algorithm);
         byte[] bytes = pid.getBytes(StandardCharsets.UTF_8);
@@ -102,7 +107,7 @@ public class FileHashStoreUtility {
      * @return True if a file is found or the directory is empty, False otherwise
      * @throws IOException If I/O occurs when accessing directory
      */
-    public static boolean isDirectoryEmpty(Path directory) throws IOException {
+    public static boolean dirContainsFiles(Path directory) throws IOException {
         try (Stream<Path> stream = Files.list(directory)) {
             // The findFirst() method is called on the stream created from the given
             // directory to retrieve the first element. If the stream is empty (i.e., the
@@ -112,26 +117,137 @@ public class FileHashStoreUtility {
             // findFirst(). If the Optional contains a value (i.e., an element was found),
             // isPresent() returns true. If the Optional is empty (i.e., the stream is
             // empty), isPresent() returns false.
-            return !stream.findFirst().isPresent();
+            return stream.findFirst().isPresent();
         }
     }
 
     /**
-     * Checks whether a given string is empty and throws an exception if so
+     * Checks a directory for files and returns a list of paths
+     *
+     * @param directory Directory to check
+     * @return List<Path> of files
+     * @throws IOException If I/O occurs when accessing directory
+     */
+    public static List<Path> getFilesFromDir(Path directory) throws IOException {
+        List<Path> filePaths = new ArrayList<>();
+        if (Files.isDirectory(directory) && dirContainsFiles(directory)) {
+            try (Stream<Path> stream = Files.walk(directory)) {
+                stream.filter(Files::isRegularFile).forEach(filePaths::add);
+            }
+        }
+        return filePaths;
+    }
+
+    /**
+     * Rename the given path to the 'file name' + '_delete'
+     *
+     * @param pathToRename The path to the file to be renamed with '_delete'
+     * @return Path to the file with '_delete' appended
+     * @throws IOException Issue with renaming the given file path
+     */
+    public static Path renamePathForDeletion(Path pathToRename) throws IOException {
+        ensureNotNull(pathToRename, "pathToRename");
+        if (!Files.exists(pathToRename)) {
+            String errMsg = "Given path to file: " + pathToRename + " does not exist.";
+            throw new FileNotFoundException(errMsg);
+        }
+        Path parentPath = pathToRename.getParent();
+        Path fileName = pathToRename.getFileName();
+        String newFileName = fileName.toString() + "_delete";
+
+        Path deletePath = parentPath.resolve(newFileName);
+        Files.move(pathToRename, deletePath, StandardCopyOption.ATOMIC_MOVE);
+        return deletePath;
+    }
+
+    /**
+     * Rename the given path slated for deletion by replacing '_delete' with ""
+     *
+     * @param pathToRename The path to the file to revert deletion
+     * @throws IOException Issue with renaming the given file path
+     */
+    public static void renamePathForRestoration(Path pathToRename) throws IOException {
+        ensureNotNull(pathToRename, "pathToRename");
+        if (!Files.exists(pathToRename)) {
+            String errMsg = "Given path to file: " + pathToRename + " does not exist.";
+            throw new FileNotFoundException(errMsg);
+        }
+        Path parentPath = pathToRename.getParent();
+        Path fileName = pathToRename.getFileName();
+        String newFileName = fileName.toString().replace("_delete", "");
+
+        Path restorePath = parentPath.resolve(newFileName);
+        Files.move(pathToRename, restorePath, StandardCopyOption.ATOMIC_MOVE);
+    }
+
+    /**
+     * Delete all paths found in the given List<Path> object.
+     *
+     * @param deleteList Directory to check
+     */
+    public static void deleteListItems(Collection<Path> deleteList) {
+        ensureNotNull(deleteList, "deleteList");
+        if (!deleteList.isEmpty()) {
+            for (Path deleteItem : deleteList) {
+                if (Files.exists(deleteItem)) {
+                    try {
+                        Files.delete(deleteItem);
+                    } catch (Exception ge) {
+                        String warnMsg =
+                            "Attempted to delete metadata document: " + deleteItem + " but failed."
+                                + " Additional Details: " + ge.getMessage();
+                        log.warn(warnMsg);
+                    }
+
+                }
+            }
+        }
+    }
+
+    /**
+     * Checks whether a given string is empty or contains illegal characters, and throws an
+     * exception if so
      *
      * @param string   String to check
      * @param argument Value that is being checked
-     * @param method   Calling method
-     * @throws IllegalArgumentException If the string is empty or null
+     * @throws IllegalArgumentException If the string is empty or contains illegal characters
      */
-    public static void checkForEmptyString(String string, String argument, String method)
+    public static void checkForNotEmptyAndValidString(String string, String argument)
         throws IllegalArgumentException {
-        ensureNotNull(string, "string", "checkForEmptyString");
-        if (string.trim().isEmpty()) {
-            String errMsg = "FileHashStoreUtility.checkForEmptyString - Calling Method: " + method
-                + "(): " + argument + " cannot be empty.";
-            throw new IllegalArgumentException(errMsg);
+        ensureNotNull(string, "string");
+        if (string.isBlank()) {
+            StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
+            String msg =
+                "Calling Method: " + stackTraceElements[2].getMethodName() + "()'s argument: "
+                    + argument + " cannot be empty, contain empty white spaces, tabs or newlines.";
+            throw new IllegalArgumentException(msg);
         }
+        if (!isValidString(string)) {
+            StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
+            String msg =
+                "Calling Method: " + stackTraceElements[2].getMethodName() + "()'s argument: "
+                    + argument + " contains empty white spaces, tabs or newlines.";
+            throw new IllegalArgumentException(msg);
+        }
+    }
+
+    /**
+     * Iterates over a given string and checks each character to make sure that there are no
+     * whitespaces, tabs, new lines or other illegal characters.
+     *
+     * @param string String to check
+     * @return True if valid, False if illegal characters found.
+     */
+    public static boolean isValidString(String string) {
+        boolean valid = true;
+        for (int i = 0; i < string.length(); i++) {
+            char ch = string.charAt(i);
+            if (Character.isWhitespace(ch)) {
+                valid = false;
+                break;
+            }
+        }
+        return valid;
     }
 
     /**
@@ -141,12 +257,12 @@ public class FileHashStoreUtility {
      * @param method  Calling method
      * @throws IllegalArgumentException If longInt is less than or equal
      */
-    public static void checkNotNegativeOrZero(long longInt, String method)
-        throws IllegalArgumentException {
-        if (longInt < 0 || longInt == 0) {
-            String errMsg = "FileHashStoreUtility.checkNotNegative - Calling Method: " + method
-                + "(): objSize cannot be less than or equal to 0.";
-            throw new IllegalArgumentException(errMsg);
+    public static void checkPositive(long longInt) throws IllegalArgumentException {
+        if (longInt <= 0) {
+            StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
+            String msg = "Calling Method: " + stackTraceElements[2].getMethodName()
+                + "(): given objSize/long/runnableMethod/etc. object cannot be <= 0 ";
+            throw new IllegalArgumentException(msg);
         }
     }
 
@@ -160,7 +276,7 @@ public class FileHashStoreUtility {
      * @return String
      */
     public static String getHierarchicalPathString(int depth, int width, String digest) {
-        List<String> tokens = new ArrayList<>();
+        Collection<String> tokens = new ArrayList<>();
         int digestLength = digest.length();
         for (int i = 0; i < depth; i++) {
             int start = i * width;
@@ -172,7 +288,7 @@ public class FileHashStoreUtility {
             tokens.add(digest.substring(depth * width));
         }
 
-        List<String> stringArray = new ArrayList<>();
+        Collection<String> stringArray = new ArrayList<>();
         for (String str : tokens) {
             if (!str.trim().isEmpty()) {
                 stringArray.add(str);
@@ -183,8 +299,8 @@ public class FileHashStoreUtility {
     }
 
     /**
-     * Creates an empty/temporary file in a given location. If this file is not moved, it will
-     * be deleted upon JVM gracefully exiting or shutting down.
+     * Creates an empty/temporary file in a given location. If this file is not moved, it will be
+     * deleted upon JVM gracefully exiting or shutting down.
      *
      * @param prefix    string to prepend before tmp file
      * @param directory location to create tmp file
@@ -192,8 +308,8 @@ public class FileHashStoreUtility {
      * @throws IOException       Issues with generating tmpFile
      * @throws SecurityException Insufficient permissions to create tmpFile
      */
-    public static File generateTmpFile(String prefix, Path directory) throws IOException,
-        SecurityException {
+    public static File generateTmpFile(String prefix, Path directory)
+        throws IOException, SecurityException {
         Random rand = new Random();
         int randomNumber = rand.nextInt(1000000);
         String newPrefix = prefix + "-" + System.currentTimeMillis() + randomNumber;
@@ -202,5 +318,24 @@ public class FileHashStoreUtility {
         File newFile = newPath.toFile();
         newFile.deleteOnExit();
         return newFile;
+    }
+
+    /**
+     * Ensures that two objects are equal. If not, throws an IllegalArgumentException.
+     *
+     * @param nameValue     The name of the object being checked
+     * @param suppliedValue The value supplied to compare
+     * @param existingValue The existing value to compare with
+     * @throws IllegalArgumentException If the supplied value is not equal to the existing value
+     */
+    public static void checkObjectEquality(
+        String nameValue, Object suppliedValue, Object existingValue) {
+        if (!Objects.equals(suppliedValue, existingValue)) {
+            String errMsg =
+                "FileHashStore.checkConfigurationEquality() - Mismatch in " + nameValue + ": "
+                    + suppliedValue + " does not match the existing configuration value: "
+                    + existingValue;
+            throw new IllegalArgumentException(errMsg);
+        }
     }
 }
