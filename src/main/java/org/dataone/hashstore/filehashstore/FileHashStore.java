@@ -76,25 +76,13 @@ public class FileHashStore implements HashStore {
 
     public static final String HASHSTORE_YAML = "hashstore.yaml";
 
-    public static final String[] SUPPORTED_HASH_ALGORITHMS = {"MD2", "MD5", "SHA-1", "SHA-256",
-        "SHA-384", "SHA-512", "SHA-512/224", "SHA-512/256"};
+    public static final String[] SUPPORTED_HASH_ALGORITHMS =
+        {"MD2", "MD5", "SHA-1", "SHA-256", "SHA-384", "SHA-512", "SHA-512/224", "SHA-512/256"};
 
-    public enum HashStoreIdTypes {
-
-        cid("cid"), pid("pid");
-
-        final String identifierType;
-
-        HashStoreIdTypes(String idType) {
-            identifierType = idType;
-        }
-
-        public String getName() {
-            return identifierType;
-        }
-    }
-
-    public enum DefaultHashAlgorithms {
+    /**
+     * The default hash algorithms included in the ObjectMetadata when storing objects.
+     */
+    enum DefaultHashAlgorithms {
         MD5("MD5"), SHA_1("SHA-1"), SHA_256("SHA-256"), SHA_384("SHA-384"), SHA_512("SHA-512");
 
         final String algoName;
@@ -108,15 +96,46 @@ public class FileHashStore implements HashStore {
         }
     }
 
-    public enum HashStoreProperties {
+    /**
+     * The two different type of HashStore identifiers
+     */
+    public enum HashStoreIdTypes {
+        cid, pid
+    }
+
+    /**
+     * The configuration properties for a HashStore
+     */
+    enum HashStoreProperties {
         storePath, storeDepth, storeWidth, storeAlgorithm, storeMetadataNamespace
     }
 
     /**
+     * When working with refs files, we either add or remove values
+     */
+    enum HashStoreRefUpdateTypes {
+        add, remove
+    }
+
+    /**
+     * Record object to encapsulate information when searching for an existing HashStore object
+     * based on a given persistent identifier {@code pid}
+     *
+     * @param cid           Content identifier of the data object of a given pid
+     * @param cidObjectPath Path to the data object
+     * @param cidRefsPath   Path to the data object's reference file
+     * @param pidRefsPath   Path to the pid's that references the data object
+     * @param sysmetaPath   Path to the pid's system metadata if available
+     */
+    record ObjectInfo(String cid, String cidObjectPath, String cidRefsPath, String pidRefsPath,
+                      String sysmetaPath) {
+    }
+
+    /**
      * Constructor to initialize FileHashStore, properties are required. FileHashStore is not
-     * responsible for ensuring that the given store path is accurate. Upon initialization, if
-     * an existing config file (hashstore.yaml) is present, it will confirm that it is accurate
-     * against the supplied properties. If not, FileHashSTore will check for 'hashstore' specific
+     * responsible for ensuring that the given store path is accurate. Upon initialization, if an
+     * existing config file (hashstore.yaml) is present, it will confirm that it is accurate against
+     * the supplied properties. If not, FileHashSTore will check for 'hashstore' specific
      * directories at the supplied store path before initializing.
      *
      * @param hashstoreProperties Properties object with the following keys: storePath, storeDepth,
@@ -125,33 +144,25 @@ public class FileHashStore implements HashStore {
      * @throws IOException              Issue with creating directories
      * @throws NoSuchAlgorithmException Unsupported store algorithm
      */
-    public FileHashStore(Properties hashstoreProperties) throws IllegalArgumentException,
-        IOException, NoSuchAlgorithmException {
+    public FileHashStore(Properties hashstoreProperties)
+        throws IllegalArgumentException, IOException, NoSuchAlgorithmException {
         logFileHashStore.info("Initializing FileHashStore");
-        FileHashStoreUtility.ensureNotNull(
-            hashstoreProperties, "hashstoreProperties", "FileHashStore - constructor"
-        );
+        FileHashStoreUtility.ensureNotNull(hashstoreProperties, "hashstoreProperties");
 
         // Get properties
-        Path storePath = Paths.get(
-            hashstoreProperties.getProperty(HashStoreProperties.storePath.name())
-        );
+        Path storePath =
+            Paths.get(hashstoreProperties.getProperty(HashStoreProperties.storePath.name()));
         int storeDepth = Integer.parseInt(
-            hashstoreProperties.getProperty(HashStoreProperties.storeDepth.name())
-        );
+            hashstoreProperties.getProperty(HashStoreProperties.storeDepth.name()));
         int storeWidth = Integer.parseInt(
-            hashstoreProperties.getProperty(HashStoreProperties.storeWidth.name())
-        );
-        String storeAlgorithm = hashstoreProperties.getProperty(
-            HashStoreProperties.storeAlgorithm.name()
-        );
-        String storeMetadataNamespace = hashstoreProperties.getProperty(
-            HashStoreProperties.storeMetadataNamespace.name()
-        );
+            hashstoreProperties.getProperty(HashStoreProperties.storeWidth.name()));
+        String storeAlgorithm =
+            hashstoreProperties.getProperty(HashStoreProperties.storeAlgorithm.name());
+        String storeMetadataNamespace =
+            hashstoreProperties.getProperty(HashStoreProperties.storeMetadataNamespace.name());
 
         verifyHashStoreProperties(
-            storePath, storeDepth, storeWidth, storeAlgorithm, storeMetadataNamespace
-        );
+            storePath, storeDepth, storeWidth, storeAlgorithm, storeMetadataNamespace);
 
         // HashStore configuration has been reviewed, proceed with initialization
         STORE_ROOT = storePath;
@@ -192,15 +203,14 @@ public class FileHashStore implements HashStore {
         // Write configuration file 'hashstore.yaml' to store HashStore properties
         Path hashstoreYaml = STORE_ROOT.resolve(HASHSTORE_YAML);
         if (!Files.exists(hashstoreYaml)) {
-            String hashstoreYamlContent = buildHashStoreYamlString(
-                DIRECTORY_DEPTH, DIRECTORY_WIDTH, OBJECT_STORE_ALGORITHM, DEFAULT_METADATA_NAMESPACE
-            );
+            String hashstoreYamlContent =
+                buildHashStoreYamlString(DIRECTORY_DEPTH, DIRECTORY_WIDTH, OBJECT_STORE_ALGORITHM,
+                                         DEFAULT_METADATA_NAMESPACE);
             writeHashStoreYaml(hashstoreYamlContent);
-            logFileHashStore.info(
-                "hashstore.yaml written to storePath: " + hashstoreYaml);
+            logFileHashStore.info("hashstore.yaml written to storePath: " + hashstoreYaml);
         } else {
-            logFileHashStore.info("hashstore.yaml exists and has been verified."
-                                      + " Initializing FileHashStore.");
+            logFileHashStore.info(
+                "hashstore.yaml exists and has been verified." + " Initializing FileHashStore.");
         }
     }
 
@@ -208,26 +218,28 @@ public class FileHashStore implements HashStore {
 
     /**
      * Determines whether FileHashStore can instantiate by validating a set of arguments and
-     * throwing exceptions. If HashStore configuration file (`hashstore.yaml`) exists, it will
-     * retrieve its properties and compare them with the given values; and if there is a
-     * mismatch, an exception will be thrown. If not, it will look to see if any relevant
-     * HashStore directories exist (i.e. '/objects', '/metadata', '/refs') in the given store
-     * path and throw an exception if any of those directories exist.
+     * throwing exceptions. If HashStore configuration file ({@code hashstore.yaml}) exists, it will
+     * retrieve its properties and compare them with the given values; and if there is a mismatch,
+     * an exception will be thrown. If not, it will look to see if any relevant HashStore
+     * directories exist (i.e. '/objects', '/metadata', '/refs') in the given store path and throw
+     * an exception if any of those directories exist.
      *
      * @param storePath              Path where HashStore will store objects
      * @param storeDepth             Depth of directories
      * @param storeWidth             Width of directories
      * @param storeAlgorithm         Algorithm to use when calculating object addresses
-     * @param storeMetadataNamespace Default metadata namespace (`formatId`)
+     * @param storeMetadataNamespace Default metadata namespace ({@code formatId})
      * @throws NoSuchAlgorithmException If algorithm supplied is not supported
-     * @throws IOException              If `hashstore.yaml` config file cannot be retrieved/opened
+     * @throws IOException              If {@code hashstore.yaml} config file cannot be
+     *                                  retrieved/opened
      * @throws IllegalArgumentException If depth or width is less than 0
      * @throws IllegalStateException    If dirs/objects exist, but HashStore config is missing
      */
     protected void verifyHashStoreProperties(
         Path storePath, int storeDepth, int storeWidth, String storeAlgorithm,
-        String storeMetadataNamespace
-    ) throws NoSuchAlgorithmException, IOException, IllegalArgumentException, IllegalStateException {
+        String storeMetadataNamespace)
+        throws NoSuchAlgorithmException, IOException, IllegalArgumentException,
+        IllegalStateException {
         if (storeDepth <= 0 || storeWidth <= 0) {
             String errMsg =
                 "Depth and width must be > than 0. Depth: " + storeDepth + ". Width: " + storeWidth;
@@ -235,12 +247,9 @@ public class FileHashStore implements HashStore {
             throw new IllegalArgumentException(errMsg);
         }
         validateAlgorithm(storeAlgorithm);
-        FileHashStoreUtility.ensureNotNull(
-            storeMetadataNamespace, "storeMetadataNamespace", "FileHashStore - constructor"
-        );
-        FileHashStoreUtility.checkForEmptyAndValidString(
-            storeMetadataNamespace, "storeMetadataNamespace", "FileHashStore - constructor"
-        );
+        FileHashStoreUtility.ensureNotNull(storeMetadataNamespace, "storeMetadataNamespace");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(
+            storeMetadataNamespace, "storeMetadataNamespace");
 
         // Check to see if configuration exists before initializing
         Path hashstoreYamlPredictedPath = Paths.get(storePath + "/hashstore.yaml");
@@ -250,12 +259,10 @@ public class FileHashStore implements HashStore {
             HashMap<String, Object> hsProperties = loadHashStoreYaml(storePath);
             int existingStoreDepth = (int) hsProperties.get(HashStoreProperties.storeDepth.name());
             int existingStoreWidth = (int) hsProperties.get(HashStoreProperties.storeWidth.name());
-            String existingStoreAlgorithm = (String) hsProperties.get(
-                HashStoreProperties.storeAlgorithm.name()
-            );
-            String existingStoreMetadataNs = (String) hsProperties.get(
-                HashStoreProperties.storeMetadataNamespace.name()
-            );
+            String existingStoreAlgorithm =
+                (String) hsProperties.get(HashStoreProperties.storeAlgorithm.name());
+            String existingStoreMetadataNs =
+                (String) hsProperties.get(HashStoreProperties.storeMetadataNamespace.name());
 
             FileHashStoreUtility.checkObjectEquality("store depth", storeDepth, existingStoreDepth);
             FileHashStoreUtility.checkObjectEquality("store width", storeWidth, existingStoreWidth);
@@ -270,11 +277,9 @@ public class FileHashStore implements HashStore {
             logFileHashStore.debug("hashstore.yaml not found, checking store path for"
                                        + " `/objects`, `/metadata` and `/refs` directories.");
             if (Files.isDirectory(storePath)) {
-                Path[] conflictingDirectories = {
-                    storePath.resolve("objects"),
-                    storePath.resolve("metadata"),
-                    storePath.resolve("refs")
-                };
+                Path[] conflictingDirectories =
+                    {storePath.resolve("objects"), storePath.resolve("metadata"),
+                        storePath.resolve("refs")};
                 for (Path dir : conflictingDirectories) {
                     if (Files.exists(dir) && Files.isDirectory(dir)) {
                         String errMsg = "FileHashStore - Unable to initialize HashStore."
@@ -295,7 +300,7 @@ public class FileHashStore implements HashStore {
      *
      * @param storePath Path to root of store
      * @return HashMap of the properties
-     * @throws IOException If `hashstore.yaml` doesn't exist
+     * @throws IOException If {@code hashstore.yaml} doesn't exist
      */
     protected HashMap<String, Object> loadHashStoreYaml(Path storePath) throws IOException {
         Path hashStoreYamlPath = storePath.resolve(HASHSTORE_YAML);
@@ -306,21 +311,15 @@ public class FileHashStore implements HashStore {
         try {
             HashMap<?, ?> hashStoreYamlProperties = om.readValue(hashStoreYamlFile, HashMap.class);
             hsProperties.put(
-                HashStoreProperties.storeDepth.name(), hashStoreYamlProperties.get("store_depth")
-            );
+                HashStoreProperties.storeDepth.name(), hashStoreYamlProperties.get("store_depth"));
             hsProperties.put(
-                HashStoreProperties.storeWidth.name(), hashStoreYamlProperties.get("store_width")
-            );
+                HashStoreProperties.storeWidth.name(), hashStoreYamlProperties.get("store_width"));
             hsProperties.put(
-                HashStoreProperties.storeAlgorithm.name(), hashStoreYamlProperties.get(
-                    "store_algorithm"
-                )
-            );
+                HashStoreProperties.storeAlgorithm.name(),
+                hashStoreYamlProperties.get("store_algorithm"));
             hsProperties.put(
-                HashStoreProperties.storeMetadataNamespace.name(), hashStoreYamlProperties.get(
-                    "store_metadata_namespace"
-                )
-            );
+                HashStoreProperties.storeMetadataNamespace.name(),
+                hashStoreYamlProperties.get("store_metadata_namespace"));
 
         } catch (IOException ioe) {
             logFileHashStore.fatal(
@@ -335,14 +334,13 @@ public class FileHashStore implements HashStore {
      * Write a 'hashstore.yaml' file to STORE_ROOT
      *
      * @param yamlString Content of the HashStore configuration
-     * @throws IOException If unable to write `hashstore.yaml`
+     * @throws IOException If unable to write {@code hashstore.yaml}
      */
     protected void writeHashStoreYaml(String yamlString) throws IOException {
         Path hashstoreYaml = STORE_ROOT.resolve(HASHSTORE_YAML);
 
         try (BufferedWriter writer = new BufferedWriter(
-            new OutputStreamWriter(Files.newOutputStream(hashstoreYaml), StandardCharsets.UTF_8)
-        )) {
+            new OutputStreamWriter(Files.newOutputStream(hashstoreYaml), StandardCharsets.UTF_8))) {
             writer.write(yamlString);
 
         } catch (IOException ioe) {
@@ -363,37 +361,40 @@ public class FileHashStore implements HashStore {
      * @return String that representing the contents of 'hashstore.yaml'
      */
     protected String buildHashStoreYamlString(
-        int storeDepth, int storeWidth, String storeAlgorithm, String storeMetadataNamespace
-    ) {
-        return String.format(
-            "# Default configuration variables for HashStore\n\n"
-                + "############### Directory Structure ###############\n"
-                + "# Desired amount of directories when sharding an object to "
-                + "form the permanent address\n"
-                + "store_depth: %d  # WARNING: DO NOT CHANGE UNLESS SETTING UP " + "NEW HASHSTORE\n"
-                + "# Width of directories created when sharding an object to "
-                + "form the permanent address\n"
-                + "store_width: %d  # WARNING: DO NOT CHANGE UNLESS SETTING UP " + "NEW HASHSTORE\n"
-                + "# Example:\n" + "# Below, objects are shown listed in directories that are # "
-                + "levels deep (DIR_DEPTH=3),\n"
-                + "# with each directory consisting of 2 characters " + "(DIR_WIDTH=2).\n"
-                + "#    /var/filehashstore/objects\n" + "#    ├── 7f\n" + "#    │   └── 5c\n"
-                + "#    │       └── c1\n" + "#    │           └── "
-                + "8f0b04e812a3b4c8f686ce34e6fec558804bf61e54b176742a7f6368d6\n\n"
-                + "############### Format of the Metadata ###############\n"
-                + "store_metadata_namespace: \"%s\"\n"
-                + "############### Hash Algorithms ###############\n"
-                + "# Hash algorithm to use when calculating object's hex digest "
-                + "for the permanent address\n" + "store_algorithm: \"%s\"\n"
-                + "############### Hash Algorithms ###############\n"
-                + "# Hash algorithm to use when calculating object's hex digest "
-                + "for the permanent address\n"
-                + "# The default algorithm list includes the hash algorithms "
-                + "calculated when storing an\n"
-                + "# object to disk and returned to the caller after successful " + "storage.\n"
-                + "store_default_algo_list:\n" + "- \"MD5\"\n" + "- \"SHA-1\"\n" + "- \"SHA-256\"\n"
-                + "- \"SHA-384\"\n" + "- \"SHA-512\"\n", storeDepth, storeWidth, storeMetadataNamespace, storeAlgorithm
-        );
+        int storeDepth, int storeWidth, String storeAlgorithm, String storeMetadataNamespace) {
+        return String.format("""
+             # Default configuration variables for HashStore
+
+             ############### Directory Structure ###############
+             # Desired amount of directories when sharding an object to form the permanent address
+             store_depth: %d  # WARNING: DO NOT CHANGE UNLESS SETTING UP NEW HASHSTORE
+             # Width of directories created when sharding an object to form the permanent address
+             store_width: %d  # WARNING: DO NOT CHANGE UNLESS SETTING UP NEW HASHSTORE
+             # Example:
+             # Below, objects are shown listed in directories that are # levels deep (DIR_DEPTH=3),
+             # with each directory consisting of 2 characters (DIR_WIDTH=2).
+             #    /var/filehashstore/objects
+             #    ├── 7f
+             #    │   └── 5c
+             #    │       └── c1
+             #    │           └── 8f0b04e812a3b4c8f686ce34e6fec558804bf61e54b176742a7f6368d6
+
+             ############### Format of the Metadata ###############
+             store_metadata_namespace: "%s"
+             ############### Hash Algorithms ###############
+             # Hash algorithm to use when calculating object's hex digest for the permanent address
+             store_algorithm: "%s"
+             ############### Hash Algorithms ###############
+             # Hash algorithm to use when calculating object's hex digest for the permanent address
+             # The default algorithm list includes the hash algorithms calculated when storing an
+             # object to disk and returned to the caller after successful storage.
+             store_default_algo_list:
+             - "MD5"
+             - "SHA-1"
+             - "SHA-256"
+             - "SHA-384"
+             - "SHA-512"
+             """, storeDepth, storeWidth, storeMetadataNamespace, storeAlgorithm);
     }
 
     // HashStore Public API Methods
@@ -401,37 +402,33 @@ public class FileHashStore implements HashStore {
     @Override
     public ObjectMetadata storeObject(
         InputStream object, String pid, String additionalAlgorithm, String checksum,
-        String checksumAlgorithm, long objSize
-    ) throws NoSuchAlgorithmException, IOException, RuntimeException, InterruptedException,
-        PidRefsFileExistsException {
+        String checksumAlgorithm, long objSize)
+        throws NoSuchAlgorithmException, IOException, RuntimeException, InterruptedException {
         logFileHashStore.debug("Storing data object for pid: " + pid);
         // Validate input parameters
-        FileHashStoreUtility.ensureNotNull(object, "object", "storeObject");
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "storeObject");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "storeObject");
+        FileHashStoreUtility.ensureNotNull(object, "object");
+        FileHashStoreUtility.ensureNotNull(pid, "pid");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid");
         // Validate algorithms if not null or empty, throws exception if not supported
         if (additionalAlgorithm != null) {
-            FileHashStoreUtility.checkForEmptyAndValidString(
-                additionalAlgorithm, "additionalAlgorithm", "storeObject");
+            FileHashStoreUtility.checkForNotEmptyAndValidString(
+                additionalAlgorithm, "additionalAlgorithm");
             validateAlgorithm(additionalAlgorithm);
         }
         if (checksumAlgorithm != null) {
-            FileHashStoreUtility.checkForEmptyAndValidString(
-                checksumAlgorithm, "checksumAlgorithm", "storeObject");
+            FileHashStoreUtility.checkForNotEmptyAndValidString(
+                checksumAlgorithm, "checksumAlgorithm");
             validateAlgorithm(checksumAlgorithm);
         }
         if (objSize != -1) {
-            FileHashStoreUtility.checkNotNegativeOrZero(objSize, "storeObject");
+            FileHashStoreUtility.checkPositive(objSize);
         }
 
-        try {
+        try (object) {
             return syncPutObject(
-                object, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize
-            );
-        } finally {
-            // Close stream
-            object.close();
+                object, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize);
         }
+        // Close stream
     }
 
     /**
@@ -439,9 +436,8 @@ public class FileHashStore implements HashStore {
      */
     private ObjectMetadata syncPutObject(
         InputStream object, String pid, String additionalAlgorithm, String checksum,
-        String checksumAlgorithm, long objSize
-    ) throws NoSuchAlgorithmException, PidRefsFileExistsException, IOException, RuntimeException,
-        InterruptedException {
+        String checksumAlgorithm, long objSize)
+        throws NoSuchAlgorithmException, IOException, RuntimeException, InterruptedException {
         try {
             // Lock pid for thread safety, transaction control and atomic writing
             // An object is stored once and only once
@@ -461,13 +457,11 @@ public class FileHashStore implements HashStore {
                     + additionalAlgorithm + ". checksum: " + checksum + ". checksumAlgorithm: "
                     + checksumAlgorithm);
             // Store object
-            ObjectMetadata objInfo = putObject(
-                object, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize
-            );
+            ObjectMetadata objInfo =
+                putObject(object, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize);
             // Tag object
-            String cid = objInfo.getCid();
+            String cid = objInfo.cid();
             tagObject(pid, cid);
-            objInfo.setPid(pid);
             logFileHashStore.info(
                 "Object stored for pid: " + pid + " at " + getHashStoreDataObjectPath(pid));
             return objInfo;
@@ -510,93 +504,84 @@ public class FileHashStore implements HashStore {
      * Overload method for storeObject with just an InputStream
      */
     @Override
-    public ObjectMetadata storeObject(InputStream object) throws NoSuchAlgorithmException,
-        IOException, PidRefsFileExistsException, RuntimeException, InterruptedException {
+    public ObjectMetadata storeObject(InputStream object)
+        throws NoSuchAlgorithmException, IOException, RuntimeException,
+        InterruptedException {
         // 'putObject' is called directly to bypass the pid synchronization implemented to
         // efficiently handle object store requests without a pid. This scenario occurs when
         // metadata about the object (ex. form data including the pid, checksum, checksum
         // algorithm, etc.) is unavailable.
         //
         // Note: This method does not tag the object to make it discoverable, so the client can
-        // call 'deleteInvalidObject' (optional) to check that the object is valid, and then
+        // call 'deleteIfInvalidObject' (optional) to check that the object is valid, and then
         // 'tagObject' (required) to create the reference files needed to associate the
         // respective pids/cids.
-        try {
+        try (object) {
             return putObject(object, "HashStoreNoPid", null, null, null, -1);
-        } finally {
-            // Close stream
-            object.close();
         }
+        // Close stream
     }
 
 
     @Override
-    public void tagObject(String pid, String cid) throws IOException, PidRefsFileExistsException,
-        NoSuchAlgorithmException, FileNotFoundException, InterruptedException {
+    public void tagObject(String pid, String cid)
+        throws IOException, NoSuchAlgorithmException,
+        InterruptedException {
         logFileHashStore.debug("Tagging cid (" + cid + ") with pid: " + pid);
         // Validate input parameters
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "tagObject");
-        FileHashStoreUtility.ensureNotNull(cid, "cid", "tagObject");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "tagObject");
-        FileHashStoreUtility.checkForEmptyAndValidString(cid, "cid", "tagObject");
+        FileHashStoreUtility.ensureNotNull(pid, "pid");
+        FileHashStoreUtility.ensureNotNull(cid, "cid");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(cid, "cid");
 
         try {
-            synchronizeObjectLockedCids(cid);
-            synchronizeReferenceLockedPids(pid);
+            // This method synchronizes the pid and cid
             storeHashStoreRefsFiles(pid, cid);
 
         } catch (HashStoreRefsAlreadyExistException hsrfae) {
+            // cid and pid has been released
             // This exception is thrown when the pid and cid are already tagged appropriately
             String errMsg =
                 "HashStore refs files already exist for pid " + pid + " and cid: " + cid;
             throw new HashStoreRefsAlreadyExistException(errMsg);
 
         } catch (PidRefsFileExistsException prfe) {
+            // cid and pid has been released
             String errMsg = "pid: " + pid + " already references another cid."
                 + " A pid can only reference one cid.";
             throw new PidRefsFileExistsException(errMsg);
 
         } catch (Exception e) {
+            // cid and pid has been released
             // Revert the process for all other exceptions
-            // We must first release the cid and pid since 'unTagObject' is synchronized
-            // If not, we will run into a deadlock.
-            releaseObjectLockedCids(cid);
-            releaseReferenceLockedPids(pid);
             unTagObject(pid, cid);
             throw e;
-
-        } finally {
-            // Release locks
-            releaseObjectLockedCids(cid);
-            releaseReferenceLockedPids(pid);
         }
     }
 
     @Override
     public String storeMetadata(InputStream metadata, String pid, String formatId)
-        throws IOException, IllegalArgumentException, FileNotFoundException, InterruptedException,
+        throws IOException, IllegalArgumentException, InterruptedException,
         NoSuchAlgorithmException {
         logFileHashStore.debug("Storing metadata for pid: " + pid + ", with formatId: " + formatId);
         // Validate input parameters
-        FileHashStoreUtility.ensureNotNull(metadata, "metadata", "storeMetadata");
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "storeMetadata");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "storeMetadata");
+        FileHashStoreUtility.ensureNotNull(metadata, "metadata");
+        FileHashStoreUtility.ensureNotNull(pid, "pid");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid");
 
         // If no formatId is supplied, use the default namespace to store metadata
         String checkedFormatId;
         if (formatId == null) {
             checkedFormatId = DEFAULT_METADATA_NAMESPACE;
         } else {
-            FileHashStoreUtility.checkForEmptyAndValidString(formatId, "formatId", "storeMetadata");
+            FileHashStoreUtility.checkForNotEmptyAndValidString(formatId, "formatId");
             checkedFormatId = formatId;
         }
 
-        try {
+        try (metadata) {
             return syncPutMetadata(metadata, pid, checkedFormatId);
-        } finally {
-            // Close stream
-            metadata.close();
         }
+        // Close stream
     }
 
     /**
@@ -606,8 +591,8 @@ public class FileHashStore implements HashStore {
         throws InterruptedException, IOException, NoSuchAlgorithmException {
         // Get the metadata document id, which is the synchronization value
         String pidFormatId = pid + checkedFormatId;
-        String metadataDocId = FileHashStoreUtility.getPidHexDigest(pidFormatId,
-                                                                OBJECT_STORE_ALGORITHM);
+        String metadataDocId =
+            FileHashStoreUtility.getPidHexDigest(pidFormatId, OBJECT_STORE_ALGORITHM);
         logFileHashStore.debug(
             "putMetadata() called to store metadata for pid: " + pid + ", with formatId: "
                 + checkedFormatId + " for metadata document: " + metadataDocId);
@@ -640,19 +625,20 @@ public class FileHashStore implements HashStore {
      * Overload method for storeMetadata with default metadata namespace
      */
     @Override
-    public String storeMetadata(InputStream metadata, String pid) throws IOException,
-        IllegalArgumentException, FileNotFoundException, InterruptedException,
+    public String storeMetadata(InputStream metadata, String pid)
+        throws IOException, IllegalArgumentException, InterruptedException,
         NoSuchAlgorithmException {
         return storeMetadata(metadata, pid, DEFAULT_METADATA_NAMESPACE);
     }
 
     @Override
-    public InputStream retrieveObject(String pid) throws IllegalArgumentException,
-        FileNotFoundException, IOException, NoSuchAlgorithmException {
+    public InputStream retrieveObject(String pid)
+        throws IllegalArgumentException, IOException,
+        NoSuchAlgorithmException {
         logFileHashStore.debug("Retrieving InputStream to data object for pid: " + pid);
         // Validate input parameters
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "retrieveObject");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "retrieveObject");
+        FileHashStoreUtility.ensureNotNull(pid, "pid");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid");
 
         // Check to see if object exists
         Path objRealPath = getHashStoreDataObjectPath(pid);
@@ -681,15 +667,15 @@ public class FileHashStore implements HashStore {
 
     @Override
     public InputStream retrieveMetadata(String pid, String formatId)
-        throws IllegalArgumentException, FileNotFoundException, IOException,
+        throws IllegalArgumentException, IOException,
         NoSuchAlgorithmException {
         logFileHashStore.debug(
             "Retrieving metadata document for pid: " + pid + " with formatId: " + formatId);
         // Validate input parameters
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "retrieveMetadata");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "retrieveMetadata");
-        FileHashStoreUtility.ensureNotNull(formatId, "formatId", "retrieveMetadata");
-        FileHashStoreUtility.checkForEmptyAndValidString(formatId, "formatId", "retrieveMetadata");
+        FileHashStoreUtility.ensureNotNull(pid, "pid");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid");
+        FileHashStoreUtility.ensureNotNull(formatId, "formatId");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(formatId, "formatId");
 
         return getHashStoreMetadataInputStream(pid, formatId);
     }
@@ -698,13 +684,14 @@ public class FileHashStore implements HashStore {
      * Overload method for retrieveMetadata with default metadata namespace
      */
     @Override
-    public InputStream retrieveMetadata(String pid) throws IllegalArgumentException,
-        FileNotFoundException, IOException, NoSuchAlgorithmException {
+    public InputStream retrieveMetadata(String pid)
+        throws IllegalArgumentException, IOException,
+        NoSuchAlgorithmException {
         logFileHashStore.debug(
             "Retrieving metadata for pid: " + pid + " with default metadata namespace: ");
         // Validate input parameters
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "retrieveMetadata");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "retrieveMetadata");
+        FileHashStoreUtility.ensureNotNull(pid, "pid");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid");
 
         return getHashStoreMetadataInputStream(pid, DEFAULT_METADATA_NAMESPACE);
     }
@@ -715,8 +702,8 @@ public class FileHashStore implements HashStore {
         InterruptedException {
         logFileHashStore.debug("Deleting object for pid: " + pid);
         // Validate input parameters
-        FileHashStoreUtility.ensureNotNull(pid, "id", "deleteObject");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "id", "deleteObject");
+        FileHashStoreUtility.ensureNotNull(pid, "id");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "id");
         Collection<Path> deleteList = new ArrayList<>();
 
         try {
@@ -729,19 +716,19 @@ public class FileHashStore implements HashStore {
             // `findObject` which will throw custom exceptions if there is an issue with
             // the reference files, which help us determine the path to proceed with.
             try {
-                Map<String, String> objInfoMap = findObject(pid);
-                String cid = objInfoMap.get("cid");
+                ObjectInfo objInfoMap = findObject(pid);
+                String cid = objInfoMap.cid();
 
                 // If no exceptions are thrown, we proceed to synchronization based on the `cid`
                 synchronizeObjectLockedCids(cid);
 
                 try {
                     // Proceed with comprehensive deletion - cid exists, nothing out of place
-                    Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
-                    Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
+                    Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid);
+                    Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
 
                     // Begin deletion process
-                    updateRefsFile(pid, absCidRefsPath, "remove");
+                    updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.remove);
                     if (Files.size(absCidRefsPath) == 0) {
                         Path objRealPath = getHashStoreDataObjectPath(pid);
                         deleteList.add(FileHashStoreUtility.renamePathForDeletion(objRealPath));
@@ -765,7 +752,7 @@ public class FileHashStore implements HashStore {
             } catch (OrphanPidRefsFileException oprfe) {
                 // `findObject` throws this exception when the cid refs file doesn't exist,
                 // so we only need to delete the pid refs file and related metadata documents
-                Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
+                Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
                 deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
                 // Delete items
                 FileHashStoreUtility.deleteListItems(deleteList);
@@ -777,16 +764,15 @@ public class FileHashStore implements HashStore {
             } catch (OrphanRefsFilesException orfe) {
                 // `findObject` throws this exception when the pid and cid refs file exists,
                 // but the actual object being referenced by the pid does not exist
-                Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
+                Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
                 String cidRead = new String(Files.readAllBytes(absPidRefsPath));
 
                 try {
                     // Since we must access the cid reference file, the `cid` must be synchronized
                     synchronizeObjectLockedCids(cidRead);
 
-                    Path absCidRefsPath =
-                        getHashStoreRefsPath(cidRead, HashStoreIdTypes.cid.getName());
-                    updateRefsFile(pid, absCidRefsPath, "remove");
+                    Path absCidRefsPath = getHashStoreRefsPath(cidRead, HashStoreIdTypes.cid);
+                    updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.remove);
                     if (Files.size(absCidRefsPath) == 0) {
                         deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
                     }
@@ -806,7 +792,7 @@ public class FileHashStore implements HashStore {
             } catch (PidNotFoundInCidRefsFileException pnficrfe) {
                 // `findObject` throws this exception when both the pid and cid refs file exists
                 // but the pid is not found in the cid refs file.
-                Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
+                Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
                 deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
                 FileHashStoreUtility.deleteListItems(deleteList);
                 deleteMetadata(pid);
@@ -822,26 +808,25 @@ public class FileHashStore implements HashStore {
 
 
     @Override
-    public void deleteInvalidObject(
+    public void deleteIfInvalidObject(
         ObjectMetadata objectInfo, String checksum, String checksumAlgorithm, long objSize)
         throws NonMatchingObjSizeException, NonMatchingChecksumException,
         UnsupportedHashAlgorithmException, InterruptedException, NoSuchAlgorithmException,
         IOException {
-        logFileHashStore.debug("Verifying data object for cid: " + objectInfo.getCid());
+        logFileHashStore.debug("Verifying data object for cid: " + objectInfo.cid());
         // Validate input parameters
-        FileHashStoreUtility.ensureNotNull(objectInfo, "objectInfo", "deleteInvalidObject");
-        FileHashStoreUtility.ensureNotNull(
-            objectInfo.getHexDigests(), "objectInfo.getHexDigests()", "deleteInvalidObject");
-        if (objectInfo.getHexDigests().isEmpty()) {
+        FileHashStoreUtility.ensureNotNull(objectInfo, "objectInfo");
+        FileHashStoreUtility.ensureNotNull(objectInfo.hexDigests(), "objectInfo.getHexDigests()");
+        if (objectInfo.hexDigests().isEmpty()) {
             throw new MissingHexDigestsException("Missing hexDigests in supplied ObjectMetadata");
         }
-        FileHashStoreUtility.ensureNotNull(checksum, "checksum", "deleteInvalidObject");
-        FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm", "deleteInvalidObject");
-        FileHashStoreUtility.checkNotNegativeOrZero(objSize, "deleteInvalidObject");
+        FileHashStoreUtility.ensureNotNull(checksum, "checksum");
+        FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm");
+        FileHashStoreUtility.checkPositive(objSize);
 
-        String objCid = objectInfo.getCid();
-        long objInfoRetrievedSize = objectInfo.getSize();
-        Map<String, String> hexDigests = objectInfo.getHexDigests();
+        String objCid = objectInfo.cid();
+        long objInfoRetrievedSize = objectInfo.size();
+        Map<String, String> hexDigests = objectInfo.hexDigests();
         String digestFromHexDigests = hexDigests.get(checksumAlgorithm);
 
         // Confirm that requested checksum to verify against is available
@@ -849,13 +834,13 @@ public class FileHashStore implements HashStore {
             try {
                 validateAlgorithm(checksumAlgorithm);
                 // If no exceptions thrown, calculate the checksum with the given algo
-                String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
-                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, objCid
-                );
+                String objRelativePath =
+                    FileHashStoreUtility.getHierarchicalPathString(DIRECTORY_DEPTH, DIRECTORY_WIDTH,
+                                                                   objCid);
                 Path pathToCidObject = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
                 try (InputStream inputStream = Files.newInputStream(pathToCidObject)) {
-                    digestFromHexDigests = FileHashStoreUtility.calculateHexDigest(inputStream,
-                                                                                   checksumAlgorithm);
+                    digestFromHexDigests =
+                        FileHashStoreUtility.calculateHexDigest(inputStream, checksumAlgorithm);
                 } catch (IOException ioe) {
                     String errMsg =
                         "Unexpected error when calculating a checksum for cid: " + objCid
@@ -898,15 +883,16 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public void deleteMetadata(String pid, String formatId) throws IllegalArgumentException,
-        IOException, NoSuchAlgorithmException, InterruptedException {
+    public void deleteMetadata(String pid, String formatId)
+        throws IllegalArgumentException, IOException, NoSuchAlgorithmException,
+        InterruptedException {
         logFileHashStore.debug(
             "Deleting metadata document for pid: " + pid + " with formatId: " + formatId);
         // Validate input parameters
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "deleteMetadata");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "deleteMetadata");
-        FileHashStoreUtility.ensureNotNull(formatId, "formatId", "deleteMetadata");
-        FileHashStoreUtility.checkForEmptyAndValidString(formatId, "formatId", "deleteMetadata");
+        FileHashStoreUtility.ensureNotNull(pid, "pid");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid");
+        FileHashStoreUtility.ensureNotNull(formatId, "formatId");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(formatId, "formatId");
 
         // Get the path to the metadata document and add it to a list
         Path metadataDocPath = getHashStoreMetadataPath(pid, formatId);
@@ -926,17 +912,18 @@ public class FileHashStore implements HashStore {
      * Overload method for deleteMetadata with default metadata namespace
      */
     @Override
-    public void deleteMetadata(String pid) throws IllegalArgumentException, IOException,
-        NoSuchAlgorithmException, InterruptedException {
+    public void deleteMetadata(String pid)
+        throws IllegalArgumentException, IOException, NoSuchAlgorithmException,
+        InterruptedException {
         logFileHashStore.debug("Deleting all metadata documents for pid: " + pid);
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "deleteMetadata");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "deleteMetadata");
+        FileHashStoreUtility.ensureNotNull(pid, "pid");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid");
 
         // Get the path to the pid metadata document directory
         String pidHexDigest = FileHashStoreUtility.getPidHexDigest(pid, OBJECT_STORE_ALGORITHM);
-        String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
-            DIRECTORY_DEPTH, DIRECTORY_WIDTH, pidHexDigest
-        );
+        String pidRelativePath =
+            FileHashStoreUtility.getHierarchicalPathString(DIRECTORY_DEPTH, DIRECTORY_WIDTH,
+                                                           pidHexDigest);
         Path expectedPidMetadataDirectory = METADATA_STORE_DIRECTORY.resolve(pidRelativePath);
         // Add all metadata docs found in the metadata doc directory to a list to iterate over
         List<Path> metadataDocPaths =
@@ -959,8 +946,7 @@ public class FileHashStore implements HashStore {
      */
     protected Collection<Path> syncRenameMetadataDocForDeletion(
         Collection<Path> metadataDocPaths) throws IOException, InterruptedException {
-        FileHashStoreUtility.ensureNotNull(
-            metadataDocPaths, "metadataDocPaths", "syncRenameMetadataDocForDeletion");
+        FileHashStoreUtility.ensureNotNull(metadataDocPaths, "metadataDocPaths");
         if (metadataDocPaths.isEmpty()) {
             String errMsg = "metadataDocPaths supplied cannot be empty.";
             logFileHashStore.error(errMsg);
@@ -1008,17 +994,18 @@ public class FileHashStore implements HashStore {
     }
 
     @Override
-    public String getHexDigest(String pid, String algorithm) throws IllegalArgumentException,
-        FileNotFoundException, IOException, NoSuchAlgorithmException {
+    public String getHexDigest(String pid, String algorithm)
+        throws IllegalArgumentException, IOException,
+        NoSuchAlgorithmException {
         logFileHashStore.debug("Calculating hex digest for pid: " + pid);
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "getHexDigest");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "getHexDigest");
+        FileHashStoreUtility.ensureNotNull(pid, "pid");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid");
         validateAlgorithm(algorithm);
 
         // Find the content identifier
         if (algorithm.equals(OBJECT_STORE_ALGORITHM)) {
-            Map<String, String> objInfoMap = findObject(pid);
-            return objInfoMap.get("cid");
+            ObjectInfo objInfo = findObject(pid);
+            return objInfo.cid();
 
         } else {
             // Get permanent address of the pid object
@@ -1031,13 +1018,11 @@ public class FileHashStore implements HashStore {
             }
 
             InputStream dataStream = Files.newInputStream(objRealPath);
-            String mdObjectHexDigest = FileHashStoreUtility.calculateHexDigest(
-                dataStream, algorithm
-            );
+            String mdObjectHexDigest =
+                FileHashStoreUtility.calculateHexDigest(dataStream, algorithm);
             logFileHashStore.info(
                 "Hex digest calculated for pid: " + pid + ", with hex digest value: "
-                    + mdObjectHexDigest
-            );
+                    + mdObjectHexDigest);
             return mdObjectHexDigest;
         }
     }
@@ -1045,36 +1030,36 @@ public class FileHashStore implements HashStore {
     // FileHashStore Core & Supporting Methods
 
     /**
-     * Checks whether an object referenced by a pid exists and returns a map containing the
-     * absolute path to the object, pid refs file, cid refs file and sysmeta document.
+     * Checks whether an object referenced by a pid exists and returns a map containing the absolute
+     * path to the object, pid refs file, cid refs file and sysmeta document.
      *
      * @param pid Authority-based identifier
      * @return Map containing the following keys: cid, cid_object_path, cid_refs_path,
-     * pid_refs_path, sysmeta_path
-     * @throws NoSuchAlgorithmException          When algorithm used to calculate pid refs
-     *                                           file's absolute address is not valid
+     *     pid_refs_path, sysmeta_path
+     * @throws NoSuchAlgorithmException          When algorithm used to calculate pid refs file's
+     *                                           absolute address is not valid
      * @throws IOException                       Unable to read from a pid refs file or pid refs
      *                                           file does not exist
-     * @throws OrphanRefsFilesException          pid and cid refs file found, but object does
-     *                                           not exist
-     * @throws OrphanPidRefsFileException        When pid refs file exists and the cid found
-     *                                           inside does not exist.
-     * @throws PidNotFoundInCidRefsFileException When pid and cid ref files exists but the
-     *                                           expected pid is not found in the cid refs file.
+     * @throws OrphanRefsFilesException          pid and cid refs file found, but object does not
+     *                                           exist
+     * @throws OrphanPidRefsFileException        When pid refs file exists and the cid found inside
+     *                                           does not exist.
+     * @throws PidNotFoundInCidRefsFileException When pid and cid ref files exists but the expected
+     *                                           pid is not found in the cid refs file.
      */
-    protected Map<String, String> findObject(String pid) throws NoSuchAlgorithmException,
-        IOException,
-        OrphanPidRefsFileException, PidNotFoundInCidRefsFileException, OrphanRefsFilesException {
+    protected ObjectInfo findObject(String pid)
+        throws NoSuchAlgorithmException, IOException, OrphanPidRefsFileException,
+        PidNotFoundInCidRefsFileException, OrphanRefsFilesException {
         logFileHashStore.debug("Finding object for pid: " + pid);
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "findObject");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "findObject");
+        FileHashStoreUtility.ensureNotNull(pid, "pid");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid");
 
         // Get path of the pid references file
-        Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
+        Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
 
         if (Files.exists(absPidRefsPath)) {
             String cid = new String(Files.readAllBytes(absPidRefsPath));
-            Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
+            Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid);
 
             // Throw exception if the cid refs file doesn't exist
             if (!Files.exists(absCidRefsPath)) {
@@ -1087,25 +1072,22 @@ public class FileHashStore implements HashStore {
             if (isStringInRefsFile(pid, absCidRefsPath)) {
                 logFileHashStore.info("cid (" + cid + ") found for pid: " + pid);
 
-                String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
-                    DIRECTORY_DEPTH, DIRECTORY_WIDTH, cid
-                );
+                String objRelativePath =
+                    FileHashStoreUtility.getHierarchicalPathString(DIRECTORY_DEPTH, DIRECTORY_WIDTH,
+                                                                   cid);
                 Path realPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
                 if (Files.exists(realPath)) {
-                    Map<String, String> objInfoMap = new HashMap<>();
-                    objInfoMap.put("cid", cid);
-                    objInfoMap.put("cid_object_path", realPath.toString());
-                    objInfoMap.put("cid_refs_path", absCidRefsPath.toString());
-                    objInfoMap.put("pid_refs_path", absPidRefsPath.toString());
                     // If the default system metadata exists, include it
                     Path metadataPidExpectedPath =
                         getHashStoreMetadataPath(pid, DEFAULT_METADATA_NAMESPACE);
                     if (Files.exists(metadataPidExpectedPath)) {
-                        objInfoMap.put("sysmeta_path", metadataPidExpectedPath.toString());
+                        return new ObjectInfo(cid, realPath.toString(), absCidRefsPath.toString(),
+                                              absPidRefsPath.toString(),
+                                              metadataPidExpectedPath.toString());
                     } else {
-                        objInfoMap.put("sysmeta_path", "Does not exist");
+                        return new ObjectInfo(cid, realPath.toString(), absCidRefsPath.toString(),
+                                              absPidRefsPath.toString(), "Does not exist");
                     }
-                    return objInfoMap;
 
                 } else {
                     String errMsg = "Object with cid: " + cid
@@ -1136,8 +1118,8 @@ public class FileHashStore implements HashStore {
      * hex digest value of an authority based identifier, usually provided as a persistent
      * identifier (pid). If an additional algorithm is provided and supported, its respective hex
      * digest value will be included in hexDigests map. If a checksum and checksumAlgorithm is
-     * provided, FileHashStore will validate the given checksum against the hex digest produced
-     * of the supplied checksumAlgorithm.
+     * provided, FileHashStore will validate the given checksum against the hex digest produced of
+     * the supplied checksumAlgorithm.
      *
      * @param object              InputStream for file
      * @param pid                 Authority-based identifier
@@ -1146,7 +1128,7 @@ public class FileHashStore implements HashStore {
      * @param checksumAlgorithm   Algorithm of checksum submitted
      * @param objSize             Expected size of object to validate after storing
      * @return 'ObjectMetadata' object that contains the file id, size, and a checksum map based on
-     *         the default algorithm list.
+     *     the default algorithm list.
      * @throws IOException                     I/O Error when writing file, generating checksums,
      *                                         moving file or deleting tmpFile upon duplicate found
      * @throws NoSuchAlgorithmException        When additionalAlgorithm or checksumAlgorithm is
@@ -1163,8 +1145,8 @@ public class FileHashStore implements HashStore {
      */
     protected ObjectMetadata putObject(
         InputStream object, String pid, String additionalAlgorithm, String checksum,
-        String checksumAlgorithm, long objSize
-    ) throws IOException, NoSuchAlgorithmException, SecurityException, FileNotFoundException,
+        String checksumAlgorithm, long objSize)
+        throws IOException, NoSuchAlgorithmException, SecurityException, FileNotFoundException,
         PidRefsFileExistsException, IllegalArgumentException, NullPointerException,
         AtomicMoveNotSupportedException, InterruptedException {
         logFileHashStore.debug("Begin writing data object for pid: " + pid);
@@ -1172,28 +1154,26 @@ public class FileHashStore implements HashStore {
         boolean compareChecksum = verifyChecksumParameters(checksum, checksumAlgorithm);
         // Validate additional algorithm if not null or empty, throws exception if not supported
         if (additionalAlgorithm != null) {
-            FileHashStoreUtility.checkForEmptyAndValidString(
-                additionalAlgorithm, "additionalAlgorithm", "putObject"
-            );
+            FileHashStoreUtility.checkForNotEmptyAndValidString(
+                additionalAlgorithm, "additionalAlgorithm");
             validateAlgorithm(additionalAlgorithm);
         }
         if (objSize != -1) {
-            FileHashStoreUtility.checkNotNegativeOrZero(objSize, "putObject");
+            FileHashStoreUtility.checkPositive(objSize);
         }
 
         // Generate tmp file and write to it
         File tmpFile = FileHashStoreUtility.generateTmpFile("tmp", OBJECT_TMP_FILE_DIRECTORY);
         Map<String, String> hexDigests;
         try {
-            hexDigests = writeToTmpFileAndGenerateChecksums(
-                tmpFile, object, additionalAlgorithm, checksumAlgorithm
-            );
+            hexDigests = writeToTmpFileAndGenerateChecksums(tmpFile, object, additionalAlgorithm,
+                                                            checksumAlgorithm);
         } catch (Exception ge) {
             // If the process to write to the tmpFile is interrupted for any reason,
             // we will delete the tmpFile.
             Files.delete(tmpFile.toPath());
-            String errMsg =
-                "Unexpected Exception while storing object for pid: " + pid + ". " + ge.getMessage();
+            String errMsg = "Unexpected Exception while storing object for pid: " + pid + ". "
+                + ge.getMessage();
             logFileHashStore.error(errMsg);
             throw new IOException(errMsg);
         }
@@ -1204,9 +1184,9 @@ public class FileHashStore implements HashStore {
 
         // Gather the elements to form the permanent address
         String objectCid = hexDigests.get(OBJECT_STORE_ALGORITHM);
-        String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
-            DIRECTORY_DEPTH, DIRECTORY_WIDTH, objectCid
-        );
+        String objRelativePath =
+            FileHashStoreUtility.getHierarchicalPathString(DIRECTORY_DEPTH, DIRECTORY_WIDTH,
+                                                           objectCid);
         Path objRealPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
 
         try {
@@ -1227,8 +1207,8 @@ public class FileHashStore implements HashStore {
             }
         } catch (Exception e) {
             String errMsg =
-                "Unexpected exception when moving object with cid: " + objectCid + " for pid:"
-                    + pid + ". Additional Details: " + e.getMessage();
+                "Unexpected exception when moving object with cid: " + objectCid + " for pid:" + pid
+                    + ". Additional Details: " + e.getMessage();
             logFileHashStore.error(errMsg);
             throw e;
         } finally {
@@ -1243,7 +1223,7 @@ public class FileHashStore implements HashStore {
      * algorithm against a list of hex digests. If there is a mismatch, the tmpFile will be deleted
      * and exceptions will be thrown.
      *
-     * @param compareChecksum Decide whether to proceed with comparing checksums
+     * @param compareChecksum   Decide whether to proceed with comparing checksums
      * @param checksum          Expected checksum value of object
      * @param checksumAlgorithm Hash algorithm of checksum value
      * @param tmpFile           Path to the file that is being evaluated
@@ -1253,8 +1233,8 @@ public class FileHashStore implements HashStore {
      */
     protected void validateTmpObject(
         boolean compareChecksum, String checksum, String checksumAlgorithm, File tmpFile,
-        Map<String, String> hexDigests, long expectedSize
-    ) throws NoSuchAlgorithmException, NonMatchingChecksumException, NonMatchingObjSizeException,
+        Map<String, String> hexDigests, long expectedSize)
+        throws NoSuchAlgorithmException, NonMatchingChecksumException, NonMatchingObjSizeException,
         IOException {
         if (expectedSize > 0) {
             long storedObjFileSize = Files.size(Paths.get(tmpFile.toString()));
@@ -1265,8 +1245,8 @@ public class FileHashStore implements HashStore {
 
                 } catch (Exception ge) {
                     String errMsg =
-                        "objSize given is not equal to the stored object size. ObjSize: " + expectedSize
-                            + ". storedObjFileSize: " + storedObjFileSize
+                        "objSize given is not equal to the stored object size. ObjSize: "
+                            + expectedSize + ". storedObjFileSize: " + storedObjFileSize
                             + ". Failed to delete tmpFile: " + tmpFile + ". " + ge.getMessage();
                     logFileHashStore.error(errMsg);
                     throw new NonMatchingObjSizeException(errMsg);
@@ -1329,10 +1309,10 @@ public class FileHashStore implements HashStore {
      * @throws IllegalArgumentException Algorithm cannot be empty
      * @throws NoSuchAlgorithmException Algorithm not supported
      */
-    protected boolean validateAlgorithm(String algorithm) throws NullPointerException,
-        IllegalArgumentException, NoSuchAlgorithmException {
-        FileHashStoreUtility.ensureNotNull(algorithm, "algorithm", "validateAlgorithm");
-        FileHashStoreUtility.checkForEmptyAndValidString(algorithm, "algorithm", "validateAlgorithm");
+    protected boolean validateAlgorithm(String algorithm)
+        throws NullPointerException, IllegalArgumentException, NoSuchAlgorithmException {
+        FileHashStoreUtility.ensureNotNull(algorithm, "algorithm");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(algorithm, "algorithm");
 
         boolean algorithmSupported = Arrays.asList(SUPPORTED_HASH_ALGORITHMS).contains(algorithm);
         if (!algorithmSupported) {
@@ -1353,8 +1333,8 @@ public class FileHashStore implements HashStore {
      * @return Boolean
      */
     protected boolean shouldCalculateAlgorithm(String algorithm) {
-        FileHashStoreUtility.ensureNotNull(algorithm, "algorithm", "shouldCalculateAlgorithm");
-        FileHashStoreUtility.checkForEmptyAndValidString(algorithm, "algorithm", "shouldCalculateAlgorithm");
+        FileHashStoreUtility.ensureNotNull(algorithm, "algorithm");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(algorithm, "algorithm");
         boolean shouldCalculateAlgorithm = true;
         for (DefaultHashAlgorithms defAlgo : DefaultHashAlgorithms.values()) {
             if (algorithm.equals(defAlgo.getName())) {
@@ -1377,22 +1357,17 @@ public class FileHashStore implements HashStore {
         throws NoSuchAlgorithmException {
         // First ensure algorithm is compatible and values are valid if they aren't null
         if (checksumAlgorithm != null) {
-            FileHashStoreUtility.checkForEmptyAndValidString(
-                checksumAlgorithm, "checksumAlgorithm", "verifyChecksumParameters");
+            FileHashStoreUtility.checkForNotEmptyAndValidString(
+                checksumAlgorithm, "checksumAlgorithm");
             validateAlgorithm(checksumAlgorithm);
         }
         if (checksum != null) {
-            FileHashStoreUtility.checkForEmptyAndValidString(
-                checksum, "checksum", "verifyChecksumParameters");
+            FileHashStoreUtility.checkForNotEmptyAndValidString(checksum, "checksum");
         }
         // If checksum is supplied, checksumAlgorithm cannot be empty
         if (checksum != null && !checksum.trim().isEmpty()) {
-            FileHashStoreUtility.ensureNotNull(
-                checksumAlgorithm, "checksumAlgorithm", "verifyChecksumParameters"
-            );
-            FileHashStoreUtility.checkForEmptyAndValidString(
-                checksumAlgorithm, "algorithm", "verifyChecksumParameters"
-            );
+            FileHashStoreUtility.ensureNotNull(checksumAlgorithm, "checksumAlgorithm");
+            FileHashStoreUtility.checkForNotEmptyAndValidString(checksumAlgorithm, "algorithm");
         }
         // Ensure algorithm is supported, not null and not empty
         boolean requestValidation = false;
@@ -1400,12 +1375,8 @@ public class FileHashStore implements HashStore {
             requestValidation = validateAlgorithm(checksumAlgorithm);
             // Ensure checksum is not null or empty if checksumAlgorithm is supplied
             if (requestValidation) {
-                FileHashStoreUtility.ensureNotNull(
-                    checksum, "checksum", "verifyChecksumParameters"
-                );
-                FileHashStoreUtility.checkForEmptyAndValidString(
-                    checksum, "checksum", "verifyChecksumParameters"
-                );
+                FileHashStoreUtility.ensureNotNull(checksum, "checksum");
+                FileHashStoreUtility.checkForNotEmptyAndValidString(checksum, "checksum");
             }
         }
         return requestValidation;
@@ -1429,22 +1400,20 @@ public class FileHashStore implements HashStore {
      * @throws FileNotFoundException    tmpFile cannot be found
      */
     protected Map<String, String> writeToTmpFileAndGenerateChecksums(
-        File tmpFile, InputStream dataStream, String additionalAlgorithm, String checksumAlgorithm
-    ) throws NoSuchAlgorithmException, IOException, FileNotFoundException, SecurityException {
+        File tmpFile, InputStream dataStream, String additionalAlgorithm, String checksumAlgorithm)
+        throws NoSuchAlgorithmException, IOException, FileNotFoundException, SecurityException {
         // Determine whether to calculate additional or checksum algorithms
         boolean generateAddAlgo = false;
         if (additionalAlgorithm != null) {
-            FileHashStoreUtility.checkForEmptyAndValidString(
-                additionalAlgorithm, "additionalAlgorithm", "writeToTmpFileAndGenerateChecksums"
-            );
+            FileHashStoreUtility.checkForNotEmptyAndValidString(
+                additionalAlgorithm, "additionalAlgorithm");
             validateAlgorithm(additionalAlgorithm);
             generateAddAlgo = shouldCalculateAlgorithm(additionalAlgorithm);
         }
         boolean generateCsAlgo = false;
         if (checksumAlgorithm != null && !checksumAlgorithm.equals(additionalAlgorithm)) {
-            FileHashStoreUtility.checkForEmptyAndValidString(
-                checksumAlgorithm, "checksumAlgorithm", "writeToTmpFileAndGenerateChecksums"
-            );
+            FileHashStoreUtility.checkForNotEmptyAndValidString(
+                checksumAlgorithm, "checksumAlgorithm");
             validateAlgorithm(checksumAlgorithm);
             generateCsAlgo = shouldCalculateAlgorithm(checksumAlgorithm);
         }
@@ -1511,13 +1480,13 @@ public class FileHashStore implements HashStore {
         hexDigests.put(DefaultHashAlgorithms.SHA_384.getName(), sha384Digest);
         hexDigests.put(DefaultHashAlgorithms.SHA_512.getName(), sha512Digest);
         if (generateAddAlgo) {
-            String extraAlgoDigest = DatatypeConverter.printHexBinary(additionalAlgo.digest())
-                .toLowerCase();
+            String extraAlgoDigest =
+                DatatypeConverter.printHexBinary(additionalAlgo.digest()).toLowerCase();
             hexDigests.put(additionalAlgorithm, extraAlgoDigest);
         }
         if (generateCsAlgo) {
-            String extraChecksumDigest = DatatypeConverter.printHexBinary(checksumAlgo.digest())
-                .toLowerCase();
+            String extraChecksumDigest =
+                DatatypeConverter.printHexBinary(checksumAlgo.digest()).toLowerCase();
             hexDigests.put(checksumAlgorithm, extraChecksumDigest);
         }
         logFileHashStore.debug(
@@ -1541,13 +1510,14 @@ public class FileHashStore implements HashStore {
      * @throws AtomicMoveNotSupportedException When ATOMIC_MOVE is not supported (usually
      *                                         encountered when moving across file systems)
      */
-    protected void move(File source, File target, String entity) throws IOException,
-        SecurityException, AtomicMoveNotSupportedException, FileAlreadyExistsException {
+    protected void move(File source, File target, String entity)
+        throws IOException, SecurityException, AtomicMoveNotSupportedException,
+        FileAlreadyExistsException {
         logFileHashStore.debug(
             "Moving " + entity + ", from source: " + source + ", to target: " + target);
         // Validate input parameters
-        FileHashStoreUtility.ensureNotNull(entity, "entity", "move");
-        FileHashStoreUtility.checkForEmptyAndValidString(entity, "entity", "move");
+        FileHashStoreUtility.ensureNotNull(entity, "entity");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(entity, "entity");
         if (entity.equals("object") && target.exists()) {
             String errMsg = "File already exists for target: " + target;
             logFileHashStore.warn(errMsg);
@@ -1607,7 +1577,7 @@ public class FileHashStore implements HashStore {
         throws IOException, NoSuchAlgorithmException, InterruptedException {
         logFileHashStore.debug("Called to delete data object with cid: " + cid);
         // Get expected path of the cid refs file & permanent address of the actual cid
-        Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
+        Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid);
         String objRelativePath =
             FileHashStoreUtility.getHierarchicalPathString(DIRECTORY_DEPTH, DIRECTORY_WIDTH, cid);
         Path expectedRealPath = OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
@@ -1633,88 +1603,97 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Create the pid refs file and create/update cid refs files in HashStore to establish
-     * the relationship between a 'pid' and a 'cid'
+     * Create the pid refs file and create/update cid refs files in HashStore to establish the
+     * relationship between a 'pid' and a 'cid'
      *
      * @param pid Persistent or authority-based identifier
      * @param cid Content identifier
      * @throws NoSuchAlgorithmException If there is an issue related to calculating hashes
-     * @throws IOException If there is an issue reading/writing a refs file
+     * @throws IOException              If there is an issue reading/writing a refs file
+     * @throws InterruptedException     If there is an issue when synchronizing pid or cid values
      */
-    protected void storeHashStoreRefsFiles(String pid, String cid) throws NoSuchAlgorithmException,
-        IOException {
-        Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
-        Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
+    protected void storeHashStoreRefsFiles(String pid, String cid)
+        throws NoSuchAlgorithmException, IOException, InterruptedException {
+        try {
+            // Immediately synchronize cid and pid
+            synchronizeObjectLockedCids(cid);
+            synchronizeReferenceLockedPids(pid);
 
-        if (Files.exists(absPidRefsPath) && Files.exists(absCidRefsPath)) {
-            // Confirm that reference files are where they are expected to be
-            verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
-            // We throw an exception so the client is aware that everything is in place
-            String errMsg =
-                "Object with cid: " + cid + " already exists and is tagged with pid: " + pid;
-            logFileHashStore.error(errMsg);
-            throw new HashStoreRefsAlreadyExistException(errMsg);
+            Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
+            Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid);
 
-        } else if (Files.exists(absPidRefsPath) && !Files.exists(absCidRefsPath)) {
-            // If pid refs exists, it can only contain and reference one cid
-            // First, compare the cid retrieved from the pid refs file from the supplied cid
-            String retrievedCid = new String(Files.readAllBytes(absPidRefsPath));
-            if (retrievedCid.equalsIgnoreCase(cid)) {
-                // The pid correctly references the cid, but the cid refs file is missing
-                // Create the file and verify tagging process
-                File cidRefsTmpFile = writeRefsFile(pid, HashStoreIdTypes.cid.getName());
-                File absPathCidRefsFile = absCidRefsPath.toFile();
-                move(cidRefsTmpFile, absPathCidRefsFile, "refs");
+            if (Files.exists(absPidRefsPath) && Files.exists(absCidRefsPath)) {
+                // Confirm that reference files are where they are expected to be
                 verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
-                logFileHashStore.info(
-                    "Pid refs file exists for pid: " + pid + ", but cid refs file for: " + cid
-                        + " is missing. Missing cid refs file created and tagging completed.");
-                return;
-            } else {
-                // Check if the retrieved cid refs file exists and pid is referenced
-                Path retrievedAbsCidRefsPath = getHashStoreRefsPath(
-                    retrievedCid, HashStoreIdTypes.cid.getName()
-                );
-                if (Files.exists(retrievedAbsCidRefsPath) && isStringInRefsFile(pid, retrievedAbsCidRefsPath
-                )) {
-                    // This pid is accounted for and tagged as expected.
-                    String errMsg = "Pid refs file already exists for pid: " + pid
-                        + ", and the associated cid refs file contains the "
-                        + "pid. A pid can only reference one cid.";
-                    logFileHashStore.error(errMsg);
-                    throw new PidRefsFileExistsException(errMsg);
+                // We throw an exception so the client is aware that everything is in place
+                String errMsg =
+                    "Object with cid: " + cid + " already exists and is tagged with pid: " + pid;
+                logFileHashStore.error(errMsg);
+                throw new HashStoreRefsAlreadyExistException(errMsg);
+
+            } else if (Files.exists(absPidRefsPath) && !Files.exists(absCidRefsPath)) {
+                // If pid refs exists, it can only contain and reference one cid
+                // First, compare the cid retrieved from the pid refs file from the supplied cid
+                String retrievedCid = new String(Files.readAllBytes(absPidRefsPath));
+                if (retrievedCid.equalsIgnoreCase(cid)) {
+                    // The pid correctly references the cid, but the cid refs file is missing
+                    // Create the file and verify tagging process
+                    File cidRefsTmpFile = writeRefsFile(pid, HashStoreIdTypes.cid.name());
+                    File absPathCidRefsFile = absCidRefsPath.toFile();
+                    move(cidRefsTmpFile, absPathCidRefsFile, "refs");
+                    verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
+                    logFileHashStore.info(
+                        "Pid refs file exists for pid: " + pid + ", but cid refs file for: " + cid
+                            + " is missing. Missing cid refs file created and tagging completed.");
+                    return;
+                } else {
+                    // Check if the retrieved cid refs file exists and pid is referenced
+                    Path retrievedAbsCidRefsPath =
+                        getHashStoreRefsPath(retrievedCid, HashStoreIdTypes.cid);
+                    if (Files.exists(retrievedAbsCidRefsPath) && isStringInRefsFile(
+                        pid, retrievedAbsCidRefsPath)) {
+                        // This pid is accounted for and tagged as expected.
+                        String errMsg = "Pid refs file already exists for pid: " + pid
+                            + ", and the associated cid refs file contains the "
+                            + "pid. A pid can only reference one cid.";
+                        logFileHashStore.error(errMsg);
+                        throw new PidRefsFileExistsException(errMsg);
+                    }
+                    // Orphaned pid refs file found, the retrieved cid refs file exists
+                    // but doesn't contain the pid. Proceed to overwrite the pid refs file.
                 }
-                // Orphaned pid refs file found, the retrieved cid refs file exists
-                // but doesn't contain the pid. Proceed to overwrite the pid refs file.
+            } else if (!Files.exists(absPidRefsPath) && Files.exists(absCidRefsPath)) {
+                // Only update cid refs file if pid is not in the file
+                if (!isStringInRefsFile(pid, absCidRefsPath)) {
+                    updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.add);
+                }
+                // Get the pid refs file and verify tagging process
+                File pidRefsTmpFile = writeRefsFile(cid, HashStoreIdTypes.pid.name());
+                File absPathPidRefsFile = absPidRefsPath.toFile();
+                move(pidRefsTmpFile, absPathPidRefsFile, "refs");
+                verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
+                logFileHashStore.info("Object with cid: " + cid
+                                          + " has been updated and tagged successfully with pid: "
+                                          + pid);
+                return;
             }
-        } else if (!Files.exists(absPidRefsPath) && Files.exists(absCidRefsPath)) {
-            // Only update cid refs file if pid is not in the file
-            if (!isStringInRefsFile(pid, absCidRefsPath)) {
-                updateRefsFile(pid, absCidRefsPath, "add");
-            }
-            // Get the pid refs file and verify tagging process
-            File pidRefsTmpFile = writeRefsFile(cid, HashStoreIdTypes.pid.getName());
+
+            // Get pid and cid refs files
+            File pidRefsTmpFile = writeRefsFile(cid, HashStoreIdTypes.pid.name());
+            File cidRefsTmpFile = writeRefsFile(pid, HashStoreIdTypes.cid.name());
+            // Move refs files to permanent location
             File absPathPidRefsFile = absPidRefsPath.toFile();
+            File absPathCidRefsFile = absCidRefsPath.toFile();
             move(pidRefsTmpFile, absPathPidRefsFile, "refs");
+            move(cidRefsTmpFile, absPathCidRefsFile, "refs");
+            // Verify tagging process, this throws an exception if there's an issue
             verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
             logFileHashStore.info(
-                "Object with cid: " + cid + " has been updated and tagged successfully with pid: "
-                    + pid);
-            return;
+                "Object with cid: " + cid + " has been tagged successfully with pid: " + pid);
+        } finally {
+            releaseObjectLockedCids(cid);
+            releaseReferenceLockedPids(pid);
         }
-
-        // Get pid and cid refs files
-        File pidRefsTmpFile = writeRefsFile(cid, HashStoreIdTypes.pid.getName());
-        File cidRefsTmpFile = writeRefsFile(pid, HashStoreIdTypes.cid.getName());
-        // Move refs files to permanent location
-        File absPathPidRefsFile = absPidRefsPath.toFile();
-        File absPathCidRefsFile = absCidRefsPath.toFile();
-        move(pidRefsTmpFile, absPathPidRefsFile, "refs");
-        move(cidRefsTmpFile, absPathCidRefsFile, "refs");
-        // Verify tagging process, this throws an exception if there's an issue
-        verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
-        logFileHashStore.info(
-            "Object with cid: " + cid + " has been tagged successfully with pid: " + pid);
     }
 
     /**
@@ -1727,13 +1706,13 @@ public class FileHashStore implements HashStore {
      * @throws NoSuchAlgorithmException When there is an algorithm used that is not supported
      * @throws IOException              When there is an issue deleting refs files
      */
-    protected void unTagObject(String pid, String cid) throws InterruptedException,
-        NoSuchAlgorithmException, IOException {
+    protected void unTagObject(String pid, String cid)
+        throws InterruptedException, NoSuchAlgorithmException, IOException {
         // Validate input parameters
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "unTagObject");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "unTagObject");
-        FileHashStoreUtility.ensureNotNull(cid, "cid", "unTagObject");
-        FileHashStoreUtility.checkForEmptyAndValidString(cid, "cid", "unTagObject");
+        FileHashStoreUtility.ensureNotNull(pid, "pid");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid");
+        FileHashStoreUtility.ensureNotNull(cid, "cid");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(cid, "cid");
 
         Collection<Path> deleteList = new ArrayList<>();
 
@@ -1743,18 +1722,17 @@ public class FileHashStore implements HashStore {
             // `findObject` which will throw custom exceptions if there is an issue with
             // the reference files, which help us determine the path to proceed with.
             try {
-                Map<String, String> objInfoMap = findObject(pid);
-                cid = objInfoMap.get("cid");
-                // If no exceptions are thrown, we proceed to synchronization based on the `cid`
-                synchronizeObjectLockedCids(cid);
-
+                ObjectInfo objInfo = findObject(pid);
+                cid = objInfo.cid();
                 try {
+                    // If no exceptions are thrown, we proceed to synchronization based on the `cid`
+                    synchronizeObjectLockedCids(cid);
                     // Get paths to reference files to work on
-                    Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
-                    Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
+                    Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid);
+                    Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
 
                     // Begin deletion process
-                    updateRefsFile(pid, absCidRefsPath, "remove");
+                    updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.remove);
                     if (Files.size(absCidRefsPath) == 0) {
                         deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
                     } else {
@@ -1774,7 +1752,7 @@ public class FileHashStore implements HashStore {
             } catch (OrphanPidRefsFileException oprfe) {
                 // `findObject` throws this exception when the cid refs file doesn't exist,
                 // so we only need to delete the pid refs file
-                Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
+                Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
                 deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
                 // Delete items
                 FileHashStoreUtility.deleteListItems(deleteList);
@@ -1785,16 +1763,15 @@ public class FileHashStore implements HashStore {
             } catch (OrphanRefsFilesException orfe) {
                 // `findObject` throws this exception when the pid and cid refs file exists,
                 // but the actual object being referenced by the pid does not exist
-                Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
+                Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
                 String cidRead = new String(Files.readAllBytes(absPidRefsPath));
 
                 try {
                     // Since we must access the cid reference file, the `cid` must be synchronized
                     synchronizeObjectLockedCids(cidRead);
 
-                    Path absCidRefsPath =
-                        getHashStoreRefsPath(cidRead, HashStoreIdTypes.cid.getName());
-                    updateRefsFile(pid, absCidRefsPath, "remove");
+                    Path absCidRefsPath = getHashStoreRefsPath(cidRead, HashStoreIdTypes.cid);
+                    updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.remove);
                     if (Files.size(absCidRefsPath) == 0) {
                         deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
                     }
@@ -1814,7 +1791,7 @@ public class FileHashStore implements HashStore {
                 // but the pid is not found in the cid refs file.
 
                 // Rename pid refs file for deletion
-                Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid.getName());
+                Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
                 deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
                 // Delete items
                 FileHashStoreUtility.deleteListItems(deleteList);
@@ -1824,10 +1801,9 @@ public class FileHashStore implements HashStore {
             } catch (PidRefsFileNotFoundException prfnfe) {
                 // `findObject` throws this exception if the pid refs file is not found
                 // Check to see if pid is in the `cid refs file`and attempt to remove it
-                Path absCidRefsPath =
-                    getHashStoreRefsPath(cid, HashStoreIdTypes.cid.getName());
+                Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid);
                 if (Files.exists(absCidRefsPath) && isStringInRefsFile(pid, absCidRefsPath)) {
-                    updateRefsFile(pid, absCidRefsPath, "remove");
+                    updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.remove);
                     String errMsg = "Pid refs file not found, removed pid found in cid refs file: "
                         + absCidRefsPath;
                     logFileHashStore.warn(errMsg);
@@ -1852,8 +1828,8 @@ public class FileHashStore implements HashStore {
      * @throws IOException                       Unable to read any of the refs files
      */
     protected void verifyHashStoreRefsFiles(
-        String pid, String cid, Path absPidRefsPath, Path absCidRefsPath
-    ) throws FileNotFoundException, CidNotFoundInPidRefsFileException,
+        String pid, String cid, Path absPidRefsPath, Path absCidRefsPath)
+        throws FileNotFoundException, CidNotFoundInPidRefsFileException,
         PidNotFoundInCidRefsFileException, IOException {
         // First confirm that the refs files have been created/moved to where they need to be
         if (!Files.exists(absCidRefsPath)) {
@@ -1894,17 +1870,15 @@ public class FileHashStore implements HashStore {
      * where it belongs otherwise it will be removed during garbage collection.
      *
      * @param ref     Authority-based or persistent identifier to write
-     * @param refType Type of reference 'pid', 'cid' or 'sysmeta'
-     * @throws IOException Failure to write refs file
+     * @param refType Type of reference 'pid' or 'cid' to include in the log
      * @return File object with single reference
+     * @throws IOException Failure to write refs file
      */
     protected File writeRefsFile(String ref, String refType) throws IOException {
         File cidRefsTmpFile = FileHashStoreUtility.generateTmpFile("tmp", REFS_TMP_FILE_DIRECTORY);
         try (BufferedWriter writer = new BufferedWriter(
-            new OutputStreamWriter(
-                Files.newOutputStream(cidRefsTmpFile.toPath()), StandardCharsets.UTF_8
-            )
-        )) {
+            new OutputStreamWriter(Files.newOutputStream(cidRefsTmpFile.toPath()),
+                                   StandardCharsets.UTF_8))) {
             writer.write(ref);
             writer.close();
 
@@ -1944,10 +1918,10 @@ public class FileHashStore implements HashStore {
      *
      * @param ref         Authority-based or persistent identifier
      * @param absRefsPath Path to the refs file to update
-     * @param updateType  "add" or "remove"
+     * @param updateType  {@link HashStoreRefUpdateTypes}
      * @throws IOException Issue with updating or accessing a refs file
      */
-    protected void updateRefsFile(String ref, Path absRefsPath, String updateType)
+    protected void updateRefsFile(String ref, Path absRefsPath, HashStoreRefUpdateTypes updateType)
         throws IOException {
         // This update process is atomic, so we first write the updated content
         // into a temporary file before overwriting it.
@@ -1956,12 +1930,12 @@ public class FileHashStore implements HashStore {
 
         try {
             // Obtain a lock on the file before updating it
-            try (FileChannel channel = FileChannel.open(
-                absRefsPath, StandardOpenOption.READ, StandardOpenOption.WRITE
-            ); FileLock ignored = channel.lock()) {
+            try (FileChannel channel = FileChannel.open(absRefsPath, StandardOpenOption.READ,
+                                                        StandardOpenOption.WRITE);
+                 FileLock ignored = channel.lock()) {
                 Collection<String> lines = new ArrayList<>(Files.readAllLines(absRefsPath));
 
-                if (updateType.equals("add")) {
+                if (updateType.equals(HashStoreRefUpdateTypes.add)) {
                     lines.add(ref);
                     Files.write(tmpFilePath, lines, StandardOpenOption.WRITE);
                     move(tmpFile, absRefsPath.toFile(), "refs");
@@ -1969,7 +1943,7 @@ public class FileHashStore implements HashStore {
                         "Ref: " + ref + " has been added to refs file: " + absRefsPath);
                 }
 
-                if (updateType.equals("remove")) {
+                if (updateType.equals(HashStoreRefUpdateTypes.remove)) {
                     lines.remove(ref);
                     Files.write(tmpFilePath, lines, StandardOpenOption.WRITE);
                     move(tmpFile, absRefsPath.toFile(), "refs");
@@ -1987,7 +1961,7 @@ public class FileHashStore implements HashStore {
     /**
      * Takes a given input stream and writes it to its permanent address on disk based on the
      * SHA-256 hex digest of the given pid + formatId. If no formatId is supplied, it will use the
-     * default store namespace as defined by `hashstore.yaml`
+     * default store namespace as defined by {@code hashstore.yaml}.
      *
      * @param metadata InputStream to metadata
      * @param pid      Authority-based identifier
@@ -2002,16 +1976,16 @@ public class FileHashStore implements HashStore {
         logFileHashStore.debug(
             "Writing metadata for pid: " + pid + " , with metadata namespace: " + formatId);
         // Validate input parameters
-        FileHashStoreUtility.ensureNotNull(metadata, "metadata", "putMetadata");
-        FileHashStoreUtility.ensureNotNull(pid, "pid", "putMetadata");
-        FileHashStoreUtility.checkForEmptyAndValidString(pid, "pid", "putMetadata");
+        FileHashStoreUtility.ensureNotNull(metadata, "metadata");
+        FileHashStoreUtility.ensureNotNull(pid, "pid");
+        FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid");
 
         // If no formatId is supplied, use the default namespace to store metadata
         String checkedFormatId;
         if (formatId == null) {
             checkedFormatId = DEFAULT_METADATA_NAMESPACE;
         } else {
-            FileHashStoreUtility.checkForEmptyAndValidString(formatId, "formatId", "putMetadata");
+            FileHashStoreUtility.checkForNotEmptyAndValidString(formatId, "formatId");
             checkedFormatId = formatId;
         }
 
@@ -2020,9 +1994,8 @@ public class FileHashStore implements HashStore {
         // by using the hash of the 'pid', with the file name being the hash of the 'pid+formatId'
         Path pathToStoredMetadata = getHashStoreMetadataPath(pid, checkedFormatId);
 
-        File tmpMetadataFile = FileHashStoreUtility.generateTmpFile(
-            "tmp", METADATA_TMP_FILE_DIRECTORY
-        );
+        File tmpMetadataFile =
+            FileHashStoreUtility.generateTmpFile("tmp", METADATA_TMP_FILE_DIRECTORY);
         boolean tmpMetadataWritten = writeToTmpMetadataFile(tmpMetadataFile, metadata);
         if (tmpMetadataWritten) {
             logFileHashStore.debug(
@@ -2074,16 +2047,16 @@ public class FileHashStore implements HashStore {
      * @param abpId Authority-based or persistent identifier
      * @return Path to the HasHStore data object
      * @throws NoSuchAlgorithmException When an algorithm used to calculate a hash is not supported
-     * @throws IOException Issue when reading a pid refs file to retrieve a 'cid'
+     * @throws IOException              Issue when reading a pid refs file to retrieve a 'cid'
      */
-    protected Path getHashStoreDataObjectPath(String abpId) throws NoSuchAlgorithmException,
-        IOException {
+    protected Path getHashStoreDataObjectPath(String abpId)
+        throws NoSuchAlgorithmException, IOException {
         // Retrieve the 'cid' from the pid refs file
         String objectCid;
         String hashedId = FileHashStoreUtility.getPidHexDigest(abpId, OBJECT_STORE_ALGORITHM);
-        String pidRefsFileRelativePath = FileHashStoreUtility.getHierarchicalPathString(
-            DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashedId
-        );
+        String pidRefsFileRelativePath =
+            FileHashStoreUtility.getHierarchicalPathString(DIRECTORY_DEPTH, DIRECTORY_WIDTH,
+                                                           hashedId);
         Path pathToPidRefsFile = REFS_PID_FILE_DIRECTORY.resolve(pidRefsFileRelativePath);
         if (!Files.exists(pathToPidRefsFile)) {
             String errMsg =
@@ -2095,9 +2068,9 @@ public class FileHashStore implements HashStore {
             objectCid = new String(Files.readAllBytes(pathToPidRefsFile));
         }
         // If cid is found, return the expected real path to object
-        String objRelativePath = FileHashStoreUtility.getHierarchicalPathString(
-            DIRECTORY_DEPTH, DIRECTORY_WIDTH, objectCid
-        );
+        String objRelativePath =
+            FileHashStoreUtility.getHierarchicalPathString(DIRECTORY_DEPTH, DIRECTORY_WIDTH,
+                                                           objectCid);
         // Real path to the data object
         return OBJECT_STORE_DIRECTORY.resolve(objRelativePath);
     }
@@ -2105,7 +2078,7 @@ public class FileHashStore implements HashStore {
     /**
      * Get the absolute path to a HashStore metadata document
      *
-     * @param abpId Authority-based or persistent identifier
+     * @param abpId    Authority-based or persistent identifier
      * @param formatId Metadata formatId or namespace
      * @return Path to the requested metadata document
      * @throws NoSuchAlgorithmException When an algorithm used to calculate a hash is not supported
@@ -2114,16 +2087,14 @@ public class FileHashStore implements HashStore {
         throws NoSuchAlgorithmException {
         // Get the pid metadata directory
         String hashedId = FileHashStoreUtility.getPidHexDigest(abpId, OBJECT_STORE_ALGORITHM);
-        String pidMetadataDirRelPath = FileHashStoreUtility.getHierarchicalPathString(
-            DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashedId
-        );
+        String pidMetadataDirRelPath =
+            FileHashStoreUtility.getHierarchicalPathString(DIRECTORY_DEPTH, DIRECTORY_WIDTH,
+                                                           hashedId);
         // The file name for the metadata document is the hash of the supplied 'pid + 'formatId'
         String metadataDocHash =
             FileHashStoreUtility.getPidHexDigest(abpId + formatId, OBJECT_STORE_ALGORITHM);
         // Real path to metadata doc
-        return METADATA_STORE_DIRECTORY.resolve(pidMetadataDirRelPath).resolve(
-            metadataDocHash
-        );
+        return METADATA_STORE_DIRECTORY.resolve(pidMetadataDirRelPath).resolve(metadataDocHash);
     }
 
     /**
@@ -2157,8 +2128,9 @@ public class FileHashStore implements HashStore {
             return metadataCidInputStream;
 
         } catch (IOException ioe) {
-            String errMsg = "Unexpected error when creating InputStream for pid: " + pid
-                + " with formatId: " + formatId + ". IOException: " + ioe.getMessage();
+            String errMsg =
+                "Unexpected error when creating InputStream for pid: " + pid + " with formatId: "
+                    + formatId + ". IOException: " + ioe.getMessage();
             logFileHashStore.error(errMsg);
             throw new IOException(errMsg);
         }
@@ -2167,43 +2139,45 @@ public class FileHashStore implements HashStore {
     /**
      * Get the absolute path to a HashStore pid or cid ref file
      *
-     * @param abpcId Authority-based identifier, persistent identifier or content identifier
-     * @param refType "cid" or "pid
+     * @param abpcId  Authority-based identifier, persistent identifier or content identifier
+     * @param refType {@link HashStoreIdTypes}
      * @return Path to the requested refs file
      * @throws NoSuchAlgorithmException When an algorithm used to calculate a hash is not supported
      */
-    protected Path getHashStoreRefsPath(String abpcId, String refType)
+    protected Path getHashStoreRefsPath(String abpcId, HashStoreIdTypes refType)
         throws NoSuchAlgorithmException {
         Path realPath;
-        if (refType.equalsIgnoreCase(HashStoreIdTypes.pid.getName())) {
-            String hashedId = FileHashStoreUtility.getPidHexDigest(abpcId, OBJECT_STORE_ALGORITHM);
-            String pidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
-                DIRECTORY_DEPTH, DIRECTORY_WIDTH, hashedId
-            );
-            realPath = REFS_PID_FILE_DIRECTORY.resolve(pidRelativePath);
-        } else if (refType.equalsIgnoreCase(HashStoreIdTypes.cid.getName())) {
-            String cidRelativePath = FileHashStoreUtility.getHierarchicalPathString(
-                DIRECTORY_DEPTH, DIRECTORY_WIDTH, abpcId
-            );
-            realPath = REFS_CID_FILE_DIRECTORY.resolve(cidRelativePath);
-        } else {
-            String errMsg = "formatId must be 'pid' or 'cid'";
-            logFileHashStore.error(errMsg);
-            throw new IllegalArgumentException(errMsg);
+
+        switch (refType) {
+            case pid -> {
+                String hashedId =
+                    FileHashStoreUtility.getPidHexDigest(abpcId, OBJECT_STORE_ALGORITHM);
+                String pidRelativePath =
+                    FileHashStoreUtility.getHierarchicalPathString(DIRECTORY_DEPTH, DIRECTORY_WIDTH,
+                                                                   hashedId);
+                realPath = REFS_PID_FILE_DIRECTORY.resolve(pidRelativePath);
+            }
+            case cid -> {
+                String cidRelativePath =
+                    FileHashStoreUtility.getHierarchicalPathString(DIRECTORY_DEPTH, DIRECTORY_WIDTH,
+                                                                   abpcId);
+                realPath = REFS_CID_FILE_DIRECTORY.resolve(cidRelativePath);
+            }
+            default -> throw new IllegalArgumentException(
+                "Ref type must be a type of HashStoreIdTypes " + "(pid or cid)");
         }
         return realPath;
     }
 
     /**
      * Storing, deleting and untagging objects are synchronized together. Duplicate store object
-     * requests for a pid are rejected, but deleting an object will wait for a pid to be released
-     * if it's found to be in use before proceeding.
+     * requests for a pid are rejected, but deleting an object will wait for a pid to be released if
+     * it's found to be in use before proceeding.
      *
      * @param pid Persistent or authority-based identifier
      * @throws InterruptedException When an issue occurs when attempting to sync the pid
      */
-    private static void synchronizeObjectLockedPids(String pid)
-        throws InterruptedException {
+    private static void synchronizeObjectLockedPids(String pid) throws InterruptedException {
         synchronized (objectLockedPids) {
             while (objectLockedPids.contains(pid)) {
                 try {
@@ -2296,8 +2270,7 @@ public class FileHashStore implements HashStore {
                     throw new InterruptedException(errMsg);
                 }
             }
-            logFileHashStore.debug(
-                "Synchronizing objectLockedCids for cid: " + cid);
+            logFileHashStore.debug("Synchronizing objectLockedCids for cid: " + cid);
             objectLockedCids.add(cid);
         }
     }
@@ -2316,8 +2289,8 @@ public class FileHashStore implements HashStore {
     }
 
     /**
-     * Synchronize the pid tagging process since `tagObject` is a Public API method that can be
-     * called directly. This is used in the scenario when the client is missing metadata but must
+     * Synchronize the pid tagging process since {@code tagObject} is a Public API method that can
+     * be called directly. This is used in the scenario when the client is missing metadata but must
      * store the data object first.
      *
      * @param pid Persistent or authority-based identifier
@@ -2336,8 +2309,7 @@ public class FileHashStore implements HashStore {
                     throw new InterruptedException(errMsg);
                 }
             }
-            logFileHashStore.debug(
-                "Synchronizing referenceLockedPids for pid: " + pid);
+            logFileHashStore.debug("Synchronizing referenceLockedPids for pid: " + pid);
             referenceLockedPids.add(pid);
         }
     }

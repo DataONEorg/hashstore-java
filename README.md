@@ -37,7 +37,7 @@ respective directories and utilizes an identifier-based API for interacting with
 HashStore storage classes (like `FileHashStore`) must implement the HashStore interface to ensure
 the expected usage of HashStore.
 
-###### Public API Methods
+### Public API Methods
 
 - storeObject
 - tagObject
@@ -49,9 +49,9 @@ the expected usage of HashStore.
 - deleteMetadata
 - getHexDigest
 
-For details, please see the HashStore interface (HashStore.java)
+For details, please see the HashStore interface [HashStore.java](https://github.com/DataONEorg/hashstore-java/blob/main/src/main/java/org/dataone/hashstore/HashStore.java)
 
-###### How do I create a HashStore?
+### How do I create a HashStore?
 
 To create or interact with a HashStore, instantiate a HashStore object with the following set of
 properties:
@@ -62,7 +62,7 @@ properties:
 - storeAlgorithm
 - storeMetadataNamespace
 
-```
+```java
 String classPackage = "org.dataone.hashstore.filehashstore.FileHashStore";
 Path rootDirectory = tempFolder.resolve("metacat");
 
@@ -79,121 +79,17 @@ storeProperties.setProperty(
 HashStore hashStore = HashStoreFactory.getHashStore(classPackage, storeProperties);
 
 // Store an object
-hashStore.storeObject(stream, pid)
+hashStore.storeObject(stream, pid);
 // ...
 ```
 
-###### Working with objects (store, retrieve, delete)
-
-In HashStore, objects are first saved as temporary files while their content identifiers are
-calculated. Once the default hash algorithm list and their hashes are generated, objects are stored
-in their permanent location using the store's algorithm's corresponding hash value, the store depth
-and the store width. Lastly, reference files are created for the object so that they can be found
-and retrieved given an identifier (ex. persistent identifier (pid)). Note: Objects are also stored
-once and only once.
-
-By calling the various interface methods for  `storeObject`, the calling app/client can validate,
-store and tag an object simultaneously if the relevant data is available. In the absence of an
-identifier (ex. persistent identifier (pid)), `storeObject` can be called to solely store an object.
-The client is then expected to call `deleteInvalidObject` when the relevant metadata is available to
-confirm that the object is what is expected. And to finalize the process (to make the object
-discoverable), the client calls `tagObject``. In summary, there are two expected paths to store an
-object:
-
-```
-// All-in-one process which stores, validates and tags an object
-objectMetadata objInfo = storeObject(InputStream, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize)
-
-// Manual Process
-// Store object
-objectMetadata objInfo = storeObject(InputStream)
-// Validate object, if the parameters do not match, the data object associated with the objInfo
-// supplied will be deleted
-- deleteInvalidObject(objInfo, checksum, checksumAlgorithn, objSize)
-// Tag object, makes the object discoverable (find, retrieve, delete)
-tagObject(pid, cid)
-```
-
-**How do I retrieve an object if I have the pid?**
-
-- To retrieve an object, call the Public API method `retrieveObject` which opens a stream to the
-  object if it exists.
-
-**How do I delete an object if I have the pid?**
-
-- To delete an object, all its associated reference files and its metadata, call the Public API
-  method `deleteObject()` with `idType` 'pid'. If an `idType` is not given (ex.
-  calling `deleteObject(String pid)`), the `idType` will be assumed to be a 'pid'
-- To delete only an object, call `deleteObject()` with `idType` 'cid' which will remove the object
-  if it is not referenced by any pids.
-- Note, `deleteObject` and `tagObject` calls are synchronized on their content identifier values so
-  that the shared reference files are not unintentionally modified concurrently. An object that is
-  in the process of being deleted should not be tagged, and vice versa. These calls have been
-  implemented to occur sequentially to improve clarity in the event of an unexpected conflict or
-  issue.
-
-###### Working with metadata (store, retrieve, delete)
-
-HashStore's '/metadata' directory holds all metadata for objects stored in HashStore. All metadata
-documents related to a 'pid' are stored in a directory determined by calculating the hash of the
-pid (based on the store's algorithm). Each specific metadata document is then stored by calculating
-the hash of its associated `pid+formatId`. By default, calling `storeMetadata` will use HashStore's
-default metadata namespace as the 'formatId' when storing metadata. Should the calling app wish to
-store multiple metadata files about an object, the client app is expected to provide a 'formatId'
-that represents an object format for the metadata type (ex. `storeMetadata(stream, pid, formatId)`).
-
-**How do I retrieve a metadata file?**
-
-- To find a metadata object, call the Public API method `retrieveMetadata` which returns a stream to
-  the metadata file that's been stored with the default metadata namespace if it exists.
-- If there are multiple metadata objects, a 'formatId' must be specified when
-  calling `retrieveMetadata` (ex. `retrieveMetadata(pid, formatId)`)
-
-**How do I delete a metadata file?**
-
-- Like `retrieveMetadata`, call the Public API method `deleteMetadata(String pid, String formatId)`
-  which will delete the metadata object associated with the given pid.
-- To delete all metadata objects related to a given 'pid', call `deleteMetadata(String pid)`
-
-###### What are HashStore reference files?
-
-HashStore assumes that every object to store has a respective identifier. This identifier is then
-used when storing, retrieving and deleting an object. In order to facilitate this process, we create
-two types of reference files:
-
-- pid (persistent identifier) reference files
-- cid (content identifier) reference files
-
-These reference files are implemented in HashStore underneath the hood with no expectation for
-modification from the calling app/client. The one and only exception to this process is when the
-calling client/app does not have an identifier, and solely stores an objects raw bytes in
-HashStore (calling `storeObject(InputStream)`).
-
-**'pid' Reference Files**
-
-- Pid (persistent identifier) reference files are created when storing an object with an identifier.
-- Pid reference files are located in HashStores '/refs/pid' directory
-- If an identifier is not available at the time of storing an object, the calling app/client must
-  create this association between a pid and the object it represents by calling `tagObject`
-  separately.
-- Each pid reference file contains a string that represents the content identifier of the object it
-  references
-- Like how objects are stored once and only once, there is also only one pid reference file for each
-  object.
-
-**'cid' Reference Files**
-
-- Cid (content identifier) reference files are created at the same time as pid reference files when
-  storing an object with an identifier.
-- Cid reference files are located in HashStore's '/refs/cid' directory
-- A cid reference file is a list of all the pids that reference a cid, delimited by a new line ("
-  \n") character
-
-###### What does HashStore look like?
+### What does HashStore look like?
 
 ```sh
 # Example layout in HashStore with a single file stored along with its metadata and reference files.
-# This uses a store depth of 3, with a width of 2 and "SHA-256" as its default store algorithm
+# This uses a store depth of 3 (number of nested levels/directories - e.g. '/4d/19/81/' within
+# 'objects', see below), with a width of 2 (number of characters used in directory name - e.g. "4d",
+# "19" etc.) and "SHA-256" as its default store algorithm
 ## Notes:
 ## - Objects are stored using their content identifier as the file address
 ## - The reference file for each pid contains a single cid
@@ -226,6 +122,116 @@ HashStore (calling `storeObject(InputStream)`).
                 └── 55
                     └── 5ed77052d7e166017f779cbc193357c3a5006ee8b8457230bcf7abcef65e
 ```
+
+### Working with objects (store, retrieve, delete)
+
+In HashStore, objects are first saved as temporary files while their content identifiers are
+calculated. Once the default hash algorithm list and their hashes are generated, objects are stored
+in their permanent location using the store's algorithm's corresponding hash value, the store depth
+and the store width. Lastly, objects are 'tagged' with a given identifier (ex. persistent
+identifier (pid)). This process produces reference files, which allow objects to be found and
+retrieved with a given identifier.
+- Note 1: An identifier can only be used once
+- Note 2: Each object is stored once and only once using its content identifier (a checksum generated
+  from using a hashing algorithm). Clients that attempt to store duplicate objects will receive
+  the expected ObjectMetadata - with HashStore handling the de-duplication process under the hood.
+
+By calling the various interface methods for  `storeObject`, the calling app/client can validate,
+store and tag an object simultaneously if the relevant data is available. In the absence of an
+identifier (ex. persistent identifier (pid)), `storeObject` can be called to solely store an object.
+The client is then expected to call `deleteIfInvalidObject` when the relevant metadata is available to
+confirm that the object is what is expected. And to finalize the process (to make the object
+discoverable), the client calls `tagObject``. In summary, there are two expected paths to store an
+object:
+
+```java
+// All-in-one process which stores, validates and tags an object
+objectMetadata objInfo = storeObject(InputStream, pid, additionalAlgorithm, checksum, checksumAlgorithm, objSize);
+
+// Manual Process
+// Store object
+objectMetadata objInfo = storeObject(InputStream);
+// Validate object, if the parameters do not match, the data object associated with the objInfo
+// supplied will be deleted
+deleteIfInvalidObject(objInfo, checksum, checksumAlgorithn, objSize);
+// Tag object, makes the object discoverable (find, retrieve, delete)
+tagObject(pid, cid);
+```
+
+**How do I retrieve an object if I have the pid?**
+
+- To retrieve an object, call the Public API method `retrieveObject` which opens a stream to the
+  object if it exists.
+
+**How do I delete an object if I have the pid?**
+
+- To delete an object, all its associated reference files and its metadata, call the Public API
+  method `deleteObject()` with `idType` 'pid'. If an `idType` is not given (ex.
+  calling `deleteObject(String pid)`), the `idType` will be assumed to be a 'pid'
+- To delete only an object, call `deleteObject()` with `idType` 'cid' which will remove the object
+  if it is not referenced by any pids.
+- Note, `deleteObject` and `tagObject` calls are synchronized on their content identifier values so
+  that the shared reference files are not unintentionally modified concurrently. An object that is
+  in the process of being deleted should not be tagged, and vice versa. These calls have been
+  implemented to occur sequentially to improve clarity in the event of an unexpected conflict or
+  issue.
+
+### Working with metadata (store, retrieve, delete)
+
+HashStore's '/metadata' directory holds all metadata for objects stored in HashStore. All metadata
+documents related to a 'pid' are stored in a directory determined by calculating the hash of the
+pid (based on the store's algorithm). Each specific metadata document is then stored by calculating
+the hash of its associated `pid+formatId`. By default, calling `storeMetadata` will use HashStore's
+default metadata namespace as the 'formatId' when storing metadata. Should the calling app wish to
+store multiple metadata files about an object, the client app is expected to provide a 'formatId'
+that represents an object format for the metadata type (ex. `storeMetadata(stream, pid, formatId)`).
+
+**How do I retrieve a metadata file?**
+
+- To find a metadata object, call the Public API method `retrieveMetadata` which returns a stream to
+  the metadata file that's been stored with the default metadata namespace if it exists.
+- If there are multiple metadata objects, a 'formatId' must be specified when
+  calling `retrieveMetadata` (ex. `retrieveMetadata(pid, formatId)`)
+
+**How do I delete a metadata file?**
+
+- Like `retrieveMetadata`, call the Public API method `deleteMetadata(String pid, String formatId)`
+  which will delete the metadata object associated with the given pid.
+- To delete all metadata objects related to a given 'pid', call `deleteMetadata(String pid)`
+
+### What are HashStore reference files?
+
+HashStore assumes that every object to store has a respective identifier. This identifier is then
+used when storing, retrieving and deleting an object. In order to facilitate this process, we create
+two types of reference files:
+
+- pid (persistent identifier) reference files
+- cid (content identifier) reference files
+
+These reference files are implemented in HashStore underneath the hood with no expectation for
+modification from the calling app/client. The one and only exception to this process is when the
+calling client/app does not have an identifier, and solely stores an objects raw bytes in
+HashStore (calling `storeObject(InputStream)`).
+
+**'pid' Reference Files**
+
+- Pid (persistent identifier) reference files are created when storing an object with an identifier.
+- Pid reference files are located in HashStores '/refs/pid' directory
+- If an identifier is not available at the time of storing an object, the calling app/client must
+  create this association between a pid and the object it represents by calling `tagObject`
+  separately.
+- Each pid reference file contains a string that represents the content identifier of the object it
+  references
+- Like how objects are stored once and only once, there is also only one pid reference file for each
+  object.
+
+**'cid' Reference Files**
+
+- Cid (content identifier) reference files are created at the same time as pid reference files when
+  storing an object with an identifier.
+- Cid reference files are located in HashStore's '/refs/cid' directory
+- A cid reference file is a list of all the pids that reference a cid, delimited by a new line ("\n")
+  character
 
 ## Development Build
 

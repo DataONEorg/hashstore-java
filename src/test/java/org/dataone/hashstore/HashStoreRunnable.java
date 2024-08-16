@@ -9,12 +9,12 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * A HashStoreRunnable represents the data needed for a single request to HashStore
- * packaged as a Runnable task that can be executed within a thread pool, typically
- * provided by the Executor service.
+ * A HashStoreRunnable represents the data needed for a single request to HashStore packaged as a
+ * Runnable task that can be executed within a thread pool, typically provided by the Executor
+ * service.
  */
 public class HashStoreRunnable implements Runnable {
-    private static final Log logHashStoreRunnable = LogFactory.getLog(HashStoreRunnable.class);
+    private static final Log log = LogFactory.getLog(HashStoreRunnable.class);
     public static final int storeObject = 1;
     public static final int deleteObject = 2;
     private final HashStore hashstore;
@@ -22,57 +22,73 @@ public class HashStoreRunnable implements Runnable {
     private final String pid;
     private InputStream objStream;
 
-    public HashStoreRunnable(HashStore hashstore, int publicAPIMethod, InputStream objStream,
-                             String pid) {
-        FileHashStoreUtility.ensureNotNull(hashstore, "hashstore",
-                                           "HashStoreServiceRequestConstructor");
-        FileHashStoreUtility.checkNotNegativeOrZero(publicAPIMethod, "HashStoreServiceRequestConstructor");
+    /**
+     * Constructor for HashStoreRunnable to store a data object with a given pid
+     *
+     * @param hashstore       HashStore object to interact with
+     * @param publicAPIMethod Integer representing action/Public API method (ex. 1 for storeObject)
+     * @param objStream       Stream to data object
+     * @param pid             Persistent or authority-based identifier
+     */
+    public HashStoreRunnable(
+        HashStore hashstore, int publicAPIMethod, InputStream objStream, String pid) {
+        FileHashStoreUtility.ensureNotNull(hashstore, "hashstore");
+        FileHashStoreUtility.checkPositive(publicAPIMethod);
         this.hashstore = hashstore;
         this.publicAPIMethod = publicAPIMethod;
         this.objStream = objStream;
         this.pid = pid;
     }
 
+    /**
+     * Constructor for HashStoreRunnable where only a pid is necessary (ex. to delete an object).
+     *
+     * @param hashstore       HashStore object to interact with
+     * @param publicAPIMethod Integer representing action/Public API method (ex. 2 for
+     *                        deleteObject)
+     * @param pid             Persistent or authority-based identifier
+     */
     public HashStoreRunnable(HashStore hashstore, int publicAPIMethod, String pid) {
-        FileHashStoreUtility.ensureNotNull(hashstore, "hashstore",
-                                           "HashStoreServiceRequestConstructor");
-        FileHashStoreUtility.checkNotNegativeOrZero(publicAPIMethod, "HashStoreServiceRequestConstructor");
+        FileHashStoreUtility.ensureNotNull(hashstore, "hashstore");
+        FileHashStoreUtility.checkPositive(publicAPIMethod);
         this.hashstore = hashstore;
         this.publicAPIMethod = publicAPIMethod;
         this.pid = pid;
     }
 
+    /**
+     * Executes a HashStore action (ex. storeObject, deleteObject)
+     */
     public void run() {
-        logHashStoreRunnable.debug("HashStoreServiceRequest - Called to: " + publicAPIMethod);
+        log.debug("HashStoreRunnable - Called to: " + publicAPIMethod);
         try {
             switch (publicAPIMethod) {
-                case storeObject:
+                case storeObject -> {
                     try {
                         hashstore.storeObject(objStream, pid, null, null, null, -1);
                     } catch (Exception e) {
                         String errMsg =
                             "HashStoreRunnable ~ UnexpectedError - storeObject: " + e.getCause();
                         System.out.println(errMsg);
-                        logHashStoreRunnable.error(errMsg);
+                        log.error(errMsg);
                         throw new HashStoreServiceException(errMsg);
                     }
                     objStream.close();
-                    break;
-                case deleteObject:
+                }
+                case deleteObject -> {
                     try {
                         hashstore.deleteObject(pid);
                     } catch (Exception e) {
                         String errMsg =
                             "HashStoreRunnable ~ UnexpectedError - deleteObject: " + e.getCause();
                         System.out.println(errMsg);
-                        logHashStoreRunnable.error(errMsg);
+                        log.error(errMsg);
                         throw new HashStoreServiceException(errMsg);
                     }
-                    break;
+                }
             }
         } catch (HashStoreServiceException | IOException hse) {
-            logHashStoreRunnable.error(
-                "HashStoreServiceRequest ~ Unexpected Error: " + hse.getMessage());
+            log.error("HashStoreRunnable ~ Unexpected Error: " + hse.getMessage());
         }
     }
 }
