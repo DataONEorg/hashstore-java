@@ -116,7 +116,7 @@ public class FileHashStoreUtility {
                 Files.createDirectories(destinationDirectoryPath);
 
             } catch (FileAlreadyExistsException faee) {
-                logFHSU.warn("Directory already exists at: " + destinationDirectoryPath
+                log.warn("Directory already exists at: " + destinationDirectoryPath
                                  + " - Skipping directory creation");
             }
         }

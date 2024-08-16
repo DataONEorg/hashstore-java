@@ -82,7 +82,7 @@ public class FileHashStore implements HashStore {
     /**
      * The default hash algorithms included in the ObjectMetadata when storing objects.
      */
-    enum DefaultHashAlgorithms {
+    public enum DefaultHashAlgorithms {
         MD5("MD5"), SHA_1("SHA-1"), SHA_256("SHA-256"), SHA_384("SHA-384"), SHA_512("SHA-512");
 
         final String algoName;
@@ -106,7 +106,7 @@ public class FileHashStore implements HashStore {
     /**
      * The configuration properties for a HashStore
      */
-    enum HashStoreProperties {
+    public enum HashStoreProperties {
         storePath, storeDepth, storeWidth, storeAlgorithm, storeMetadataNamespace
     }
 
