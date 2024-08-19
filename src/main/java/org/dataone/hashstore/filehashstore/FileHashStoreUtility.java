@@ -8,6 +8,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -98,6 +99,27 @@ public class FileHashStoreUtility {
         stringMessageDigest.update(bytes);
         // stringDigest
         return DatatypeConverter.printHexBinary(stringMessageDigest.digest()).toLowerCase();
+    }
+
+
+    /**
+     * Create the parent directories for a given file path.
+     *
+     * @param desiredPath The path to your data object or file
+     * @throws IOException If there is an issue creating a directory
+     */
+    public static void createParentDirectories(Path desiredPath) throws IOException {
+        File desiredPathParentDirs = new File(desiredPath.toFile().getParent());
+        if (!desiredPathParentDirs.exists()) {
+            Path destinationDirectoryPath = desiredPathParentDirs.toPath();
+            try {
+                Files.createDirectories(destinationDirectoryPath);
+
+            } catch (FileAlreadyExistsException faee) {
+                log.warn("Directory already exists at: " + destinationDirectoryPath
+                                 + " - Skipping directory creation");
+            }
+        }
     }
 
     /**

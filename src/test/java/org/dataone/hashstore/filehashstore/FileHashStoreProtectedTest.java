@@ -825,6 +825,8 @@ public class FileHashStoreProtectedTest {
                 assertEquals(sha256, hexDigests.get("SHA-256"));
                 assertEquals(sha384, hexDigests.get("SHA-384"));
                 assertEquals(sha512, hexDigests.get("SHA-512"));
+
+                assertEquals(hexDigests.size(), 5);
             }
         }
     }
@@ -877,6 +879,8 @@ public class FileHashStoreProtectedTest {
                 // Validate checksum values
                 String md2 = testData.pidData.get(pid).get("md2");
                 assertEquals(md2, hexDigests.get("MD2"));
+
+                assertEquals(hexDigests.size(), 6);
             }
         }
     }
@@ -903,6 +907,8 @@ public class FileHashStoreProtectedTest {
                 // Validate checksum values
                 String sha512224 = testData.pidData.get(pid).get("sha512-224");
                 assertEquals(sha512224, hexDigests.get("SHA-512/224"));
+
+                assertEquals(hexDigests.size(), 6);
             }
         }
     }
@@ -932,6 +938,8 @@ public class FileHashStoreProtectedTest {
                 String sha512224 = testData.pidData.get(pid).get("sha512-224");
                 assertEquals(md2, hexDigests.get("MD2"));
                 assertEquals(sha512224, hexDigests.get("SHA-512/224"));
+
+                assertEquals(hexDigests.size(), 7);
             }
         }
     }
