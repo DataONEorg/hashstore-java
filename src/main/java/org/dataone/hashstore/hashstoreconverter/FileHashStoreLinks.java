@@ -37,10 +37,6 @@ public class FileHashStoreLinks extends FileHashStore {
     private final String OBJECT_STORE_ALGORITHM;
     private final Path OBJECT_STORE_DIRECTORY;
 
-    // List of default hash algorithms to calculate when storing objects/hard links
-    // This list is not final, if additional algorithms are requested we may add to it
-    private List<MessageDigest> digestsToCalculate = new ArrayList<>();
-
     /**
      * Constructor for FireHashStoreLinks. HashStore properties are required.
      *
@@ -67,10 +63,6 @@ public class FileHashStoreLinks extends FileHashStore {
         DIRECTORY_WIDTH = storeWidth;
         OBJECT_STORE_ALGORITHM = storeAlgorithm;
         OBJECT_STORE_DIRECTORY = storePath.resolve("objects");
-        // Initialize default hash algorithms
-        for (DefaultHashAlgorithms algorithm : DefaultHashAlgorithms.values()) {
-            digestsToCalculate.add(MessageDigest.getInstance(algorithm.getName()));
-        }
         logFileHashStoreLinks.info("FileHashStoreLinks initialized");
     }
 
@@ -171,6 +163,11 @@ public class FileHashStoreLinks extends FileHashStore {
     protected Map<String, String> generateChecksums(
         InputStream dataStream, String additionalAlgorithm)
         throws NoSuchAlgorithmException, IOException, SecurityException {
+        List<MessageDigest> digestsToCalculate = defaultHexDigestsList;
+        // Initialize default hash algorithms
+        for (DefaultHashAlgorithms algorithm : DefaultHashAlgorithms.values()) {
+            digestsToCalculate.add(MessageDigest.getInstance(algorithm.getName()));
+        }
         // Determine whether to calculate additional or checksum algorithms
         boolean generateAddAlgo = false;
         if (additionalAlgorithm != null) {
