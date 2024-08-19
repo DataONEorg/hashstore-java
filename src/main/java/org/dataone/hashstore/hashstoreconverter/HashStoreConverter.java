@@ -84,9 +84,9 @@ public class HashStoreConverter {
             FileHashStoreUtility.checkForNotEmptyAndValidString(
                 checksumAlgorithm, "checksumAlgorithm");
 
-            try (InputStream fileStream = Files.newInputStream(filePath)) {
-                objInfo = fileHashStoreLinks.storeHardLink(filePath, fileStream, pid, checksum,
-                                                           checksumAlgorithm);
+            try {
+                objInfo =
+                    fileHashStoreLinks.storeHardLink(filePath, pid, checksum, checksumAlgorithm);
                 logHashStoreConverter.info("Stored data object for pid: " + pid);
 
             } catch (IOException ioe) {
@@ -112,10 +112,8 @@ public class HashStoreConverter {
         }
 
         // Now the sysmeta
-        try {
+        try (sysmetaStream) {
             fileHashStoreLinks.storeMetadata(sysmetaStream, pid);
-        } finally {
-            sysmetaStream.close();
         }
 
         return objInfo;

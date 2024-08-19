@@ -140,10 +140,8 @@ public class FileHashStoreLinksTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
             assertTrue(Files.exists(testDataFile));
 
-            InputStream dataStream = Files.newInputStream(testDataFile);
             ObjectMetadata objInfo =
-                fileHashStoreLinks.storeHardLink(testDataFile, dataStream, pid, sha256, "SHA-256");
-            dataStream.close();
+                fileHashStoreLinks.storeHardLink(testDataFile, pid, sha256, "SHA-256");
 
             // Check id (content identifier based on the store algorithm)
             String objectCid = testData.pidData.get(pid).get("sha256");
@@ -153,8 +151,10 @@ public class FileHashStoreLinksTest {
             Path objPath = fileHashStoreLinks.getHashStoreLinksDataObjectPath(pid);
 
             // Verify that a hard link has been created
-            BasicFileAttributes fileAttributes = Files.readAttributes(objPath, BasicFileAttributes.class);
-            BasicFileAttributes originalFileAttributes = Files.readAttributes(testDataFile, BasicFileAttributes.class);
+            BasicFileAttributes fileAttributes =
+                Files.readAttributes(objPath, BasicFileAttributes.class);
+            BasicFileAttributes originalFileAttributes =
+                Files.readAttributes(testDataFile, BasicFileAttributes.class);
             assertEquals(fileAttributes.fileKey(), originalFileAttributes.fileKey());
         }
     }
@@ -170,13 +170,8 @@ public class FileHashStoreLinksTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
             assertTrue(Files.exists(testDataFile));
 
-            InputStream dataStream = Files.newInputStream(testDataFile);
-            fileHashStoreLinks.storeHardLink(testDataFile, dataStream, pid, sha256, "SHA-256");
-            dataStream.close();
-            InputStream dataStreamTwo = Files.newInputStream(testDataFile);
-            fileHashStoreLinks.storeHardLink(testDataFile, dataStreamTwo, pid + ".test.pid", sha256,
-                                             "SHA-256");
-            dataStreamTwo.close();
+            fileHashStoreLinks.storeHardLink(testDataFile, pid, sha256, "SHA-256");
+            fileHashStoreLinks.storeHardLink(testDataFile, pid + ".test.pid", sha256, "SHA-256");
         }
     }
 

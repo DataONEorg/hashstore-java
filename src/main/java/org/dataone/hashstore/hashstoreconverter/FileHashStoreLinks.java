@@ -78,12 +78,11 @@ public class FileHashStoreLinks extends FileHashStore {
      * @throws InterruptedException     Sync issue when tagging pid and cid
      */
     public ObjectMetadata storeHardLink(
-        Path filePath, InputStream fileStream, String pid, String checksum,
+        Path filePath, String pid, String checksum,
         String checksumAlgorithm)
         throws NoSuchAlgorithmException, IOException, InterruptedException {
         // Validate input parameters
         FileHashStoreUtility.ensureNotNull(filePath, "filePath");
-        FileHashStoreUtility.ensureNotNull(fileStream, "fileStream");
         FileHashStoreUtility.ensureNotNull(pid, "pid");
         FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid");
         FileHashStoreUtility.ensureNotNull(checksum, "checksum");
@@ -94,7 +93,7 @@ public class FileHashStoreLinks extends FileHashStore {
             throw new FileNotFoundException(errMsg);
         }
 
-        try {
+        try (InputStream fileStream = Files.newInputStream(filePath)) {
             Map<String, String> hexDigests = generateChecksums(fileStream, checksumAlgorithm);
             String checksumToMatch = hexDigests.get(checksumAlgorithm);
             if (!checksum.equalsIgnoreCase(checksumToMatch)) {
@@ -130,9 +129,6 @@ public class FileHashStoreLinks extends FileHashStore {
 
             return new ObjectMetadata(pid, objectCid, Files.size(objHardLinkPath), hexDigests);
 
-        } finally {
-            // Close stream
-            fileStream.close();
         }
     }
 
