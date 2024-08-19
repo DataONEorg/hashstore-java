@@ -17,7 +17,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -163,8 +162,8 @@ public class FileHashStoreLinks extends FileHashStore {
     protected Map<String, String> generateChecksums(
         InputStream dataStream, String additionalAlgorithm)
         throws NoSuchAlgorithmException, IOException, SecurityException {
-        List<MessageDigest> digestsToCalculate = defaultHexDigestsList;
-        // Initialize default hash algorithms
+        List<MessageDigest> digestsToCalculate = defaultMessageDigestsList;
+        // Get the default hash algorithms to calculate checksums for
         for (DefaultHashAlgorithms algorithm : DefaultHashAlgorithms.values()) {
             digestsToCalculate.add(MessageDigest.getInstance(algorithm.getName()));
         }

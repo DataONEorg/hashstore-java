@@ -97,7 +97,7 @@ public class FileHashStore implements HashStore {
     }
 
     // List of default hash algorithms to calculate when storing objects/hard links
-    protected List<MessageDigest> defaultHexDigestsList = new ArrayList<>();
+    protected List<MessageDigest> defaultMessageDigestsList = new ArrayList<>();
 
     /**
      * The two different type of HashStore identifiers
@@ -191,9 +191,9 @@ public class FileHashStore implements HashStore {
             Files.createDirectories(REFS_TMP_FILE_DIRECTORY);
             Files.createDirectories(REFS_PID_FILE_DIRECTORY);
             Files.createDirectories(REFS_CID_FILE_DIRECTORY);
-            // Initialize default hash algorithms
+            // Initialize default hash algorithms to calculate checksums for
             for (DefaultHashAlgorithms algorithm : DefaultHashAlgorithms.values()) {
-                defaultHexDigestsList.add(MessageDigest.getInstance(algorithm.getName()));
+                defaultMessageDigestsList.add(MessageDigest.getInstance(algorithm.getName()));
             }
             logFileHashStore.debug("FileHashStore initialized");
 
@@ -1409,7 +1409,8 @@ public class FileHashStore implements HashStore {
     protected Map<String, String> writeToTmpFileAndGenerateChecksums(
         File tmpFile, InputStream dataStream, String additionalAlgorithm, String checksumAlgorithm)
         throws NoSuchAlgorithmException, IOException, FileNotFoundException, SecurityException {
-        List<MessageDigest> digestsToCalculate = defaultHexDigestsList;
+        // Get the default hash algorithms to calculate checksums for
+        List<MessageDigest> digestsToCalculate = defaultMessageDigestsList;
         // Determine whether to calculate additional or checksum algorithms
         boolean generateAddAlgo = false;
         if (additionalAlgorithm != null) {
