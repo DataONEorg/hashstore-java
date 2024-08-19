@@ -1443,7 +1443,7 @@ public class FileHashStore implements HashStore {
         }
 
         // Calculate hex digests
-        try {
+        try (dataStream) {
             byte[] buffer = new byte[8192];
             int bytesRead;
             while ((bytesRead = dataStream.read(buffer)) != -1) {
@@ -1459,7 +1459,6 @@ public class FileHashStore implements HashStore {
             throw ioe;
 
         } finally {
-            dataStream.close();
             os.flush();
             os.close();
         }

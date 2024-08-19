@@ -187,11 +187,11 @@ public class FileHashStoreLinks extends FileHashStore {
         }
 
         // Calculate hex digests
-        try {
+        try (dataStream) {
             byte[] buffer = new byte[8192];
             int bytesRead;
             while ((bytesRead = dataStream.read(buffer)) != -1) {
-                forgi (MessageDigest digest : digestsToCalculate) {
+                for (MessageDigest digest : digestsToCalculate) {
                     digest.update(buffer, 0, bytesRead);
                 }
             }
@@ -201,8 +201,6 @@ public class FileHashStoreLinks extends FileHashStore {
             logFileHashStoreLinks.error(errMsg);
             throw ioe;
 
-        } finally {
-            dataStream.close();
         }
 
         // Create map of hash algorithms and corresponding hex digests
