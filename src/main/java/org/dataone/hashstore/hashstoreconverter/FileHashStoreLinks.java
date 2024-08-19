@@ -38,7 +38,8 @@ public class FileHashStoreLinks extends FileHashStore {
     private final Path OBJECT_STORE_DIRECTORY;
 
     // List of default hash algorithms to calculate when storing objects/hard links
-    List<MessageDigest> digestsToCalculate = new ArrayList<>();
+    // This list is not final, if additional algorithms are requested we may add to it
+    private List<MessageDigest> digestsToCalculate = new ArrayList<>();
 
     /**
      * Constructor for FireHashStoreLinks. HashStore properties are required.
@@ -77,7 +78,6 @@ public class FileHashStoreLinks extends FileHashStore {
      * Store a hard link to HashStore from an existing data object in the filesystem.
      *
      * @param filePath          Path to the source file which a hard link will be created for
-     * @param fileStream        Stream to the source file to calculate checksums for
      * @param pid               Persistent or authority-based identifier for tagging
      * @param checksum          Value of checksum
      * @param checksumAlgorithm Ex. "SHA-256"
@@ -191,7 +191,7 @@ public class FileHashStoreLinks extends FileHashStore {
             byte[] buffer = new byte[8192];
             int bytesRead;
             while ((bytesRead = dataStream.read(buffer)) != -1) {
-                for (MessageDigest digest : digestsToCalculate) {
+                forgi (MessageDigest digest : digestsToCalculate) {
                     digest.update(buffer, 0, bytesRead);
                 }
             }

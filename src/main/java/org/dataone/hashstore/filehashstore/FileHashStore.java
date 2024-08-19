@@ -97,7 +97,8 @@ public class FileHashStore implements HashStore {
     }
 
     // List of default hash algorithms to calculate when storing objects
-    List<MessageDigest> digestsToCalculate = new ArrayList<>();
+    // This list is not final, if additional algorithms are requested we may add to it
+    private List<MessageDigest> digestsToCalculate = new ArrayList<>();
 
     /**
      * The two different type of HashStore identifiers
