@@ -17,7 +17,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -34,6 +36,9 @@ public class FileHashStoreLinks extends FileHashStore {
     private final int DIRECTORY_WIDTH;
     private final String OBJECT_STORE_ALGORITHM;
     private final Path OBJECT_STORE_DIRECTORY;
+
+    // List of default hash algorithms to calculate when storing objects/hard links
+    List<MessageDigest> digestsToCalculate = new ArrayList<>();
 
     /**
      * Constructor for FireHashStoreLinks. HashStore properties are required.
@@ -61,6 +66,10 @@ public class FileHashStoreLinks extends FileHashStore {
         DIRECTORY_WIDTH = storeWidth;
         OBJECT_STORE_ALGORITHM = storeAlgorithm;
         OBJECT_STORE_DIRECTORY = storePath.resolve("objects");
+        // Initialize default hash algorithms
+        for (DefaultHashAlgorithms algorithm : DefaultHashAlgorithms.values()) {
+            digestsToCalculate.add(MessageDigest.getInstance(algorithm.getName()));
+        }
         logFileHashStoreLinks.info("FileHashStoreLinks initialized");
     }
 
@@ -169,11 +178,6 @@ public class FileHashStoreLinks extends FileHashStore {
             generateAddAlgo = shouldCalculateAlgorithm(additionalAlgorithm);
         }
 
-        MessageDigest md5 = MessageDigest.getInstance(DefaultHashAlgorithms.MD5.getName());
-        MessageDigest sha1 = MessageDigest.getInstance(DefaultHashAlgorithms.SHA_1.getName());
-        MessageDigest sha256 = MessageDigest.getInstance(DefaultHashAlgorithms.SHA_256.getName());
-        MessageDigest sha384 = MessageDigest.getInstance(DefaultHashAlgorithms.SHA_384.getName());
-        MessageDigest sha512 = MessageDigest.getInstance(DefaultHashAlgorithms.SHA_512.getName());
         MessageDigest additionalAlgo = null;
         if (generateAddAlgo) {
             logFileHashStoreLinks.debug(
@@ -186,11 +190,9 @@ public class FileHashStoreLinks extends FileHashStore {
             byte[] buffer = new byte[8192];
             int bytesRead;
             while ((bytesRead = dataStream.read(buffer)) != -1) {
-                md5.update(buffer, 0, bytesRead);
-                sha1.update(buffer, 0, bytesRead);
-                sha256.update(buffer, 0, bytesRead);
-                sha384.update(buffer, 0, bytesRead);
-                sha512.update(buffer, 0, bytesRead);
+                for (MessageDigest digest : digestsToCalculate) {
+                    digest.update(buffer, 0, bytesRead);
+                }
                 if (generateAddAlgo) {
                     additionalAlgo.update(buffer, 0, bytesRead);
                 }
@@ -207,21 +209,17 @@ public class FileHashStoreLinks extends FileHashStore {
 
         // Create map of hash algorithms and corresponding hex digests
         Map<String, String> hexDigests = new HashMap<>();
-        String md5Digest = DatatypeConverter.printHexBinary(md5.digest()).toLowerCase();
-        String sha1Digest = DatatypeConverter.printHexBinary(sha1.digest()).toLowerCase();
-        String sha256Digest = DatatypeConverter.printHexBinary(sha256.digest()).toLowerCase();
-        String sha384Digest = DatatypeConverter.printHexBinary(sha384.digest()).toLowerCase();
-        String sha512Digest = DatatypeConverter.printHexBinary(sha512.digest()).toLowerCase();
-        hexDigests.put(DefaultHashAlgorithms.MD5.getName(), md5Digest);
-        hexDigests.put(DefaultHashAlgorithms.SHA_1.getName(), sha1Digest);
-        hexDigests.put(DefaultHashAlgorithms.SHA_256.getName(), sha256Digest);
-        hexDigests.put(DefaultHashAlgorithms.SHA_384.getName(), sha384Digest);
-        hexDigests.put(DefaultHashAlgorithms.SHA_512.getName(), sha512Digest);
+        for (DefaultHashAlgorithms algorithm : DefaultHashAlgorithms.values()) {
+            String hexDigest = DatatypeConverter
+                .printHexBinary(digestsToCalculate.get(algorithm.ordinal()).digest()).toLowerCase();
+            hexDigests.put(algorithm.getName(), hexDigest);
+        }
         if (generateAddAlgo) {
             String extraAlgoDigest =
                 DatatypeConverter.printHexBinary(additionalAlgo.digest()).toLowerCase();
             hexDigests.put(additionalAlgorithm, extraAlgoDigest);
         }
+        logFileHashStoreLinks.debug("Checksums have been calculated.");
 
         return hexDigests;
     }
