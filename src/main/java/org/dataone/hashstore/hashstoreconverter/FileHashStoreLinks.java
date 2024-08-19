@@ -183,6 +183,7 @@ public class FileHashStoreLinks extends FileHashStore {
             logFileHashStoreLinks.debug(
                 "Adding additional algorithm to hex digest map, algorithm: " + additionalAlgorithm);
             additionalAlgo = MessageDigest.getInstance(additionalAlgorithm);
+            digestsToCalculate.add(additionalAlgo);
         }
 
         // Calculate hex digests
@@ -192,9 +193,6 @@ public class FileHashStoreLinks extends FileHashStore {
             while ((bytesRead = dataStream.read(buffer)) != -1) {
                 for (MessageDigest digest : digestsToCalculate) {
                     digest.update(buffer, 0, bytesRead);
-                }
-                if (generateAddAlgo) {
-                    additionalAlgo.update(buffer, 0, bytesRead);
                 }
             }
 

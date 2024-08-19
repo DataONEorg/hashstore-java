@@ -1432,11 +1432,13 @@ public class FileHashStore implements HashStore {
             logFileHashStore.debug(
                 "Adding additional algorithm to hex digest map, algorithm: " + additionalAlgorithm);
             additionalAlgo = MessageDigest.getInstance(additionalAlgorithm);
+            digestsToCalculate.add(additionalAlgo);
         }
         if (generateCsAlgo) {
             logFileHashStore.debug(
                 "Adding checksum algorithm to hex digest map, algorithm: " + checksumAlgorithm);
             checksumAlgo = MessageDigest.getInstance(checksumAlgorithm);
+            digestsToCalculate.add(checksumAlgo);
         }
 
         // Calculate hex digests
@@ -1447,12 +1449,6 @@ public class FileHashStore implements HashStore {
                 os.write(buffer, 0, bytesRead);
                 for (MessageDigest digest : digestsToCalculate) {
                     digest.update(buffer, 0, bytesRead);
-                }
-                if (generateAddAlgo) {
-                    additionalAlgo.update(buffer, 0, bytesRead);
-                }
-                if (generateCsAlgo) {
-                    checksumAlgo.update(buffer, 0, bytesRead);
                 }
             }
 
