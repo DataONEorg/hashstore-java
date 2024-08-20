@@ -1,6 +1,7 @@
 package org.dataone.hashstore.hashstoreconverter;
 
 import org.dataone.hashstore.ObjectMetadata;
+import org.dataone.hashstore.exceptions.NonMatchingChecksumException;
 import org.dataone.hashstore.filehashstore.FileHashStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,8 +17,10 @@ import java.util.Map;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+
 import org.dataone.hashstore.testdata.TestDataHarness;
 
 /**
@@ -56,8 +59,7 @@ public class FileHashStoreLinksTest {
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
         storeProperties.setProperty(
-            "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
-        );
+            "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata");
 
         try {
             fileHashStoreLinks = new FileHashStoreLinks(storeProperties);
@@ -123,8 +125,7 @@ public class FileHashStoreLinksTest {
         storeProperties.setProperty("storeWidth", "2");
         storeProperties.setProperty("storeAlgorithm", "SHA-256");
         storeProperties.setProperty(
-            "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata"
-        );
+            "storeMetadataNamespace", "https://ns.dataone.org/service/types/v2.0#SystemMetadata");
 
         new FileHashStore(storeProperties);
     }
@@ -172,6 +173,23 @@ public class FileHashStoreLinksTest {
 
             fileHashStoreLinks.storeHardLink(testDataFile, pid, sha256, "SHA-256");
             fileHashStoreLinks.storeHardLink(testDataFile, pid + ".test.pid", sha256, "SHA-256");
+        }
+    }
+
+    /**
+     * Check that storeHardLink throws nonMatchingChecksumException when values do not match
+     */
+    @Test
+    public void storeHardLink_nonMatchingChecksum() {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+            assertTrue(Files.exists(testDataFile));
+
+            assertThrows(NonMatchingChecksumException.class,
+                         () -> fileHashStoreLinks.storeHardLink(testDataFile, pid, "badchecksum",
+                                                                "SHA-256"));
+
         }
     }
 

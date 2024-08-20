@@ -3,6 +3,7 @@ package org.dataone.hashstore.hashstoreconverter;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.dataone.hashstore.ObjectMetadata;
+import org.dataone.hashstore.exceptions.NonMatchingChecksumException;
 import org.dataone.hashstore.filehashstore.FileHashStoreUtility;
 
 import java.io.IOException;
@@ -61,14 +62,16 @@ public class HashStoreConverter {
      * @param checksum          Value of checksum
      * @param checksumAlgorithm Ex. "SHA-256"
      * @return ObjectMetadata for the given pid
-     * @throws IOException              An issue with calculating checksums or storing sysmeta
-     * @throws NoSuchAlgorithmException An algorithm defined is not supported
-     * @throws InterruptedException     Issue with synchronizing storing metadata
+     * @throws IOException                  An issue with calculating checksums or storing sysmeta
+     * @throws NoSuchAlgorithmException     An algorithm defined is not supported
+     * @throws InterruptedException         Issue with synchronizing storing metadata
+     * @throws NonMatchingChecksumException When the checksums calculated/given do not match
      */
     public ObjectMetadata convert(
         Path filePath, String pid, InputStream sysmetaStream, String checksum,
         String checksumAlgorithm)
-        throws IOException, NoSuchAlgorithmException, InterruptedException {
+        throws IOException, NoSuchAlgorithmException, InterruptedException,
+        NonMatchingChecksumException {
         logHashStoreConverter.info("Begin converting data object and sysmeta for pid: " + pid);
         FileHashStoreUtility.ensureNotNull(sysmetaStream, "sysmetaStream");
         FileHashStoreUtility.ensureNotNull(pid, "pid");
