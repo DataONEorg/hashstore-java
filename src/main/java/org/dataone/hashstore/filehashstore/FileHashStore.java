@@ -1479,13 +1479,13 @@ public class FileHashStore implements HashStore {
         hexDigests.put(DefaultHashAlgorithms.SHA_384.getName(), sha384Digest);
         hexDigests.put(DefaultHashAlgorithms.SHA_512.getName(), sha512Digest);
         if (generateAddAlgo) {
-            String extraAlgoDigest = DatatypeConverter.printHexBinary(additionalAlgo.digest())
-                .toLowerCase();
+            String extraAlgoDigest =
+                DatatypeConverter.printHexBinary(additionalAlgo.digest()).toLowerCase();
             hexDigests.put(additionalAlgorithm, extraAlgoDigest);
         }
         if (generateCsAlgo) {
-            String extraChecksumDigest = DatatypeConverter.printHexBinary(checksumAlgo.digest())
-                .toLowerCase();
+            String extraChecksumDigest =
+                DatatypeConverter.printHexBinary(checksumAlgo.digest()).toLowerCase();
             hexDigests.put(checksumAlgorithm, extraChecksumDigest);
         }
         logFileHashStore.debug(
