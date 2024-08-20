@@ -180,7 +180,7 @@ public class FileHashStoreLinksTest {
      * Check that storeHardLink throws nonMatchingChecksumException when values do not match
      */
     @Test
-    public void storeHardLink_nonMatchingChecksum() throws Exception {
+    public void storeHardLink_nonMatchingChecksum() {
         for (String pid : testData.pidList) {
             String pidFormatted = pid.replace("/", "_");
             Path testDataFile = testData.getTestFile(pidFormatted);
