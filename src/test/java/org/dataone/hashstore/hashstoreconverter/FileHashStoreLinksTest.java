@@ -177,7 +177,7 @@ public class FileHashStoreLinksTest {
     }
 
     /**
-     * Check that storeHardLink creates hard link and returns the correct ObjectMetadata cid
+     * Check that storeHardLink throws nonMatchingChecksumException when values do not match
      */
     @Test
     public void storeHardLink_nonMatchingChecksum() throws Exception {
