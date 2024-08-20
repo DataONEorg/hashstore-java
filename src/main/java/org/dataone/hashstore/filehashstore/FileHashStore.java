@@ -96,9 +96,6 @@ public class FileHashStore implements HashStore {
         }
     }
 
-    // List of default hash algorithms to calculate when storing objects/hard links
-    protected List<MessageDigest> defaultMessageDigestsList = new ArrayList<>();
-
     /**
      * The two different type of HashStore identifiers
      */
@@ -191,10 +188,6 @@ public class FileHashStore implements HashStore {
             Files.createDirectories(REFS_TMP_FILE_DIRECTORY);
             Files.createDirectories(REFS_PID_FILE_DIRECTORY);
             Files.createDirectories(REFS_CID_FILE_DIRECTORY);
-            // Initialize default hash algorithms to calculate checksums for
-            for (DefaultHashAlgorithms algorithm : DefaultHashAlgorithms.values()) {
-                defaultMessageDigestsList.add(MessageDigest.getInstance(algorithm.getName()));
-            }
             logFileHashStore.debug("FileHashStore initialized");
 
         } catch (IOException ioe) {
@@ -1409,8 +1402,6 @@ public class FileHashStore implements HashStore {
     protected Map<String, String> writeToTmpFileAndGenerateChecksums(
         File tmpFile, InputStream dataStream, String additionalAlgorithm, String checksumAlgorithm)
         throws NoSuchAlgorithmException, IOException, FileNotFoundException, SecurityException {
-        // Get the default hash algorithms to calculate checksums for
-        List<MessageDigest> digestsToCalculate = defaultMessageDigestsList;
         // Determine whether to calculate additional or checksum algorithms
         boolean generateAddAlgo = false;
         if (additionalAlgorithm != null) {
@@ -1428,19 +1419,22 @@ public class FileHashStore implements HashStore {
         }
 
         FileOutputStream os = new FileOutputStream(tmpFile);
+        MessageDigest md5 = MessageDigest.getInstance(DefaultHashAlgorithms.MD5.getName());
+        MessageDigest sha1 = MessageDigest.getInstance(DefaultHashAlgorithms.SHA_1.getName());
+        MessageDigest sha256 = MessageDigest.getInstance(DefaultHashAlgorithms.SHA_256.getName());
+        MessageDigest sha384 = MessageDigest.getInstance(DefaultHashAlgorithms.SHA_384.getName());
+        MessageDigest sha512 = MessageDigest.getInstance(DefaultHashAlgorithms.SHA_512.getName());
         MessageDigest additionalAlgo = null;
         MessageDigest checksumAlgo = null;
         if (generateAddAlgo) {
             logFileHashStore.debug(
                 "Adding additional algorithm to hex digest map, algorithm: " + additionalAlgorithm);
             additionalAlgo = MessageDigest.getInstance(additionalAlgorithm);
-            digestsToCalculate.add(additionalAlgo);
         }
         if (generateCsAlgo) {
             logFileHashStore.debug(
                 "Adding checksum algorithm to hex digest map, algorithm: " + checksumAlgorithm);
             checksumAlgo = MessageDigest.getInstance(checksumAlgorithm);
-            digestsToCalculate.add(checksumAlgo);
         }
 
         // Calculate hex digests
@@ -1449,8 +1443,16 @@ public class FileHashStore implements HashStore {
             int bytesRead;
             while ((bytesRead = dataStream.read(buffer)) != -1) {
                 os.write(buffer, 0, bytesRead);
-                for (MessageDigest digest : digestsToCalculate) {
-                    digest.update(buffer, 0, bytesRead);
+                md5.update(buffer, 0, bytesRead);
+                sha1.update(buffer, 0, bytesRead);
+                sha256.update(buffer, 0, bytesRead);
+                sha384.update(buffer, 0, bytesRead);
+                sha512.update(buffer, 0, bytesRead);
+                if (generateAddAlgo) {
+                    additionalAlgo.update(buffer, 0, bytesRead);
+                }
+                if (generateCsAlgo) {
+                    checksumAlgo.update(buffer, 0, bytesRead);
                 }
             }
 
@@ -1466,11 +1468,16 @@ public class FileHashStore implements HashStore {
 
         // Create map of hash algorithms and corresponding hex digests
         Map<String, String> hexDigests = new HashMap<>();
-        for (DefaultHashAlgorithms algorithm : DefaultHashAlgorithms.values()) {
-            String hexDigest = DatatypeConverter
-                .printHexBinary(digestsToCalculate.get(algorithm.ordinal()).digest()).toLowerCase();
-            hexDigests.put(algorithm.getName(), hexDigest);
-        }
+        String md5Digest = DatatypeConverter.printHexBinary(md5.digest()).toLowerCase();
+        String sha1Digest = DatatypeConverter.printHexBinary(sha1.digest()).toLowerCase();
+        String sha256Digest = DatatypeConverter.printHexBinary(sha256.digest()).toLowerCase();
+        String sha384Digest = DatatypeConverter.printHexBinary(sha384.digest()).toLowerCase();
+        String sha512Digest = DatatypeConverter.printHexBinary(sha512.digest()).toLowerCase();
+        hexDigests.put(DefaultHashAlgorithms.MD5.getName(), md5Digest);
+        hexDigests.put(DefaultHashAlgorithms.SHA_1.getName(), sha1Digest);
+        hexDigests.put(DefaultHashAlgorithms.SHA_256.getName(), sha256Digest);
+        hexDigests.put(DefaultHashAlgorithms.SHA_384.getName(), sha384Digest);
+        hexDigests.put(DefaultHashAlgorithms.SHA_512.getName(), sha512Digest);
         if (generateAddAlgo) {
             String extraAlgoDigest =
                 DatatypeConverter.printHexBinary(additionalAlgo.digest()).toLowerCase();
@@ -1483,7 +1490,7 @@ public class FileHashStore implements HashStore {
         }
         logFileHashStore.debug(
             "Object has been written to tmpFile: " + tmpFile.getName() + ". To be moved to: "
-                + hexDigests.get(DefaultHashAlgorithms.SHA_256.getName()));
+                + sha256Digest);
 
         return hexDigests;
     }

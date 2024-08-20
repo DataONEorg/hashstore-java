@@ -580,7 +580,7 @@ public class FileHashStoreInterfaceTest {
                 }
             } catch (Exception e) {
                 System.out.println(
-                    "storeObject_objectLockedIds_FiveThreads - Exception Cause: " + e.getCause());
+                    "storeObject_objectLockedIds_FiveThreads - Exception Cause: " + e.getMessage());
                 assertTrue(e instanceof RuntimeException
                                | e instanceof HashStoreRefsAlreadyExistException);
             }
@@ -602,7 +602,7 @@ public class FileHashStoreInterfaceTest {
                 }
             } catch (Exception e) {
                 System.out.println(
-                    "storeObject_objectLockedIds_FiveThreads - Exception Cause: " + e.getCause());
+                    "storeObject_objectLockedIds_FiveThreads - Exception Cause: " + e.getMessage());
                 assertTrue(e instanceof RuntimeException
                                | e instanceof HashStoreRefsAlreadyExistException);
             }
@@ -624,7 +624,7 @@ public class FileHashStoreInterfaceTest {
                 }
             } catch (Exception e) {
                 System.out.println(
-                    "storeObject_objectLockedIds_FiveThreads - Exception Cause: " + e.getCause());
+                    "storeObject_objectLockedIds_FiveThreads - Exception Cause: " + e.getMessage());
                 assertTrue(e instanceof RuntimeException
                                | e instanceof HashStoreRefsAlreadyExistException);
             }
@@ -646,7 +646,7 @@ public class FileHashStoreInterfaceTest {
                 }
             } catch (Exception e) {
                 System.out.println(
-                    "storeObject_objectLockedIds_FiveThreads - Exception Cause: " + e.getCause());
+                    "storeObject_objectLockedIds_FiveThreads - Exception Cause: " + e.getMessage());
                 assertTrue(e instanceof RuntimeException
                                | e instanceof HashStoreRefsAlreadyExistException);
             }
@@ -668,7 +668,7 @@ public class FileHashStoreInterfaceTest {
                 }
             } catch (Exception e) {
                 System.out.println(
-                    "storeObject_objectLockedIds_FiveThreads - Exception Cause: " + e.getCause());
+                    "storeObject_objectLockedIds_FiveThreads - Exception Cause: " + e.getMessage());
                 assertTrue(e instanceof RuntimeException
                                | e instanceof HashStoreRefsAlreadyExistException);
             }
