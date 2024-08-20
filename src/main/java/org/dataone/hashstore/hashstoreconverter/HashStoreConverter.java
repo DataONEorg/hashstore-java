@@ -7,7 +7,6 @@ import org.dataone.hashstore.filehashstore.FileHashStoreUtility;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.Properties;
