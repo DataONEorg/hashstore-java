@@ -2189,7 +2189,7 @@ public class FileHashStore implements HashStore {
      * @param pid Persistent or authority-based identifier
      * @throws InterruptedException When an issue occurs when attempting to sync the pid
      */
-    private void synchronizeObjectLockedPids(String pid) throws InterruptedException {
+    private static void synchronizeObjectLockedPids(String pid) throws InterruptedException {
         synchronized (objectLockedPids) {
             while (objectLockedPids.contains(pid)) {
                 try {
@@ -2212,7 +2212,7 @@ public class FileHashStore implements HashStore {
      *
      * @param pid Content identifier
      */
-    private void releaseObjectLockedPids(String pid) {
+    private static void releaseObjectLockedPids(String pid) {
         synchronized (objectLockedPids) {
             logFileHashStore.debug("Releasing objectLockedPids for pid: " + pid);
             objectLockedPids.remove(pid);
@@ -2226,7 +2226,7 @@ public class FileHashStore implements HashStore {
      * @param metadataDocId Metadata document id hash(pid+formatId)
      * @throws InterruptedException When an issue occurs when attempting to sync the metadata doc
      */
-    private void synchronizeMetadataLockedDocIds(String metadataDocId)
+    private static void synchronizeMetadataLockedDocIds(String metadataDocId)
         throws InterruptedException {
         synchronized (metadataLockedDocIds) {
             while (metadataLockedDocIds.contains(metadataDocId)) {
@@ -2252,7 +2252,7 @@ public class FileHashStore implements HashStore {
      *
      * @param metadataDocId Metadata document id hash(pid+formatId)
      */
-    private void releaseMetadataLockedDocIds(String metadataDocId) {
+    private static void releaseMetadataLockedDocIds(String metadataDocId) {
         synchronized (metadataLockedDocIds) {
             logFileHashStore.debug(
                 "Releasing metadataLockedDocIds for metadata doc: " + metadataDocId);
@@ -2269,7 +2269,7 @@ public class FileHashStore implements HashStore {
      * @param cid Content identifier
      * @throws InterruptedException When an issue occurs when attempting to sync the pid
      */
-    protected void synchronizeObjectLockedCids(String cid) throws InterruptedException {
+    protected static void synchronizeObjectLockedCids(String cid) throws InterruptedException {
         synchronized (objectLockedCids) {
             while (objectLockedCids.contains(cid)) {
                 try {
@@ -2292,7 +2292,7 @@ public class FileHashStore implements HashStore {
      *
      * @param cid Content identifier
      */
-    protected void releaseObjectLockedCids(String cid) {
+    protected static void releaseObjectLockedCids(String cid) {
         synchronized (objectLockedCids) {
             logFileHashStore.debug("Releasing objectLockedCids for cid: " + cid);
             objectLockedCids.remove(cid);
@@ -2308,7 +2308,7 @@ public class FileHashStore implements HashStore {
      * @param pid Persistent or authority-based identifier
      * @throws InterruptedException When an issue occurs when attempting to sync the pid
      */
-    protected void synchronizeReferenceLockedPids(String pid) throws InterruptedException {
+    protected static void synchronizeReferenceLockedPids(String pid) throws InterruptedException {
         synchronized (referenceLockedPids) {
             while (referenceLockedPids.contains(pid)) {
                 try {
@@ -2331,7 +2331,7 @@ public class FileHashStore implements HashStore {
      *
      * @param pid Persistent or authority-based identifier
      */
-    protected void releaseReferenceLockedPids(String pid) {
+    protected static void releaseReferenceLockedPids(String pid) {
         synchronized (referenceLockedPids) {
             logFileHashStore.debug("Releasing referenceLockedPids for pid: " + pid);
             referenceLockedPids.remove(pid);
