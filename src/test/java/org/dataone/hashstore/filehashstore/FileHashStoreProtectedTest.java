@@ -1455,8 +1455,8 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Check that unTagObject does not throw exception when a pid refs file and cid refs file does
-     * not exist
+     * Check that unTagObject successfully removes a pid from a cid refs file when a pid refs file
+     * is missing but the pid is referenced in a cid refs file
      */
     @Test
     public void unTagObject_missingPidRefsFile() throws Exception {

@@ -552,12 +552,6 @@ public class FileHashStore implements HashStore {
                 + " A pid can only reference one cid.";
             throw new PidRefsFileExistsException(errMsg);
         }
-//        } catch (Exception e) {
-//            // cid and pid has been released
-//            // Revert the process for all other exceptions
-//            unTagObject(pid, cid);
-//            throw e;
-//        }
     }
 
     @Override
