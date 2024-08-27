@@ -38,6 +38,7 @@ import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.HashStore;
 import org.dataone.hashstore.exceptions.CidNotFoundInPidRefsFileException;
 import org.dataone.hashstore.exceptions.HashStoreRefsAlreadyExistException;
+import org.dataone.hashstore.exceptions.IdentifierNotLockedException;
 import org.dataone.hashstore.exceptions.MissingHexDigestsException;
 import org.dataone.hashstore.exceptions.NonMatchingChecksumException;
 import org.dataone.hashstore.exceptions.NonMatchingObjSizeException;
@@ -1711,9 +1712,11 @@ public class FileHashStore implements HashStore {
      *
      * @param pid Persistent or authority-based identifier
      * @param cid Content identifier of data object
-     * @throws InterruptedException     When there is a synchronization issue
-     * @throws NoSuchAlgorithmException When there is an algorithm used that is not supported
-     * @throws IOException              When there is an issue deleting refs files
+     * @throws InterruptedException         When there is a synchronization issue
+     * @throws NoSuchAlgorithmException     When there is an algorithm used that is not supported
+     * @throws IOException                  When there is an issue deleting refs files
+     * @throws IdentifierNotLockedException When called to untag a pid or cid that is not currently
+     *                                      locked, breaking thread safety
      */
     protected void unTagObject(String pid, String cid)
         throws InterruptedException, NoSuchAlgorithmException, IOException {
@@ -1725,101 +1728,107 @@ public class FileHashStore implements HashStore {
 
         Collection<Path> deleteList = new ArrayList<>();
 
+        // To untag a pid, the pid must be found and currently locked
+        // The pid will not be released until this process is over
+        if (!referenceLockedPids.contains(pid)) {
+            String errMsg = "Cannot untag pid that is not currently locked";
+            logFileHashStore.error(errMsg);
+            throw new IdentifierNotLockedException(errMsg);
+        }
+
+        // Before we begin untagging process, we look for the `cid` by calling
+        // `findObject` which will throw custom exceptions if there is an issue with
+        // the reference files, which help us determine the path to proceed with.
         try {
-            synchronizeObjectLockedPids(pid);
-            // Before we begin untagging process, we look for the `cid` by calling
-            // `findObject` which will throw custom exceptions if there is an issue with
-            // the reference files, which help us determine the path to proceed with.
-            try {
-                ObjectInfo objInfo = findObject(pid);
-                cid = objInfo.cid();
-                try {
-                    // If no exceptions are thrown, we proceed to synchronization based on the `cid`
-                    synchronizeObjectLockedCids(cid);
-                    // Get paths to reference files to work on
-                    Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid);
-                    Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
+            ObjectInfo objInfo = findObject(pid);
+            cid = objInfo.cid();
 
-                    // Begin deletion process
-                    updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.remove);
-                    if (Files.size(absCidRefsPath) == 0) {
-                        deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
-                    } else {
-                        String warnMsg = "Cid referenced by pid: " + pid
-                            + " is not empty (refs exist for cid). Skipping object " + "deletion.";
-                        logFileHashStore.warn(warnMsg);
-                    }
-                    deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
-                    // Delete all related/relevant items with the least amount of delay
-                    FileHashStoreUtility.deleteListItems(deleteList);
-                    logFileHashStore.info("Untagged pid: " + pid + " with cid: " + cid);
-
-                } finally {
-                    releaseObjectLockedCids(cid);
-                }
-
-            } catch (OrphanPidRefsFileException oprfe) {
-                // `findObject` throws this exception when the cid refs file doesn't exist,
-                // so we only need to delete the pid refs file
-                Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
-                deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
-                // Delete items
-                FileHashStoreUtility.deleteListItems(deleteList);
-                String warnMsg = "Cid refs file does not exist for pid: " + pid
-                    + ". Deleted orphan pid refs file.";
-                logFileHashStore.warn(warnMsg);
-
-            } catch (OrphanRefsFilesException orfe) {
-                // `findObject` throws this exception when the pid and cid refs file exists,
-                // but the actual object being referenced by the pid does not exist
-                Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
-                String cidRead = new String(Files.readAllBytes(absPidRefsPath));
-
-                try {
-                    // Since we must access the cid reference file, the `cid` must be synchronized
-                    synchronizeObjectLockedCids(cidRead);
-
-                    Path absCidRefsPath = getHashStoreRefsPath(cidRead, HashStoreIdTypes.cid);
-                    updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.remove);
-                    if (Files.size(absCidRefsPath) == 0) {
-                        deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
-                    }
-                    deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
-                    // Delete items
-                    FileHashStoreUtility.deleteListItems(deleteList);
-                    String warnMsg = "Object with cid: " + cidRead
-                        + " does not exist, but pid and cid reference file found for pid: " + pid
-                        + ". Deleted pid and cid ref files.";
-                    logFileHashStore.warn(warnMsg);
-
-                } finally {
-                    releaseObjectLockedCids(cidRead);
-                }
-            } catch (PidNotFoundInCidRefsFileException pnficrfe) {
-                // `findObject` throws this exception when both the pid and cid refs file exists
-                // but the pid is not found in the cid refs file.
-
-                // Rename pid refs file for deletion
-                Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
-                deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
-                // Delete items
-                FileHashStoreUtility.deleteListItems(deleteList);
-                String warnMsg = "Pid not found in expected cid refs file for pid: " + pid
-                    + ". Deleted orphan pid refs file.";
-                logFileHashStore.warn(warnMsg);
-            } catch (PidRefsFileNotFoundException prfnfe) {
-                // `findObject` throws this exception if the pid refs file is not found
-                // Check to see if pid is in the `cid refs file`and attempt to remove it
-                Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid);
-                if (Files.exists(absCidRefsPath) && isStringInRefsFile(pid, absCidRefsPath)) {
-                    updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.remove);
-                    String errMsg = "Pid refs file not found, removed pid found in cid refs file: "
-                        + absCidRefsPath;
-                    logFileHashStore.warn(errMsg);
-                }
+            // We must confirm that we are working on a cid that is locked
+            // If not, this means that this call is not thread safe.
+            // This `cid` will be released by the calling method.
+            if (!objectLockedCids.contains(cid)) {
+                String errMsg = "Cannot untag cid that is not currently locked";
+                logFileHashStore.error(errMsg);
+                throw new IdentifierNotLockedException(errMsg);
             }
-        } finally {
-            releaseObjectLockedPids(pid);
+
+            // Get paths to reference files to work on
+            Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid);
+            Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
+
+            // Begin deletion process
+            updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.remove);
+            if (Files.size(absCidRefsPath) == 0) {
+                deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
+            } else {
+                String warnMsg = "Cid referenced by pid: " + pid
+                    + " is not empty (refs exist for cid). Skipping object " + "deletion.";
+                logFileHashStore.warn(warnMsg);
+            }
+            deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
+            // Delete all related/relevant items with the least amount of delay
+            FileHashStoreUtility.deleteListItems(deleteList);
+            logFileHashStore.info("Untagged pid: " + pid + " with cid: " + cid);
+
+        } catch (OrphanPidRefsFileException oprfe) {
+            // `findObject` throws this exception when the cid refs file doesn't exist,
+            // so we only need to delete the pid refs file
+            Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
+            deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
+            // Delete items
+            FileHashStoreUtility.deleteListItems(deleteList);
+            String warnMsg = "Cid refs file does not exist for pid: " + pid
+                + ". Deleted orphan pid refs file.";
+            logFileHashStore.warn(warnMsg);
+
+        } catch (OrphanRefsFilesException orfe) {
+            // `findObject` throws this exception when the pid and cid refs file exists,
+            // but the actual object being referenced by the pid does not exist
+            Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
+            String cidRead = new String(Files.readAllBytes(absPidRefsPath));
+
+            try {
+                // Since we must access the cid reference file, the `cid` must be synchronized
+                synchronizeObjectLockedCids(cidRead);
+
+                Path absCidRefsPath = getHashStoreRefsPath(cidRead, HashStoreIdTypes.cid);
+                updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.remove);
+                if (Files.size(absCidRefsPath) == 0) {
+                    deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
+                }
+                deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
+                // Delete items
+                FileHashStoreUtility.deleteListItems(deleteList);
+                String warnMsg = "Object with cid: " + cidRead
+                    + " does not exist, but pid and cid reference file found for pid: " + pid
+                    + ". Deleted pid and cid ref files.";
+                logFileHashStore.warn(warnMsg);
+
+            } finally {
+                releaseObjectLockedCids(cidRead);
+            }
+        } catch (PidNotFoundInCidRefsFileException pnficrfe) {
+            // `findObject` throws this exception when both the pid and cid refs file exists
+            // but the pid is not found in the cid refs file.
+
+            // Rename pid refs file for deletion
+            Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
+            deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
+            // Delete items
+            FileHashStoreUtility.deleteListItems(deleteList);
+            String warnMsg = "Pid not found in expected cid refs file for pid: " + pid
+                + ". Deleted orphan pid refs file.";
+            logFileHashStore.warn(warnMsg);
+        } catch (PidRefsFileNotFoundException prfnfe) {
+            // `findObject` throws this exception if the pid refs file is not found
+            // Check to see if pid is in the `cid refs file`and attempt to remove it
+            Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid);
+            if (Files.exists(absCidRefsPath) && isStringInRefsFile(pid, absCidRefsPath)) {
+                updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.remove);
+                String errMsg = "Pid refs file not found, removed pid found in cid refs file: "
+                    + absCidRefsPath;
+                logFileHashStore.warn(errMsg);
+            }
         }
     }
 
@@ -2186,7 +2195,7 @@ public class FileHashStore implements HashStore {
      * @param pid Persistent or authority-based identifier
      * @throws InterruptedException When an issue occurs when attempting to sync the pid
      */
-    private static void synchronizeObjectLockedPids(String pid) throws InterruptedException {
+    private void synchronizeObjectLockedPids(String pid) throws InterruptedException {
         synchronized (objectLockedPids) {
             while (objectLockedPids.contains(pid)) {
                 try {
@@ -2209,7 +2218,7 @@ public class FileHashStore implements HashStore {
      *
      * @param pid Content identifier
      */
-    private static void releaseObjectLockedPids(String pid) {
+    private void releaseObjectLockedPids(String pid) {
         synchronized (objectLockedPids) {
             logFileHashStore.debug("Releasing objectLockedPids for pid: " + pid);
             objectLockedPids.remove(pid);
@@ -2223,7 +2232,7 @@ public class FileHashStore implements HashStore {
      * @param metadataDocId Metadata document id hash(pid+formatId)
      * @throws InterruptedException When an issue occurs when attempting to sync the metadata doc
      */
-    private static void synchronizeMetadataLockedDocIds(String metadataDocId)
+    private void synchronizeMetadataLockedDocIds(String metadataDocId)
         throws InterruptedException {
         synchronized (metadataLockedDocIds) {
             while (metadataLockedDocIds.contains(metadataDocId)) {
@@ -2249,7 +2258,7 @@ public class FileHashStore implements HashStore {
      *
      * @param metadataDocId Metadata document id hash(pid+formatId)
      */
-    private static void releaseMetadataLockedDocIds(String metadataDocId) {
+    private void releaseMetadataLockedDocIds(String metadataDocId) {
         synchronized (metadataLockedDocIds) {
             logFileHashStore.debug(
                 "Releasing metadataLockedDocIds for metadata doc: " + metadataDocId);
@@ -2266,7 +2275,7 @@ public class FileHashStore implements HashStore {
      * @param cid Content identifier
      * @throws InterruptedException When an issue occurs when attempting to sync the pid
      */
-    private static void synchronizeObjectLockedCids(String cid) throws InterruptedException {
+    protected void synchronizeObjectLockedCids(String cid) throws InterruptedException {
         synchronized (objectLockedCids) {
             while (objectLockedCids.contains(cid)) {
                 try {
@@ -2289,7 +2298,7 @@ public class FileHashStore implements HashStore {
      *
      * @param cid Content identifier
      */
-    private static void releaseObjectLockedCids(String cid) {
+    protected void releaseObjectLockedCids(String cid) {
         synchronized (objectLockedCids) {
             logFileHashStore.debug("Releasing objectLockedCids for cid: " + cid);
             objectLockedCids.remove(cid);
@@ -2305,7 +2314,7 @@ public class FileHashStore implements HashStore {
      * @param pid Persistent or authority-based identifier
      * @throws InterruptedException When an issue occurs when attempting to sync the pid
      */
-    private static void synchronizeReferenceLockedPids(String pid) throws InterruptedException {
+    protected void synchronizeReferenceLockedPids(String pid) throws InterruptedException {
         synchronized (referenceLockedPids) {
             while (referenceLockedPids.contains(pid)) {
                 try {
@@ -2328,7 +2337,7 @@ public class FileHashStore implements HashStore {
      *
      * @param pid Persistent or authority-based identifier
      */
-    private static void releaseReferenceLockedPids(String pid) {
+    protected void releaseReferenceLockedPids(String pid) {
         synchronized (referenceLockedPids) {
             logFileHashStore.debug("Releasing referenceLockedPids for pid: " + pid);
             referenceLockedPids.remove(pid);
