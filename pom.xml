@@ -174,5 +174,24 @@
         </plugin>
       </plugins>
     <!-- </pluginManagement> -->
+    <extensions>
+      <!-- Enabling the use of SSH; see `<distributionManagement>` section -->
+      <extension>
+        <groupId>org.apache.maven.wagon</groupId>
+        <artifactId>wagon-ssh-external</artifactId>
+        <version>3.5.3</version>
+      </extension>
+    </extensions>
   </build>
+  <!-- Config for mvn deploy to upload to repo. Also see `<build><extensions>` section         -->
+  <!-- Also requires authentication info in ~/.m2/settings.xml;                                -->
+  <!--   see: https://maven.apache.org/guides/mini/guide-deployment-security-settings.html     -->
+  <!--   ...but note pvt key location should be an absolute path (/home/myname/...), NOT ~/... -->
+  <distributionManagement>
+    <repository>
+      <id>dataone.org</id>
+      <name>DataONE Repository</name>
+      <url>scpexe://maven.dataone.org/var/www/maven</url>
+    </repository>
+  </distributionManagement>
 </project>
