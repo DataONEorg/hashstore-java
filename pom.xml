@@ -18,6 +18,26 @@
     <maven.compiler.target>17</maven.compiler.target>
   </properties>
 
+  <!-- The command to run remote deployment is mvn -P remote clean deploy -->
+  <profiles>
+    <profile>
+      <id>remote</id>
+        <!-- Config for mvn deploy to upload to repo. Also see `<build><extensions>` section         -->
+        <!-- Also requires authentication info in ~/.m2/settings.xml;                                -->
+        <!--   see: https://maven.apache.org/guides/mini/guide-deployment-security-settings.html     -->
+        <!--   ...but note pvt key location should be an absolute path (/home/myname/...), NOT ~/... -->
+      <properties>
+        <url>scpexe://maven.dataone.org/var/www/maven</url>
+      </properties>
+    </profile>
+    <profile>
+      <id>local</id>
+      <properties>
+        <url>file:///var/www/maven</url>
+      </properties>
+    </profile>
+  </profiles>
+
   <dependencies>
     <dependency>
       <groupId>commons-logging</groupId>
@@ -174,5 +194,21 @@
         </plugin>
       </plugins>
     <!-- </pluginManagement> -->
+    <extensions>
+      <!-- Enabling the use of SSH; see `<distributionManagement>` section -->
+      <extension>
+        <groupId>org.apache.maven.wagon</groupId>
+        <artifactId>wagon-ssh-external</artifactId>
+        <version>3.5.3</version>
+      </extension>
+    </extensions>
   </build>
+
+  <distributionManagement>
+    <repository>
+      <id>dataone.org</id>
+      <name>DataONE Repository</name>
+      <url>${url}</url>
+    </repository>
+  </distributionManagement>
 </project>
