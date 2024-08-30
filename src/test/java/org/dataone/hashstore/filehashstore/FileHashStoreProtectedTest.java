@@ -1197,8 +1197,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Check storeHashStoreRefsFiles overwrites an orphaned pid refs file - the 'cid' that it
-     * references does not exist (does not have a cid refs file)
+     * Check storeHashStoreRefsFiles throws exception when a pid refs file already exists
      */
     @Test
     public void storeHashStoreRefsFiles_pidRefsOrphanedFile() throws Exception {
@@ -1214,16 +1213,8 @@ public class FileHashStoreProtectedTest {
         File absPathPidRefsFile = absPidRefsPath.toFile();
         fileHashStore.move(pidRefsTmpFile, absPathPidRefsFile, "refs");
 
-        fileHashStore.storeHashStoreRefsFiles(pid, cid);
-        // There should only be 1 of each ref file
-        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
-        List<Path> pidRefsFiles =
-            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/pids"));
-        List<Path> cidRefsFiles =
-            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/cids"));
-
-        assertEquals(1, pidRefsFiles.size());
-        assertEquals(1, cidRefsFiles.size());
+        assertThrows(PidRefsFileExistsException.class,
+                     () -> fileHashStore.storeHashStoreRefsFiles(pid, cid));
     }
 
     /**

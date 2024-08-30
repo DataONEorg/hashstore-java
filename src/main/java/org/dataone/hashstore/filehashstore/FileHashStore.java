@@ -1642,20 +1642,12 @@ public class FileHashStore implements HashStore {
                                 + " is missing. Missing cid refs file created and tagging completed.");
                         return;
                     } else {
-                        // Check if the retrieved cid refs file exists and pid is referenced
-                        Path retrievedAbsCidRefsPath =
-                            getHashStoreRefsPath(retrievedCid, HashStoreIdTypes.cid);
-                        if (Files.exists(retrievedAbsCidRefsPath) && isStringInRefsFile(
-                            pid, retrievedAbsCidRefsPath)) {
-                            // This pid is accounted for and tagged as expected.
-                            String errMsg = "Pid refs file already exists for pid: " + pid
-                                + ", and the associated cid refs file contains the "
-                                + "pid. A pid can only reference one cid.";
-                            logFileHashStore.error(errMsg);
-                            throw new PidRefsFileExistsException(errMsg);
-                        }
-                        // Orphaned pid refs file found, the retrieved cid refs file exists
-                        // but doesn't contain the pid. Proceed to overwrite the pid refs file.
+                        // If a pid is in use, we throw an exception immediately
+                        String errMsg = "Pid refs file already exists for pid: " + pid
+                            + ", and the associated cid refs file contains the "
+                            + "pid. A pid can only reference one cid.";
+                        logFileHashStore.error(errMsg);
+                        throw new PidRefsFileExistsException(errMsg);
                     }
                 } else if (!Files.exists(absPidRefsPath) && Files.exists(absCidRefsPath)) {
                     // Only update cid refs file if pid is not in the file
