@@ -1618,14 +1618,22 @@ public class FileHashStore implements HashStore {
 
             try {
                 if (Files.exists(absPidRefsPath) && Files.exists(absCidRefsPath)) {
-                    // Confirm that reference files are where they are expected to be
-                    verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
-                    // We throw an exception so the client is aware that everything is in place
+                    // If both reference files exist, we confirm that reference files are where
+                    // they are expected to be and throw an exception to inform the client that
+                    // everything is in place - and include other issues for context
                     String errMsg =
-                        "Object with cid: " + cid + " already exists and is tagged with pid: " + pid;
-                    logFileHashStore.error(errMsg);
-                    throw new HashStoreRefsAlreadyExistException(errMsg);
+                        "Object with cid: " + cid + " already exists and is tagged with pid: "
+                            + pid;
+                    try {
+                        verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
+                        logFileHashStore.error(errMsg);
+                        throw new HashStoreRefsAlreadyExistException(errMsg);
 
+                    } catch (Exception e) {
+                        String revMsg = errMsg + " . " + e.getMessage();
+                        logFileHashStore.error(revMsg);
+                        throw new HashStoreRefsAlreadyExistException(revMsg);
+                    }
                 } else if (Files.exists(absPidRefsPath) && !Files.exists(absCidRefsPath)) {
                     // If pid refs exists, the pid has already been claimed and cannot be tagged
                     // We throw an exception immediately
@@ -1634,6 +1642,7 @@ public class FileHashStore implements HashStore {
                         + "pid. A pid can only reference one cid.";
                     logFileHashStore.error(errMsg);
                     throw new PidRefsFileExistsException(errMsg);
+
                 } else if (!Files.exists(absPidRefsPath) && Files.exists(absCidRefsPath)) {
                     // Only update cid refs file if pid is not in the file
                     if (!isStringInRefsFile(pid, absCidRefsPath)) {
