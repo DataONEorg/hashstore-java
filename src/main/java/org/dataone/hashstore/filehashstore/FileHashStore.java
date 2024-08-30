@@ -1934,11 +1934,16 @@ public class FileHashStore implements HashStore {
                 Collection<String> lines = new ArrayList<>(Files.readAllLines(absRefsPath));
 
                 if (updateType.equals(HashStoreRefUpdateTypes.add)) {
-                    lines.add(ref);
-                    Files.write(tmpFilePath, lines, StandardOpenOption.WRITE);
-                    move(tmpFile, absRefsPath.toFile(), "refs");
-                    logFileHashStore.debug(
-                        "Ref: " + ref + " has been added to refs file: " + absRefsPath);
+                    if (!lines.contains(ref)) { // Check for duplicates
+                        lines.add(ref);
+                        Files.write(tmpFilePath, lines, StandardOpenOption.WRITE);
+                        move(tmpFile, absRefsPath.toFile(), "refs");
+                        logFileHashStore.debug(
+                            "Ref: " + ref + " has been added to refs file: " + absRefsPath);
+                    } else {
+                        logFileHashStore.debug(
+                            "Ref: " + ref + " already exists in refs file: " + absRefsPath);
+                    }
                 }
 
                 if (updateType.equals(HashStoreRefUpdateTypes.remove)) {

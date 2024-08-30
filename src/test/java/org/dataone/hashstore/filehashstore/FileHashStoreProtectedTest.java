@@ -1656,6 +1656,30 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
+     * Confirm that cid refs file does not add duplicate value
+     */
+    @Test
+    public void updateRefsFile_addDuplicateValue() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        // Get path of the cid refs file
+        Path cidRefsFilePath =
+            fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
+
+        String pidAdditional = "dou.test.2";
+        fileHashStore.updateRefsFile(
+            pidAdditional, cidRefsFilePath, FileHashStore.HashStoreRefUpdateTypes.add);
+        // Try re-adding it
+        fileHashStore.updateRefsFile(
+            pidAdditional, cidRefsFilePath, FileHashStore.HashStoreRefUpdateTypes.add);
+
+        List<String> lines = Files.readAllLines(cidRefsFilePath);
+        assertEquals(lines.size(), 2);
+    }
+
+    /**
      * Check that updateRefsFile removes pid from its cid refs file
      */
     @Test
