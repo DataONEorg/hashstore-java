@@ -1944,9 +1944,7 @@ public class FileHashStore implements HashStore {
                         logFileHashStore.debug(
                             "Ref: " + ref + " already exists in refs file: " + absRefsPath);
                     }
-                }
-
-                if (updateType.equals(HashStoreRefUpdateTypes.remove)) {
+                } else if (updateType.equals(HashStoreRefUpdateTypes.remove)) {
                     lines.remove(ref);
                     Files.write(tmpFilePath, lines, StandardOpenOption.WRITE);
                     move(tmpFile, absRefsPath.toFile(), "refs");
