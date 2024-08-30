@@ -1644,14 +1644,14 @@ public class FileHashStore implements HashStore {
                     throw new PidRefsFileExistsException(errMsg);
 
                 } else if (!Files.exists(absPidRefsPath) && Files.exists(absCidRefsPath)) {
-                    // Only update cid refs file if pid is not in the file
-                    if (!isStringInRefsFile(pid, absCidRefsPath)) {
-                        updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.add);
-                    }
                     // Get the pid refs file and verify tagging process
                     File pidRefsTmpFile = writeRefsFile(cid, HashStoreIdTypes.pid.name());
                     File absPathPidRefsFile = absPidRefsPath.toFile();
                     move(pidRefsTmpFile, absPathPidRefsFile, "refs");
+                    // Only update cid refs file if pid is not in the file
+                    if (!isStringInRefsFile(pid, absCidRefsPath)) {
+                        updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.add);
+                    }
                     verifyHashStoreRefsFiles(pid, cid, absPidRefsPath, absCidRefsPath);
                     logFileHashStore.info("Object with cid: " + cid
                                               + " has been updated and tagged successfully with pid: "
