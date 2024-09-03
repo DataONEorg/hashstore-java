@@ -1743,7 +1743,8 @@ public class FileHashStore implements HashStore {
 
             } catch (Exception e) {
                 logFileHashStore.warn(
-                    "Unable to delete pid refs file: " + absPidRefsPath + " for pid: " + pid);
+                    "Unable to delete pid refs file: " + absPidRefsPath + " for pid: " + pid + "."
+                        + " " + e.getMessage());
             }
 
             try {
@@ -1757,7 +1758,8 @@ public class FileHashStore implements HashStore {
                 }
             } catch (Exception e) {
                 logFileHashStore.warn(
-                    "Unable to remove pid: " + pid + " from cid refs file: " + absCidRefsPath);
+                    "Unable to remove pid: " + pid + " from cid refs file: " + absCidRefsPath +
+                        ". " + e.getMessage());
             }
 
             try {
@@ -1765,7 +1767,8 @@ public class FileHashStore implements HashStore {
                 FileHashStoreUtility.deleteListItems(deleteList);
             } catch (Exception e) {
                 logFileHashStore.warn("Unable to delete list of refs files marked for deletion "
-                                          + "for request with pid: " + pid + " and cid: " + cid);
+                                          + "for request with pid: " + pid + " and cid: " + cid
+                                          + ". " + e.getMessage());
             }
             logFileHashStore.info("Untagged pid: " + pid + " with cid: " + cid);
 
@@ -1778,7 +1781,8 @@ public class FileHashStore implements HashStore {
 
             } catch (Exception e) {
                 logFileHashStore.warn(
-                    "Unable to delete pid refs file: " + absPidRefsPath + " for pid: " + pid);
+                    "Unable to delete pid refs file: " + absPidRefsPath + " for pid: " + pid +
+                    ". " + e.getMessage());
             }
 
             try {
@@ -1786,7 +1790,8 @@ public class FileHashStore implements HashStore {
                 FileHashStoreUtility.deleteListItems(deleteList);
             } catch (Exception e) {
                 logFileHashStore.warn("Unable to delete list of refs files marked for deletion "
-                                          + "for orphaned pid refs file for pid: " + pid);
+                                          + "for orphaned pid refs file for pid: " + pid + ". "
+                                          + e.getMessage());
             }
             String warnMsg = "Cid refs file does not exist for pid: " + pid
                 + ". Deleted orphan pid refs file.";
@@ -1803,7 +1808,8 @@ public class FileHashStore implements HashStore {
 
             } catch (Exception e) {
                 logFileHashStore.warn(
-                    "Unable to delete pid refs file: " + absPidRefsPath + " for pid: " + pid);
+                    "Unable to delete pid refs file: " + absPidRefsPath + " for pid: " + pid + ". "
+                        + e.getMessage());
             }
 
             try {
@@ -1820,8 +1826,13 @@ public class FileHashStore implements HashStore {
                     }
                 } catch (Exception e) {
                     logFileHashStore.warn(
-                        "Unable to remove pid: " + pid + " from cid refs file: " + absCidRefsPath);
+                        "Unable to remove pid: " + pid + " from cid refs file: " + absCidRefsPath
+                            + ". " + e.getMessage());
                 }
+            } catch (Exception e ) {
+                logFileHashStore.warn(
+                    "Unexpected exception when attempting to remove pid: " + pid + " from cid "
+                        + "refs file for cid: " + cidRead + ". " + e.getMessage());
             } finally {
                 releaseObjectLockedCids(cidRead);
             }
@@ -1831,7 +1842,8 @@ public class FileHashStore implements HashStore {
                 FileHashStoreUtility.deleteListItems(deleteList);
             } catch (Exception e) {
                 logFileHashStore.warn("Unable to delete list of refs files marked for deletion "
-                                          + "for request with pid: " + pid + " and cid: " + cid);
+                                          + "for request with pid: " + pid + " and cid: " + cid
+                                          + ". " + e.getMessage());
             }
             String warnMsg = "Object with cid: " + cidRead
                 + " does not exist, but pid and cid reference file found for pid: " + pid
@@ -1848,7 +1860,8 @@ public class FileHashStore implements HashStore {
 
             } catch (Exception e) {
                 logFileHashStore.warn(
-                    "Unable to delete pid refs file: " + absPidRefsPath + " for pid: " + pid);
+                    "Unable to delete pid refs file: " + absPidRefsPath + " for pid: " + pid + "."
+                        + " " + e.getMessage());
             }
 
             try {
@@ -1856,7 +1869,8 @@ public class FileHashStore implements HashStore {
                 FileHashStoreUtility.deleteListItems(deleteList);
             } catch (Exception e) {
                 logFileHashStore.warn("Unable to delete list of refs files marked for deletion "
-                                          + "for request with pid: " + pid + " and cid: " + cid);
+                                          + "for request with pid: " + pid + " and cid: " + cid
+                                          + ". " + e.getMessage());
             }
             String warnMsg = "Pid not found in expected cid refs file for pid: " + pid
                 + ". Deleted orphan pid refs file.";
@@ -1875,7 +1889,8 @@ public class FileHashStore implements HashStore {
             } catch (Exception e) {
                 logFileHashStore.warn(
                     "Unable to remove pid: " + pid + " from cid refs file: " + absCidRefsPath
-                        + "for request with pid: " + pid + " and cid: " + cid);
+                        + "for request with pid: " + pid + " and cid: " + cid + ". "
+                        + e.getMessage());
             }
         }
     }
