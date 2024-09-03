@@ -1041,10 +1041,11 @@ public class FileHashStore implements HashStore {
      *                                           does not exist.
      * @throws PidNotFoundInCidRefsFileException When pid and cid ref files exists but the expected
      *                                           pid is not found in the cid refs file.
+     * @throws PidRefsFileNotFoundException      When a pid reference file is not found.
      */
     protected ObjectInfo findObject(String pid)
         throws NoSuchAlgorithmException, IOException, OrphanPidRefsFileException,
-        PidNotFoundInCidRefsFileException, OrphanRefsFilesException {
+        PidNotFoundInCidRefsFileException, OrphanRefsFilesException, PidRefsFileNotFoundException {
         logFileHashStore.debug("Finding object for pid: " + pid);
         FileHashStoreUtility.ensureNotNull(pid, "pid");
         FileHashStoreUtility.checkForNotEmptyAndValidString(pid, "pid");
