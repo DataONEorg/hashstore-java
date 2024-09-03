@@ -1722,8 +1722,7 @@ public class FileHashStore implements HashStore {
         // `findObject` which will throw custom exceptions if there is an issue with
         // the reference files, which help us determine the path to proceed with.
         try {
-            ObjectInfo objInfo = findObject(pid);
-            cid = objInfo.cid();
+            findObject(pid);
 
             // We must confirm that we are working on a cid that is locked
             // If not, this means that this call is not thread safe.
@@ -1800,6 +1799,16 @@ public class FileHashStore implements HashStore {
             String cidRead = new String(Files.readAllBytes(absPidRefsPath));
 
             try {
+                deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
+
+            } catch (Exception e) {
+                logFileHashStore.warn(
+                    "Unable to delete pid refs file: " + absPidRefsPath + " for pid: " + pid);
+            }
+
+            try {
+                FileHashStoreUtility.ensureNotNull(cidRead, "cidRead");
+                FileHashStoreUtility.checkForNotEmptyAndValidString(cidRead, "cidRead");
                 // Since we must access the cid reference file, the `cid` must be synchronized
                 synchronizeObjectLockedCids(cidRead);
 
@@ -1813,29 +1822,21 @@ public class FileHashStore implements HashStore {
                     logFileHashStore.warn(
                         "Unable to remove pid: " + pid + " from cid refs file: " + absCidRefsPath);
                 }
-
-                try {
-                    deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
-                } catch (Exception e) {
-                    logFileHashStore.warn(
-                        "Unable to delete pid refs file: " + absPidRefsPath + " for pid: " + pid);
-                }
-
-                try {
-                    // Delete all related/relevant items with the least amount of delay
-                    FileHashStoreUtility.deleteListItems(deleteList);
-                } catch (Exception e) {
-                    logFileHashStore.warn("Unable to delete list of refs files marked for deletion "
-                                              + "for request with pid: " + pid + " and cid: " + cid);
-                }
-                String warnMsg = "Object with cid: " + cidRead
-                    + " does not exist, but pid and cid reference file found for pid: " + pid
-                    + ". Deleted pid and cid ref files.";
-                logFileHashStore.warn(warnMsg);
-
             } finally {
                 releaseObjectLockedCids(cidRead);
             }
+
+            try {
+                // Delete all related/relevant items with the least amount of delay
+                FileHashStoreUtility.deleteListItems(deleteList);
+            } catch (Exception e) {
+                logFileHashStore.warn("Unable to delete list of refs files marked for deletion "
+                                          + "for request with pid: " + pid + " and cid: " + cid);
+            }
+            String warnMsg = "Object with cid: " + cidRead
+                + " does not exist, but pid and cid reference file found for pid: " + pid
+                + ". Deleted pid and cid ref files.";
+            logFileHashStore.warn(warnMsg);
         } catch (PidNotFoundInCidRefsFileException pnficrfe) {
             // `findObject` throws this exception when both the pid and cid refs file exists
             // but the pid is not found in the cid refs file.
