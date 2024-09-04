@@ -1725,6 +1725,8 @@ public class FileHashStore implements HashStore {
         try {
             ObjectInfo objInfo = findObject(pid);
             String cidRetrieved = objInfo.cid();
+            FileHashStoreUtility.ensureNotNull(cidRetrieved, "cidRetrieved");
+            FileHashStoreUtility.checkForNotEmptyAndValidString(cidRetrieved, "cidRetrieved");
 
             // If the cid retrieved does not match, this untag request is invalid immediately
             if (!cid.equals(cidRetrieved)) {
@@ -1813,6 +1815,8 @@ public class FileHashStore implements HashStore {
             // - but the actual object being referenced by the pid does not exist
             Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
             String cidRead = new String(Files.readAllBytes(absPidRefsPath));
+            FileHashStoreUtility.ensureNotNull(cidRead, "cidRead");
+            FileHashStoreUtility.checkForNotEmptyAndValidString(cidRead, "cidRead");
 
             // If the cid retrieved does not match, this untag request is invalid immediately
             if (!cid.equals(cidRead)) {
@@ -1821,6 +1825,13 @@ public class FileHashStore implements HashStore {
                 logFileHashStore.error(errMsg);
                 throw new IdentifierNotLockedException(errMsg);
 
+            } else if (!objectLockedCids.contains(cid)) {
+                // If it matches, we must confirm that we are working on a cid that is locked
+                // If not, this means that this call is not thread safe.
+                // This `cid` will be released by the calling method.
+                String errMsg = "Cannot untag cid that is not currently locked";
+                logFileHashStore.error(errMsg);
+                throw new IdentifierNotLockedException(errMsg);
             }
 
             try {
@@ -1833,9 +1844,6 @@ public class FileHashStore implements HashStore {
             }
 
             try {
-                FileHashStoreUtility.ensureNotNull(cidRead, "cidRead");
-                FileHashStoreUtility.checkForNotEmptyAndValidString(cidRead, "cidRead");
-
                 Path absCidRefsPath = getHashStoreRefsPath(cidRead, HashStoreIdTypes.cid);
                 try {
                     updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.remove);
