@@ -1902,7 +1902,18 @@ public class FileHashStore implements HashStore {
         } catch (PidRefsFileNotFoundException prfnfe) {
             // `findObject` throws this exception if the pid refs file is not found
             // Check to see if pid is in the `cid refs file`and attempt to remove it
+
+            // Confirm that we are working on a cid that is locked
+            // If not, this means that this call is not thread safe.
+            // This `cid` will be released by the calling method.
+            if (!objectLockedCids.contains(cid)) {
+                String errMsg = "Cannot untag cid that is not currently locked";
+                logFileHashStore.error(errMsg);
+                throw new IdentifierNotLockedException(errMsg);
+            }
+
             Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid);
+
             try {
                 if (Files.exists(absCidRefsPath) && isStringInRefsFile(pid, absCidRefsPath)) {
                     updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.remove);
