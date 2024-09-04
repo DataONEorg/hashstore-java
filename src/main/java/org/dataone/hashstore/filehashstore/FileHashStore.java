@@ -1723,12 +1723,20 @@ public class FileHashStore implements HashStore {
         // `findObject` which will throw custom exceptions if there is an issue with
         // the reference files, which help us determine the path to proceed with.
         try {
-            findObject(pid);
+            ObjectInfo objInfo = findObject(pid);
+            String cidRetrieved = objInfo.cid();
 
-            // We must confirm that we are working on a cid that is locked
-            // If not, this means that this call is not thread safe.
-            // This `cid` will be released by the calling method.
-            if (!objectLockedCids.contains(cid)) {
+            // If the cid retrieved does not match, this untag request is invalid immediately
+            if (!cid.equals(cidRetrieved)) {
+                String errMsg = "Cid retrieved: " + cidRetrieved + " does not match untag request"
+                    + " cid: " + cid;
+                logFileHashStore.error(errMsg);
+                throw new IdentifierNotLockedException(errMsg);
+
+            } else if (!objectLockedCids.contains(cid)) {
+                // If it matches, we must confirm that we are working on a cid that is locked
+                // If not, this means that this call is not thread safe.
+                // This `cid` will be released by the calling method.
                 String errMsg = "Cannot untag cid that is not currently locked";
                 logFileHashStore.error(errMsg);
                 throw new IdentifierNotLockedException(errMsg);
