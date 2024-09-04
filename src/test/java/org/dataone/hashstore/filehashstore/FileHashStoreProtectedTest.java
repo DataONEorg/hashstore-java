@@ -1489,6 +1489,68 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
+     * Check that unTagObject successfully deletes cid and pid refs file when a data object does
+     * not exist.
+     */
+    @Test
+    public void unTagObject_refsExistButDataObjectDoesNotExist() throws Exception {
+        String pid = "jtao.1700.1";
+        String cid = testData.pidData.get(pid).get("sha256");
+
+        Collection<String> pidList = new ArrayList<>();
+        for (int i = 1; i < 5; i++) {
+            pidList.add(pid + "." + i);
+        }
+
+        // The object must be stored otherwise the unTag process cannot execute as expected
+        for (String pidToUse : pidList) {
+            fileHashStore.tagObject(pidToUse, cid);
+        }
+
+        String pidToCheck = pid + ".1";
+
+        fileHashStore.synchronizeReferenceLockedPids(pidToCheck);
+        fileHashStore.synchronizeObjectLockedCids(cid);
+
+        fileHashStore.unTagObject(pidToCheck, cid);
+
+        fileHashStore.releaseReferenceLockedPids(pidToCheck);
+        fileHashStore.releaseObjectLockedCids(cid);
+
+        Path absCidRefsPath =
+            fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
+        assertFalse(fileHashStore.isStringInRefsFile(pidToCheck, absCidRefsPath));
+    }
+
+    /**
+     * Check that unTagObject successfully deletes cid and pid refs file when a data object does
+     * not exist.
+     */
+    @Test
+    public void unTagObject_refsExistNoObject_singlePidInCidRefs() throws Exception {
+        String pid = "jtao.1700.1";
+        String cid = testData.pidData.get(pid).get("sha256");
+
+        fileHashStore.tagObject(pid, cid);
+
+
+        fileHashStore.synchronizeReferenceLockedPids(pid);
+        fileHashStore.synchronizeObjectLockedCids(cid);
+
+        fileHashStore.unTagObject(pid, cid);
+
+        fileHashStore.releaseReferenceLockedPids(pid);
+        fileHashStore.releaseObjectLockedCids(cid);
+
+        Path absPidRefsPath =
+            fileHashStore.getHashStoreRefsPath(pid, FileHashStore.HashStoreIdTypes.pid);
+        Path absCidRefsPath =
+            fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
+        assertFalse(Files.exists(absPidRefsPath));
+        assertFalse(Files.exists(absCidRefsPath));
+    }
+
+    /**
      * Check that no exception is thrown when pid and cid are tagged correctly
      */
     @Test

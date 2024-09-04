@@ -1783,7 +1783,7 @@ public class FileHashStore implements HashStore {
 
         } catch (OrphanPidRefsFileException oprfe) {
             // `findObject` throws this exception when the cid refs file doesn't exist,
-            // so we only need to delete the pid refs file
+            // so we only need to delete the pid refs file (pid is already locked)
             Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
             try {
                 deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
@@ -1807,10 +1807,21 @@ public class FileHashStore implements HashStore {
             logFileHashStore.warn(warnMsg);
 
         } catch (OrphanRefsFilesException orfe) {
-            // `findObject` throws this exception when the pid and cid refs file exists,
-            // but the actual object being referenced by the pid does not exist
+            // `findObject` throws this exception when:
+            // - the pid and cid refs file exists,
+            // - the pid is found in the cid refs file
+            // - but the actual object being referenced by the pid does not exist
             Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
             String cidRead = new String(Files.readAllBytes(absPidRefsPath));
+
+            // If the cid retrieved does not match, this untag request is invalid immediately
+            if (!cid.equals(cidRead)) {
+                String errMsg = "Cid retrieved: " + cidRead + " does not match untag request"
+                    + " cid: " + cid;
+                logFileHashStore.error(errMsg);
+                throw new IdentifierNotLockedException(errMsg);
+
+            }
 
             try {
                 deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
@@ -1824,8 +1835,6 @@ public class FileHashStore implements HashStore {
             try {
                 FileHashStoreUtility.ensureNotNull(cidRead, "cidRead");
                 FileHashStoreUtility.checkForNotEmptyAndValidString(cidRead, "cidRead");
-                // Since we must access the cid reference file, the `cid` must be synchronized
-                synchronizeObjectLockedCids(cidRead);
 
                 Path absCidRefsPath = getHashStoreRefsPath(cidRead, HashStoreIdTypes.cid);
                 try {
@@ -1842,8 +1851,6 @@ public class FileHashStore implements HashStore {
                 logFileHashStore.warn(
                     "Unexpected exception when attempting to remove pid: " + pid + " from cid "
                         + "refs file for cid: " + cidRead + ". " + e.getMessage());
-            } finally {
-                releaseObjectLockedCids(cidRead);
             }
 
             try {
