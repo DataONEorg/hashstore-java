@@ -30,6 +30,7 @@ import javax.xml.bind.DatatypeConverter;
 import org.dataone.hashstore.ObjectMetadata;
 import org.dataone.hashstore.exceptions.CidNotFoundInPidRefsFileException;
 import org.dataone.hashstore.exceptions.HashStoreRefsAlreadyExistException;
+import org.dataone.hashstore.exceptions.IdentifierNotLockedException;
 import org.dataone.hashstore.exceptions.NonMatchingChecksumException;
 import org.dataone.hashstore.exceptions.NonMatchingObjSizeException;
 import org.dataone.hashstore.exceptions.OrphanPidRefsFileException;
@@ -1196,8 +1197,7 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Check storeHashStoreRefsFiles overwrites an orphaned pid refs file - the 'cid' that it
-     * references does not exist (does not have a cid refs file)
+     * Check storeHashStoreRefsFiles throws exception when a pid refs file already exists
      */
     @Test
     public void storeHashStoreRefsFiles_pidRefsOrphanedFile() throws Exception {
@@ -1213,16 +1213,8 @@ public class FileHashStoreProtectedTest {
         File absPathPidRefsFile = absPidRefsPath.toFile();
         fileHashStore.move(pidRefsTmpFile, absPathPidRefsFile, "refs");
 
-        fileHashStore.storeHashStoreRefsFiles(pid, cid);
-        // There should only be 1 of each ref file
-        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
-        List<Path> pidRefsFiles =
-            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/pids"));
-        List<Path> cidRefsFiles =
-            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/cids"));
-
-        assertEquals(1, pidRefsFiles.size());
-        assertEquals(1, cidRefsFiles.size());
+        assertThrows(PidRefsFileExistsException.class,
+                     () -> fileHashStore.storeHashStoreRefsFiles(pid, cid));
     }
 
     /**
@@ -1266,19 +1258,90 @@ public class FileHashStoreProtectedTest {
      */
     @Test
     public void unTagObject() throws Exception {
-        String pid = "dou.test.1";
-        String cid = "abcdef123456789";
-        fileHashStore.tagObject(pid, cid);
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
 
-        fileHashStore.unTagObject(pid, cid);
+            try (InputStream dataStream = Files.newInputStream(testDataFile)) {
+                ObjectMetadata objInfo =
+                    fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
 
-        // Confirm refs files do not exist
-        Path absCidRefsPath =
-            fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
-        Path absPidRefsPath =
-            fileHashStore.getHashStoreRefsPath(pid, FileHashStore.HashStoreIdTypes.pid);
-        assertFalse(Files.exists(absCidRefsPath));
-        assertFalse(Files.exists(absPidRefsPath));
+                String cid = objInfo.cid();
+                fileHashStore.synchronizeReferenceLockedPids(pid);
+                fileHashStore.synchronizeObjectLockedCids(cid);
+
+                fileHashStore.unTagObject(pid, cid);
+
+                fileHashStore.releaseReferenceLockedPids(pid);
+                fileHashStore.releaseObjectLockedCids(cid);
+
+                // Confirm refs files do not exist
+                Path absCidRefsPath =
+                    fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
+                Path absPidRefsPath =
+                    fileHashStore.getHashStoreRefsPath(pid, FileHashStore.HashStoreIdTypes.pid);
+                assertFalse(Files.exists(absCidRefsPath));
+                assertFalse(Files.exists(absPidRefsPath));
+            }
+        }
+    }
+
+    /**
+     * Confirm IdentifierNotLockedException is thrown when pid is not locked
+     */
+    @Test
+    public void unTagObject_pid_IdentifierNotLockedException() {
+        for (String pid : testData.pidList) {
+            assertThrows(
+                IdentifierNotLockedException.class, () -> fileHashStore.unTagObject(pid, "cid"));
+        }
+    }
+
+    /**
+     * Confirm IdentifierNotLockedException is thrown when cid is not locked
+     */
+    @Test
+    public void unTagObject_cid_IdentifierNotLockedException() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            // The object must be stored otherwise the unTag process cannot execute as expected
+            ObjectMetadata objInfo = null;
+            try (InputStream dataStream = Files.newInputStream(testDataFile)) {
+                objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
+            }
+            String cid = objInfo.cid();
+
+            FileHashStore.synchronizeReferenceLockedPids(pid);
+            assertThrows(IdentifierNotLockedException.class,
+                         () -> fileHashStore.unTagObject(pid, cid));
+            FileHashStore.releaseReferenceLockedPids(pid);
+        }
+    }
+
+    /**
+     * Confirm IllegalArgumentException is thrown when cid retrieved does not match what has been
+     * provided.
+     */
+    @Test
+    public void unTagObject_cid_doesNotMatchFindObject() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            // The object must be stored otherwise the unTag process cannot execute as expected
+            try (InputStream dataStream = Files.newInputStream(testDataFile)) {
+                fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
+            }
+
+            fileHashStore.synchronizeReferenceLockedPids(pid);
+            fileHashStore.synchronizeObjectLockedCids("does_not_match");
+            assertThrows(
+                IllegalArgumentException.class, () -> fileHashStore.unTagObject(pid, "cid"));
+            fileHashStore.releaseReferenceLockedPids(pid);
+            fileHashStore.releaseObjectLockedCids("does_not_match");
+        }
     }
 
     /**
@@ -1287,23 +1350,38 @@ public class FileHashStoreProtectedTest {
      */
     @Test
     public void unTagObject_cidWithMultiplePidReferences() throws Exception {
-        String pid = "dou.test.1";
-        String pidTwo = "dou.test.2";
-        String pidThree = "dou.test.3";
-        String pidFour = "dou.test.4";
-        String cid = "abcdef123456789";
-        fileHashStore.tagObject(pid, cid);
-        fileHashStore.tagObject(pidTwo, cid);
-        fileHashStore.tagObject(pidThree, cid);
-        fileHashStore.tagObject(pidFour, cid);
+        // Get test file to "upload"
+        String pid = "jtao.1700.1";
+        Path testDataFile = testData.getTestFile(pid);
+        String cid = testData.pidData.get(pid).get("sha256");
 
-        fileHashStore.unTagObject(pid, cid);
+        Collection<String> pidList = new ArrayList<>();
+        for (int i = 1; i < 5; i++) {
+            pidList.add(pid + "." + i);
+        }
+
+        // The object must be stored otherwise the unTag process cannot execute as expected
+        for (String pidToUse : pidList) {
+            try (InputStream dataStream = Files.newInputStream(testDataFile)) {
+                fileHashStore.storeObject(dataStream, pidToUse, null, null, null, -1);
+            }
+        }
+
+        String pidToCheck = pid + ".1";
+
+        fileHashStore.synchronizeReferenceLockedPids(pidToCheck);
+        fileHashStore.synchronizeObjectLockedCids(cid);
+
+        fileHashStore.unTagObject(pidToCheck, cid);
+
+        fileHashStore.releaseReferenceLockedPids(pidToCheck);
+        fileHashStore.releaseObjectLockedCids(cid);
 
         // Confirm refs files state
         Path absCidRefsPath =
             fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
         Path absPidRefsPath =
-            fileHashStore.getHashStoreRefsPath(pid, FileHashStore.HashStoreIdTypes.pid);
+            fileHashStore.getHashStoreRefsPath(pidToCheck, FileHashStore.HashStoreIdTypes.pid);
 
         assertFalse(Files.exists(absPidRefsPath));
         assertTrue(Files.exists(absCidRefsPath));
@@ -1324,32 +1402,46 @@ public class FileHashStoreProtectedTest {
      */
     @Test
     public void unTagObject_orphanPidRefsFile() throws Exception {
-        String pid = "dou.test.1";
-        String cid = "abcdef123456789";
-        fileHashStore.tagObject(pid, cid);
 
-        // Delete cid refs file to create orphaned pid refs file
-        Path absCidRefsPath =
-            fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
-        Files.delete(absCidRefsPath);
-        assertFalse(Files.exists(absCidRefsPath));
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
 
-        fileHashStore.unTagObject(pid, cid);
+            try (InputStream dataStream = Files.newInputStream(testDataFile)) {
+                ObjectMetadata objInfo =
+                    fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
 
-        // Confirm pid refs is deleted
-        Path absPidRefsPath =
-            fileHashStore.getHashStoreRefsPath(pid, FileHashStore.HashStoreIdTypes.pid);
-        assertFalse(Files.exists(absPidRefsPath));
+                String cid = objInfo.cid();
+                // Delete cid refs file to create orphaned pid refs file
+                Path absCidRefsPath =
+                    fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
+                Files.delete(absCidRefsPath);
+                assertFalse(Files.exists(absCidRefsPath));
 
-        // Confirm number of reference files
-        Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
-        List<Path> pidRefsFiles =
-            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/pids"));
-        List<Path> cidRefsFiles =
-            FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/cids"));
+                fileHashStore.synchronizeReferenceLockedPids(pid);
+                fileHashStore.synchronizeObjectLockedCids(cid);
 
-        assertEquals(0, pidRefsFiles.size());
-        assertEquals(0, cidRefsFiles.size());
+                fileHashStore.unTagObject(pid, cid);
+
+                fileHashStore.releaseReferenceLockedPids(pid);
+                fileHashStore.releaseObjectLockedCids(cid);
+
+                // Confirm pid refs is deleted
+                Path absPidRefsPath =
+                    fileHashStore.getHashStoreRefsPath(pid, FileHashStore.HashStoreIdTypes.pid);
+                assertFalse(Files.exists(absPidRefsPath));
+
+                // Confirm number of reference files
+                Path storePath = Paths.get(fhsProperties.getProperty("storePath"));
+                List<Path> pidRefsFiles =
+                    FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/pids"));
+                List<Path> cidRefsFiles =
+                    FileHashStoreUtility.getFilesFromDir(storePath.resolve("refs" + "/cids"));
+
+                assertEquals(0, pidRefsFiles.size());
+                assertEquals(0, cidRefsFiles.size());
+            }
+        }
     }
 
     /**
@@ -1358,37 +1450,130 @@ public class FileHashStoreProtectedTest {
      */
     @Test
     public void unTagObject_missingRefsFiles() throws Exception {
-        String pid = "dou.test.1";
-        String cid = "abcdef123456789";
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
 
-        fileHashStore.unTagObject(pid, cid);
+            try (InputStream dataStream = Files.newInputStream(testDataFile)) {
+                // Store data object only
+                ObjectMetadata objInfo =
+                    fileHashStore.storeObject(dataStream);
+
+                String cid = objInfo.cid();
+                fileHashStore.synchronizeReferenceLockedPids(pid);
+                fileHashStore.synchronizeObjectLockedCids(cid);
+
+                fileHashStore.unTagObject(pid, cid);
+
+                fileHashStore.releaseReferenceLockedPids(pid);
+                fileHashStore.releaseObjectLockedCids(cid);
+            }
+        }
     }
 
     /**
-     * Check that unTagObject does not throw exception when a pid refs file and cid refs file does
-     * not exist
+     * Check that unTagObject successfully removes a pid from a cid refs file when a pid refs file
+     * is missing but the pid is referenced in a cid refs file
      */
     @Test
     public void unTagObject_missingPidRefsFile() throws Exception {
-        String pid = "dou.test.1";
-        String pidTwo = "dou.test.2";
-        String pidThree = "dou.test.3";
-        String cid = "abcdef123456789";
-        fileHashStore.tagObject(pid, cid);
-        fileHashStore.tagObject(pidTwo, cid);
-        fileHashStore.tagObject(pidThree, cid);
+        String pid = "jtao.1700.1";
+        Path testDataFile = testData.getTestFile(pid);
+        String cid = testData.pidData.get(pid).get("sha256");
+
+        Collection<String> pidList = new ArrayList<>();
+        for (int i = 1; i < 5; i++) {
+            pidList.add(pid + "." + i);
+        }
+
+        // The object must be stored otherwise the unTag process cannot execute as expected
+        for (String pidToUse : pidList) {
+            try (InputStream dataStream = Files.newInputStream(testDataFile)) {
+                fileHashStore.storeObject(dataStream, pidToUse, null, null, null, -1);
+            }
+        }
+
+        String pidToCheck = pid + ".1";
 
         // Delete pid refs to create scenario
         Path absPidRefsPath =
-            fileHashStore.getHashStoreRefsPath(pid, FileHashStore.HashStoreIdTypes.pid);
+            fileHashStore.getHashStoreRefsPath(pidToCheck, FileHashStore.HashStoreIdTypes.pid);
         Files.delete(absPidRefsPath);
         assertFalse(Files.exists(absPidRefsPath));
 
-        fileHashStore.unTagObject(pid, cid);
+        fileHashStore.synchronizeReferenceLockedPids(pidToCheck);
+        fileHashStore.synchronizeObjectLockedCids(cid);
+
+        fileHashStore.unTagObject(pidToCheck, cid);
+
+        fileHashStore.releaseReferenceLockedPids(pidToCheck);
+        fileHashStore.releaseObjectLockedCids(cid);
 
         Path absCidRefsPath =
             fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
-        assertFalse(fileHashStore.isStringInRefsFile(pid, absCidRefsPath));
+        assertFalse(fileHashStore.isStringInRefsFile(pidToCheck, absCidRefsPath));
+    }
+
+    /**
+     * Check that unTagObject successfully deletes cid and pid refs file when a data object does
+     * not exist.
+     */
+    @Test
+    public void unTagObject_refsExistButDataObjectDoesNotExist() throws Exception {
+        String pid = "jtao.1700.1";
+        String cid = testData.pidData.get(pid).get("sha256");
+
+        Collection<String> pidList = new ArrayList<>();
+        for (int i = 1; i < 5; i++) {
+            pidList.add(pid + "." + i);
+        }
+
+        // The object must be stored otherwise the unTag process cannot execute as expected
+        for (String pidToUse : pidList) {
+            fileHashStore.tagObject(pidToUse, cid);
+        }
+
+        String pidToCheck = pid + ".1";
+
+        fileHashStore.synchronizeReferenceLockedPids(pidToCheck);
+        fileHashStore.synchronizeObjectLockedCids(cid);
+
+        fileHashStore.unTagObject(pidToCheck, cid);
+
+        fileHashStore.releaseReferenceLockedPids(pidToCheck);
+        fileHashStore.releaseObjectLockedCids(cid);
+
+        Path absCidRefsPath =
+            fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
+        assertFalse(fileHashStore.isStringInRefsFile(pidToCheck, absCidRefsPath));
+    }
+
+    /**
+     * Check that unTagObject successfully deletes cid and pid refs file when a data object does
+     * not exist.
+     */
+    @Test
+    public void unTagObject_refsExistNoObject_singlePidInCidRefs() throws Exception {
+        String pid = "jtao.1700.1";
+        String cid = testData.pidData.get(pid).get("sha256");
+
+        fileHashStore.tagObject(pid, cid);
+
+
+        fileHashStore.synchronizeReferenceLockedPids(pid);
+        fileHashStore.synchronizeObjectLockedCids(cid);
+
+        fileHashStore.unTagObject(pid, cid);
+
+        fileHashStore.releaseReferenceLockedPids(pid);
+        fileHashStore.releaseObjectLockedCids(cid);
+
+        Path absPidRefsPath =
+            fileHashStore.getHashStoreRefsPath(pid, FileHashStore.HashStoreIdTypes.pid);
+        Path absCidRefsPath =
+            fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
+        assertFalse(Files.exists(absPidRefsPath));
+        assertFalse(Files.exists(absCidRefsPath));
     }
 
     /**
@@ -1556,6 +1741,30 @@ public class FileHashStoreProtectedTest {
         }
         assertTrue(pidOriginal_foundInCidRefFiles);
         assertTrue(pidAdditional_foundInCidRefFiles);
+    }
+
+    /**
+     * Confirm that cid refs file does not add duplicate value
+     */
+    @Test
+    public void updateRefsFile_addDuplicateValue() throws Exception {
+        String pid = "dou.test.1";
+        String cid = "abcdef123456789";
+        fileHashStore.tagObject(pid, cid);
+
+        // Get path of the cid refs file
+        Path cidRefsFilePath =
+            fileHashStore.getHashStoreRefsPath(cid, FileHashStore.HashStoreIdTypes.cid);
+
+        String pidAdditional = "dou.test.2";
+        fileHashStore.updateRefsFile(
+            pidAdditional, cidRefsFilePath, FileHashStore.HashStoreRefUpdateTypes.add);
+        // Try re-adding it
+        fileHashStore.updateRefsFile(
+            pidAdditional, cidRefsFilePath, FileHashStore.HashStoreRefUpdateTypes.add);
+
+        List<String> lines = Files.readAllLines(cidRefsFilePath);
+        assertEquals(lines.size(), 2);
     }
 
     /**
