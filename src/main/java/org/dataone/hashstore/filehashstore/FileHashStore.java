@@ -1753,20 +1753,7 @@ public class FileHashStore implements HashStore {
             // Begin deletion process
             addAndRenamePidRefsFileToDeleteList(pid, deleteList, absPidRefsPath);
 
-            try {
-                updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.remove);
-                if (Files.size(absCidRefsPath) == 0) {
-                    deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
-                } else {
-                    String warnMsg = "Cid referenced by pid: " + pid
-                        + " is not empty (refs exist for cid). Skipping object " + "deletion.";
-                    logFileHashStore.warn(warnMsg);
-                }
-            } catch (Exception e) {
-                logFileHashStore.warn(
-                    "Unable to remove pid: " + pid + " from cid refs file: " + absCidRefsPath +
-                        ". " + e.getMessage());
-            }
+            removePidFromCidRefsAndDetermineDeletion(pid, deleteList, absCidRefsPath);
 
             deleteListOfFilesRenamedForDeletion(pid, cid, deleteList);
             logFileHashStore.info("Untagged pid: " + pid + " with cid: " + cid);
@@ -1816,23 +1803,8 @@ public class FileHashStore implements HashStore {
 
             addAndRenamePidRefsFileToDeleteList(pid, deleteList, absPidRefsPath);
 
-            try {
-                Path absCidRefsPath = getHashStoreRefsPath(cidRead, HashStoreIdTypes.cid);
-                try {
-                    updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.remove);
-                    if (Files.size(absCidRefsPath) == 0) {
-                        deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
-                    }
-                } catch (Exception e) {
-                    logFileHashStore.warn(
-                        "Unable to remove pid: " + pid + " from cid refs file: " + absCidRefsPath
-                            + ". " + e.getMessage());
-                }
-            } catch (Exception e ) {
-                logFileHashStore.warn(
-                    "Unexpected exception when attempting to remove pid: " + pid + " from cid "
-                        + "refs file for cid: " + cidRead + ". " + e.getMessage());
-            }
+            Path absCidRefsPath = getHashStoreRefsPath(cidRead, HashStoreIdTypes.cid);
+            removePidFromCidRefsAndDetermineDeletion(pid, deleteList, absCidRefsPath);
 
             deleteListOfFilesRenamedForDeletion(pid, cid, deleteList);
             String warnMsg = "Object with cid: " + cidRead
@@ -1882,6 +1854,32 @@ public class FileHashStore implements HashStore {
                         + "for request with pid: " + pid + " and cid: " + cid + ". "
                         + e.getMessage());
             }
+        }
+    }
+
+    /**
+     * Removes a pid from a given cid refs file (if it's found) and checks to see if the cid refs is
+     * empty before renaming this file for deletion.
+     *
+     * @param pid            Persistent identifier
+     * @param deleteList     If cid refs file needs to be deleted, list to add to
+     * @param absCidRefsPath Path of the cid refs file
+     */
+    private void removePidFromCidRefsAndDetermineDeletion(
+        String pid, Collection<Path> deleteList, Path absCidRefsPath) {
+        try {
+            updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.remove);
+            if (Files.size(absCidRefsPath) == 0) {
+                deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
+            } else {
+                String warnMsg = "Cid referenced by pid: " + pid
+                    + " is not empty (refs exist for cid). Skipping object " + "deletion.";
+                logFileHashStore.warn(warnMsg);
+            }
+        } catch (Exception e) {
+            logFileHashStore.warn(
+                "Unable to remove pid: " + pid + " from cid refs file: " + absCidRefsPath + ". "
+                    + e.getMessage());
         }
     }
 
