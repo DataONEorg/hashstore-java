@@ -1730,7 +1730,7 @@ public class FileHashStore implements HashStore {
             Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
 
             // Begin deletion process
-            addAndRenamePidRefsFileToDeleteList(pid, deleteList, absPidRefsPath);
+            markPidRefsFileForDeletion(pid, deleteList, absPidRefsPath);
             removePidAndHandleCidDeletion(pid, cid, deleteList);
             deleteMarkedFiles(pid, cid, deleteList);
 
@@ -1744,7 +1744,7 @@ public class FileHashStore implements HashStore {
             validateCidAndCheckLocked(pid, cid, cidToCheck);
 
             // Begin deletion process
-            addAndRenamePidRefsFileToDeleteList(pid, deleteList, absPidRefsPath);
+            markPidRefsFileForDeletion(pid, deleteList, absPidRefsPath);
             deleteMarkedFiles(pid, cid, deleteList);
 
             String warnMsg = "Cid refs file does not exist for pid: " + pid
@@ -1761,7 +1761,7 @@ public class FileHashStore implements HashStore {
             validateCidAndCheckLocked(pid, cid, cidToCheck);
 
             // Begin deletion process
-            addAndRenamePidRefsFileToDeleteList(pid, deleteList, absPidRefsPath);
+            markPidRefsFileForDeletion(pid, deleteList, absPidRefsPath);
             removePidAndHandleCidDeletion(pid, cid, deleteList);
             deleteMarkedFiles(pid, cid, deleteList);
 
@@ -1778,7 +1778,7 @@ public class FileHashStore implements HashStore {
             validateCidAndCheckLocked(pid, cid, cidToCheck);
 
             // Begin deletion process
-            addAndRenamePidRefsFileToDeleteList(pid, deleteList, absPidRefsPath);
+            markPidRefsFileForDeletion(pid, deleteList, absPidRefsPath);
             deleteMarkedFiles(pid, cid, deleteList);
 
             String warnMsg = "Pid not found in expected cid refs file for pid: " + pid
@@ -1890,7 +1890,7 @@ public class FileHashStore implements HashStore {
      * @param deleteList     List to add renamed file
      * @param absPidRefsPath Path of file to rename for deletion
      */
-    private static void addAndRenamePidRefsFileToDeleteList(
+    private static void markPidRefsFileForDeletion(
         String pid, Collection<Path> deleteList, Path absPidRefsPath) {
         try {
             deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
