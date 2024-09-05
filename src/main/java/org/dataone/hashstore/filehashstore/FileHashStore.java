@@ -1749,7 +1749,7 @@ public class FileHashStore implements HashStore {
 
             String warnMsg = "Cid refs file does not exist for pid: " + pid
                 + ". Deleted orphan pid refs file.";
-            logFileHashStore.error(warnMsg);
+            logFileHashStore.warn(warnMsg);
 
         } catch (OrphanRefsFilesException orfe) {
             // `findObject` throws this exception when:
@@ -1768,7 +1768,7 @@ public class FileHashStore implements HashStore {
             String warnMsg = "Object with cid: " + cidToCheck
                 + " does not exist, but pid and cid reference file found for pid: " + pid
                 + ". Deleted pid and cid ref files.";
-            logFileHashStore.error(warnMsg);
+            logFileHashStore.warn(warnMsg);
 
         } catch (PidNotFoundInCidRefsFileException pnficrfe) {
             // `findObject` throws this exception when both the pid and cid refs file exists
@@ -1783,7 +1783,7 @@ public class FileHashStore implements HashStore {
 
             String warnMsg = "Pid not found in expected cid refs file for pid: " + pid
                 + ". Deleted orphan pid refs file.";
-            logFileHashStore.error(warnMsg);
+            logFileHashStore.warn(warnMsg);
 
         } catch (PidRefsFileNotFoundException prfnfe) {
             // `findObject` throws this exception if the pid refs file is not found
@@ -1803,7 +1803,7 @@ public class FileHashStore implements HashStore {
 
             String errMsg =
                 "Pid refs file not found, removed pid from cid refs file for cid: " + cid;
-            logFileHashStore.error(errMsg);
+            logFileHashStore.warn(errMsg);
         }
     }
 
@@ -1855,7 +1855,7 @@ public class FileHashStore implements HashStore {
             } else {
                 String warnMsg = "Cid referenced by pid: " + pid
                     + " is not empty (refs exist for cid). Skipping object " + "deletion.";
-                logFileHashStore.error(warnMsg);
+                logFileHashStore.info(warnMsg);
             }
         } catch (Exception e) {
             logFileHashStore.error(
