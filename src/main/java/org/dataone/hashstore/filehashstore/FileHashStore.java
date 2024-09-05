@@ -1732,7 +1732,7 @@ public class FileHashStore implements HashStore {
             // Begin deletion process
             addAndRenamePidRefsFileToDeleteList(pid, deleteList, absPidRefsPath);
             removePidAndHandleCidDeletion(pid, cid, deleteList);
-            deleteListOfFilesRenamedForDeletion(pid, cid, deleteList);
+            deleteMarkedFiles(pid, cid, deleteList);
 
             logFileHashStore.info("Untagged pid: " + pid + " with cid: " + cid);
 
@@ -1745,7 +1745,7 @@ public class FileHashStore implements HashStore {
 
             // Begin deletion process
             addAndRenamePidRefsFileToDeleteList(pid, deleteList, absPidRefsPath);
-            deleteListOfFilesRenamedForDeletion(pid, cid, deleteList);
+            deleteMarkedFiles(pid, cid, deleteList);
 
             String warnMsg = "Cid refs file does not exist for pid: " + pid
                 + ". Deleted orphan pid refs file.";
@@ -1763,7 +1763,7 @@ public class FileHashStore implements HashStore {
             // Begin deletion process
             addAndRenamePidRefsFileToDeleteList(pid, deleteList, absPidRefsPath);
             removePidAndHandleCidDeletion(pid, cid, deleteList);
-            deleteListOfFilesRenamedForDeletion(pid, cid, deleteList);
+            deleteMarkedFiles(pid, cid, deleteList);
 
             String warnMsg = "Object with cid: " + cidToCheck
                 + " does not exist, but pid and cid reference file found for pid: " + pid
@@ -1779,7 +1779,7 @@ public class FileHashStore implements HashStore {
 
             // Begin deletion process
             addAndRenamePidRefsFileToDeleteList(pid, deleteList, absPidRefsPath);
-            deleteListOfFilesRenamedForDeletion(pid, cid, deleteList);
+            deleteMarkedFiles(pid, cid, deleteList);
 
             String warnMsg = "Pid not found in expected cid refs file for pid: " + pid
                 + ". Deleted orphan pid refs file.";
@@ -1799,7 +1799,7 @@ public class FileHashStore implements HashStore {
             }
 
             removePidAndHandleCidDeletion(pid, cid, deleteList);
-            deleteListOfFilesRenamedForDeletion(pid, cid, deleteList);
+            deleteMarkedFiles(pid, cid, deleteList);
 
             String errMsg =
                 "Pid refs file not found, removed pid from cid refs file for cid: " + cid;
@@ -1871,7 +1871,7 @@ public class FileHashStore implements HashStore {
      * @param cid Content identifier, used for logging
      * @param deleteList List of file paths to delete
      */
-    private static void deleteListOfFilesRenamedForDeletion(
+    private static void deleteMarkedFiles(
         String pid, String cid, Collection<Path> deleteList) {
         try {
             // Delete all related/relevant items with the least amount of delay
