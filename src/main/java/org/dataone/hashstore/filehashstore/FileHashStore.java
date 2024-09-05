@@ -1751,14 +1751,7 @@ public class FileHashStore implements HashStore {
             Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
 
             // Begin deletion process
-            try {
-                deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
-
-            } catch (Exception e) {
-                logFileHashStore.warn(
-                    "Unable to delete pid refs file: " + absPidRefsPath + " for pid: " + pid + "."
-                        + " " + e.getMessage());
-            }
+            addAndRenamePidRefsFileToDeleteList(pid, deleteList, absPidRefsPath);
 
             try {
                 updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.remove);
@@ -1789,15 +1782,9 @@ public class FileHashStore implements HashStore {
             // `findObject` throws this exception when the cid refs file doesn't exist,
             // so we only need to delete the pid refs file (pid is already locked)
             // TODO: Check that the cid found actually matches what has been provided
-            Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
-            try {
-                deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
 
-            } catch (Exception e) {
-                logFileHashStore.warn(
-                    "Unable to delete pid refs file: " + absPidRefsPath + " for pid: " + pid +
-                    ". " + e.getMessage());
-            }
+            Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
+            addAndRenamePidRefsFileToDeleteList(pid, deleteList, absPidRefsPath);
 
             try {
                 // Delete items
@@ -1841,14 +1828,7 @@ public class FileHashStore implements HashStore {
                 throw new IdentifierNotLockedException(errMsg);
             }
 
-            try {
-                deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
-
-            } catch (Exception e) {
-                logFileHashStore.warn(
-                    "Unable to delete pid refs file: " + absPidRefsPath + " for pid: " + pid + ". "
-                        + e.getMessage());
-            }
+            addAndRenamePidRefsFileToDeleteList(pid, deleteList, absPidRefsPath);
 
             try {
                 Path absCidRefsPath = getHashStoreRefsPath(cidRead, HashStoreIdTypes.cid);
@@ -1887,14 +1867,7 @@ public class FileHashStore implements HashStore {
 
             // Only rename pid refs file for deletion
             Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
-            try {
-                deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
-
-            } catch (Exception e) {
-                logFileHashStore.warn(
-                    "Unable to delete pid refs file: " + absPidRefsPath + " for pid: " + pid + "."
-                        + " " + e.getMessage());
-            }
+            addAndRenamePidRefsFileToDeleteList(pid, deleteList, absPidRefsPath);
 
             try {
                 // Delete items
@@ -1935,6 +1908,25 @@ public class FileHashStore implements HashStore {
                         + "for request with pid: " + pid + " and cid: " + cid + ". "
                         + e.getMessage());
             }
+        }
+    }
+
+    /**
+     * Renames a given path and adds it to a list to delete.
+     *
+     * @param pid            Persistent identifier for exception messaging
+     * @param deleteList     List to add renamed file
+     * @param absPidRefsPath Path of file to rename for deletion
+     */
+    private static void addAndRenamePidRefsFileToDeleteList(
+        String pid, Collection<Path> deleteList, Path absPidRefsPath) {
+        try {
+            deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
+
+        } catch (Exception e) {
+            logFileHashStore.warn(
+                "Unable to delete pid refs file: " + absPidRefsPath + " for pid: " + pid + "." + " "
+                    + e.getMessage());
         }
     }
 
