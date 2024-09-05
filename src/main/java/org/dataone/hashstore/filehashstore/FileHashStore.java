@@ -1724,27 +1724,11 @@ public class FileHashStore implements HashStore {
         // the reference files, which help us determine the path to proceed with.
         try {
             ObjectInfo objInfo = findObject(pid);
-            String cidRetrieved = objInfo.cid();
-            FileHashStoreUtility.ensureNotNull(cidRetrieved, "cidRetrieved");
-            FileHashStoreUtility.checkForNotEmptyAndValidString(cidRetrieved, "cidRetrieved");
+            String cidToCheck = objInfo.cid();
+            FileHashStoreUtility.ensureNotNull(cidToCheck, "cidRetrieved");
+            FileHashStoreUtility.checkForNotEmptyAndValidString(cidToCheck, "cidRetrieved");
 
-            // If the cid retrieved does not match, this untag request is invalid immediately
-            if (!cid.equals(cidRetrieved)) {
-                String errMsg =
-                    "Cid retrieved: " + cidRetrieved + " does not match untag request for cid: "
-                        + cid + " and pid: " + pid;
-                logFileHashStore.error(errMsg);
-                throw new IllegalArgumentException(errMsg);
-
-            } else if (!objectLockedCids.contains(cid)) {
-                // If it matches, we must confirm that we are working on a cid that is locked
-                // If not, this means that this call is not thread safe.
-                // This `cid` will be released by the calling method.
-                String errMsg =
-                    "Cannot untag cid: " + cid + " that is not currently locked (pid: " + pid + ")";
-                logFileHashStore.error(errMsg);
-                throw new IdentifierNotLockedException(errMsg);
-            }
+            validateCidAndCheckLocked(pid, cid, cidToCheck);
 
             // Get paths to reference files to work on
             Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid);
@@ -1777,37 +1761,20 @@ public class FileHashStore implements HashStore {
             // - the pid is found in the cid refs file
             // - but the actual object being referenced by the pid does not exist
             Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
-            String cidRead = new String(Files.readAllBytes(absPidRefsPath));
-            FileHashStoreUtility.ensureNotNull(cidRead, "cidRead");
-            FileHashStoreUtility.checkForNotEmptyAndValidString(cidRead, "cidRead");
+            String cidToCheck = new String(Files.readAllBytes(absPidRefsPath));
+            FileHashStoreUtility.ensureNotNull(cidToCheck, "cidRead");
+            FileHashStoreUtility.checkForNotEmptyAndValidString(cidToCheck, "cidRead");
             // TODO: Lots of repeated code with the basic scenario, see how to reduce code length
 
-            // If the cid retrieved does not match, this untag request is invalid immediately
-            if (!cid.equals(cidRead)) {
-                String errMsg =
-                    "Orphan reference files found but data object does not exist. Cid read: "
-                        + cidRead + " does not match untag request for cid: " + cid + " and pid: "
-                        + pid;
-                logFileHashStore.error(errMsg);
-                throw new IllegalArgumentException(errMsg);
-
-            } else if (!objectLockedCids.contains(cid)) {
-                // If it matches, we must confirm that we are working on a cid that is locked
-                // If not, this means that this call is not thread safe.
-                // This `cid` will be released by the calling method.
-                String errMsg =
-                    "Cannot untag cid: " + cid + " that is not currently locked (pid: " + pid + ")";
-                logFileHashStore.error(errMsg);
-                throw new IdentifierNotLockedException(errMsg);
-            }
+            validateCidAndCheckLocked(pid, cid, cidToCheck);
 
             addAndRenamePidRefsFileToDeleteList(pid, deleteList, absPidRefsPath);
 
-            Path absCidRefsPath = getHashStoreRefsPath(cidRead, HashStoreIdTypes.cid);
+            Path absCidRefsPath = getHashStoreRefsPath(cidToCheck, HashStoreIdTypes.cid);
             removePidFromCidRefsAndDetermineDeletion(pid, deleteList, absCidRefsPath);
 
             deleteListOfFilesRenamedForDeletion(pid, cid, deleteList);
-            String warnMsg = "Object with cid: " + cidRead
+            String warnMsg = "Object with cid: " + cidToCheck
                 + " does not exist, but pid and cid reference file found for pid: " + pid
                 + ". Deleted pid and cid ref files.";
             logFileHashStore.warn(warnMsg);
@@ -1854,6 +1821,33 @@ public class FileHashStore implements HashStore {
                         + "for request with pid: " + pid + " and cid: " + cid + ". "
                         + e.getMessage());
             }
+        }
+    }
+
+    /**
+     * Check that the supplied cid matches the cid retrieved/read before performing untagging
+     *
+     * @param pid Persistent identifier for logging
+     * @param cid Cid to confirm
+     * @param cidToCheck Cid that was retrieved or read
+     */
+    private static void validateCidAndCheckLocked(String pid, String cid, String cidToCheck) {
+        // If the cid retrieved does not match, this untag request is invalid immediately
+        if (!cid.equals(cidToCheck)) {
+            String errMsg =
+                "Cid retrieved: " + cidToCheck + " does not match untag request for cid: "
+                    + cid + " and pid: " + pid;
+            logFileHashStore.error(errMsg);
+            throw new IllegalArgumentException(errMsg);
+
+        } else if (!objectLockedCids.contains(cid)) {
+            // If it matches, we must confirm that we are working on a cid that is locked
+            // If not, this means that this call is not thread safe.
+            // This `cid` will be released by the calling method.
+            String errMsg =
+                "Cannot untag cid: " + cid + " that is not currently locked (pid: " + pid + ")";
+            logFileHashStore.error(errMsg);
+            throw new IdentifierNotLockedException(errMsg);
         }
     }
 
