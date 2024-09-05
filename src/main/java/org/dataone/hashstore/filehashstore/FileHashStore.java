@@ -1727,13 +1727,11 @@ public class FileHashStore implements HashStore {
             String cidToCheck = objInfo.cid();
             validateCidAndCheckLocked(pid, cid, cidToCheck);
 
-            // Get paths to reference files to work on
-            Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid);
             Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
 
             // Begin deletion process
             addAndRenamePidRefsFileToDeleteList(pid, deleteList, absPidRefsPath);
-            removePidFromCidRefsAndDetermineDeletion(pid, deleteList, absCidRefsPath);
+            removePidFromCidRefsAndDetermineDeletion(pid, cid, deleteList);
             deleteListOfFilesRenamedForDeletion(pid, cid, deleteList);
 
             logFileHashStore.info("Untagged pid: " + pid + " with cid: " + cid);
@@ -1759,13 +1757,12 @@ public class FileHashStore implements HashStore {
             // - the pid is found in the cid refs file
             // - but the actual object being referenced by the pid does not exist
             Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
-            Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid);
             String cidToCheck = new String(Files.readAllBytes(absPidRefsPath));
             validateCidAndCheckLocked(pid, cid, cidToCheck);
 
             // Begin deletion process
             addAndRenamePidRefsFileToDeleteList(pid, deleteList, absPidRefsPath);
-            removePidFromCidRefsAndDetermineDeletion(pid, deleteList, absCidRefsPath);
+            removePidFromCidRefsAndDetermineDeletion(pid, cid, deleteList);
             deleteListOfFilesRenamedForDeletion(pid, cid, deleteList);
 
             String warnMsg = "Object with cid: " + cidToCheck
@@ -1801,20 +1798,12 @@ public class FileHashStore implements HashStore {
                 throw new IdentifierNotLockedException(errMsg);
             }
 
-            Path absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid);
-            try {
-                if (Files.exists(absCidRefsPath) && isStringInRefsFile(pid, absCidRefsPath)) {
-                    updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.remove);
-                    String errMsg = "Pid refs file not found, removed pid found in cid refs file: "
-                        + absCidRefsPath;
-                    logFileHashStore.warn(errMsg);
-                }
-            } catch (Exception e) {
-                logFileHashStore.warn(
-                    "Unable to remove pid: " + pid + " from cid refs file: " + absCidRefsPath
-                        + "for request with pid: " + pid + " and cid: " + cid + ". "
-                        + e.getMessage());
-            }
+            removePidFromCidRefsAndDetermineDeletion(pid, cid, deleteList);
+            deleteListOfFilesRenamedForDeletion(pid, cid, deleteList);
+
+            String errMsg =
+                "Pid refs file not found, removed pid from cid refs file for cid: " + cid;
+            logFileHashStore.warn(errMsg);
         }
     }
 
@@ -1851,13 +1840,15 @@ public class FileHashStore implements HashStore {
      * Removes a pid from a given cid refs file (if it's found) and checks to see if the cid refs is
      * empty before renaming this file for deletion.
      *
-     * @param pid            Persistent identifier
-     * @param deleteList     If cid refs file needs to be deleted, list to add to
-     * @param absCidRefsPath Path of the cid refs file
+     * @param pid        Persistent identifier
+     * @param cid        Content Identifier
+     * @param deleteList If cid refs file needs to be deleted, list to add to
      */
     private void removePidFromCidRefsAndDetermineDeletion(
-        String pid, Collection<Path> deleteList, Path absCidRefsPath) {
+        String pid, String cid, Collection<Path> deleteList) {
+        Path absCidRefsPath = null;
         try {
+            absCidRefsPath = getHashStoreRefsPath(cid, HashStoreIdTypes.cid);
             updateRefsFile(pid, absCidRefsPath, HashStoreRefUpdateTypes.remove);
             if (Files.size(absCidRefsPath) == 0) {
                 deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
