@@ -1725,7 +1725,7 @@ public class FileHashStore implements HashStore {
         try {
             ObjectInfo objInfo = findObject(pid);
             String cidToCheck = objInfo.cid();
-            validateCidAndCheckLocked(pid, cid, cidToCheck);
+            validateAndCheckCidLock(pid, cid, cidToCheck);
 
             Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
 
@@ -1741,7 +1741,7 @@ public class FileHashStore implements HashStore {
             // so we only need to delete the pid refs file (pid is already locked)
             Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
             String cidToCheck = new String(Files.readAllBytes(absPidRefsPath));
-            validateCidAndCheckLocked(pid, cid, cidToCheck);
+            validateAndCheckCidLock(pid, cid, cidToCheck);
 
             // Begin deletion process
             markPidRefsFileForDeletion(pid, deleteList, absPidRefsPath);
@@ -1758,7 +1758,7 @@ public class FileHashStore implements HashStore {
             // - but the actual object being referenced by the pid does not exist
             Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
             String cidToCheck = new String(Files.readAllBytes(absPidRefsPath));
-            validateCidAndCheckLocked(pid, cid, cidToCheck);
+            validateAndCheckCidLock(pid, cid, cidToCheck);
 
             // Begin deletion process
             markPidRefsFileForDeletion(pid, deleteList, absPidRefsPath);
@@ -1775,7 +1775,7 @@ public class FileHashStore implements HashStore {
             // but the pid is not found in the cid refs file (nothing to change here)
             Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
             String cidToCheck = new String(Files.readAllBytes(absPidRefsPath));
-            validateCidAndCheckLocked(pid, cid, cidToCheck);
+            validateAndCheckCidLock(pid, cid, cidToCheck);
 
             // Begin deletion process
             markPidRefsFileForDeletion(pid, deleteList, absPidRefsPath);
@@ -1814,7 +1814,7 @@ public class FileHashStore implements HashStore {
      * @param cid Cid to confirm
      * @param cidToCheck Cid that was retrieved or read
      */
-    private static void validateCidAndCheckLocked(String pid, String cid, String cidToCheck) {
+    private static void validateAndCheckCidLock(String pid, String cid, String cidToCheck) {
         FileHashStoreUtility.ensureNotNull(cidToCheck, "cidToCheck");
         FileHashStoreUtility.checkForNotEmptyAndValidString(cidToCheck, "cidToCheck");
         // If the cid retrieved does not match, this untag request is invalid immediately
