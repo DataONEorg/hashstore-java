@@ -1853,9 +1853,9 @@ public class FileHashStore implements HashStore {
             if (Files.size(absCidRefsPath) == 0) {
                 deleteList.add(FileHashStoreUtility.renamePathForDeletion(absCidRefsPath));
             } else {
-                String warnMsg = "Cid referenced by pid: " + pid
+                String infoMsg = "Cid referenced by pid: " + pid
                     + " is not empty (refs exist for cid). Skipping object " + "deletion.";
-                logFileHashStore.info(warnMsg);
+                logFileHashStore.info(infoMsg);
             }
         } catch (Exception e) {
             logFileHashStore.error(
