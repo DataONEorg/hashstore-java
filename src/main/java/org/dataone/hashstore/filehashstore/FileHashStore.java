@@ -1732,10 +1732,9 @@ public class FileHashStore implements HashStore {
             if (!cid.equals(cidRetrieved)) {
                 String errMsg =
                     "Cid retrieved: " + cidRetrieved + " does not match untag request for cid: "
-                        + cid + " and pid: " + pid
-                        + ". Cannot untag cid that is not currently locked.";
+                        + cid + " and pid: " + pid;
                 logFileHashStore.error(errMsg);
-                throw new IdentifierNotLockedException(errMsg);
+                throw new IllegalArgumentException(errMsg);
 
             } else if (!objectLockedCids.contains(cid)) {
                 // If it matches, we must confirm that we are working on a cid that is locked
@@ -1789,6 +1788,7 @@ public class FileHashStore implements HashStore {
         } catch (OrphanPidRefsFileException oprfe) {
             // `findObject` throws this exception when the cid refs file doesn't exist,
             // so we only need to delete the pid refs file (pid is already locked)
+            // TODO: Check that the cid found actually matches what has been provided
             Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
             try {
                 deleteList.add(FileHashStoreUtility.renamePathForDeletion(absPidRefsPath));
@@ -1820,15 +1820,16 @@ public class FileHashStore implements HashStore {
             String cidRead = new String(Files.readAllBytes(absPidRefsPath));
             FileHashStoreUtility.ensureNotNull(cidRead, "cidRead");
             FileHashStoreUtility.checkForNotEmptyAndValidString(cidRead, "cidRead");
+            // TODO: Lots of repeated code with the basic scenario, see how to reduce code length
 
             // If the cid retrieved does not match, this untag request is invalid immediately
             if (!cid.equals(cidRead)) {
                 String errMsg =
                     "Orphan reference files found but data object does not exist. Cid read: "
                         + cidRead + " does not match untag request for cid: " + cid + " and pid: "
-                        + pid + ". Cannot untag cid that is not currently locked.";
+                        + pid;
                 logFileHashStore.error(errMsg);
-                throw new IdentifierNotLockedException(errMsg);
+                throw new IllegalArgumentException(errMsg);
 
             } else if (!objectLockedCids.contains(cid)) {
                 // If it matches, we must confirm that we are working on a cid that is locked
@@ -1882,6 +1883,7 @@ public class FileHashStore implements HashStore {
         } catch (PidNotFoundInCidRefsFileException pnficrfe) {
             // `findObject` throws this exception when both the pid and cid refs file exists
             // but the pid is not found in the cid refs file (nothing to change here)
+            // TODO: Still need to check that the cid found matches
 
             // Only rename pid refs file for deletion
             Path absPidRefsPath = getHashStoreRefsPath(pid, HashStoreIdTypes.pid);
@@ -1907,7 +1909,7 @@ public class FileHashStore implements HashStore {
             logFileHashStore.warn(warnMsg);
         } catch (PidRefsFileNotFoundException prfnfe) {
             // `findObject` throws this exception if the pid refs file is not found
-            // Check to see if pid is in the `cid refs file`and attempt to remove it
+            // Check to see if pid is in the `cid refs file` and attempt to remove it
 
             // Confirm that we are working on a cid that is locked
             // If not, this means that this call is not thread safe.
