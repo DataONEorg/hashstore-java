@@ -1307,14 +1307,40 @@ public class FileHashStoreProtectedTest {
             Path testDataFile = testData.getTestFile(pidFormatted);
 
             // The object must be stored otherwise the unTag process cannot execute as expected
+            ObjectMetadata objInfo = null;
+            try (InputStream dataStream = Files.newInputStream(testDataFile)) {
+                objInfo = fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
+            }
+            String cid = objInfo.cid();
+
+            FileHashStore.synchronizeReferenceLockedPids(pid);
+            assertThrows(IdentifierNotLockedException.class,
+                         () -> fileHashStore.unTagObject(pid, cid));
+            FileHashStore.releaseReferenceLockedPids(pid);
+        }
+    }
+
+    /**
+     * Confirm IllegalArgumentException is thrown when cid retrieved does not match what has been
+     * provided.
+     */
+    @Test
+    public void unTagObject_cid_doesNotMatchFindObject() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            // The object must be stored otherwise the unTag process cannot execute as expected
             try (InputStream dataStream = Files.newInputStream(testDataFile)) {
                 fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
             }
 
             fileHashStore.synchronizeReferenceLockedPids(pid);
+            fileHashStore.synchronizeObjectLockedCids("does_not_match");
             assertThrows(
-                IdentifierNotLockedException.class, () -> fileHashStore.unTagObject(pid, "cid"));
+                IllegalArgumentException.class, () -> fileHashStore.unTagObject(pid, "cid"));
             fileHashStore.releaseReferenceLockedPids(pid);
+            fileHashStore.releaseObjectLockedCids("does_not_match");
         }
     }
 
