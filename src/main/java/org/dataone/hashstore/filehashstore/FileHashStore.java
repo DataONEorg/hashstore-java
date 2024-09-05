@@ -1731,7 +1731,7 @@ public class FileHashStore implements HashStore {
 
             // Begin deletion process
             addAndRenamePidRefsFileToDeleteList(pid, deleteList, absPidRefsPath);
-            removePidFromCidRefsAndDetermineDeletion(pid, cid, deleteList);
+            removePidAndHandleCidDeletion(pid, cid, deleteList);
             deleteListOfFilesRenamedForDeletion(pid, cid, deleteList);
 
             logFileHashStore.info("Untagged pid: " + pid + " with cid: " + cid);
@@ -1762,7 +1762,7 @@ public class FileHashStore implements HashStore {
 
             // Begin deletion process
             addAndRenamePidRefsFileToDeleteList(pid, deleteList, absPidRefsPath);
-            removePidFromCidRefsAndDetermineDeletion(pid, cid, deleteList);
+            removePidAndHandleCidDeletion(pid, cid, deleteList);
             deleteListOfFilesRenamedForDeletion(pid, cid, deleteList);
 
             String warnMsg = "Object with cid: " + cidToCheck
@@ -1798,7 +1798,7 @@ public class FileHashStore implements HashStore {
                 throw new IdentifierNotLockedException(errMsg);
             }
 
-            removePidFromCidRefsAndDetermineDeletion(pid, cid, deleteList);
+            removePidAndHandleCidDeletion(pid, cid, deleteList);
             deleteListOfFilesRenamedForDeletion(pid, cid, deleteList);
 
             String errMsg =
@@ -1844,7 +1844,7 @@ public class FileHashStore implements HashStore {
      * @param cid        Content Identifier
      * @param deleteList If cid refs file needs to be deleted, list to add to
      */
-    private void removePidFromCidRefsAndDetermineDeletion(
+    private void removePidAndHandleCidDeletion(
         String pid, String cid, Collection<Path> deleteList) {
         Path absCidRefsPath = null;
         try {
