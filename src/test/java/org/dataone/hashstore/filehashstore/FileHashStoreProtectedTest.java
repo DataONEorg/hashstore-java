@@ -2430,7 +2430,7 @@ public class FileHashStoreProtectedTest {
      * Confirm that generateTemporaryFile creates tmpFile with expected permissions
      */
     @Test
-    public void fileHashStoreUtility_generateTemporaryFile_permissions() throws Exception {
+    public void fileHashStoreUtility_generateTmpFile_permissions() throws Exception {
         Path directory = tempFolder.resolve("hashstore");
         // newFile
         File tmpFile = FileHashStoreUtility.generateTmpFile("testfile", directory);
