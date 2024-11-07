@@ -8,6 +8,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,9 +17,11 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import javax.xml.bind.DatatypeConverter;
@@ -321,8 +324,9 @@ public class FileHashStoreUtility {
     }
 
     /**
-     * Creates an empty/temporary file in a given location. If this file is not moved, it will be
-     * deleted upon JVM gracefully exiting or shutting down.
+     * Creates an empty/temporary file in a given location. This temporary file has the default
+     * permissions of 'rw- r-- ---'  (owner read/write, and group read). If this file is not
+     * moved, it will be deleted upon JVM gracefully exiting or shutting down.
      *
      * @param prefix    string to prepend before tmp file
      * @param directory location to create tmp file
@@ -336,10 +340,19 @@ public class FileHashStoreUtility {
         int randomNumber = rand.nextInt(1000000);
         String newPrefix = prefix + "-" + System.currentTimeMillis() + randomNumber;
 
-        Path newPath = Files.createTempFile(directory, newPrefix, null);
-        File newFile = newPath.toFile();
-        newFile.deleteOnExit();
-        return newFile;
+        Path newTmpPath = Files.createTempFile(directory, newPrefix, null);
+        File newTmpFile = newTmpPath.toFile();
+
+        // Set default file permissions 'rw- r-- ---'
+        final Set<PosixFilePermission> permissions = new HashSet<>();
+        permissions.add(PosixFilePermission.OWNER_READ);
+        permissions.add(PosixFilePermission.OWNER_WRITE);
+        permissions.add(PosixFilePermission.GROUP_READ);
+        Files.setPosixFilePermissions(newTmpPath, permissions);
+        // Mark tmp file to be cleaned up if it runs into an issue
+        newTmpFile.deleteOnExit();
+
+        return newTmpFile;
     }
 
     /**
