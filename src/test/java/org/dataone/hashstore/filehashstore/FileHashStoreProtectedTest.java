@@ -15,15 +15,18 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermission;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.Set;
 
 import javax.xml.bind.DatatypeConverter;
 
@@ -2420,5 +2423,25 @@ public class FileHashStoreProtectedTest {
                 assertTrue(Files.exists(metadataPath));
             }
         }
+    }
+
+
+    /**
+     * Confirm that generateTemporaryFile creates tmpFile with expected permissions
+     */
+    @Test
+    public void fileHashStoreUtility_generateTemporaryFile_permissions() throws Exception {
+        Path directory = tempFolder.resolve("hashstore");
+        // newFile
+        File tmpFile = FileHashStoreUtility.generateTmpFile("testfile", directory);
+
+        Collection<PosixFilePermission> expectedPermissions = new HashSet<>();
+        expectedPermissions.add(PosixFilePermission.OWNER_READ);
+        expectedPermissions.add(PosixFilePermission.OWNER_WRITE);
+        expectedPermissions.add(PosixFilePermission.GROUP_READ);
+
+        Set<PosixFilePermission> actualPermissions = Files.getPosixFilePermissions(tmpFile.toPath());
+
+        assertEquals(expectedPermissions, actualPermissions);
     }
 }
