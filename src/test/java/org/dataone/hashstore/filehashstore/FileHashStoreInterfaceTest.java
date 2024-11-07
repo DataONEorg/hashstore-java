@@ -187,6 +187,12 @@ public class FileHashStoreInterfaceTest {
                 Set<PosixFilePermission> actualPermissions = Files.getPosixFilePermissions(objRealPath);
 
                 assertEquals(expectedPermissions, actualPermissions);
+                assertFalse(actualPermissions.contains(PosixFilePermission.OWNER_EXECUTE));
+                assertFalse(actualPermissions.contains(PosixFilePermission.GROUP_WRITE));
+                assertFalse(actualPermissions.contains(PosixFilePermission.GROUP_EXECUTE));
+                assertFalse(actualPermissions.contains(PosixFilePermission.OTHERS_READ));
+                assertFalse(actualPermissions.contains(PosixFilePermission.OTHERS_WRITE));
+                assertFalse(actualPermissions.contains(PosixFilePermission.OTHERS_EXECUTE));
             }
         }
     }
