@@ -343,7 +343,7 @@ public class FileHashStoreUtility {
         File newTmpFile = newTmpPath.toFile();
 
         // Set default file permissions 'rw- r-- ---' / posix 640
-        Set<PosixFilePermission> permissions = new HashSet<>();
+        final Set<PosixFilePermission> permissions = new HashSet<>();
         permissions.add(PosixFilePermission.OWNER_READ);
         permissions.add(PosixFilePermission.OWNER_WRITE);
         permissions.add(PosixFilePermission.GROUP_READ);
