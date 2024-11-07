@@ -2440,7 +2440,8 @@ public class FileHashStoreProtectedTest {
         expectedPermissions.add(PosixFilePermission.OWNER_WRITE);
         expectedPermissions.add(PosixFilePermission.GROUP_READ);
 
-        Set<PosixFilePermission> actualPermissions = Files.getPosixFilePermissions(tmpFile.toPath());
+        Set<PosixFilePermission> actualPermissions =
+            Files.getPosixFilePermissions(tmpFile.toPath());
 
         assertEquals(expectedPermissions, actualPermissions);
         assertFalse(actualPermissions.contains(PosixFilePermission.OWNER_EXECUTE));

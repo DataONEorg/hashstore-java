@@ -324,8 +324,9 @@ public class FileHashStoreUtility {
     }
 
     /**
-     * Creates an empty/temporary file in a given location. If this file is not moved, it will be
-     * deleted upon JVM gracefully exiting or shutting down.
+     * Creates an empty/temporary file in a given location. This temporary file has the default
+     * permissions of 'rw- r-- ---'  (owner read/write, and group read). If this file is not
+     * moved, it will be deleted upon JVM gracefully exiting or shutting down.
      *
      * @param prefix    string to prepend before tmp file
      * @param directory location to create tmp file
@@ -342,7 +343,7 @@ public class FileHashStoreUtility {
         Path newTmpPath = Files.createTempFile(directory, newPrefix, null);
         File newTmpFile = newTmpPath.toFile();
 
-        // Set default file permissions 'rw- r-- ---' / posix 640
+        // Set default file permissions 'rw- r-- ---'
         final Set<PosixFilePermission> permissions = new HashSet<>();
         permissions.add(PosixFilePermission.OWNER_READ);
         permissions.add(PosixFilePermission.OWNER_WRITE);
