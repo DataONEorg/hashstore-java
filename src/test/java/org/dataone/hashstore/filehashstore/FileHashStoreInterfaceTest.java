@@ -17,6 +17,7 @@ import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermission;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -159,6 +161,32 @@ public class FileHashStoreInterfaceTest {
                 assertEquals(sha256, hexDigests.get("SHA-256"));
                 assertEquals(sha384, hexDigests.get("SHA-384"));
                 assertEquals(sha512, hexDigests.get("SHA-512"));
+            }
+        }
+    }
+
+    /**
+     * Check that data object stored contains the correct permission settings 'rw- r-- ---'
+     */
+    @Test
+    public void storeObject_filePermissions() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+
+            try (InputStream dataStream = Files.newInputStream(testDataFile)) {
+                fileHashStore.storeObject(dataStream, pid, null, null, null, -1);
+
+                Path objRealPath = fileHashStore.getHashStoreDataObjectPath(pid);
+
+                Collection<PosixFilePermission> expectedPermissions = new HashSet<>();
+                expectedPermissions.add(PosixFilePermission.OWNER_READ);
+                expectedPermissions.add(PosixFilePermission.OWNER_WRITE);
+                expectedPermissions.add(PosixFilePermission.GROUP_READ);
+
+                Set<PosixFilePermission> actualPermissions = Files.getPosixFilePermissions(objRealPath);
+
+                assertEquals(expectedPermissions, actualPermissions);
             }
         }
     }
