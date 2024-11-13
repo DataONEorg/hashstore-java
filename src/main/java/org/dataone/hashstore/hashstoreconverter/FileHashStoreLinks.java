@@ -18,7 +18,6 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -118,7 +117,7 @@ public class FileHashStoreLinks extends FileHashStore {
                 Files.createLink(objHardLinkPath, filePath);
 
             } catch (FileAlreadyExistsException faee) {
-                logFileHashStoreLinks.warn("Data object already exists at: " + objHardLinkPath);
+                logFileHashStoreLinks.debug("Data object already exists at: " + objHardLinkPath);
             }
 
             // This method is thread safe and synchronized

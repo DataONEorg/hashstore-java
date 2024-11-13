@@ -8,11 +8,13 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -116,7 +118,12 @@ public class FileHashStoreUtility {
         if (!desiredPathParentDirs.exists()) {
             Path destinationDirectoryPath = desiredPathParentDirs.toPath();
             try {
-                Files.createDirectories(destinationDirectoryPath);
+                // The execute permission must be added to the owner/group as it is crucial for
+                // users (ex. maven/junit or a group) to access directories and subdirectories
+                Set<PosixFilePermission> perms = PosixFilePermissions.fromString("rwxr-x---");
+                FileAttribute<Set<PosixFilePermission>> attr =
+                    PosixFilePermissions.asFileAttribute(perms);
+                Files.createDirectories(destinationDirectoryPath, attr);
 
             } catch (FileAlreadyExistsException faee) {
                 log.warn("Directory already exists at: " + destinationDirectoryPath

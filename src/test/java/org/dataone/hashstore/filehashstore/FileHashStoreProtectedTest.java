@@ -986,6 +986,67 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
+     * Confirm directories have 'rwxr-x---' permissions
+     */
+    @Test
+    public void move_directoryPermissions() throws Exception {
+        File newTmpFile = generateTemporaryFile();
+        String targetString = tempFolder.toString() + "/testmove/subdir1/subdir2/test_tmp_object"
+            + ".tmp";
+        File targetFile = new File(targetString);
+
+        fileHashStore.move(newTmpFile, targetFile, "object");
+
+        Path path = Paths.get(targetFile.toString());
+        while (path.getParent() != null) {
+            path = path.getParent();
+            // Check if the directory name starts with "testmove"
+            if (path.getFileName().toString().startsWith("junit")) {
+                break;
+            } else {
+                System.out.println(path);
+                Set<PosixFilePermission> actualPermissions = Files.getPosixFilePermissions(path);
+
+                assertTrue(actualPermissions.contains(PosixFilePermission.OWNER_READ));
+                assertTrue(actualPermissions.contains(PosixFilePermission.OWNER_WRITE));
+                assertTrue(actualPermissions.contains(PosixFilePermission.OWNER_EXECUTE));
+                assertTrue(actualPermissions.contains(PosixFilePermission.GROUP_READ));
+                assertFalse(actualPermissions.contains(PosixFilePermission.GROUP_WRITE));
+                assertTrue(actualPermissions.contains(PosixFilePermission.GROUP_EXECUTE));
+                assertFalse(actualPermissions.contains(PosixFilePermission.OTHERS_READ));
+                assertFalse(actualPermissions.contains(PosixFilePermission.OTHERS_WRITE));
+                assertFalse(actualPermissions.contains(PosixFilePermission.OTHERS_EXECUTE));
+            }
+        }
+    }
+
+    /**
+     * Confirm file has 'rw-r-----' permissions
+     */
+    @Test
+    public void move_filePermissions() throws Exception {
+        File newTmpFile = generateTemporaryFile();
+        String targetString = tempFolder.toString() + "/testmove/subdir1/subdir2/test_tmp_object"
+            + ".tmp";
+        File targetFile = new File(targetString);
+
+        fileHashStore.move(newTmpFile, targetFile, "object");
+
+        Set<PosixFilePermission> actualPermissions =
+            Files.getPosixFilePermissions(targetFile.toPath());
+
+        assertTrue(actualPermissions.contains(PosixFilePermission.OWNER_READ));
+        assertTrue(actualPermissions.contains(PosixFilePermission.OWNER_WRITE));
+        assertFalse(actualPermissions.contains(PosixFilePermission.OWNER_EXECUTE));
+        assertTrue(actualPermissions.contains(PosixFilePermission.GROUP_READ));
+        assertFalse(actualPermissions.contains(PosixFilePermission.GROUP_WRITE));
+        assertFalse(actualPermissions.contains(PosixFilePermission.GROUP_EXECUTE));
+        assertFalse(actualPermissions.contains(PosixFilePermission.OTHERS_READ));
+        assertFalse(actualPermissions.contains(PosixFilePermission.OTHERS_WRITE));
+        assertFalse(actualPermissions.contains(PosixFilePermission.OTHERS_EXECUTE));
+    }
+
+    /**
      * Confirm that exceptions are not thrown when move is called on an object that already exists
      */
     @Test
