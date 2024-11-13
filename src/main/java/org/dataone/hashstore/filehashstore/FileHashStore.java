@@ -17,15 +17,20 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -1519,18 +1524,8 @@ public class FileHashStore implements HashStore {
             return;
         }
 
-        File destinationDirectory = new File(target.getParent());
-        // Create parent directory if it doesn't exist
-        if (!destinationDirectory.exists()) {
-            Path destinationDirectoryPath = destinationDirectory.toPath();
-            try {
-                Files.createDirectories(destinationDirectoryPath);
-
-            } catch (FileAlreadyExistsException faee) {
-                logFileHashStore.warn("Directory already exists at: " + destinationDirectoryPath
-                                          + " - Skipping directory creation");
-            }
-        }
+        // Create parent directories if they don't exist
+        FileHashStoreUtility.createParentDirectories(target.toPath());
 
         // Move file
         Path sourceFilePath = source.toPath();
