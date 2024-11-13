@@ -643,8 +643,8 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Confirm validateTmpObject does not throw exception when requested to validate checksums with
-     * good values, and that the tmpFile passed is deleted.
+     * Confirm validateTmpObject throws exception when requested to validate a bad checksum,
+     * and that the tmpFile passed is deleted.
      */
     @Test
     public void validateTmpObject_validationRequested_nonMatchingChecksum() throws Exception {
