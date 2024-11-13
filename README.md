@@ -45,7 +45,7 @@ the expected usage of HashStore.
 - retrieveObject
 - retrieveMetadata
 - deleteObject
-- deleteInvalidObject
+- deleteIfInvalidObject
 - deleteMetadata
 - getHexDigest
 
@@ -165,16 +165,11 @@ tagObject(pid, cid);
 
 **How do I delete an object if I have the pid?**
 
-- To delete an object, all its associated reference files and its metadata, call the Public API
-  method `deleteObject()` with `idType` 'pid'. If an `idType` is not given (ex.
-  calling `deleteObject(String pid)`), the `idType` will be assumed to be a 'pid'
-- To delete only an object, call `deleteObject()` with `idType` 'cid' which will remove the object
-  if it is not referenced by any pids.
-- Note, `deleteObject` and `tagObject` calls are synchronized on their content identifier values so
-  that the shared reference files are not unintentionally modified concurrently. An object that is
-  in the process of being deleted should not be tagged, and vice versa. These calls have been
-  implemented to occur sequentially to improve clarity in the event of an unexpected conflict or
-  issue.
+- To delete an object and all its associated reference files, call the Public API
+  method `deleteObject()`.
+- Note, `deleteObject` and `storeObject` are synchronized processes based on a given `pid`.
+  Additionally, `deleteObject` further synchronizes with `tagObject` based on a `cid`. Every
+  object is stored once, is unique and shares one cid reference file.
 
 ### Working with metadata (store, retrieve, delete)
 
@@ -251,35 +246,35 @@ parallel [Python-based version of HashStore](https://github.com/DataONEorg/hashs
 $ mvn clean package -Dmaven.test.skip=true
 
 # Get help
-$ java -cp ./target/hashstore-1.0-SNAPSHOT-shaded.jar org.dataone.hashstore.HashStoreClient -h
+$ java -cp ./target/hashstore-1.1.0-shaded.jar org.dataone.hashstore.HashStoreClient -h
 
 # Step 2: Determine where your hashstore should live (ex. `/var/hashstore`)
 ## Create a HashStore (long option)
-$ java -cp ./target/hashstore-1.0-SNAPSHOT-shaded.jar org.dataone.hashstore.HashStoreClient --createhashstore --storepath=/path/to/store --storedepth=3 --storewidth=2 --storealgo=SHA-256 --storenamespace=https://ns.dataone.org/service/types/v2.0#SystemMetadata
+$ java -cp ./target/hashstore-1.1.0-shaded.jar org.dataone.hashstore.HashStoreClient --createhashstore --storepath=/path/to/store --storedepth=3 --storewidth=2 --storealgo=SHA-256 --storenamespace=https://ns.dataone.org/service/types/v2.0#SystemMetadata
 
 ## Create a HashStore (short option)
-$ java -cp ./target/hashstore-1.0-SNAPSHOT-shaded.jar org.dataone.hashstore.HashStoreClient -chs -store /path/to/store -dp 3 -wp 2 -ap SHA-256 -nsp https://ns.dataone.org/service/types/v2.0#SystemMetadata
+$ java -cp ./target/hashstore-1.1.0-shaded.jar org.dataone.hashstore.HashStoreClient -chs -store /path/to/store -dp 3 -wp 2 -ap SHA-256 -nsp https://ns.dataone.org/service/types/v2.0#SystemMetadata
 
 # Get the checksum of a data object
-$ java -cp ./target/hashstore-1.0-SNAPSHOT-shaded.jar org.dataone.hashstore.HashStoreClient -store /path/to/store -getchecksum -pid testpid1 -algo SHA-256
+$ java -cp ./target/hashstore-1.1.0-shaded.jar org.dataone.hashstore.HashStoreClient -store /path/to/store -getchecksum -pid testpid1 -algo SHA-256
 
 # Store a data object
-$ java -cp ./target/hashstore-1.0-SNAPSHOT-shaded.jar org.dataone.hashstore.HashStoreClient -store /path/to/store -storeobject -path /path/to/data.ext -pid testpid1
+$ java -cp ./target/hashstore-1.1.0-shaded.jar org.dataone.hashstore.HashStoreClient -store /path/to/store -storeobject -path /path/to/data.ext -pid testpid1
 
 # Store a metadata object
-$ java -cp ./target/hashstore-1.0-SNAPSHOT-shaded.jar org.dataone.hashstore.HashStoreClient -store /path/to/store -storemetadata -path /path/to/metadata.ext -pid testpid1 -format_id https://ns.dataone.org/service/types/v2.0#SystemMetadata
+$ java -cp ./target/hashstore-1.1.0-shaded.jar org.dataone.hashstore.HashStoreClient -store /path/to/store -storemetadata -path /path/to/metadata.ext -pid testpid1 -format_id https://ns.dataone.org/service/types/v2.0#SystemMetadata
 
 # Retrieve a data object
-$ java -cp ./target/hashstore-1.0-SNAPSHOT-shaded.jar org.dataone.hashstore.HashStoreClient -store /path/to/store -retrieveobject -pid testpid1
+$ java -cp ./target/hashstore-1.1.0-shaded.jar org.dataone.hashstore.HashStoreClient -store /path/to/store -retrieveobject -pid testpid1
 
 # Retrieve a metadata object
-$ java -cp ./target/hashstore-1.0-SNAPSHOT-shaded.jar org.dataone.hashstore.HashStoreClient -store /path/to/store -retrievemetadata -pid testpid1 -format_id https://ns.dataone.org/service/types/v2.0#SystemMetadata
+$ java -cp ./target/hashstore-1.1.0-shaded.jar org.dataone.hashstore.HashStoreClient -store /path/to/store -retrievemetadata -pid testpid1 -format_id https://ns.dataone.org/service/types/v2.0#SystemMetadata
 
 # Delete a data object
-$ java -cp ./target/hashstore-1.0-SNAPSHOT-shaded.jar org.dataone.hashstore.HashStoreClient -store /path/to/store -deleteobject -pid testpid1
+$ java -cp ./target/hashstore-1.1.0-shaded.jar org.dataone.hashstore.HashStoreClient -store /path/to/store -deleteobject -pid testpid1
 
 # Delete a metadata file
-$ java -cp ./target/hashstore-1.0-SNAPSHOT-shaded.jar org.dataone.hashstore.HashStoreClient -store /path/to/store -deletemetadata -pid testpid1 -format_id https://ns.dataone.org/service/types/v2.0#SystemMetadata
+$ java -cp ./target/hashstore-1.1.0-shaded.jar org.dataone.hashstore.HashStoreClient -store /path/to/store -deletemetadata -pid testpid1 -format_id https://ns.dataone.org/service/types/v2.0#SystemMetadata
 ```
 
 ## License
