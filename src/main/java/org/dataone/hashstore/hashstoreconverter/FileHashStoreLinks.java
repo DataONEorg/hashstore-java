@@ -118,7 +118,7 @@ public class FileHashStoreLinks extends FileHashStore {
                 Files.createLink(objHardLinkPath, filePath);
 
             } catch (FileAlreadyExistsException faee) {
-                logFileHashStoreLinks.warn("Data object already exists at: " + objHardLinkPath);
+                logFileHashStoreLinks.debug("Data object already exists at: " + objHardLinkPath);
             }
 
             // This method is thread safe and synchronized

@@ -1536,7 +1536,7 @@ public class FileHashStore implements HashStore {
                 "File moved from: " + sourceFilePath + ", to: " + targetFilePath);
 
         } catch (FileAlreadyExistsException faee) {
-            logFileHashStore.warn(
+            logFileHashStore.debug(
                 "File already exists, skipping request to move object. Source: " + source
                     + ". Target: " + target);
 
