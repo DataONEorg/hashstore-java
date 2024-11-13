@@ -643,8 +643,8 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
-     * Confirm validateTmpObject does not throw exception when requested to validate checksums with
-     * good values, and that the tmpFile passed is deleted.
+     * Confirm validateTmpObject throws exception when requested to validate a bad checksum,
+     * and that the tmpFile passed is deleted.
      */
     @Test
     public void validateTmpObject_validationRequested_nonMatchingChecksum() throws Exception {
@@ -674,6 +674,18 @@ public class FileHashStoreProtectedTest {
                      () -> fileHashStore.validateTmpObject(true, "md2Digest", "MD2", tmpFile,
                                                            hexDigests, -1));
         assertFalse(Files.exists(tmpFile.toPath()));
+    }
+
+    /**
+     * Confirm validateTmpObject throws exception when hexDigests provided is null
+     */
+    @Test
+    public void validateTmpObject_validationRequested_hexDigestsNull() throws Exception {
+        File tmpFile = generateTemporaryFile();
+
+        assertThrows(IllegalArgumentException.class,
+                     () -> fileHashStore.validateTmpObject(true, "md2Digest", "MD2", tmpFile, null,
+                                                           -1));
     }
 
     /**

@@ -365,7 +365,7 @@ public class FileHashStoreInterfaceTest {
      */
     @Test
     public void storeObject_incorrectChecksumValue() {
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(NonMatchingChecksumException.class, () -> {
             // Get test file to "upload"
             String pid = "jtao.1700.1";
             Path testDataFile = testData.getTestFile(pid);
@@ -377,6 +377,39 @@ public class FileHashStoreInterfaceTest {
                 fileHashStore.storeObject(dataStream, pid, null, checksumIncorrect, "SHA-256", -1);
             }
         });
+    }
+
+    /**
+     * Verify exception contains hexDigests when NonMatchingChecksumException is thrown
+     */
+    @Test
+    public void storeObject_nonMatchingChecksumException_hexDigestsIncluded() throws Exception {
+        // Get test file to "upload"
+        String pid = "jtao.1700.1";
+        Path testDataFile = testData.getTestFile(pid);
+
+        String checksumIncorrect =
+            "aaf9b6c88f1f458e410c30c351c6384ea42ac1b5ee1f8430d3e365e43b78a38a";
+
+        try (InputStream dataStream = Files.newInputStream(testDataFile)) {
+            try {
+                fileHashStore.storeObject(dataStream, pid, null, checksumIncorrect, "SHA-256", -1);
+
+            } catch (NonMatchingChecksumException nmce) {
+                Map<String, String> hexDigestsRetrieved = nmce.getHexDigests();
+
+                String md5 = testData.pidData.get(pid).get("md5");
+                String sha1 = testData.pidData.get(pid).get("sha1");
+                String sha256 = testData.pidData.get(pid).get("sha256");
+                String sha384 = testData.pidData.get(pid).get("sha384");
+                String sha512 = testData.pidData.get(pid).get("sha512");
+                assertEquals(md5, hexDigestsRetrieved.get("MD5"));
+                assertEquals(sha1, hexDigestsRetrieved.get("SHA-1"));
+                assertEquals(sha256, hexDigestsRetrieved.get("SHA-256"));
+                assertEquals(sha384, hexDigestsRetrieved.get("SHA-384"));
+                assertEquals(sha512, hexDigestsRetrieved.get("SHA-512"));
+            }
+        }
     }
 
     /**

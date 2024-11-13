@@ -859,7 +859,7 @@ public class FileHashStore implements HashStore {
                     + ". Actual checksum calculated: " + digestFromHexDigests + " (algorithm: "
                     + checksumAlgorithm + ")";
             logFileHashStore.error(errMsg);
-            throw new NonMatchingChecksumException(errMsg);
+            throw new NonMatchingChecksumException(errMsg, hexDigests);
         }
         // Validate size
         if (objInfoRetrievedSize != objSize) {
@@ -1258,6 +1258,7 @@ public class FileHashStore implements HashStore {
         }
 
         if (compareChecksum) {
+            FileHashStoreUtility.ensureNotNull(hexDigests, "hexDigests");
             logFileHashStore.info("Validating object, checksum arguments supplied and valid.");
             String digestFromHexDigests = hexDigests.get(checksumAlgorithm);
             if (digestFromHexDigests == null) {
@@ -1269,7 +1270,7 @@ public class FileHashStore implements HashStore {
                     String errMsg = baseErrMsg + ". Failed to delete tmpFile: " + tmpFile + ". "
                         + ge.getMessage();
                     logFileHashStore.error(errMsg);
-                    throw new NonMatchingChecksumException(errMsg);
+                    throw new NonMatchingChecksumException(errMsg, hexDigests);
                 }
                 String errMsg = baseErrMsg + ". tmpFile has been deleted: " + tmpFile;
                 logFileHashStore.error(errMsg);
@@ -1285,12 +1286,12 @@ public class FileHashStore implements HashStore {
                     String errMsg = baseErrMsg + ". Failed to delete tmpFile: " + tmpFile + ". "
                         + ge.getMessage();
                     logFileHashStore.error(errMsg);
-                    throw new NonMatchingChecksumException(errMsg);
+                    throw new NonMatchingChecksumException(errMsg, hexDigests);
                 }
 
                 String errMsg = baseErrMsg + ". tmpFile has been deleted: " + tmpFile;
                 logFileHashStore.error(errMsg);
-                throw new NonMatchingChecksumException(errMsg);
+                throw new NonMatchingChecksumException(errMsg, hexDigests);
             }
         }
     }
