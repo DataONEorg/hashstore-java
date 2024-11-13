@@ -100,7 +100,7 @@ public class FileHashStoreLinks extends FileHashStore {
                     + " calculated: " + checksumToMatch + " for pid: " + pid + " and checksum"
                     + " algorithm: " + checksumAlgorithm;
                 logFileHashStoreLinks.error(errMsg);
-                throw new NonMatchingChecksumException(errMsg);
+                throw new NonMatchingChecksumException(errMsg, hexDigests);
             }
 
             // Gather the elements to form the permanent address
