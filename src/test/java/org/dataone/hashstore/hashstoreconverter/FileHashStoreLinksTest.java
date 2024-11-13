@@ -194,6 +194,40 @@ public class FileHashStoreLinksTest {
     }
 
     /**
+     * Check hexDigests included when nonMatchingChecksumException is thrown when storing a hard
+     * link and that an algorithm that is not part of the default list is generated & included.
+     */
+    @Test
+    public void storeHardLink_nonMatchingChecksum_hexDigestsIncluded() throws Exception {
+        for (String pid : testData.pidList) {
+            String pidFormatted = pid.replace("/", "_");
+            Path testDataFile = testData.getTestFile(pidFormatted);
+            assertTrue(Files.exists(testDataFile));
+
+            try {
+                fileHashStoreLinks.storeHardLink(testDataFile, pid, "badchecksum", "SHA-512/224");
+
+            } catch (NonMatchingChecksumException nmce) {
+                Map<String, String> hexDigestsRetrieved = nmce.getHexDigests();
+
+                String md5 = testData.pidData.get(pid).get("md5");
+                String sha1 = testData.pidData.get(pid).get("sha1");
+                String sha256 = testData.pidData.get(pid).get("sha256");
+                String sha384 = testData.pidData.get(pid).get("sha384");
+                String sha512 = testData.pidData.get(pid).get("sha512");
+                String sha512_224 = testData.pidData.get(pid).get("sha512-224");
+                assertEquals(md5, hexDigestsRetrieved.get("MD5"));
+                assertEquals(sha1, hexDigestsRetrieved.get("SHA-1"));
+                assertEquals(sha256, hexDigestsRetrieved.get("SHA-256"));
+                assertEquals(sha384, hexDigestsRetrieved.get("SHA-384"));
+                assertEquals(sha512, hexDigestsRetrieved.get("SHA-512"));
+                assertEquals(sha512_224, hexDigestsRetrieved.get("SHA-512/224"));
+            }
+        }
+
+    }
+
+    /**
      * Confirm that generateChecksums calculates checksums as expected
      */
     @Test

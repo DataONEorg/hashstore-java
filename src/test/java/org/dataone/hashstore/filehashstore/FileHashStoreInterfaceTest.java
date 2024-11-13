@@ -380,7 +380,8 @@ public class FileHashStoreInterfaceTest {
     }
 
     /**
-     * Verify exception contains hexDigests when NonMatchingChecksumException is thrown
+     * Verify exception contains hexDigests when NonMatchingChecksumException is thrown, and that
+     * an additional algorithm included is also found.
      */
     @Test
     public void storeObject_nonMatchingChecksumException_hexDigestsIncluded() throws Exception {
@@ -393,7 +394,7 @@ public class FileHashStoreInterfaceTest {
 
         try (InputStream dataStream = Files.newInputStream(testDataFile)) {
             try {
-                fileHashStore.storeObject(dataStream, pid, null, checksumIncorrect, "SHA-256", -1);
+                fileHashStore.storeObject(dataStream, pid, "SHA-512/224", checksumIncorrect, "SHA-256", -1);
 
             } catch (NonMatchingChecksumException nmce) {
                 Map<String, String> hexDigestsRetrieved = nmce.getHexDigests();
