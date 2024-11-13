@@ -94,6 +94,7 @@ public class FileHashStoreLinks extends FileHashStore {
 
         try (InputStream fileStream = Files.newInputStream(filePath)) {
             Map<String, String> hexDigests = generateChecksums(fileStream, checksumAlgorithm);
+            FileHashStoreUtility.ensureNotNull(hexDigests, "hexDigests");
             String checksumToMatch = hexDigests.get(checksumAlgorithm);
             if (!checksum.equalsIgnoreCase(checksumToMatch)) {
                 String errMsg = "Checksum supplied: " + checksum + " does not match what has been"
