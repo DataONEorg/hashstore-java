@@ -677,6 +677,18 @@ public class FileHashStoreProtectedTest {
     }
 
     /**
+     * Confirm validateTmpObject throws exception when hexDigests provided is null
+     */
+    @Test
+    public void validateTmpObject_validationRequested_hexDigestsNull() throws Exception {
+        File tmpFile = generateTemporaryFile();
+
+        assertThrows(IllegalArgumentException.class,
+                     () -> fileHashStore.validateTmpObject(true, "md2Digest", "MD2", tmpFile, null,
+                                                           -1));
+    }
+
+    /**
      * Check algorithm support for supported algorithm
      */
     @Test

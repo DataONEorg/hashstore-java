@@ -1258,6 +1258,7 @@ public class FileHashStore implements HashStore {
         }
 
         if (compareChecksum) {
+            FileHashStoreUtility.ensureNotNull(hexDigests, "hexDigests");
             logFileHashStore.info("Validating object, checksum arguments supplied and valid.");
             String digestFromHexDigests = hexDigests.get(checksumAlgorithm);
             if (digestFromHexDigests == null) {
