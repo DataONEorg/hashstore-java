@@ -1,13 +1,28 @@
-## HashStore: hash-based object storage for DataONE data packages
+## HashStore-java: hash-based object storage for DataONE data packages
 
-- **Author**: Matthew B. Jones, Dou Mok, Jing Tao, Matthew Brooke
+Version: 1.1.0
+- DOI: [doi:10.18739/A2ZG6G87Q](https://doi.org/10.18739/A2ZG6G87Q)
+
+## Contributors
+
+- **Author**: Dou Mok, Jing Tao, Matthew Brooke, Matthew B. Jones
 - **License**: [Apache 2](http://opensource.org/licenses/Apache-2.0)
 - [Package source code on GitHub](https://github.com/DataONEorg/hashstore-java)
 - [**Submit Bugs and feature requests**](https://github.com/DataONEorg/hashstore-java/issues)
 - Contact us: support@dataone.org
 - [DataONE discussions](https://github.com/DataONEorg/dataone/discussions)
 
-HashStore is a server-side java library that implements an object storage file system for storing
+## Citation
+
+Cite this software as:
+
+> Dou Mok, Jing Tao, Matthew Brooke, Matthew B. Jones. 2024.
+> HashStore-java: hash-based object storage for DataONE data packages. Arctic Data Center.
+> [doi:10.18739/A2QF8JM59](https://doi.org/10.18739/A2QF8JM59)
+
+## Introduction
+
+HashStore-java is a server-side java library that implements an object storage file system for storing
 and accessing data and metadata for DataONE services. The package is used in DataONE system
 components that need direct, filesystem-based access to data objects, their system metadata, and
 extended metadata about the objects. This package is a core component of
