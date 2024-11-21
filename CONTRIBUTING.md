@@ -1,16 +1,16 @@
 # Contributing to HashStore
 
-:tada: First off, thanks for contributing! :tada:
+**🎉 First off, thanks for contributing! 🎉**
 
-- [Types of contributions](#types-of-contributions)
-- [Pull Requests](#pull-requests)
-- [Development Workflow](#development-workflow)
-- [Release process](#release-process)
-- [Testing](#testing)
-- [Code style](#code-style)
-- [Contributor license agreement](#contributor-license-agreement)
+- [✨ Types of Contributions](#types-of-contributions)
+- [🌳 Pull Requests](#pull-requests)
+- [🔀 Development Workflow](#development-workflow)
+- [🚀 Release Process](#release-process)
+- [🔬 Testing](#testing)
+- [🎨 Code Style](#code-style)
+- [📄 Contributor License Agreement](#contributor-license-agreement)
 
-## Types of contributions
+## ✨ Types of Contributions
 
 We welcome all types of contributions, including bug fixes, feature enhancements,
 bug reports, documentation, graphics, and many others.  You might consider contributing by:
@@ -29,7 +29,7 @@ made to increase the value of HashStore to the community.  We strive to
 incorporate code, documentation, and other useful contributions quickly and
 efficiently while maintaining a high-quality software product.
 
-## Pull Requests
+## 🌳 Pull Requests
 We use the pull-request model for contributions. See [GitHub's help on pull-requests](https://help.github.com/articles/about-pull-requests/).
 
 In short:
@@ -43,22 +43,24 @@ In short:
 - our team may request changes before we will approve the Pull Request, or we will make them for you
 - once the code is reviewed, our team will merge in your changes to `develop` for the next planned release
 
-## Development Workflow
+## 🔀 Development Workflow
 
-Development is managed through the git repository at https://github.com/DataONEorg/hashstore-java.  The repository is organized into several branches, each with a specific purpose.  
+Development is managed through the git repository at https://github.com/DataONEorg/hashstore-java.  The repository is organized into several branches, each with a specific purpose.
 
 **main**. The `main` branch represents the stable branch that is constantly maintained with the current release.  It should generally be safe to install and use the `main` branch the same way as binary releases. The version number in all configuration files and the README on the `main` branch follows [semantic versioning](https://semver.org/) and should always be set to the current stable release, for example `2.8.5`.
 
 **develop**. Development takes place on a single branch for integrated development and testing of the set of features
 targeting the next release. Commits should only be pushed to this branch once they are ready to be deployed to
 production immediately after being pushed. This keeps the `develop` branch in a state of readiness for the next release.
-Any unreleased code changes on the `develop` branch represent changes that have been tested and staged for the next release. 
+Any unreleased code changes on the `develop` branch represent changes that have been tested and staged for the next
+release.
 The tip of the `develop` branch always represents the set of features that are awaiting the next release. The develop
 branch represents the opportunity to integrate changes from multiple features for integrated testing before release.
 
 Version numbers on the `develop` branch represent either the planned next release number (e.g., `2.9.0`), or the planned next release number with a `beta` designator or release candidate `rc` designator appended as appropriate.  For example, `2.8.6-beta1` or `2.9.0-rc1`.
 
-**feature**. to isolate development on a specific set of capabilities, especially if it may be disruptive to other developers working on the `develop` branch, feature branches should be created.
+**feature**. To isolate development on a specific set of capabilities, especially if it may be disruptive to other
+developers working on the `develop` branch, feature branches should be created.
 
 Feature branches are named as `feature-` + `{issue}` +  `-{short-description}`, with `{issue}` being the GitHub issue number related to that new feature. e.g. `feature-23-refactor-storage`.
 
@@ -102,20 +104,20 @@ gitGraph
     merge develop id: "11" tag: "v1.1.0"
 ```
 
-## Release process
+## 🚀 Release Process
 
 1. Our release process starts with integration testing in a `develop` branch. Once all
-changes that are desired in a release are merged into the `develop` branch, we run
-the full set of tests on a clean checkout of the `develop` branch.
+   changes that are desired in a release are merged into the `develop` branch, we run
+   the full set of tests on a clean checkout of the `develop` branch.
 2. After testing, the `develop` branch is merged to main, and the `main` branch is tagged with
-the new version number (e.g. `2.11.2`). At this point, the tip of the `main` branch will 
-reflect the new release and the `develop` branch can be fast-forwarded to sync with `main` to 
-start work on the next release.
+   the new version number (e.g. `2.11.2`). At this point, the tip of the `main` branch will
+   reflect the new release and the `develop` branch can be fast-forwarded to sync with `main` to
+   start work on the next release.
 3. Releases can be downloaded from the [GitHub releases page](https://github.com/DataONEorg/hashstore-java/releases).
 
-## Testing
+## 🔬 Testing
 
-**Unit and integration tests**. HashStore has a full suite of `pytest` tests in the `tests` subdirectory.
+**Unit and integration tests**. HashStore has a full suite of `JUnit` tests in the `tests` subdirectory.
 Any new code developed should include a robust set of tests for each public
 method, as well as integration tests from new feature sets.  Tests should fully
 exercise the feature to ensure that it responds correctly to both good data inputs
@@ -125,16 +127,16 @@ or merging to `develop`.
 Tests are automatically run via GitHub Actions. Check the root `README.md` file
 for this GitHub Actions status badge and make sure it says "Passing":
 
-## Code style
+## 🎨 Code Style
 
 Code should be written to professional standards to enable clean, well-documented,
 readable, and maintainable software.  While there has been significant variability
 in the coding styles applied historically, new contributions should strive for
-clean code formatting.  We generally follow PEP8 guidelines for Python code formatting,
-typically enforced through the `black` code formatting package. For Java, we typically 
-follow the [Google Style](https://raw.githubusercontent.com/google/styleguide/gh-pages/eclipse-java-google-style.xml), enforced through the VS Code formatting extensions.
+clean code formatting. For Java, we generally follow the [Google
+Style](https://raw.githubusercontent.com/google/styleguide/gh-pages/eclipse-java-google-style.xml),
+enforced through the VS Code formatting extensions or IntelliJ IDEA import settings.
 
-## Contributor license agreement
+## 📄 Contributor License Agreement
 
 In order to clarify the intellectual property license
 granted with Contributions from any person or entity, you agree to
